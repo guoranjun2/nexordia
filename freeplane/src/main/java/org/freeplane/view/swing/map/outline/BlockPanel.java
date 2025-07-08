@@ -1,0 +1,124 @@
+/*
+ * Created on 8 Jul 2025
+ *
+ * author dimitry
+ */
+package org.freeplane.view.swing.map.outline;
+
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Graphics;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
+
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+
+class BlockPanel extends JPanel {
+
+    private final int breadcrumbNodeCount;
+    
+    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+        setLayout(null);
+        setOpaque(false);
+        this.breadcrumbNodeCount = breadcrumbNodeCount;
+
+        createNodeComponents(nodes, firstIdx, rowHeight, indent, parentPanel, breadcrumbNodeCount);
+    }
+
+    private void createNodeComponents(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+        int visibleButtonIndex = 0;
+        for (int i = 0; i < nodes.size(); i++) {
+            FlatNode flat = nodes.get(i);
+            int idx = firstIdx + i;
+
+            if (idx >= breadcrumbNodeCount) {
+                int y = visibleButtonIndex * rowHeight;
+                createActionButton(flat, y, rowHeight, indent, parentPanel, idx);
+                visibleButtonIndex++;
+            }
+        }
+    }
+
+    private void createActionButton(FlatNode flat, int y, int rowHeight, int indent, ScrollableTreePanel parentPanel, int idx) {
+        String buttonText = flat.node.title;
+        JButton button = new JButton(buttonText);
+
+        int actionX;
+        if (flat.depth == 0) {
+            actionX = parentPanel.navButtons.buttonAreaWidth - parentPanel.navButtons.indent;
+        } else {
+            actionX = (flat.depth * parentPanel.navButtons.indent) + parentPanel.navButtons.buttonAreaWidth - parentPanel.navButtons.indent;
+        }
+
+        button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                parentPanel.selectNodeById(flat.node.id);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                parentPanel.onContentButtonHovered(flat.node);
+            }
+        });
+
+        add(button);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        ScrollableTreePanel parentPanel = null;
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof ScrollableTreePanel)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof ScrollableTreePanel) {
+            parentPanel = (ScrollableTreePanel) parent;
+        }
+
+        if (parentPanel != null) {
+            TreeNode selected = parentPanel.getSelectedNode();
+            for (Component comp : getComponents()) {
+                if (comp instanceof JButton) {
+                    JButton btn = (JButton) comp;
+                    String buttonText = btn.getText();
+                    if (selected != null && buttonText.equals(selected.title)) {
+                        // Check if the selected node is in the breadcrumb area
+                        int selectedNodeIndex = parentPanel.findNodeIndexInVisibleList(selected);
+                        boolean isInBreadcrumb = selectedNodeIndex >= 0 && selectedNodeIndex < breadcrumbNodeCount;
+                        
+                        // Only paint selection circle if the node is NOT in breadcrumb area
+                        if (!isInBreadcrumb) {
+                            Icon icon = parentPanel.selectionIcon;
+
+                            FlatNode selectedFlat = null;
+                            for (FlatNode flat : parentPanel.visibleNodes) {
+                                if (flat.node.id.equals(selected.id)) {
+                                    selectedFlat = flat;
+                                    break;
+                                }
+                            }
+
+                            int iconX;
+                            if (selectedFlat != null && selectedFlat.depth == 0) {
+                                iconX = Math.max(0, comp.getX() - icon.getIconWidth());
+                            } else {
+                                iconX = comp.getX() - icon.getIconWidth();
+                            }
+
+                            int iconY = comp.getY() + (comp.getHeight() - icon.getIconHeight()) / 2;
+                            icon.paintIcon(this, g, iconX, iconY);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
