@@ -19,11 +19,13 @@ import javax.swing.JPanel;
 class BlockPanel extends JPanel {
 
     private final int breadcrumbNodeCount;
+    private final TreeSelection selection;
     
-    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, TreeSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.breadcrumbNodeCount = breadcrumbNodeCount;
+        this.selection = selection;
 
         createNodeComponents(nodes, firstIdx, rowHeight, indent, parentPanel, breadcrumbNodeCount);
     }
@@ -84,7 +86,7 @@ class BlockPanel extends JPanel {
         }
 
         if (parentPanel != null) {
-            TreeNode selected = parentPanel.getSelectedNode();
+            TreeNode selected = selection.getSelectedNode();
             for (Component comp : getComponents()) {
                 if (comp instanceof JButton) {
                     JButton btn = (JButton) comp;

@@ -35,11 +35,11 @@ class ScrollableTreePanel extends JPanel {
     final SelectionCircleIcon selectionIcon;
 
     final TreeNode root;
+    final TreeSelection selection;
     final int blockSize;
     List<FlatNode> visibleNodes = new ArrayList<>();
     final Map<Integer, BlockPanel> blockPanels = new HashMap<>();
     JScrollPane scrollPane;
-    String selectedNodeId;
     private int breadcrumbAreaHeight = 0;
 
     TreeNode hoveredNode;
@@ -52,7 +52,7 @@ class ScrollableTreePanel extends JPanel {
         super(null);
         this.root = root;
         this.blockSize = blockSize;
-        this.selectedNodeId = root.id;
+        this.selection = new TreeSelection(root);
         this.hoveredNode = root;
 
         this.navButtons = new NavigationButtons();
@@ -94,7 +94,7 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-    void updateVisibleBlocks() {
+        void updateVisibleBlocks() {
         if (scrollPane == null) return;
 
         updateVisibleNodeList();
@@ -110,7 +110,38 @@ class ScrollableTreePanel extends JPanel {
             boolean isInBreadcrumb = nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
             
             if (!isInBreadcrumb) {
-                moveNavigationButtonsTo(this, hoveredNode, -1, false);
+                navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, this);
+            }
+        }
+    }
+
+    void updateVisibleBlocks(int startFromNodeIndex) {
+        if (scrollPane == null) return;
+
+        updateVisibleNodeList();
+        clearBlocks();
+        
+        // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)
+        // We need to account for the breadcrumb area height
+        int targetY = (startFromNodeIndex * navButtons.rowHeight) - breadcrumbAreaHeight;
+        targetY = Math.max(0, targetY); // Ensure we don't go negative
+        System.out.println("updateVisibleBlocks: startFromNodeIndex=" + startFromNodeIndex + 
+                          ", breadcrumbAreaHeight=" + breadcrumbAreaHeight + 
+                          ", targetY=" + targetY);
+        scrollPane.getViewport().setViewPosition(new java.awt.Point(0, targetY));
+        
+        createVisibleBlocks();
+        updatePreferredFromActualBlocks();
+        refreshUI();
+
+        if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
+            // Check if this node is in breadcrumb area - if so, don't move buttons here
+            int breadcrumbNodeCount = breadcrumbAreaHeight / navButtons.rowHeight;
+            int nodeIndex = findNodeIndexInVisibleList(hoveredNode);
+            boolean isInBreadcrumb = nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
+            
+            if (!isInBreadcrumb) {
+                navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, this);
             }
         }
     }
@@ -155,19 +186,19 @@ class ScrollableTreePanel extends JPanel {
         int start = blockIndex * blockSize;
         int end = Math.min(start + blockSize, visibleNodes.size());
         int breadcrumbNodeCount = breadcrumbAreaHeight / navButtons.rowHeight;
-        
+
         // Skip blocks that would be entirely composed of breadcrumb nodes
         if (end <= breadcrumbNodeCount) {
             return;
         }
-        
-        BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, navButtons.rowHeight, navButtons.indent, this, breadcrumbNodeCount);
-        
+
+        BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, navButtons.rowHeight, navButtons.indent, this, breadcrumbNodeCount, selection);
+
         // Calculate position and height only for visible (non-breadcrumb) nodes
         int visibleStart = Math.max(start, breadcrumbNodeCount);
         int visibleNodesInBlock = end - visibleStart;
         int blockY = yOffset + (visibleStart - breadcrumbNodeCount) * navButtons.rowHeight;
-        
+
         bp.setBounds(0, blockY, getPreferredSize().width, visibleNodesInBlock * navButtons.rowHeight);
         add(bp);
         blockPanels.put(blockIndex, bp);
@@ -220,8 +251,8 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void setSelectedNodeId(String nodeId) {
-        if (nodeId != null && findNodeById(nodeId) != null) {
-            this.selectedNodeId = nodeId;
+        if (nodeId != null && selection.findNodeById(nodeId) != null) {
+            selection.selectNode(nodeId);
             TreeNode preservedHoveredNode = hoveredNode;
             removeAll();
             blockPanels.clear();
@@ -232,25 +263,10 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-    private TreeNode findNodeById(String id) {
-        return findNodeById(root, id);
-    }
 
-    private TreeNode findNodeById(TreeNode node, String id) {
-        if (node.id.equals(id)) {
-            return node;
-        }
-        for (TreeNode child : node.children) {
-            TreeNode found = findNodeById(child, id);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
-    }
 
     private void scrollToSelectedNode() {
-        if (scrollPane == null || selectedNodeId == null) {
+        if (scrollPane == null || selection.getSelectedNodeId() == null) {
             return;
         }
 
@@ -264,7 +280,7 @@ class ScrollableTreePanel extends JPanel {
 
     private int findSelectedNodeIndex() {
         for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node.id.equals(selectedNodeId)) {
+            if (visibleNodes.get(i).node.id.equals(selection.getSelectedNodeId())) {
                 return i;
             }
         }
@@ -296,11 +312,11 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public String getSelectedNodeId() {
-        return selectedNodeId;
+        return selection.getSelectedNodeId();
     }
 
     public TreeNode getSelectedNode() {
-        return findNodeById(selectedNodeId);
+        return selection.getSelectedNode();
     }
 
     void onContentButtonHovered(TreeNode node) {
@@ -312,77 +328,14 @@ class ScrollableTreePanel extends JPanel {
                 // Node is in breadcrumb, don't handle hover in main content
                 return;
             }
-            
+
             hoveredNode = node;
-            moveNavigationButtonsTo(this, node, -1, false);
+            navButtons.attachToNode(node, this, false, -1, breadcrumbAreaHeight, this);
             repaint();
         }
     }
 
-    void moveNavigationButtonsTo(JPanel targetPanel, TreeNode node, int rowIndex, boolean isBreadcrumb) {
-        if (node.children.isEmpty()) {
-            navButtons.hideNavigationButtons();
-            return;
-        }
 
-        // Remove buttons from current parent
-        navButtons.hideNavigationButtons();
-        if (navButtons.expandBtn.getParent() != null) {
-            navButtons.expandBtn.getParent().remove(navButtons.expandBtn);
-        }
-        if (navButtons.collapseBtn.getParent() != null) {
-            navButtons.collapseBtn.getParent().remove(navButtons.collapseBtn);
-        }
-        if (navButtons.expandMoreBtn.getParent() != null) {
-            navButtons.expandMoreBtn.getParent().remove(navButtons.expandMoreBtn);
-        }
-        if (navButtons.reduceBtn.getParent() != null) {
-            navButtons.reduceBtn.getParent().remove(navButtons.reduceBtn);
-        }
-
-        // Add buttons to target panel
-        targetPanel.add(navButtons.expandBtn);
-        targetPanel.add(navButtons.collapseBtn);
-        targetPanel.add(navButtons.expandMoreBtn);
-        targetPanel.add(navButtons.reduceBtn);
-
-        // Calculate position and show appropriate buttons
-        int y, depth, baseX;
-        if (isBreadcrumb) {
-            y = rowIndex * navButtons.rowHeight;
-            depth = calculateNodeDepth(node);
-            // Position navigation buttons just to the left of breadcrumb text buttons
-            // Breadcrumb text buttons are at: buttonAreaWidth - indent (+ depth * indent for non-root)
-            int textButtonX;
-            if (depth == 0) {
-                textButtonX = navButtons.buttonAreaWidth - navButtons.indent;
-            } else {
-                textButtonX = (depth * navButtons.indent) + navButtons.buttonAreaWidth - navButtons.indent;
-            }
-            baseX = Math.max(0, textButtonX - navButtons.navButtonsTotalWidth);
-        } else {
-            FlatNode flatNode = findFlatNode(node);
-            if (flatNode == null) return;
-            int nodeIndex = findNodeIndexInVisibleList(node);
-            int breadcrumbNodeCount = breadcrumbAreaHeight / navButtons.rowHeight;
-            int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
-            y = breadcrumbAreaHeight + contentAreaIndex * navButtons.rowHeight;
-            depth = flatNode.depth;
-            baseX = calculateBaseX(flatNode);
-        }
-
-        removeActionListeners();
-
-        final boolean isInBreadcrumb = isBreadcrumb;
-        if (!node.isExpanded()) {
-            showSingleButton(navButtons.expandBtn, baseX, y, () -> {
-                node.applyExpansionLevel(1);
-                refreshWithBreadcrumbs();
-            });
-        } else {
-            showExpandedButtons(node, baseX, y, depth, isInBreadcrumb);
-        }
-    }
 
     private FlatNode findFlatNode(TreeNode node) {
         for (FlatNode flat : visibleNodes) {
@@ -393,44 +346,7 @@ class ScrollableTreePanel extends JPanel {
         return null;
     }
 
-    private void showExpandedButtons(TreeNode node, int baseX, int y, int depth, boolean isInBreadcrumb) {
-        navButtons.hideNavigationButtons();
 
-        if (depth > 0) {
-            navButtons.collapseBtn.setBounds(baseX, y, navButtons.navButtonWidth, navButtons.rowHeight);
-            navButtons.collapseBtn.addActionListener(e -> {
-                node.applyExpansionLevel(0);
-                refreshWithBreadcrumbs();
-                requestFocusInWindow();
-            });
-            navButtons.collapseBtn.setVisible(true);
-        }
-
-        int expandX = depth == 0 ? baseX : baseX + navButtons.navButtonWidth;
-        navButtons.expandMoreBtn.setBounds(expandX, y, navButtons.navButtonWidth, navButtons.rowHeight);
-        navButtons.expandMoreBtn.addActionListener(e -> {
-            int currentLevel = node.getMaxExpansionDepth();
-            node.applyExpansionLevel(currentLevel + 1);
-            refreshWithBreadcrumbs();
-            requestFocusInWindow();
-        });
-        navButtons.expandMoreBtn.setVisible(true);
-
-        int reduceX = depth == 0 ? baseX + navButtons.navButtonWidth : baseX + (2 * navButtons.navButtonWidth);
-        navButtons.reduceBtn.setBounds(reduceX, y, navButtons.navButtonWidth, navButtons.rowHeight);
-        navButtons.reduceBtn.addActionListener(e -> {
-            int currentLevel = node.getMaxExpansionDepth();
-            int minLevel = depth == 0 ? 1 : 0;
-            if (currentLevel > minLevel) {
-                node.applyExpansionLevel(currentLevel - 1);
-            } else {
-                node.applyExpansionLevel(minLevel);
-            }
-            refreshWithBreadcrumbs();
-            requestFocusInWindow();
-        });
-        navButtons.reduceBtn.setVisible(true);
-    }
 
     private int calculateBaseXForDepth(int depth) {
         if (depth == 0) {
@@ -440,17 +356,9 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-    private int calculateNodeDepth(TreeNode node) {
-        int depth = 0;
-        TreeNode current = node;
-        while (current != root) {
-            current = current.parent;
-            depth++;
-        }
-        return depth;
-    }
 
-    private void refreshWithBreadcrumbs() {
+
+    void refreshWithBreadcrumbs() {
         TreeNode preservedHoveredNode = hoveredNode;
         SwingUtilities.invokeLater(() -> {
             // Notify TreeViewPane to update breadcrumbs first
@@ -459,10 +367,11 @@ class ScrollableTreePanel extends JPanel {
                 parent = parent.getParent();
             }
             if (parent instanceof OutlinePane) {
-                ((OutlinePane) parent).updateBreadcrumbs();
+                BreadcrumbState state = calculateBreadcrumbState();
+                ((OutlinePane) parent).breadcrumbPanel.update(state);
             }
             refreshPanel();
-            
+
             // Immediately recreate navigation buttons for the hovered node if it has children
             if (preservedHoveredNode != null && !preservedHoveredNode.children.isEmpty()) {
                 SwingUtilities.invokeLater(() -> {
@@ -471,7 +380,7 @@ class ScrollableTreePanel extends JPanel {
                     int breadcrumbNodeCount = breadcrumbAreaHeight / navButtons.rowHeight;
                     int nodeIndex = findNodeIndexInVisibleList(preservedHoveredNode);
                     boolean isInBreadcrumb = nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
-                    
+
                     if (isInBreadcrumb) {
                         // Find the row index in breadcrumb
                         Container outlinePane = getParent();
@@ -480,40 +389,19 @@ class ScrollableTreePanel extends JPanel {
                         }
                         if (outlinePane instanceof OutlinePane) {
                             // Let OutlinePane handle breadcrumb button positioning
-                            ((OutlinePane) outlinePane).updateBreadcrumbs();
+                            BreadcrumbState state = calculateBreadcrumbState();
+                            ((OutlinePane) outlinePane).breadcrumbPanel.update(state);
                         }
                     } else {
                         // Node is in main content
-                        moveNavigationButtonsTo(this, preservedHoveredNode, -1, false);
+                        navButtons.attachToNode(preservedHoveredNode, this, false, -1, breadcrumbAreaHeight, this);
                     }
                 });
             }
         });
     }
 
-    private int calculateBaseX(FlatNode flat) {
-        if (flat.depth == 0) {
-            return 0;
-        } else {
-            return (flat.depth * navButtons.indent) - navButtons.indent;
-        }
-    }
 
-    private void removeActionListeners() {
-        navButtons.removeAllActionListeners();
-    }
-
-    private void showSingleButton(JButton button, int baseX, int y, Runnable action) {
-        navButtons.hideNavigationButtons();
-        // Position single button closer to the node text
-        int singleButtonX = baseX + navButtons.navButtonsTotalWidth - navButtons.navButtonWidth;
-        button.setBounds(singleButtonX, y, navButtons.navButtonWidth, navButtons.rowHeight);
-        button.addActionListener(e -> {
-            action.run();
-            requestFocusInWindow();
-        });
-        button.setVisible(true);
-    }
 
     private void refreshPanel() {
         SwingUtilities.invokeLater(() -> {
@@ -616,6 +504,124 @@ class ScrollableTreePanel extends JPanel {
             }
         }
         return -1;
+    }
+
+    BreadcrumbState calculateBreadcrumbState() {
+        if (visibleNodes.isEmpty()) {
+            return new BreadcrumbState(java.util.Collections.emptyList(), 0, false, -1);
+        }
+
+        java.awt.Rectangle viewRect = scrollPane.getViewport().getViewRect();
+        System.out.println("=== calculateBreadcrumbState START ===");
+        System.out.println("ViewRect: " + viewRect);
+
+        int workingBreadcrumbHeight = 0;
+        TreeNode previousFirstVisibleNode = null;
+        int previousNodeLevel = -1;
+        int iteration = 0;
+        
+        // Variables to track level reduction case
+        boolean needsScroll = false;
+        int finalBreadcrumbHeight = 0;
+        int levelReductionFirstVisibleNodeIndex = -1;
+        
+        while (true) {
+            iteration++;
+            System.out.println("\n--- Iteration " + iteration + " ---");
+            
+            int effectiveViewportY = viewRect.y + workingBreadcrumbHeight;
+            int firstFullyVisibleNodeIndex = Math.max(0, (effectiveViewportY + navButtons.rowHeight - 1) / navButtons.rowHeight);
+            
+            System.out.println("workingBreadcrumbHeight: " + workingBreadcrumbHeight);
+            System.out.println("effectiveViewportY: " + effectiveViewportY);
+            System.out.println("firstFullyVisibleNodeIndex: " + firstFullyVisibleNodeIndex);
+            
+            if (firstFullyVisibleNodeIndex >= visibleNodes.size()) {
+                System.out.println("Index >= visibleNodes.size(), returning empty state");
+                return new BreadcrumbState(java.util.Collections.emptyList(), 0, false, -1);
+            }
+
+            TreeNode firstFullyVisibleNode = visibleNodes.get(firstFullyVisibleNodeIndex).node;
+            System.out.println("firstFullyVisibleNode: " + firstFullyVisibleNode.title);
+            
+            if (firstFullyVisibleNode == root) {
+                System.out.println("firstFullyVisibleNode == root, returning empty state");
+                return new BreadcrumbState(java.util.Collections.emptyList(), 0, false, -1);
+            }
+
+            if (firstFullyVisibleNode == previousFirstVisibleNode) {
+                System.out.println("firstFullyVisibleNode == previousFirstVisibleNode, breaking");
+                break;
+            }
+
+            java.util.List<TreeNode> breadcrumbNodes = new java.util.ArrayList<>();
+            TreeNode current = firstFullyVisibleNode.parent;
+            while (current != null) {
+                breadcrumbNodes.add(0, current);
+                current = current.parent;
+            }
+
+            int newBreadcrumbHeight = breadcrumbNodes.size() * navButtons.rowHeight;
+            int currentNodeLevel = calculateNodeDepth(firstFullyVisibleNode);
+            
+            System.out.println("currentNodeLevel: " + currentNodeLevel + ", previousNodeLevel: " + previousNodeLevel);
+            System.out.println("newBreadcrumbHeight: " + newBreadcrumbHeight);
+            
+            if (previousNodeLevel >= 0 && currentNodeLevel < previousNodeLevel) {
+                System.out.println("LEVEL REDUCTION DETECTED!");
+                System.out.println("previousFirstVisibleNode: " + (previousFirstVisibleNode != null ? previousFirstVisibleNode.title : "null"));
+                System.out.println("currentFirstVisibleNode: " + firstFullyVisibleNode.title);
+                System.out.println("Setting levelReductionFirstVisibleNodeIndex to: " + firstFullyVisibleNodeIndex);
+                
+                // Use the current firstFullyVisibleNode as the first visible content node
+                // This is the node that should appear at the top of the content area
+                needsScroll = true;
+                finalBreadcrumbHeight = newBreadcrumbHeight;
+                levelReductionFirstVisibleNodeIndex = firstFullyVisibleNodeIndex;
+                break;
+            }
+            
+            if (iteration > 10) {
+                System.out.println("Max iterations reached, breaking");
+                break;
+            }
+            
+            workingBreadcrumbHeight = newBreadcrumbHeight;
+            previousNodeLevel = currentNodeLevel;
+            previousFirstVisibleNode = firstFullyVisibleNode;
+            System.out.println("Updated previousFirstVisibleNode to: " + previousFirstVisibleNode.title);
+        }
+
+        // Build final breadcrumb path
+        java.util.List<TreeNode> breadcrumbNodes = new java.util.ArrayList<>();
+        TreeNode current = previousFirstVisibleNode.parent;
+        while (current != null) {
+            breadcrumbNodes.add(0, current);
+            current = current.parent;
+        }
+
+        int finalHeight = needsScroll ? finalBreadcrumbHeight : breadcrumbNodes.size() * navButtons.rowHeight;
+        
+        System.out.println("\n=== FINAL RESULT ===");
+        System.out.println("needsScroll: " + needsScroll);
+        System.out.println("finalHeight: " + finalHeight);
+        System.out.println("levelReductionFirstVisibleNodeIndex: " + levelReductionFirstVisibleNodeIndex);
+        if (levelReductionFirstVisibleNodeIndex >= 0 && levelReductionFirstVisibleNodeIndex < visibleNodes.size()) {
+            System.out.println("Node at levelReductionFirstVisibleNodeIndex: " + visibleNodes.get(levelReductionFirstVisibleNodeIndex).node.title);
+        }
+        System.out.println("=== calculateBreadcrumbState END ===\n");
+        
+        return new BreadcrumbState(breadcrumbNodes, finalHeight, needsScroll, levelReductionFirstVisibleNodeIndex);
+    }
+
+    int calculateNodeDepth(TreeNode node) {
+        int depth = 0;
+        TreeNode current = node;
+        while (current != root) {
+            current = current.parent;
+            depth++;
+        }
+        return depth;
     }
 
     @Override
