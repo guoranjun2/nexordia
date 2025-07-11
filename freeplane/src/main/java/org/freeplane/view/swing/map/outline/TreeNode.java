@@ -67,4 +67,11 @@ class TreeNode {
     public boolean isExpanded() {
         return expansionLevel > 0;
     }
+
+	@Override
+	public String toString() {
+		return "TreeNode [title=" + title + "]";
+	}
+
+
 }

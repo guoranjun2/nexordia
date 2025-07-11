@@ -13,6 +13,7 @@ class BreadcrumbPanel extends JPanel {
     private final JScrollPane scrollPane;
     private final TreeSelection selection;
     private int currentBreadcrumbHeight = 0;
+    private List<TreeNode> currentBreadcrumbNodes = new java.util.ArrayList<>();
 
     public BreadcrumbPanel(ScrollableTreePanel treePanel, JScrollPane scrollPane, TreeSelection selection) {
         this.treePanel = treePanel;
@@ -29,6 +30,7 @@ class BreadcrumbPanel extends JPanel {
 
         List<TreeNode> breadcrumbNodes = state.breadcrumbNodes;
         currentBreadcrumbHeight = state.breadcrumbHeight;
+        currentBreadcrumbNodes = new java.util.ArrayList<>(breadcrumbNodes);
         
         treePanel.setBreadcrumbAreaHeight(currentBreadcrumbHeight);
 
@@ -106,6 +108,10 @@ class BreadcrumbPanel extends JPanel {
 
     public int getCurrentHeight() {
         return currentBreadcrumbHeight;
+    }
+
+    public List<TreeNode> getCurrentBreadcrumbNodes() {
+        return new java.util.ArrayList<>(currentBreadcrumbNodes);
     }
 
     private int getNodeDepth(TreeNode node) {

@@ -22,7 +22,7 @@ public class OutlinePane extends JPanel {
     public OutlinePane(ScrollableTreePanel treePanel) {
         this.treePanel = treePanel;
         this.treeScrollPane = new JScrollPane(treePanel);
-        
+
         // Set up the scroll pane connection
         treePanel.setScrollPane(this.treeScrollPane);
 
@@ -41,57 +41,37 @@ public class OutlinePane extends JPanel {
 
         add(breadcrumbPanel);
         add(treeScrollPane, BorderLayout.CENTER);
-        
+
         setupScrollListeners();
         performInitialSetup();
     }
-    
+
     private void setupScrollListeners() {
-        // Add scroll bar adjustment listener
-        treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
-            BreadcrumbState state = treePanel.calculateBreadcrumbState();
-            breadcrumbPanel.update(state);
-            
-            if (state.needsScroll && state.levelReductionFirstVisibleNodeIndex >= 0) {
-                // Level reduction case - use atomic update with specific start node
-                treePanel.updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
-            } else {
-                // Normal scrolling - keep smooth scrolling behavior
-                treePanel.updateVisibleBlocks();
-            }
+    	treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+    		if(! e.getValueIsAdjusting()) {
+    			BreadcrumbState state = treePanel.calculateBreadcrumbState();
+
+    			if (state != null) {
+    				breadcrumbPanel.update(state);
+					if (state.levelReductionFirstVisibleNodeIndex >= 0) {
+						treePanel.updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
+						return;
+					}
+				}
+    		}
+    		treePanel.updateVisibleBlocks();
         });
-        
-        // Add viewport resize listener
         treeScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                BreadcrumbState state = treePanel.calculateBreadcrumbState();
-                breadcrumbPanel.update(state);
-                
-                if (state.needsScroll && state.levelReductionFirstVisibleNodeIndex >= 0) {
-                    // Level reduction case - use atomic update with specific start node
-                    treePanel.updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
-                } else {
-                    // Normal scrolling - keep smooth scrolling behavior
-                    treePanel.updateVisibleBlocks();
-                }
+            	treePanel.updateVisibleBlocks();
             }
         });
     }
-    
+
     private void performInitialSetup() {
         SwingUtilities.invokeLater(() -> {
-            BreadcrumbState state = treePanel.calculateBreadcrumbState();
-            breadcrumbPanel.update(state);
-            
-            if (state.needsScroll && state.levelReductionFirstVisibleNodeIndex >= 0) {
-                // Level reduction case - use atomic update with specific start node
-                treePanel.updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
-            } else {
-                // Normal scrolling - keep smooth scrolling behavior
-                treePanel.updateVisibleBlocks();
-            }
-            
+            treePanel.updateVisibleBlocks();
             treePanel.requestFocusInWindow();
         });
     }

@@ -28,7 +28,7 @@ public class BlockVirtualTreeDemo {
 
 class DemoTreeFactory {
     private static int nodeCounter = 1;
-    
+
     static TreeNode createDemoRoot() {
         nodeCounter = 1; // Reset counter for each new tree
         TreeNode root = new TreeNode("Root", "root");
@@ -44,9 +44,10 @@ class DemoTreeFactory {
         int numChildren = 2 + (int)(Math.random() * 4);
 
         for (int i = 1; i <= numChildren; i++) {
-            String childId = parent.id + "-child-" + i;
+            String childId = "Child " + nodeCounter++;
             // Make title unique using global counter
-            String childTitle = "Level " + currentLevel + " Child " + nodeCounter++;
+            String childTitle = "Level " + currentLevel + " " + childId;
+
             TreeNode child = new TreeNode(childTitle, childId);
 
             boolean shouldHaveChildren = Math.random() < 0.7 && currentLevel < maxLevels - 1;
