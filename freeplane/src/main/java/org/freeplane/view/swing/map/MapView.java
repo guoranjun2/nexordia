@@ -977,7 +977,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    return distanceToEdge * distanceToEdge * 2 / AUTOSCROLL_MARGIN;
 	}
 
-	boolean frameLayoutCompleted() {
+	boolean isFrameLayoutCompleted() {
 		final Frame frame = JOptionPane.getFrameForComponent(this);
 		final Insets frameInsets = frame.getInsets();
 		final Component rootPane = frame.getComponent(0);
@@ -1689,7 +1689,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         if(isSelected())
             return;
         IMapSelection primarySelection = modeController.getController().getSelection();
-        if( primarySelection == null)
+        if( primarySelection == null || primarySelection.getMap() != viewedMap)
             return;
 
         if (getSelectedNodes().size() > 1)
@@ -1719,7 +1719,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         if(isSelected())
             return;
         IMapSelection primarySelection = modeController.getController().getSelection();
-        if( primarySelection == null)
+        if( primarySelection == null || primarySelection.getMap() != viewedMap)
             return;
 
         NodeModel primaryRoot = primarySelection.getSelectionRoot();
@@ -2993,14 +2993,13 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     }
 
 	void scrollViewAfterLayout() {
-		if(isDisplayable() && ! selection.selectionChanged) {
+		if(isDisplayable() && ! selection.selectionChanged && isFrameLayoutCompleted()) {
 			if(scrollsViewAfterLayout ) {
 				scrollsViewAfterLayout  = false;
 				mapScroller.scrollView();
 			}
 			else
 				setAnchorContentLocation();
-//				mapScroller.updateAnchorContentLocation();
 		}
 	}
 	public void scrollBy(final int x, final int y) {
@@ -3312,9 +3311,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		    nextSelectedNode = newRootView;
 		if(newRootWasFolded) {
 			newRootView.fireFoldingChanged();
-	        currentRootView.updateIcons();
 	        setSiblingMaxLevel(getSelected());
 		}
+		newRootView.updateIcons();
 		newRootView.resetLayoutPropertiesRecursively();
 		fireRootChanged();
 		if(nextSelectedNode.isDisplayable()) {
