@@ -102,7 +102,7 @@ class BreadcrumbPanel extends JPanel {
 	}
 
     public Rectangle calculateBounds() {
-        int width = scrollPane.getViewport().getWidth();
+        int width = treePanel.viewport != null ? treePanel.viewport.getViewportWidth() : scrollPane.getViewport().getWidth();
         return new Rectangle(0, 0, width, currentBreadcrumbHeight);
     }
 

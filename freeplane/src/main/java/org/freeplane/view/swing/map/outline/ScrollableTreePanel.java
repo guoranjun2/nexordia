@@ -38,6 +38,7 @@ class ScrollableTreePanel extends JPanel {
     final OutlineGeometry geometry;
     final ExpansionControls expansionControls;
     final NodePositioning nodePositioning;
+    OutlineViewport viewport;
 
     final TreeNode root;
     final OutlineSelection selection;
@@ -83,6 +84,7 @@ class ScrollableTreePanel extends JPanel {
 
     void setScrollPane(JScrollPane scroll) {
         this.scrollPane = scroll;
+        this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
     }
 
     void setBreadcrumbAreaHeight(int height) {
@@ -92,7 +94,7 @@ class ScrollableTreePanel extends JPanel {
 
 
         void updateVisibleBlocks() {
-        if (scrollPane == null) return;
+        if (viewport == null) return;
 
         visibleState.updateVisibleNodes();
         clearBlocks();
@@ -112,19 +114,16 @@ class ScrollableTreePanel extends JPanel {
     }
 
     void updateVisibleBlocks(int startFromNodeIndex) {
-        if (scrollPane == null) return;
+        if (viewport == null) return;
 
         visibleState.updateVisibleNodes();
         clearBlocks();
 
         // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)
-        // We need to account for the breadcrumb area height
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        java.awt.Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbAreaHeight);
+        viewport.setViewPosition(startFromNodeIndex, breadcrumbAreaHeight);
         System.out.println("updateVisibleBlocks: startFromNodeIndex=" + startFromNodeIndex +
-                          ", breadcrumbAreaHeight=" + breadcrumbAreaHeight +
-                          ", targetY=" + viewPosition.y);
-        scrollPane.getViewport().setViewPosition(viewPosition);
+                          ", breadcrumbAreaHeight=" + breadcrumbAreaHeight);
 
         createVisibleBlocks();
         updatePreferredFromActualBlocks();
@@ -162,20 +161,10 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void createVisibleBlocks() {
-        Rectangle view = scrollPane.getViewport().getViewRect();
-        int blockHeight = blockSize * geometry.rowHeight;
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        int totalBlocks = (visibleNodes.size() + blockSize - 1) / blockSize;
-
-        int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        int adjustedViewY = Math.max(0, view.y - breadcrumbAreaHeight);
-        int adjustedViewHeight = view.height;
-
-        int firstBlock = Math.max(0, adjustedViewY / blockHeight);
-        int lastBlock = Math.min(totalBlocks - 1, (adjustedViewY + adjustedViewHeight) / blockHeight);
-
-        for (int b = firstBlock; b <= lastBlock; b++) {
-            createBlock(b, breadcrumbAreaHeight);
+        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        
+        for (int b = range.firstBlock; b <= range.lastBlock; b++) {
+            createBlock(b, range.breadcrumbAreaHeight);
         }
     }
 
@@ -227,8 +216,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void refreshUI() {
-        scrollPane.getViewport().revalidate();
-        scrollPane.repaint();
+        viewport.refreshViewport();
         repaint();
     }
 
@@ -261,28 +249,17 @@ class ScrollableTreePanel extends JPanel {
 
 
     private void scrollToSelectedNode() {
-        if (scrollPane == null || selection.getSelectedNodeId() == null) {
+        if (viewport == null || selection.getSelectedNodeId() == null) {
             return;
         }
 
-        int selectedIndex = findSelectedNodeIndex();
-        if (selectedIndex >= 0) {
-            int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-            int y = breadcrumbAreaHeight + selectedIndex * geometry.rowHeight;
-            Rectangle targetRect = new Rectangle(0, y, getWidth(), geometry.rowHeight);
-            scrollRectToVisible(targetRect);
+        TreeNode selectedNode = selection.getSelectedNode();
+        if (selectedNode != null) {
+            viewport.scrollToNode(selectedNode);
         }
     }
 
-    private int findSelectedNodeIndex() {
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node.id.equals(selection.getSelectedNodeId())) {
-                return i;
-            }
-        }
-        return -1;
-    }
+
 
     public void selectNodeByTitle(String title) {
         TreeNode found = findNodeByTitle(root, title);
@@ -408,49 +385,60 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void navigateUp() {
-        int currentIndex = findSelectedNodeIndex();
-        if (currentIndex > 0) {
-            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-            TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
-            setSelectedNodeId(newSelected.id);
+        TreeNode currentSelected = selection.getSelectedNode();
+        if (currentSelected != null) {
+            int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
+            if (currentIndex > 0) {
+                List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
+                TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
+                setSelectedNodeId(newSelected.id);
+            }
         }
     }
 
     private void navigateDown() {
-        int currentIndex = findSelectedNodeIndex();
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
-            TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
-            setSelectedNodeId(newSelected.id);
+        TreeNode currentSelected = selection.getSelectedNode();
+        if (currentSelected != null) {
+            int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
+            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
+            if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
+                TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
+                setSelectedNodeId(newSelected.id);
+            }
         }
     }
 
     private void navigatePageUp() {
-        int currentIndex = findSelectedNodeIndex();
-        int pageSize = getPageSize();
-        int newIndex = Math.max(0, currentIndex - pageSize);
-        if (newIndex != currentIndex) {
-            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-            TreeNode newSelected = visibleNodes.get(newIndex).node;
-            setSelectedNodeId(newSelected.id);
+        TreeNode currentSelected = selection.getSelectedNode();
+        if (currentSelected != null) {
+            int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
+            int pageSize = getPageSize();
+            int newIndex = Math.max(0, currentIndex - pageSize);
+            if (newIndex != currentIndex) {
+                List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
+                TreeNode newSelected = visibleNodes.get(newIndex).node;
+                setSelectedNodeId(newSelected.id);
+            }
         }
     }
 
     private void navigatePageDown() {
-        int currentIndex = findSelectedNodeIndex();
-        int pageSize = getPageSize();
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
-        if (newIndex != currentIndex) {
-            TreeNode newSelected = visibleNodes.get(newIndex).node;
-            setSelectedNodeId(newSelected.id);
+        TreeNode currentSelected = selection.getSelectedNode();
+        if (currentSelected != null) {
+            int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
+            int pageSize = getPageSize();
+            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
+            int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
+            if (newIndex != currentIndex) {
+                TreeNode newSelected = visibleNodes.get(newIndex).node;
+                setSelectedNodeId(newSelected.id);
+            }
         }
     }
 
     private int getPageSize() {
-        if (scrollPane != null) {
-            int viewportHeight = scrollPane.getViewport().getHeight();
-            return Math.max(1, viewportHeight / geometry.rowHeight);
+        if (viewport != null) {
+            return viewport.getPageSize();
         }
         return 10;
     }
@@ -481,11 +469,8 @@ class ScrollableTreePanel extends JPanel {
             return null;
         }
 
-        java.awt.Rectangle viewRect = scrollPane.getViewport().getViewRect();
-
         int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
-
-        int firstFullyVisibleNodeIndex = nodePositioning.calculateFirstVisibleNodeIndex(viewRect, currentBreadcrumbHeight);
+        int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
 
         if (firstFullyVisibleNodeIndex >= visibleNodes.size()) {
             return null;
