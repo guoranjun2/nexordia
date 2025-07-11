@@ -133,10 +133,7 @@ class NavigationButtons {
         button.setVisible(true);
     }
     
-
-    
-    
-    public void hide() {
+    private void hide() {
         expandBtn.setVisible(false);
         collapseBtn.setVisible(false);
         expandMoreBtn.setVisible(false);
@@ -147,7 +144,7 @@ class NavigationButtons {
         hide();
     }
     
-    void removeAllActionListeners() {
+    private void removeAllActionListeners() {
         removeActionListeners(expandBtn);
         removeActionListeners(collapseBtn);
         removeActionListeners(expandMoreBtn);

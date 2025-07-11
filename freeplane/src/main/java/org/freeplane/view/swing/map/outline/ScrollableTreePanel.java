@@ -34,28 +34,23 @@ class ScrollableTreePanel extends JPanel {
 
     final NavigationButtons navButtons;
     final SelectionCircleIcon selectionIcon;
-    final BreadcrumbPanel breadcrumbPanel;
+    private final BreadcrumbPanel breadcrumbPanel;
     final OutlineGeometry geometry;
-    final ExpansionControls expansionControls;
+    private final ExpansionControls expansionControls;
     final NodePositioning nodePositioning;
     final BreadcrumbPath breadcrumbPath;
     OutlineViewport viewport;
 
-    final TreeNode root;
+    private final TreeNode root;
     final OutlineSelection selection;
-    final int blockSize;
+    private final int blockSize;
     final VisibleOutlineState visibleState;
-    JScrollPane scrollPane;
-
-    public ScrollableTreePanel(TreeNode root) {
-		this(root, BLOCK_SIZE, null);
-	}
 
     public ScrollableTreePanel(TreeNode root, BreadcrumbPanel breadcrumbPanel) {
 		this(root, BLOCK_SIZE, breadcrumbPanel);
 	}
 
-	ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
+    private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
         super(null);
         this.root = root;
         this.blockSize = blockSize;
@@ -66,7 +61,7 @@ class ScrollableTreePanel extends JPanel {
         this.geometry = new OutlineGeometry(new javax.swing.JButton("▶"));
         this.expansionControls = new ExpansionControls(this);
         this.nodePositioning = new NodePositioning(root, geometry, visibleState);
-        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null); // viewport set later
+        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
 
@@ -85,7 +80,6 @@ class ScrollableTreePanel extends JPanel {
     }
 
     void setScrollPane(JScrollPane scroll) {
-        this.scrollPane = scroll;
         this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
         this.breadcrumbPath.setViewport(viewport);
     }
@@ -223,19 +217,6 @@ class ScrollableTreePanel extends JPanel {
         repaint();
     }
 
-    public void addChildNode(TreeNode parent, String childName, String childId) {
-        TreeNode newChild = new TreeNode(childName, childId);
-        parent.addChild(newChild);
-        updateVisibleBlocks();
-    }
-
-    public void removeNode(TreeNode nodeToRemove) {
-        if (nodeToRemove.parent != null) {
-            nodeToRemove.parent.removeChild(nodeToRemove);
-            updateVisibleBlocks();
-        }
-    }
-
     public void setSelectedNodeId(String nodeId) {
         if (nodeId != null && selection.findNodeById(nodeId) != null) {
             selection.selectNode(nodeId);
@@ -252,40 +233,16 @@ class ScrollableTreePanel extends JPanel {
 
 
     private void scrollToSelectedNode() {
-        if (viewport == null || selection.getSelectedNodeId() == null) {
-            return;
-        }
-
         TreeNode selectedNode = selection.getSelectedNode();
-        if (selectedNode != null) {
+        if (selectedNode != null && viewport != null) {
             viewport.scrollToNode(selectedNode);
         }
     }
 
 
 
-    public void selectNodeByTitle(String title) {
-        TreeNode found = findNodeByTitle(root, title);
-        if (found != null) {
-            setSelectedNodeId(found.id);
-        }
-    }
-
-    private TreeNode findNodeByTitle(TreeNode node, String title) {
-        if (node.title.equals(title)) {
-            return node;
-        }
-        for (TreeNode child : node.children) {
-            TreeNode found = findNodeByTitle(child, title);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
-    }
-
-    void selectNodeById(String nodeId) {
-        setSelectedNodeId(nodeId);
+    public void selectNodeById(String nodeId) {
+        selection.selectNode(nodeId);
     }
 
     public String getSelectedNodeId() {

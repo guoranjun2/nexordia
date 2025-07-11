@@ -39,10 +39,6 @@ class VisibleOutlineState {
         return visibleNodes.size();
     }
     
-    public boolean isNodeVisible(TreeNode node) {
-        return findNodeIndexInVisibleList(node) >= 0;
-    }
-    
     public int findNodeIndexInVisibleList(TreeNode node) {
         for (int i = 0; i < visibleNodes.size(); i++) {
             if (visibleNodes.get(i).node == node) {
@@ -60,14 +56,6 @@ class VisibleOutlineState {
     
     public void addBlockPanel(int blockIndex, BlockPanel panel) {
         blockPanels.put(blockIndex, panel);
-    }
-    
-    public void removeBlockPanel(int blockIndex) {
-        blockPanels.remove(blockIndex);
-    }
-    
-    public BlockPanel getBlockPanel(int blockIndex) {
-        return blockPanels.get(blockIndex);
     }
     
     public void clearBlockPanels() {

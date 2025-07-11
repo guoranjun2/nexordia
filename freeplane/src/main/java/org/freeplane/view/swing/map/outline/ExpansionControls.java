@@ -31,22 +31,6 @@ class ExpansionControls {
         }
     }
     
-    public boolean canExpand(TreeNode node) {
-        return !node.children.isEmpty() && !node.isExpanded();
-    }
-    
-    public boolean canCollapse(TreeNode node) {
-        return node.isExpanded();
-    }
-    
-    public boolean canExpandMore(TreeNode node) {
-        return !node.children.isEmpty() && node.isExpanded();
-    }
-    
-    public boolean canReduceExpansion(TreeNode node) {
-        return node.getMaxExpansionDepth() > 0;
-    }
-    
     private void refreshAfterExpansionChange() {
         treePanel.refreshWithBreadcrumbs();
         treePanel.requestFocusInWindow();

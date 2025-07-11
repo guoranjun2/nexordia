@@ -24,12 +24,6 @@ class NodePositioning {
         return depth;
     }
     
-    public Point calculateContentButtonPosition(FlatNode flatNode, int visibleButtonIndex) {
-        int x = geometry.calculateTextButtonX(flatNode.depth);
-        int y = visibleButtonIndex * geometry.rowHeight;
-        return new Point(x, y);
-    }
-    
     public Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
         int y, depth, baseX;
         
@@ -87,14 +81,6 @@ class NodePositioning {
         int blockHeight = visibleNodesInBlock * geometry.rowHeight;
         
         return new Rectangle(0, blockY, panelWidth, blockHeight);
-    }
-    
-    public Rectangle calculateBreadcrumbPanelBounds(int viewportWidth, int breadcrumbAreaHeight) {
-        return new Rectangle(0, 0, viewportWidth, breadcrumbAreaHeight);
-    }
-    
-    public boolean isNodeInContentArea(TreeNode node, int breadcrumbAreaHeight) {
-        return !visibleState.isNodeInBreadcrumbArea(node, geometry.rowHeight);
     }
     
     public int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {

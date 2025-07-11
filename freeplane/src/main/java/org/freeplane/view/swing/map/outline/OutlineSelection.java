@@ -20,12 +20,6 @@ class OutlineSelection {
             notifyListeners(oldSelection, selectedNodeId);
         }
     }
-    
-    public void selectNode(TreeNode node) {
-        if (node != null) {
-            selectNode(node.id);
-        }
-    }
 
     public String getSelectedNodeId() {
         return selectedNodeId;
@@ -35,7 +29,7 @@ class OutlineSelection {
         return findNodeById(selectedNodeId);
     }
 
-    public boolean isSelected(String nodeId) {
+    private boolean isSelected(String nodeId) {
         return selectedNodeId != null && selectedNodeId.equals(nodeId);
     }
 
@@ -60,21 +54,13 @@ class OutlineSelection {
         return null;
     }
 
-    public void addSelectionListener(SelectionListener listener) {
-        listeners.add(listener);
-    }
-
-    public void removeSelectionListener(SelectionListener listener) {
-        listeners.remove(listener);
-    }
-
     private void notifyListeners(String oldSelection, String newSelection) {
         for (SelectionListener listener : listeners) {
             listener.selectionChanged(oldSelection, newSelection);
         }
     }
 
-    public interface SelectionListener {
+    private interface SelectionListener {
         void selectionChanged(String oldSelection, String newSelection);
     }
 } 

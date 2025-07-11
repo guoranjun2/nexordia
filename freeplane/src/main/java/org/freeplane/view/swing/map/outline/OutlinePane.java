@@ -17,7 +17,7 @@ import javax.swing.SwingUtilities;
 public class OutlinePane extends JPanel {
     private final JScrollPane treeScrollPane;
     private final ScrollableTreePanel treePanel;
-    final BreadcrumbPanel breadcrumbPanel;
+    private final BreadcrumbPanel breadcrumbPanel;
 
     public OutlinePane(TreeNode rootNode) {
         // Create BreadcrumbPanel first

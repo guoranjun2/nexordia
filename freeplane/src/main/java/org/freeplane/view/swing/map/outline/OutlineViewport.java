@@ -43,7 +43,7 @@ class OutlineViewport {
         }
     }
     
-    public void scrollToRect(Rectangle targetRect) {
+    private void scrollToRect(Rectangle targetRect) {
         if (scrollPane.getParent() instanceof javax.swing.JComponent) {
             ((javax.swing.JComponent) scrollPane.getParent()).scrollRectToVisible(targetRect);
         }
@@ -103,7 +103,7 @@ class OutlineViewport {
         public final int lastBlock;
         public final int breadcrumbAreaHeight;
         
-        public VisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
+        private VisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
             this.firstBlock = firstBlock;
             this.lastBlock = lastBlock;
             this.breadcrumbAreaHeight = breadcrumbAreaHeight;
