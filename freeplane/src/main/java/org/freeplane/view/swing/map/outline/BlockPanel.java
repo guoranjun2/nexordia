@@ -94,17 +94,10 @@ class BlockPanel extends JPanel {
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 
-                            FlatNode selectedFlat = parentPanel.visibleState.getFlatNode(selected);
-
-                            int iconX;
-                            if (selectedFlat != null && selectedFlat.depth == 0) {
-                                iconX = Math.max(0, comp.getX() - icon.getIconWidth());
-                            } else {
-                                iconX = comp.getX() - icon.getIconWidth();
+                            java.awt.Point iconPosition = parentPanel.nodePositioning.calculateSelectionIconPosition(selected, comp.getBounds());
+                            if (iconPosition != null) {
+                                icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
                             }
-
-                            int iconY = comp.getY() + (comp.getHeight() - icon.getIconHeight()) / 2;
-                            icon.paintIcon(this, g, iconX, iconY);
                         }
                     }
                 }

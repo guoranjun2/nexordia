@@ -15,10 +15,12 @@ class NavigationButtons {
     final JButton reduceBtn;
     
     private final OutlineGeometry geometry;
+    private final ExpansionControls expansionControls;
     private JPanel currentParent;
     
-    NavigationButtons(OutlineGeometry geometry) {
+    NavigationButtons(OutlineGeometry geometry, ExpansionControls expansionControls) {
         this.geometry = geometry;
+        this.expansionControls = expansionControls;
         
         expandBtn = new JButton("▶");
         collapseBtn = new JButton("◀");
@@ -43,7 +45,7 @@ class NavigationButtons {
         button.setVisible(false);
     }
     
-    public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, ScrollableTreePanel treePanel) {
+    public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
         if (node.children.isEmpty()) {
             hide();
             return;
@@ -61,33 +63,22 @@ class NavigationButtons {
         currentParent = targetPanel;
 
         // Calculate position and show appropriate buttons
-        int y, depth, baseX;
-        if (isBreadcrumb) {
-            y = rowIndex * geometry.rowHeight;
-            depth = calculateNodeDepth(node, treePanel.root);
-            int textButtonX = geometry.calculateTextButtonX(depth);
-            baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
-        } else {
-            FlatNode flatNode = treePanel.visibleState.getFlatNode(node);
-            if (flatNode == null) return;
-            int nodeIndex = treePanel.visibleState.findNodeIndexInVisibleList(node);
-            int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
-            int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
-            y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;
-            depth = flatNode.depth;
-            baseX = geometry.calculateNavigationButtonBaseX(flatNode);
-        }
+        java.awt.Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
+        if (position == null) return;
+        
+        int baseX = position.x;
+        int y = position.y;
+        int depth = nodePositioning.calculateNodeDepth(node);
 
         removeAllActionListeners();
 
         final boolean isInBreadcrumb = isBreadcrumb;
         if (!node.isExpanded()) {
             showSingleButton(expandBtn, baseX, y, () -> {
-                node.applyExpansionLevel(1);
-                treePanel.refreshWithBreadcrumbs();
+                expansionControls.expandNode(node);
             });
         } else {
-            showExpandedButtons(node, baseX, y, depth, isInBreadcrumb, treePanel);
+            showExpandedButtons(node, baseX, y, depth, isInBreadcrumb);
         }
     }
     
@@ -109,15 +100,13 @@ class NavigationButtons {
         }
     }
     
-    private void showExpandedButtons(TreeNode node, int baseX, int y, int depth, boolean isInBreadcrumb, ScrollableTreePanel treePanel) {
+    private void showExpandedButtons(TreeNode node, int baseX, int y, int depth, boolean isInBreadcrumb) {
         hide();
 
         if (depth > 0) {
             collapseBtn.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
             collapseBtn.addActionListener(e -> {
-                node.applyExpansionLevel(0);
-                treePanel.refreshWithBreadcrumbs();
-                treePanel.requestFocusInWindow();
+                expansionControls.collapseNode(node);
             });
             collapseBtn.setVisible(true);
         }
@@ -125,22 +114,14 @@ class NavigationButtons {
         int expandX = depth == 0 ? baseX : baseX + geometry.navButtonWidth;
         expandMoreBtn.setBounds(expandX, y, geometry.navButtonWidth, geometry.rowHeight);
         expandMoreBtn.addActionListener(e -> {
-            int currentLevel = node.getMaxExpansionDepth();
-            node.applyExpansionLevel(currentLevel + 1);
-            treePanel.refreshWithBreadcrumbs();
-            treePanel.requestFocusInWindow();
+            expansionControls.expandNodeMore(node);
         });
         expandMoreBtn.setVisible(true);
 
         int reduceX = depth == 0 ? baseX + geometry.navButtonWidth : baseX + (2 * geometry.navButtonWidth);
         reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
         reduceBtn.addActionListener(e -> {
-            int currentLevel = node.getMaxExpansionDepth();
-            if (currentLevel > 0) {
-                node.applyExpansionLevel(currentLevel - 1);
-                treePanel.refreshWithBreadcrumbs();
-                treePanel.requestFocusInWindow();
-            }
+            expansionControls.reduceNodeExpansion(node);
         });
         reduceBtn.setVisible(true);
     }
@@ -152,35 +133,8 @@ class NavigationButtons {
         button.setVisible(true);
     }
     
-    private int calculateNodeDepth(TreeNode node, TreeNode root) {
-        int depth = 0;
-        TreeNode current = node;
-        while (current != root) {
-            current = current.parent;
-            depth++;
-        }
-        return depth;
-    }
-    
-    private FlatNode findFlatNode(TreeNode node, java.util.List<FlatNode> visibleNodes) {
-        for (FlatNode flat : visibleNodes) {
-            if (flat.node == node) {
-                return flat;
-            }
-        }
-        return null;
-    }
-    
-    private int findNodeIndexInVisibleList(TreeNode node, java.util.List<FlatNode> visibleNodes) {
-        for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node == node) {
-                return i;
-            }
-        }
-        return -1;
-    }
-    
 
+    
     
     public void hide() {
         expandBtn.setVisible(false);

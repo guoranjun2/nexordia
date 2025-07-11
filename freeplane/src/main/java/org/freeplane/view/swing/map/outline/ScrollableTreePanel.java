@@ -36,6 +36,8 @@ class ScrollableTreePanel extends JPanel {
     final SelectionCircleIcon selectionIcon;
     final BreadcrumbPanel breadcrumbPanel;
     final OutlineGeometry geometry;
+    final ExpansionControls expansionControls;
+    final NodePositioning nodePositioning;
 
     final TreeNode root;
     final OutlineSelection selection;
@@ -60,7 +62,9 @@ class ScrollableTreePanel extends JPanel {
         this.visibleState = new VisibleOutlineState(root);
 
         this.geometry = new OutlineGeometry(new javax.swing.JButton("▶"));
-        this.navButtons = new NavigationButtons(geometry);
+        this.expansionControls = new ExpansionControls(this);
+        this.nodePositioning = new NodePositioning(root, geometry, visibleState);
+        this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
 
         root.applyExpansionLevel(1);
@@ -102,7 +106,7 @@ class ScrollableTreePanel extends JPanel {
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
             if (!isInBreadcrumb) {
-                navButtons.attachToNode(hoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), this);
+                navButtons.attachToNode(hoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
             }
         }
     }
@@ -116,12 +120,11 @@ class ScrollableTreePanel extends JPanel {
         // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)
         // We need to account for the breadcrumb area height
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        int targetY = (startFromNodeIndex * geometry.rowHeight) - breadcrumbAreaHeight;
-        targetY = Math.max(0, targetY); // Ensure we don't go negative
+        java.awt.Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbAreaHeight);
         System.out.println("updateVisibleBlocks: startFromNodeIndex=" + startFromNodeIndex +
                           ", breadcrumbAreaHeight=" + breadcrumbAreaHeight +
-                          ", targetY=" + targetY);
-        scrollPane.getViewport().setViewPosition(new java.awt.Point(0, targetY));
+                          ", targetY=" + viewPosition.y);
+        scrollPane.getViewport().setViewPosition(viewPosition);
 
         createVisibleBlocks();
         updatePreferredFromActualBlocks();
@@ -133,7 +136,7 @@ class ScrollableTreePanel extends JPanel {
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
             if (!isInBreadcrumb) {
-                navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, this);
+                navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, nodePositioning);
             }
         }
     }
@@ -189,12 +192,8 @@ class ScrollableTreePanel extends JPanel {
 
         BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, geometry.rowHeight, geometry.indent, this, breadcrumbNodeCount, selection);
 
-        // Calculate position and height only for visible (non-breadcrumb) nodes
-        int visibleStart = Math.max(start, breadcrumbNodeCount);
-        int visibleNodesInBlock = end - visibleStart;
-        int blockY = yOffset + (visibleStart - breadcrumbNodeCount) * geometry.rowHeight;
-
-        bp.setBounds(0, blockY, getPreferredSize().width, visibleNodesInBlock * geometry.rowHeight);
+        Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, yOffset, getPreferredSize().width);
+        bp.setBounds(bounds);
         add(bp);
         visibleState.addBlockPanel(blockIndex, bp);
     }
@@ -327,7 +326,7 @@ class ScrollableTreePanel extends JPanel {
             }
 
             visibleState.setHoveredNode(node);
-            navButtons.attachToNode(node, this, false, -1, visibleState.getBreadcrumbAreaHeight(), this);
+            navButtons.attachToNode(node, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
             repaint();
         }
     }
@@ -349,7 +348,7 @@ class ScrollableTreePanel extends JPanel {
                        breadcrumbPanel.updateNavigationButtons();
                     } else {
                         // Node is in main content
-                        navButtons.attachToNode(preservedHoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), this);
+                        navButtons.attachToNode(preservedHoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
                     }
                 });
             }
@@ -486,8 +485,7 @@ class ScrollableTreePanel extends JPanel {
 
         int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
 
-        int effectiveViewportY = viewRect.y + currentBreadcrumbHeight;
-        int firstFullyVisibleNodeIndex = Math.max(0, (effectiveViewportY + geometry.rowHeight/2 - 1) / geometry.rowHeight);
+        int firstFullyVisibleNodeIndex = nodePositioning.calculateFirstVisibleNodeIndex(viewRect, currentBreadcrumbHeight);
 
         if (firstFullyVisibleNodeIndex >= visibleNodes.size()) {
             return null;
@@ -526,13 +524,7 @@ class ScrollableTreePanel extends JPanel {
 	}
 
     int calculateNodeDepth(TreeNode node) {
-        int depth = 0;
-        TreeNode current = node;
-        while (current != root) {
-            current = current.parent;
-            depth++;
-        }
-        return depth;
+        return nodePositioning.calculateNodeDepth(node);
     }
 
     @Override
@@ -543,6 +535,6 @@ class ScrollableTreePanel extends JPanel {
 	public void attachNavigationNode(TreeNode node,
 	        boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
 		visibleState.setHoveredNode(isBreadCrumb ? null : node);
-		navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, this);
+		navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
 	}
 }
