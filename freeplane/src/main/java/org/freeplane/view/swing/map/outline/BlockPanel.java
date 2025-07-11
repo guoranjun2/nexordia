@@ -48,12 +48,7 @@ class BlockPanel extends JPanel {
         String buttonText = flat.node.title;
         JButton button = new JButton(buttonText);
 
-        int actionX;
-        if (flat.depth == 0) {
-            actionX = parentPanel.navButtons.buttonAreaWidth - parentPanel.navButtons.indent;
-        } else {
-            actionX = (flat.depth * parentPanel.navButtons.indent) + parentPanel.navButtons.buttonAreaWidth - parentPanel.navButtons.indent;
-        }
+        int actionX = parentPanel.geometry.calculateTextButtonX(flat.depth);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 

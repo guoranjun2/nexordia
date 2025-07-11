@@ -41,17 +41,12 @@ class BreadcrumbPanel extends JPanel {
 		for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
             int depth = getNodeDepth(node);
-            int y = i * treePanel.navButtons.rowHeight;
+            int y = i * treePanel.geometry.rowHeight;
 
-            int actionX;
-            if (depth == 0) {
-                actionX = treePanel.navButtons.buttonAreaWidth - treePanel.navButtons.indent;
-            } else {
-                actionX = (depth * treePanel.navButtons.indent) + treePanel.navButtons.buttonAreaWidth - treePanel.navButtons.indent;
-            }
+            int actionX = treePanel.geometry.calculateTextButtonX(depth);
 
             JButton breadcrumbButton = new JButton(node.title);
-            breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, treePanel.navButtons.rowHeight);
+            breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, treePanel.geometry.rowHeight);
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
@@ -152,7 +147,7 @@ class BreadcrumbPanel extends JPanel {
             setFocusable(false);
 
             int iconX = targetButton.getX() - icon.getIconWidth();
-            setBounds(iconX, targetButton.getY(), icon.getIconWidth(), treePanel.navButtons.rowHeight);
+            setBounds(iconX, targetButton.getY(), icon.getIconWidth(), treePanel.geometry.rowHeight);
         }
 
         @Override

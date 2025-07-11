@@ -14,36 +14,18 @@ class NavigationButtons {
     final JButton expandMoreBtn;
     final JButton reduceBtn;
     
-    final int arrowAreaWidth;
-    final int indent;
-    final int rowHeight;
-    
-    final int navButtonWidth;
-    final int navButtonsTotalWidth;
-    final int standardGap;
-    final int buttonAreaWidth;
-    final int iconDiameter;
-    
+    private final OutlineGeometry geometry;
     private JPanel currentParent;
     
-    NavigationButtons() {
+    NavigationButtons(OutlineGeometry geometry) {
+        this.geometry = geometry;
+        
         expandBtn = new JButton("▶");
         collapseBtn = new JButton("◀");
         expandMoreBtn = new JButton("▼");
         reduceBtn = new JButton("▲");
         
         configureNavigationButtons();
-        
-        final Dimension preferredButtonSize = expandBtn.getPreferredSize();
-        this.arrowAreaWidth = Math.round(preferredButtonSize.width * 60 / 13);
-        this.indent = arrowAreaWidth / 2;
-        this.rowHeight = Math.round(preferredButtonSize.height * 30 / 17);
-        
-        this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
-        this.navButtonsTotalWidth = 3 * navButtonWidth;
-        this.standardGap = Math.round(preferredButtonSize.width * 12 / 13);
-        this.buttonAreaWidth = navButtonsTotalWidth + (2 * standardGap);
-        this.iconDiameter = Math.round(preferredButtonSize.width * 10 / 13);
     }
     
     private void configureNavigationButtons() {
@@ -81,24 +63,19 @@ class NavigationButtons {
         // Calculate position and show appropriate buttons
         int y, depth, baseX;
         if (isBreadcrumb) {
-            y = rowIndex * rowHeight;
+            y = rowIndex * geometry.rowHeight;
             depth = calculateNodeDepth(node, treePanel.root);
-            int textButtonX;
-            if (depth == 0) {
-                textButtonX = buttonAreaWidth - indent;
-            } else {
-                textButtonX = (depth * indent) + buttonAreaWidth - indent;
-            }
-            baseX = Math.max(0, textButtonX - navButtonsTotalWidth);
+            int textButtonX = geometry.calculateTextButtonX(depth);
+            baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         } else {
             FlatNode flatNode = findFlatNode(node, treePanel.visibleNodes);
             if (flatNode == null) return;
             int nodeIndex = findNodeIndexInVisibleList(node, treePanel.visibleNodes);
-            int breadcrumbNodeCount = breadcrumbAreaHeight / rowHeight;
+            int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
             int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
-            y = breadcrumbAreaHeight + contentAreaIndex * rowHeight;
+            y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;
             depth = flatNode.depth;
-            baseX = calculateBaseX(flatNode);
+            baseX = geometry.calculateNavigationButtonBaseX(flatNode);
         }
 
         removeAllActionListeners();
@@ -136,7 +113,7 @@ class NavigationButtons {
         hide();
 
         if (depth > 0) {
-            collapseBtn.setBounds(baseX, y, navButtonWidth, rowHeight);
+            collapseBtn.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
             collapseBtn.addActionListener(e -> {
                 node.applyExpansionLevel(0);
                 treePanel.refreshWithBreadcrumbs();
@@ -145,8 +122,8 @@ class NavigationButtons {
             collapseBtn.setVisible(true);
         }
 
-        int expandX = depth == 0 ? baseX : baseX + navButtonWidth;
-        expandMoreBtn.setBounds(expandX, y, navButtonWidth, rowHeight);
+        int expandX = depth == 0 ? baseX : baseX + geometry.navButtonWidth;
+        expandMoreBtn.setBounds(expandX, y, geometry.navButtonWidth, geometry.rowHeight);
         expandMoreBtn.addActionListener(e -> {
             int currentLevel = node.getMaxExpansionDepth();
             node.applyExpansionLevel(currentLevel + 1);
@@ -155,8 +132,8 @@ class NavigationButtons {
         });
         expandMoreBtn.setVisible(true);
 
-        int reduceX = depth == 0 ? baseX + navButtonWidth : baseX + (2 * navButtonWidth);
-        reduceBtn.setBounds(reduceX, y, navButtonWidth, rowHeight);
+        int reduceX = depth == 0 ? baseX + geometry.navButtonWidth : baseX + (2 * geometry.navButtonWidth);
+        reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
         reduceBtn.addActionListener(e -> {
             int currentLevel = node.getMaxExpansionDepth();
             if (currentLevel > 0) {
@@ -170,7 +147,7 @@ class NavigationButtons {
     
     private void showSingleButton(JButton button, int baseX, int y, Runnable action) {
         hide();
-        button.setBounds(baseX, y, navButtonWidth, rowHeight);
+        button.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
         button.addActionListener(e -> action.run());
         button.setVisible(true);
     }
@@ -203,19 +180,7 @@ class NavigationButtons {
         return -1;
     }
     
-    private int calculateBaseX(FlatNode flat) {
-        // Calculate where the text button would be positioned
-        int textButtonX;
-        if (flat.depth == 0) {
-            textButtonX = buttonAreaWidth - indent;
-        } else {
-            textButtonX = (flat.depth * indent) + buttonAreaWidth - indent;
-        }
-        
-        // Position navigation buttons just to the left of the text button
-        int baseX = textButtonX - navButtonsTotalWidth;
-        return Math.max(0, baseX);
-    }
+
     
     public void hide() {
         expandBtn.setVisible(false);
