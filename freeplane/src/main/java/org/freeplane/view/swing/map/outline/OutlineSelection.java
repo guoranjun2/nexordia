@@ -3,12 +3,12 @@ package org.freeplane.view.swing.map.outline;
 import java.util.ArrayList;
 import java.util.List;
 
-class TreeSelection {
+class OutlineSelection {
     private String selectedNodeId;
     private final TreeNode root;
     private final List<SelectionListener> listeners = new ArrayList<>();
 
-    public TreeSelection(TreeNode root) {
+    public OutlineSelection(TreeNode root) {
         this.root = root;
         this.selectedNodeId = root.id;
     }
@@ -18,6 +18,12 @@ class TreeSelection {
             String oldSelection = selectedNodeId;
             selectedNodeId = nodeId;
             notifyListeners(oldSelection, selectedNodeId);
+        }
+    }
+    
+    public void selectNode(TreeNode node) {
+        if (node != null) {
+            selectNode(node.id);
         }
     }
 

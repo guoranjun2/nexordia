@@ -38,7 +38,7 @@ class ScrollableTreePanel extends JPanel {
     final OutlineGeometry geometry;
 
     final TreeNode root;
-    final TreeSelection selection;
+    final OutlineSelection selection;
     final int blockSize;
     List<FlatNode> visibleNodes = new ArrayList<>();
     final Map<Integer, BlockPanel> blockPanels = new HashMap<>();
@@ -60,7 +60,7 @@ class ScrollableTreePanel extends JPanel {
         this.root = root;
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
-        this.selection = new TreeSelection(root);
+        this.selection = new OutlineSelection(root);
         this.hoveredNode = root;
 
         this.geometry = new OutlineGeometry(new javax.swing.JButton("▶"));

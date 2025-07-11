@@ -19,9 +19,9 @@ import javax.swing.JPanel;
 class BlockPanel extends JPanel {
 
     private final int breadcrumbNodeCount;
-    private final TreeSelection selection;
+    private final OutlineSelection selection;
     
-    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, TreeSelection selection) {
+    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.breadcrumbNodeCount = breadcrumbNodeCount;

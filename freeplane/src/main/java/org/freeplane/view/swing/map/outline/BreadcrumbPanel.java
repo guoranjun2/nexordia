@@ -11,7 +11,7 @@ import javax.swing.JScrollPane;
 class BreadcrumbPanel extends JPanel {
     private ScrollableTreePanel treePanel;
     private JScrollPane scrollPane;
-    private TreeSelection selection;
+    private OutlineSelection selection;
     private int currentBreadcrumbHeight = 0;
     private List<TreeNode> currentBreadcrumbNodes = new java.util.ArrayList<>();
 
@@ -21,7 +21,7 @@ class BreadcrumbPanel extends JPanel {
         setOpaque(true);
     }
 
-    public void initialize(ScrollableTreePanel treePanel, JScrollPane scrollPane, TreeSelection selection) {
+    public void initialize(ScrollableTreePanel treePanel, JScrollPane scrollPane, OutlineSelection selection) {
         this.treePanel = treePanel;
         this.scrollPane = scrollPane;
         this.selection = selection;
