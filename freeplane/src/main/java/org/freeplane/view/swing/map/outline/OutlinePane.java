@@ -19,12 +19,19 @@ public class OutlinePane extends JPanel {
     private final ScrollableTreePanel treePanel;
     final BreadcrumbPanel breadcrumbPanel;
 
-    public OutlinePane(ScrollableTreePanel treePanel) {
-        this.treePanel = treePanel;
+    public OutlinePane(TreeNode rootNode) {
+        // Create BreadcrumbPanel first
+        this.breadcrumbPanel = new BreadcrumbPanel();
+
+        // Create ScrollableTreePanel with BreadcrumbPanel as parameter
+        this.treePanel = new ScrollableTreePanel(rootNode, breadcrumbPanel);
         this.treeScrollPane = new JScrollPane(treePanel);
 
         // Set up the scroll pane connection
         treePanel.setScrollPane(this.treeScrollPane);
+
+        // Wire BreadcrumbPanel with its dependencies
+        breadcrumbPanel.initialize(treePanel, treeScrollPane, treePanel.selection);
 
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 1L;
@@ -37,8 +44,6 @@ public class OutlinePane extends JPanel {
             }
         });
 
-        breadcrumbPanel = new BreadcrumbPanel(treePanel, treeScrollPane, treePanel.selection);
-
         add(breadcrumbPanel);
         add(treeScrollPane, BorderLayout.CENTER);
 
@@ -49,17 +54,10 @@ public class OutlinePane extends JPanel {
     private void setupScrollListeners() {
     	treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
     		if(! e.getValueIsAdjusting()) {
-    			BreadcrumbState state = treePanel.calculateBreadcrumbState();
-
-    			if (state != null) {
-    				breadcrumbPanel.update(state);
-					if (state.levelReductionFirstVisibleNodeIndex >= 0) {
-						treePanel.updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
-						return;
-					}
-				}
+    			treePanel.updateVisibleBlocksAndBreadcrumb();
     		}
-    		treePanel.updateVisibleBlocks();
+    		else
+    			treePanel.updateVisibleBlocks();
         });
         treeScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override

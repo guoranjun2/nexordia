@@ -15,8 +15,8 @@ public class BlockVirtualTreeDemo {
             JFrame frame = new JFrame("Block Virtual Tree Demo");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-            ScrollableTreePanel panel = new ScrollableTreePanel(DemoTreeFactory.createDemoRoot());
-            OutlinePane outlinePane = new OutlinePane(panel);
+            
+            OutlinePane outlinePane = new OutlinePane(DemoTreeFactory.createDemoRoot());
 
             frame.setLayout(new BorderLayout());
             frame.add(outlinePane, BorderLayout.CENTER);
