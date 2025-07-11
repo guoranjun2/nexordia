@@ -38,6 +38,7 @@ class ScrollableTreePanel extends JPanel {
     final OutlineGeometry geometry;
     final ExpansionControls expansionControls;
     final NodePositioning nodePositioning;
+    final BreadcrumbPath breadcrumbPath;
     OutlineViewport viewport;
 
     final TreeNode root;
@@ -65,6 +66,7 @@ class ScrollableTreePanel extends JPanel {
         this.geometry = new OutlineGeometry(new javax.swing.JButton("▶"));
         this.expansionControls = new ExpansionControls(this);
         this.nodePositioning = new NodePositioning(root, geometry, visibleState);
+        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null); // viewport set later
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
 
@@ -85,6 +87,7 @@ class ScrollableTreePanel extends JPanel {
     void setScrollPane(JScrollPane scroll) {
         this.scrollPane = scroll;
         this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
+        this.breadcrumbPath.setViewport(viewport);
     }
 
     void setBreadcrumbAreaHeight(int height) {
@@ -464,49 +467,11 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private BreadcrumbState calculateBreadcrumbState() {
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        if (visibleNodes.isEmpty()) {
-            return null;
-        }
-
-        int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
-        int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
-
-        if (firstFullyVisibleNodeIndex >= visibleNodes.size()) {
-            return null;
-        }
-
-        TreeNode firstFullyVisibleNode = visibleNodes.get(firstFullyVisibleNodeIndex).node;
-
         List<TreeNode> currentBreadcrumbNodes = getCurrentBreadcrumbNodes();
-        if (firstFullyVisibleNode == root) {
-        	if(currentBreadcrumbHeight == 0)
-        		return null;
-        	else
-        		return new BreadcrumbState(Collections.emptyList(), 0, 0);
-        }
-
-        TreeNode lastCurrentBreadcrumbNode = currentBreadcrumbNodes.isEmpty() ? null : currentBreadcrumbNodes.get(currentBreadcrumbNodes.size() - 1);
-
-        if (firstFullyVisibleNode.parent == lastCurrentBreadcrumbNode) {
-            return null;
-        }
-
-        List<TreeNode> newBreadcrumbNodes = collectBreadCrumbNodes(firstFullyVisibleNode);
-        int newBreadcrumbHeight = newBreadcrumbNodes.size() * geometry.rowHeight;
-
-        return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, firstFullyVisibleNodeIndex);
+        return breadcrumbPath.calculateBreadcrumbState(currentBreadcrumbNodes);
     }
 
-	private List<TreeNode> collectBreadCrumbNodes(TreeNode firstFullyVisibleNode) {
-		List<TreeNode> breadcrumbNodes = new ArrayList<>();
-		TreeNode current = firstFullyVisibleNode.parent;
-		while (current != null) {
-		    breadcrumbNodes.add(0, current);
-		    current = current.parent;
-		}
-		return breadcrumbNodes;
-	}
+
 
     int calculateNodeDepth(TreeNode node) {
         return nodePositioning.calculateNodeDepth(node);
