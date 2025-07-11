@@ -68,9 +68,9 @@ class NavigationButtons {
             int textButtonX = geometry.calculateTextButtonX(depth);
             baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         } else {
-            FlatNode flatNode = findFlatNode(node, treePanel.visibleNodes);
+            FlatNode flatNode = treePanel.visibleState.getFlatNode(node);
             if (flatNode == null) return;
-            int nodeIndex = findNodeIndexInVisibleList(node, treePanel.visibleNodes);
+            int nodeIndex = treePanel.visibleState.findNodeIndexInVisibleList(node);
             int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
             int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
             y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;

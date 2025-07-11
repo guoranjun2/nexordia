@@ -70,19 +70,20 @@ class BreadcrumbPanel extends JPanel {
             }
         }
 
-        if (treePanel.hoveredNode != null && !treePanel.hoveredNode.children.isEmpty()) {
-            boolean isInBreadcrumb = currentBreadcrumbNodes.contains(treePanel.hoveredNode);
+        TreeNode hoveredNode = treePanel.visibleState.getHoveredNode();
+        if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
+            boolean isInBreadcrumb = currentBreadcrumbNodes.contains(hoveredNode);
 
             if (isInBreadcrumb) {
                 int hoveredRowIndex = -1;
                 for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
-                    if (currentBreadcrumbNodes.get(i) == treePanel.hoveredNode) {
+                    if (currentBreadcrumbNodes.get(i) == hoveredNode) {
                         hoveredRowIndex = i;
                         break;
                     }
                 }
                 if (hoveredRowIndex >= 0) {
-                    treePanel.attachNavigationNode(treePanel.hoveredNode, true, hoveredRowIndex, currentBreadcrumbHeight);
+                    treePanel.attachNavigationNode(hoveredNode, true, hoveredRowIndex, currentBreadcrumbHeight);
                 }
             } else {
                 boolean buttonsCurrentlyVisible = treePanel.navButtons.expandBtn.isVisible() ||
@@ -91,7 +92,7 @@ class BreadcrumbPanel extends JPanel {
                                                 treePanel.navButtons.reduceBtn.isVisible();
 
                 if (buttonsCurrentlyVisible) {
-                    treePanel.attachNavigationNode(treePanel.hoveredNode, false, -1, currentBreadcrumbHeight);
+                    treePanel.attachNavigationNode(hoveredNode, false, -1, currentBreadcrumbHeight);
                 }
             }
         }

@@ -88,20 +88,13 @@ class BlockPanel extends JPanel {
                     String buttonText = btn.getText();
                     if (selected != null && buttonText.equals(selected.title)) {
                         // Check if the selected node is in the breadcrumb area
-                        int selectedNodeIndex = parentPanel.findNodeIndexInVisibleList(selected);
-                        boolean isInBreadcrumb = selectedNodeIndex >= 0 && selectedNodeIndex < breadcrumbNodeCount;
+                        boolean isInBreadcrumb = parentPanel.visibleState.isNodeInBreadcrumbArea(selected, parentPanel.geometry.rowHeight);
                         
                         // Only paint selection circle if the node is NOT in breadcrumb area
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 
-                            FlatNode selectedFlat = null;
-                            for (FlatNode flat : parentPanel.visibleNodes) {
-                                if (flat.node.id.equals(selected.id)) {
-                                    selectedFlat = flat;
-                                    break;
-                                }
-                            }
+                            FlatNode selectedFlat = parentPanel.visibleState.getFlatNode(selected);
 
                             int iconX;
                             if (selectedFlat != null && selectedFlat.depth == 0) {
