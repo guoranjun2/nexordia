@@ -311,7 +311,7 @@ public class EditNodeTextField extends EditNodeBase {
 		}
 
 	    final HTMLDocument document = (HTMLDocument) textfield.getDocument();
-	    document.getStyleSheet().addRule("body { width: " + (maxWidth - 1) + "}");
+	    document.getStyleSheet().addRule("body { width: " + maxWidth + "}");
 	    // bad hack: call "setEditable" only to update view
 	    textfield.setEditable(false);
 	    textfield.setEditable(true);
@@ -676,7 +676,6 @@ public class EditNodeTextField extends EditNodeBase {
 	private final ZoomableLabel parent;
 	private NodeView nodeView;
 	private Font font;
-	private float zoom;
 	private final PasteAction pasteAction;
 	private final BoldAction boldAction;
 	private final ItalicAction italicAction;
@@ -754,7 +753,7 @@ public class EditNodeTextField extends EditNodeBase {
 		final MTextController textController = (MTextController) TextController.getController(modeController);
 		nodeView = (NodeView) SwingUtilities.getAncestorOfClass(NodeView.class, parent);
 		font = parent.getFont();
-		zoom = viewController.getZoom();
+		float zoom = viewController.getZoom();
 		if (zoom != 1F) {
 			final float fontSize = (int) (Math.rint(font.getSize() * zoom));
 			font = font.deriveFont(fontSize);
@@ -899,15 +898,13 @@ public class EditNodeTextField extends EditNodeBase {
 		final ZoomableLabelUI parentUI = parent.getUI();
 		final Rectangle textR = parentUI.getAvailableTextR(parent);
 		Point mouseEventPoint = null;
-		if (firstEvent == null) {
-			MouseEvent currentEvent = eventQueue.getMouseEvent();
-			if(currentEvent != null){
-				MouseEvent mouseEvent = currentEvent;
-				if(mouseEvent.getComponent().equals(parent)){
-					mouseEventPoint = mouseEvent.getPoint();
-					mouseEventPoint.x -= textR.x;
-					mouseEventPoint.y -= textR.y;
-				}
+		if (firstEvent instanceof MouseEvent) {
+			MouseEvent currentEvent = (MouseEvent) firstEvent;
+			MouseEvent mouseEvent = currentEvent;
+			if(mouseEvent.getComponent().equals(parent)){
+				mouseEventPoint = mouseEvent.getPoint();
+				mouseEventPoint.x -= textR.x;
+				mouseEventPoint.y -= textR.y;
 			}
 		}
 
@@ -916,7 +913,6 @@ public class EditNodeTextField extends EditNodeBase {
 		textFieldMinimumSize.height = Math.max(textFieldMinimumSize.height, textR.height + 2 * textFieldBorderWidth);
 		int textFieldX = Math.max(0, textR.x  - textFieldBorderWidth);
 		int textFieldY = Math.max(0, textR.y  - textFieldBorderWidth);
-		textfield.setSize(textFieldMinimumSize.width, textFieldMinimumSize.height);
         verticalSpace = Math.max(textFieldY, parent.getHeight() - textFieldMinimumSize.height);
 		final Dimension newParentSize = new Dimension(textFieldX + textFieldMinimumSize.width + parentInsets.right,
 				verticalSpace + textFieldMinimumSize.height);
@@ -958,7 +954,7 @@ public class EditNodeTextField extends EditNodeBase {
 			mapView.add(textfield, 0);
 
 		redispatchKeyEvents(textfield, firstEvent);
-		if (firstEvent == null) {
+		if (firstEvent instanceof MouseEvent) {
 			final int caretPosition;
 			final int textLength = document.getLength();
 			if(mouseEventPoint != null)
