@@ -24,14 +24,9 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.Image;
-import java.awt.KeyboardFocusManager;
-import java.awt.LayoutManager;
-import java.awt.LayoutManager2;
 import java.awt.Rectangle;
-import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -45,8 +40,6 @@ import java.util.Locale;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JSplitPane;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
@@ -54,8 +47,6 @@ import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.Hyperlink;
-import org.freeplane.features.map.IMapSelection;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FrameController;
 import org.freeplane.features.ui.IMapViewManager;
@@ -63,29 +54,18 @@ import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.overview.BookmarkToolbarPane;
 
 class ApplicationViewController extends FrameController {
-	private static final String SPLIT_PANE_LAST_LEFT_POSITION = "split_pane_last_left_position";
-	private static final String SPLIT_PANE_LAST_POSITION = "split_pane_last_position";
-	private static final String SPLIT_PANE_LAST_RIGHT_POSITION = "split_pane_last_right_position";
-	private static final String SPLIT_PANE_LAST_TOP_POSITION = "split_pane_last_top_position";
-
-
-    private static Image frameIcon(String size) {
+	private static Image frameIcon(String size) {
         return new ImageIcon(ResourceController.getResourceController().getResource(
                 "/images/Freeplane_frame_icon_"+ size + ".png")).getImage();
     }
 
 	// // 	final private Controller controller;
 	final private JFrame frame;
-	/** Contains the value where the Note Window should be displayed (right, left, top, bottom) */
-	private String mLocationPreferenceValue;
 	/** Contains the Note Window Component */
-	private JComponent mMindMapComponent;
-	private JSplitPane mSplitPane;
+	private AuxillaryEditorSplitPane mSplitPane;
 	final private NavigationNextMapAction navigationNextMap;
 	final private NavigationPreviousMapAction navigationPreviousMap;
-	final private ApplicationResourceController resourceController;
 	private MapViewDockingWindows mapViewWindows;
-	private BookmarkToolbarPane mainBookmarkToolbarPane;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame) {
 		super(controller, mapViewController, "");
@@ -96,7 +76,6 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(navigationNextMap);
 		controller.addAction(new NavigationMapNextViewAction());
 		controller.addAction(new NavigationMapPreviousViewAction());
-		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
 		this.frame = frame;
 	}
 
@@ -105,15 +84,7 @@ class ApplicationViewController extends FrameController {
 	 */
 	@Override
 	public void changeNoteWindowLocation() {
-		saveSplitPanePosition();
-		mLocationPreferenceValue = resourceController.getProperty("note_location");
-		if(mMindMapComponent != null){
-			insertComponentIntoSplitPane(mMindMapComponent);
-		}
-	}
-
-	public String getAdjustableProperty(final String label) {
-		return resourceController.getProperty(label);
+		mSplitPane.changeNoteWindowLocation();
 	}
 
 	@Override
@@ -123,62 +94,7 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		// --- Save the Component --
-		mMindMapComponent = pMindMapComponent;
-		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		mSplitPane.setLeftComponent(null);
-		mSplitPane.setRightComponent(null);
-		if ("right".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			mSplitPane.setLeftComponent(mainBookmarkToolbarPane);
-			mSplitPane.setRightComponent(pMindMapComponent);
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			mSplitPane.setLeftComponent(pMindMapComponent);
-			mSplitPane.setRightComponent(mainBookmarkToolbarPane);
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-			mSplitPane.setLeftComponent(pMindMapComponent);
-			mSplitPane.setRightComponent(mainBookmarkToolbarPane);
-		}
-		else {
-			mSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-			mSplitPane.setLeftComponent(mainBookmarkToolbarPane);
-			mSplitPane.setRightComponent(pMindMapComponent);
-		}
-		if(focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, mSplitPane)) {
-		    focusOwner.requestFocusInWindow();
-		}
-		mSplitPane.setContinuousLayout(true);
-		mSplitPane.setOneTouchExpandable(false);
-		SwingUtilities.invokeLater(this::resetDividerLocation);
-
-	}
-	private void resetDividerLocation() {
-		int lastSplitPanePosition = -1;
-		if ("right".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_RIGHT_POSITION, -1);
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_LEFT_POSITION, -1);
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_TOP_POSITION, -1);
-		}
-		else if ("bottom".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_POSITION, -1);
-		}
-
-		if (lastSplitPanePosition != -1) {
-			mSplitPane.setDividerLocation(lastSplitPanePosition);
-			mSplitPane.setDividerLocation(lastSplitPanePosition);
-		}
-		else {
-			mSplitPane.setDividerLocation(0.5);
-			mSplitPane.setDividerLocation(0.5);
-		}
+		mSplitPane.insertComponentIntoSplitPane(pMindMapComponent);
 	}
 
 	@Override
@@ -213,33 +129,15 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void removeSplitPane() {
-		saveSplitPanePosition();
-		mMindMapComponent = null;
-		mSplitPane.setLeftComponent(null);
-		mSplitPane.setRightComponent(null);
-		mSplitPane.setLeftComponent(mainBookmarkToolbarPane);
-		final Controller controller = Controller.getCurrentModeController().getController();
-		final IMapSelection selection = controller.getSelection();
-		if(selection == null){
-			return;
-		}
-		final NodeModel node = selection.getSelected();
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				final Component component = controller.getMapViewManager().getComponent(node);
-				if (component != null) {
-					component.requestFocus();
-				}
-			}
-		});
+		mSplitPane.removeSplitPane();
 	}
 
 	@Override
 	public void saveProperties() {
 		if(mapViewWindows == null)
 			return;
-		saveSplitPanePosition();
+		mSplitPane.saveSplitPanePosition();
+		final ApplicationResourceController resourceController = (ApplicationResourceController)ResourceController.getResourceController();
 		if (frame.isResizable()) {
 			final int winState = frame.getExtendedState() & ~Frame.ICONIFIED;
 			if (JFrame.MAXIMIZED_BOTH != (winState & JFrame.MAXIMIZED_BOTH)) {
@@ -252,24 +150,6 @@ class ApplicationViewController extends FrameController {
 		}
 		mapViewWindows.saveLayout();
 		resourceController.getLastOpenedList().saveProperties();
-	}
-
-	private void saveSplitPanePosition() {
-		if (mSplitPane == null) {
-			return;
-		}
-		if ("right".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_RIGHT_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_LEFT_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_TOP_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else { // "bottom".equals(mLocationPreferenceValue) also covered
-			resourceController.setProperty(SPLIT_PANE_LAST_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
 	}
 
 	@Override
@@ -317,35 +197,14 @@ class ApplicationViewController extends FrameController {
 	public void init(Controller controller) {
 		frame.getContentPane().setLayout(new BorderLayout());
 		// --- Set Note Window Location ---
-		mLocationPreferenceValue = resourceController.getProperty("note_location", "bottom");
 		// disable all hotkeys for JSplitPane
-		mSplitPane = new JSplitPane(){
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed){
-				return false;
-			}
-
-			@Override
-			public void setLayout(LayoutManager layout) {
-				if(layout == null || layout instanceof SplitPaneLayoutManagerDecorator)
-					super.setLayout(layout);
-				else if(layout instanceof LayoutManager2)
-					super.setLayout(new SplitPaneLayoutManager2Decorator((LayoutManager2) layout));
-				else
-					super.setLayout(new SplitPaneLayoutManagerDecorator(layout));
-			}
-
-		};
+		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
+		mSplitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
 		mSplitPane.setResizeWeight(1.0d);
 		mapViewWindows = new MapViewDockingWindows();
-		mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		Container contentPane = frame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
         contentPane.add(mSplitPane, BorderLayout.CENTER);
-		mSplitPane.setLeftComponent(mainBookmarkToolbarPane);
-		mSplitPane.setRightComponent(null);
 		initFrame(frame);
 		super.init(controller);
 	}
