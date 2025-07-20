@@ -69,7 +69,7 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public void changeNoteWindowLocation() {
+	public void changeNoteWindowLocation(String location) {
 		throw methodNotImplementedException();
 	}
 

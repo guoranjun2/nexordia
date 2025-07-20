@@ -12,7 +12,7 @@ import org.freeplane.features.ui.ViewController;
 @SelectableAction(checkOnPopup = true)
 public class SetNoteWindowPosition extends AFreeplaneAction {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	private final String position;
@@ -23,10 +23,8 @@ public class SetNoteWindowPosition extends AFreeplaneAction {
 	};
 
 	public void actionPerformed(final ActionEvent e) {
-		final ResourceController resourceController = ResourceController.getResourceController();
-		resourceController.setProperty("note_location", position);
 		final ViewController viewController = Controller.getCurrentModeController().getController().getViewController();
-		viewController.changeNoteWindowLocation();
+		viewController.changeNoteWindowLocation(position);
 	}
 
 	@Override

@@ -83,8 +83,10 @@ class ApplicationViewController extends FrameController {
 	 * Called from the Controller, when the Location of the Note Window is changed on the Menu->View->Note Window Location
 	 */
 	@Override
-	public void changeNoteWindowLocation() {
-		mSplitPane.changeNoteWindowLocation();
+	public void changeNoteWindowLocation(String location) {
+		final ResourceController resourceController = ResourceController.getResourceController();
+		resourceController.setProperty("note_location", location);
+		mSplitPane.changeNoteWindowLocation(location);
 	}
 
 	@Override

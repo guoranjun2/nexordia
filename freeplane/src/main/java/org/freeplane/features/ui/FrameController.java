@@ -222,7 +222,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	@Override
-	public void changeNoteWindowLocation() {
+	public void changeNoteWindowLocation(String location) {
 	}
 
 	@Override

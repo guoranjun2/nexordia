@@ -46,7 +46,7 @@ public interface ViewController {
 	public static final int RIGHT = 2;
 	public static final int TOP = 0;
 
-	public void changeNoteWindowLocation();
+	public void changeNoteWindowLocation(String location);
 
 	public void err(final String msg);
 
