@@ -147,7 +147,8 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
         final ComponentOrientation componentOrientation = getNoteTextDirection().componentOrientation;
         notePanel.setComponentOrientation(componentOrientation);
         final Font noteFont = noteStyleAccessor.getNoteFont();
-		notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
+        if(noteFont != null)
+        	notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
         notePanel.setForeground(noteForeground);
         StringBuilder bodyCssBuilder = new StringBuilder( "body {").append(noteCssRule).append("}\n");
         if (ResourceController.getResourceController().getBooleanProperty(
