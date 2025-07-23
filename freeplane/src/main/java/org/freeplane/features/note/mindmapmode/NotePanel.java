@@ -310,10 +310,12 @@ class NotePanel extends JPanel {
         }
 	}
 
-	void setViewedImage(Icon icon, HorizontalTextAlignment alignment ) {
+	void setViewedImage(Icon icon, HorizontalTextAlignment alignment, Color noteBackground ) {
 		setVisible(iconViewerPanel);
 		iconViewerPanel.setIcon(icon);
 		iconViewerPanel.setHorizontalAlignment(alignment.swingConstant);
+		iconViewerPanel.setBackground(noteBackground);
+		iconViewerPanel.setOpaque(noteBackground != null);
 	}
 
 	private void setVisible(JComponent component) {

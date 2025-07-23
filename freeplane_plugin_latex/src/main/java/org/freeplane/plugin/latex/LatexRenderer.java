@@ -9,7 +9,6 @@ import java.util.function.Supplier;
 
 import javax.swing.Icon;
 import javax.swing.JEditorPane;
-import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
@@ -19,10 +18,8 @@ import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.nodestyle.NodeStyleController;
 import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.note.mindmapmode.MNoteController;
-import org.freeplane.features.styles.LogicalStyleController.StyleOption;
 import org.freeplane.features.text.AbstractContentTransformer;
 import org.freeplane.features.text.DetailModel;
 import org.freeplane.features.text.TextController;
@@ -33,6 +30,7 @@ import org.freeplane.features.text.mindmapmode.EditNodeDialog;
 import org.freeplane.features.text.mindmapmode.IEditBaseCreator;
 import org.freeplane.features.text.mindmapmode.MTextController;
 import org.freeplane.features.text.mindmapmode.SourceTextEditorUIConfigurator;
+import org.freeplane.view.swing.map.ZoomableLabel;
 import org.scilab.forge.jlatexmath.TeXConstants;
 import org.scilab.forge.jlatexmath.TeXIcon;
 
@@ -61,21 +59,25 @@ public class LatexRenderer extends AbstractContentTransformer implements IEditBa
 		final String latext = getText(node, nodeProperty, content, Target.VIEW, textController);
 		if (latext == null)
 			return content;
-		int iconWithGapWidth = 0;
-		if(component instanceof JLabel) {
-			final JLabel label = (JLabel)component;
+		int widthWithInsets;
+		if(component instanceof ZoomableLabel) {
+			final ZoomableLabel label = (ZoomableLabel)component;
 			if (label.getVerticalTextPosition() != SwingConstants.BOTTOM) {
 				final Icon icon = label.getIcon();
 				int iconWidth = icon != null ? icon.getIconWidth() : 0;
-				iconWithGapWidth = iconWidth > 0 ? iconWidth + label.getIconTextGap() : 0;
+				int iconWithGapWidth = iconWidth > 0 ? iconWidth + label.getIconTextGap() : 0;
+				widthWithInsets = label.getMaximumWidth() - iconWithGapWidth;
 			}
+			else
+				widthWithInsets = label.getMaximumWidth();
 		}
-		final NodeStyleController ncs = NodeStyleController.getController(textController.getModeController());
-		int widthWithInsets = ncs.getMaxWidth(node, StyleOption.FOR_UNSELECTED_NODE).toBaseUnitsRounded() - iconWithGapWidth;
-		final int maxWidth = Math.max(0, widthWithInsets - 4);
+		else {
+			widthWithInsets = component.getWidth();
+		}
+		final int maxWidth = widthWithInsets > 4 ? widthWithInsets : 10000;
 		TeXText teXt = new TeXText(latext);
-		int fontSize = Math.round(ncs.getFontSize(node, StyleOption.FOR_UNSELECTED_NODE) * UITools.FONT_SCALE_FACTOR);
-		TeXIcon icon = teXt.createTeXIcon(TeXConstants.STYLE_DISPLAY, fontSize, TeXConstants.ALIGN_LEFT, maxWidth);
+		int fontSize = component.getFont().getSize();
+		TeXIcon icon = teXt.createTeXIcon(component.getForeground(), TeXConstants.STYLE_DISPLAY, fontSize, TeXConstants.ALIGN_LEFT, maxWidth);
 		int insetSize = (widthWithInsets - maxWidth) / 2;
 		icon.setInsets(new Insets(insetSize, insetSize, insetSize, insetSize));
 		return new LatexRenderIcon(icon);

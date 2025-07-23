@@ -21,6 +21,7 @@ package org.freeplane.features.note.mindmapmode;
 
 import java.awt.Color;
 import java.awt.ComponentOrientation;
+import java.awt.Font;
 
 import javax.swing.Icon;
 import javax.swing.SwingUtilities;
@@ -28,6 +29,7 @@ import javax.swing.text.html.StyleSheet;
 
 import org.freeplane.api.TextWritingDirection;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
@@ -144,6 +146,9 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
         Color noteBackground = noteStyleAccessor.getNoteBackground();
         final ComponentOrientation componentOrientation = getNoteTextDirection().componentOrientation;
         notePanel.setComponentOrientation(componentOrientation);
+        final Font noteFont = noteStyleAccessor.getNoteFont();
+		notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
+        notePanel.setForeground(noteForeground);
         StringBuilder bodyCssBuilder = new StringBuilder( "body {").append(noteCssRule).append("}\n");
         if (ResourceController.getResourceController().getBooleanProperty(
             MNoteController.RESOURCES_USE_MARGIN_TOP_ZERO_FOR_NOTES)) {
@@ -163,10 +168,10 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 		if (note != null) {
 			try {
 			    TextController textController = TextController.getController();
-				final Object transformedContent = textController.getTransformedObject(node, NoteModel.getNote(node), note, null);
+				final Object transformedContent = textController.getTransformedObject(node, NoteModel.getNote(node), note, notePanel);
 				Icon icon = textController.getIcon(transformedContent);
 				if(icon != null)
-					notePanel.setViewedImage(icon, noteStyleAccessor.getHorizontalAlignment());
+					notePanel.setViewedImage(icon, noteStyleAccessor.getHorizontalAlignment(), noteBackground);
 				else if (transformedContent == note) {
 					notePanel.removeDocumentListener();
 					String noteContentType = noteController.getNoteContentType(node);
