@@ -35,7 +35,7 @@ public class CopyNodeURIAction extends AFreeplaneAction {
 		controller.getViewController().out(idString);
 	}
 
-	public String uri(final NodeModel node, File mindmapFile) {
+	private String uri(final NodeModel node, File mindmapFile) {
 	    final String fileBasedUri = mindmapFile.toURI().toString() + '#' + node.createID();
 		final FreeplaneUriConverter freeplaneUriConverter = new FreeplaneUriConverter();
 		return freeplaneUriConverter.freeplaneUriForFile(fileBasedUri);
