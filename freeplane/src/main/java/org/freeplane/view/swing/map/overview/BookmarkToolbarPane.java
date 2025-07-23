@@ -57,7 +57,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
 
         attachDockingWindowListeners(rootWindow);
 
-        initializeToolbarForContainedMapViews();
+        SwingUtilities.invokeLater(this::initializeToolbarForContainedMapViews);
     }
 
     private void attachDockingWindowListeners(Component window) {
@@ -94,15 +94,8 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
                 if (currentSelectedMapView != null && removedWindow instanceof View) {
                     Component containedMapView = getContainedMapView((View) removedWindow);
                     if (containedMapView == currentSelectedMapView) {
-                        if (bookmarksToolbar != null) {
-                            bookmarksToolbar.setVisible(false);
-                        }
-                        currentSelectedMapView = null;
-                        if (currentMap != null) {
-                            currentMap = null;
-                        }
+                    	refreshToolbarForContainedMapViews();
                     }
-                    refreshToolbarForContainedMapViews();
                 }
             }
         };
@@ -167,7 +160,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         for (Component view : mapViews) {
             if (view instanceof MapView) {
                 MapView mapView = (MapView) view;
-                if (containsMapView(mapView)) {
+                if (mapView.isShowing() && containsMapView(mapView)) {
                     if (foundMapView == null) {
                         foundMapView = mapView;
                     }
@@ -320,9 +313,11 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         ResourceController.getResourceController().removePropertyChangeListener(this);
         if (currentMap != null) {
             currentMap.removeMapChangeListener(this);
+            currentMap = null;
         }
         if (currentSelectedMapView != null) {
             currentSelectedMapView.getModeController().getMapController().removeNodeSelectionListener(this);
+            currentSelectedMapView = null;
         }
     }
 }
