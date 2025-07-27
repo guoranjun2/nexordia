@@ -30,6 +30,7 @@ import org.freeplane.view.swing.map.NodeView;
  */
 public class DefaultNodeMouseMotionListener implements IMouseListener {
 	protected final NodeSelector nodeSelector;
+	protected final NodeFolder nodeFolder;
 	private static final String FOLD_ON_CLICK_INSIDE = "fold_on_click_inside";
 	static final String OPEN_LINKS_ON_PLAIN_CLICKS = "openLinksOnPlainClicks";
 	/**
@@ -43,6 +44,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 //		mc = modeController;
 		doubleClickTimer = new DoubleClickTimer();
 		nodeSelector = new NodeSelector();
+		nodeFolder = new NodeFolder();
 	}
 
 
@@ -197,7 +199,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseEntered(final MouseEvent e) {
 		if (nodeSelector.isRelevant(e)) {
-			nodeSelector.createTimer(e, isInFoldingControl(e));
+			if (isInFoldingControl(e)) {
+				nodeFolder.createTimer(e);
+			} else {
+				nodeSelector.createTimer(e);
+			}
 			mouseMoved(e);
 		}
 	}
@@ -205,9 +211,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseExited(final MouseEvent e) {
 		nodeSelector.stopTimerForDelayedSelection();
+		nodeFolder.onMouseExited();
 		final MainView v = (MainView) e.getSource();
 		v.setMouseArea(MouseArea.OUT);
 		nodeSelector.trackWindowForComponent(v);
+		nodeFolder.trackWindowForComponent(v);
 	}
 
 	@Override
@@ -242,7 +250,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
         if (node.getCursor().getType() != requiredCursor.getType() || requiredCursor.getType() == Cursor.CUSTOM_CURSOR && node.getCursor() != requiredCursor) {
         	node.setCursor(requiredCursor);
         }
-		nodeSelector.createTimer(e, isInFoldingControl(e));
+		if (isInFoldingControl(e)) {
+			nodeFolder.createTimer(e);
+		} else {
+			nodeSelector.createTimer(e);
+		}
 	}
 
 	@Override

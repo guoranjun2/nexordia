@@ -290,6 +290,23 @@
 				<boolean name="cut_nodes_without_question" />
 				<boolean name="remove_notes_without_question" />
 			</separator>
+			<separator name="mouse_over_behavior">
+				<combo name="mouse_over_timing">
+					<choice value="immediate" />
+					<choice value="delayed" />
+				</combo>
+				<number name="mouse_over_delay" min="50" max="5000" />
+				<combo name="selection_on_mouse_over">
+					<choice value="disabled" />
+					<choice value="enabled" />
+				</combo>
+				<combo name="folding_on_mouse_over">
+					<choice value="disabled" />
+					<choice value="toggle" />
+					<choice value="unfold_only" />
+					<choice value="preview" />
+				</combo>
+			</separator>
 			<separator name="selection">
 				<combo name="selection_method">
 					<choice value="selection_method_direct" />

@@ -104,7 +104,7 @@ public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 	public void mouseMoved(MouseEvent e) {
 		super.mouseMoved(e);
 		if (!eventFromHideDisplayArea(e) && nodeSelector.isRelevant(e))
-			nodeSelector.createTimer(e, false);
+			nodeSelector.createTimer(e);
 		else
 			nodeSelector.stopTimerForDelayedSelection();
 	}

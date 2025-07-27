@@ -77,17 +77,22 @@ public class NodeSelector {
 	private static final String SELECTION_METHOD_BY_CLICK = "selection_method_by_click";
 	private static final String TIME_FOR_DELAYED_SELECTION = "time_for_delayed_selection";
 	private static final String SELECTION_METHOD = "selection_method";
+	private static final String SELECTION_ON_MOUSE_OVER = "selection_on_mouse_over";
+	private static final String MOUSE_OVER_TIMING = "mouse_over_timing";
+	private static final String MOUSE_OVER_DELAY = "mouse_over_delay";
+	private static final String SELECTION_DISABLED = "disabled";
+	private static final String SELECTION_ENABLED = "enabled";
+	private static final String TIMING_IMMEDIATE = "immediate";
+	private static final String TIMING_DELAYED = "delayed";
 	private static boolean mouseWasMoved = false;
 	private final MovedMouseEventFilter windowMouseTracker = new MovedMouseEventFilter();
 
 	protected static class TimeDelayedSelection implements ActionListener {
 		private final MouseEvent mouseEvent;
-		private final boolean isInFoldingRegion;
 		private boolean wasFired;
 
-		TimeDelayedSelection(final MouseEvent e, boolean isInFoldingRegion) {
+		TimeDelayedSelection(final MouseEvent e) {
 			this.mouseEvent = e;
-			this.isInFoldingRegion = isInFoldingRegion;
 			this.wasFired = false;
 		}
 
@@ -106,16 +111,10 @@ public class NodeSelector {
 		            if (nodeV.isDisplayable() && nodeV.getNode().hasVisibleContent(map.getFilter())) {
 		                map.select();
 		                NodeModel node = nodeV.getNode();
-		                MouseEventActor.INSTANCE.withMouseEvent( () ->
-                            {
+		                MouseEventActor.INSTANCE.withMouseEvent( () -> {
                             	MapController mapController = modeController.getMapController();
-                            	if(isInFoldingRegion) {
-                            		mapController.toggleFoldedAndScroll(node);
-                            	}
-                            	else {
-                            		controller.getSelection().selectAsTheOnlyOneSelected(node);
-                            		mapController.scrollNodeTreeAfterSelect(node);
-                            	}
+                            	controller.getSelection().selectAsTheOnlyOneSelected(node);
+                            	mapController.scrollNodeTreeAfterSelect(node);
 							});
 		                this.wasFired = true;
 		            }
@@ -130,14 +129,12 @@ public class NodeSelector {
 	private Timer timerForDelayedSelection;
 	private TimeDelayedSelection delayedSelection;
 
-	public void createTimer(final MouseEvent e, boolean isInFoldingRegion) {
+	public void createTimer(final MouseEvent e) {
 		if(! mouseWasMoved
 				|| controlRegionForDelayedSelection != null && controlRegionForDelayedSelection.contains(e.getPoint())) {
 			return;
 		}
-		if (!(isInFoldingRegion || isInside(e)))
-			return;
-		if(isInFoldingRegion && (delayedSelection != null && delayedSelection.isInFoldingRegion && delayedSelection.wasFired))
+		if (!isInside(e))
 			return;
 		stopTimerForDelayedSelection();
 		Window focusedWindow = FocusManager.getCurrentManager().getFocusedWindow();
@@ -147,20 +144,23 @@ public class NodeSelector {
 		if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof JTextComponent) {
 			return;
 		}
-		/* Region to check for in the sequel. */
 		controlRegionForDelayedSelection = getControlRegion(e.getPoint());
-		final String selectionMethod = ResourceController.getResourceController().getProperty(SELECTION_METHOD);
-		if (selectionMethod.equals(SELECTION_METHOD_BY_CLICK)) {
+		
+		final String selectionBehavior = getSelectionBehavior();
+		if (selectionBehavior.equals(SELECTION_DISABLED)) {
 			return;
 		}
-		delayedSelection = new TimeDelayedSelection(e, isInFoldingRegion);
-		if (selectionMethod.equals(SELECTION_METHOD_DIRECT) && ! isInFoldingRegion) {
+
+		delayedSelection = new TimeDelayedSelection(e);
+		final String timing = getMouseOverTiming();
+		
+		if (timing.equals(TIMING_IMMEDIATE)) {
 			delayedSelection.actionPerformed(new ActionEvent(this, 0, ""));
 			return;
 		}
-		final int timeForDelayedSelection = ResourceController.getResourceController().getIntProperty(
-		    TIME_FOR_DELAYED_SELECTION, 100);
-		timerForDelayedSelection = new Timer(timeForDelayedSelection, delayedSelection);
+
+		final int mouseOverDelay = getMouseOverDelay();
+		timerForDelayedSelection = new Timer(mouseOverDelay, delayedSelection);
 		timerForDelayedSelection.setRepeats(false);
 		timerForDelayedSelection.start();
 	}
@@ -240,5 +240,46 @@ public class NodeSelector {
 
 	public void trackWindowForComponent(Component c) {
 		windowMouseTracker.trackWindowForComponent(c);
+	}
+
+	private String getSelectionBehavior() {
+		ResourceController rc = ResourceController.getResourceController();
+		if (usesLegacySelectionMethod(rc)) {
+			return mapLegacySelectionMethodToNewBehavior(rc);
+		}
+		return rc.getProperty(SELECTION_ON_MOUSE_OVER, SELECTION_ENABLED);
+	}
+
+	private String getMouseOverTiming() {
+		ResourceController rc = ResourceController.getResourceController();
+		if (usesLegacySelectionMethod(rc)) {
+			return mapLegacySelectionMethodToTiming(rc);
+		}
+		return rc.getProperty(MOUSE_OVER_TIMING, TIMING_DELAYED);
+	}
+
+	private int getMouseOverDelay() {
+		ResourceController rc = ResourceController.getResourceController();
+		if (usesLegacySelectionMethod(rc)) {
+			return rc.getIntProperty(TIME_FOR_DELAYED_SELECTION, 100);
+		}
+		return rc.getIntProperty(MOUSE_OVER_DELAY, 100);
+	}
+
+	private boolean usesLegacySelectionMethod(ResourceController rc) {
+		return rc.isPropertySetByUser(SELECTION_METHOD) && 
+			   !rc.isPropertySetByUser(SELECTION_ON_MOUSE_OVER);
+	}
+
+	private String mapLegacySelectionMethodToNewBehavior(ResourceController rc) {
+		String selectionMethod = rc.getProperty(SELECTION_METHOD);
+		return selectionMethod.equals(SELECTION_METHOD_BY_CLICK) ? 
+			   SELECTION_DISABLED : SELECTION_ENABLED;
+	}
+
+	private String mapLegacySelectionMethodToTiming(ResourceController rc) {
+		String selectionMethod = rc.getProperty(SELECTION_METHOD);
+		return selectionMethod.equals(SELECTION_METHOD_DIRECT) ? 
+			   TIMING_IMMEDIATE : TIMING_DELAYED;
 	}
 }
