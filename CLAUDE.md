@@ -57,6 +57,35 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - **Single responsibility** - each extracted class should have clear purpose
 - **Remove unused imports** - Clean up imports after coding changes to keep code tidy
 
+### Feature-Driven Testing Process (MANDATORY)
+
+**CORE PRINCIPLE**: Tests follow features, not vice versa. Every feature development session MUST follow this pattern:
+
+1. **Extract Business Logic First** - Pull complex logic out of UI event handlers into testable classes
+2. **Test Extracted Logic Immediately** - Write focused unit tests for the extracted business logic  
+3. **Implement Feature Using Tested Components** - Build the feature using tested, reliable building blocks
+4. **Minimal UI Integration** - Keep UI code as thin wiring that delegates to tested logic
+
+**CLAUDE'S RESPONSIBILITY**: 
+- **ALWAYS suggest extraction opportunities** when seeing complex logic in UI code
+- **ALWAYS propose testing approach** before implementing any non-trivial business logic
+- **PROACTIVELY identify** when feature work could benefit from extract-test-integrate pattern
+- **INTERRUPT implementation** if business logic is being mixed directly into UI event handlers
+- **REMIND** about testing utilities and patterns available for current work
+
+**DEVELOPER RESPONSIBILITY**:
+- **FOLLOW the extract-test-integrate pattern** for all feature development
+- **EXPECT Claude to urge** this approach and take the suggestions seriously
+- **RESIST the temptation** to modify complex UI code directly without extraction
+
+**SUCCESS METRICS**:
+- Feature development feels faster due to immediate feedback loops
+- Fewer debugging sessions needed (logic verified through tests)
+- More confidence when making changes to existing functionality
+- Gradual accumulation of testable, reusable business logic components
+
+**VIOLATION CONSEQUENCES**: Technical debt accumulates, debugging becomes harder, feature development slows down, regression risk increases.
+
 ### OSGi Bundle Configuration
 - Plugin bundles require `Bundle-Activator` and `Require-Bundle: org.freeplane.core`
 - Bundle dependencies are externalized via `Bundle-ClassPath`
