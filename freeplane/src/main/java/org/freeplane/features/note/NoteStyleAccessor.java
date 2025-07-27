@@ -23,6 +23,7 @@ public class NoteStyleAccessor {
 	final private NodeCss noteCss;
 	final private Color noteBackground;
 	final private HorizontalTextAlignment horizontalAlignment;
+	private Font noteFont;
 	public NoteStyleAccessor(ModeController modeController, NodeModel node, float zoom, boolean asHtmlFragment) {
 		final Controller controller = modeController.getController();
 		MapModel map = controller.getMap();
@@ -31,7 +32,7 @@ public class NoteStyleAccessor {
 			final NodeModel noteStyleNode = model.getStyleNodeSafe(MapStyleModel.NOTE_STYLE);
 			final NodeStyleController style = Controller.getCurrentModeController().getExtension(
 				NodeStyleController.class);
-			final Font noteFont = style.getFont(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
+			this.noteFont = style.getFont(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
 			this.noteBackground = style.getBackgroundColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
 			this.noteForeground = style.getColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
 			this.noteCss = style.getStyleSheet(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
@@ -75,7 +76,7 @@ public class NoteStyleAccessor {
     public HorizontalTextAlignment getHorizontalAlignment() {
         return horizontalAlignment;
     }
-
-
-
+	public Font getNoteFont() {
+		return noteFont;
+	}
 }
