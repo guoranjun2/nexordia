@@ -25,7 +25,7 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 ### Core Architecture
 - **OSGi Framework**: Uses Knopflerfish OSGi framework for modular plugin system
 - **Multi-module Gradle project**: 17+ submodules with clear separation of concerns
-- **Java 8 compatibility**: Targets Java 8 for broad compatibility
+- **Java 8 compatibility**: Targets Java 8 for broad compatibility - avoid Java 9+ features
 - **Plugin system**: Extensible through OSGi plugins for features like LaTeX, scripting, SVG support
 
 ### Key Modules
@@ -115,6 +115,12 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Follow existing patterns rather than reinventing
 - Check method signatures carefully (compilation catches parameter mismatches)
 - Use existing controller methods rather than lower-level operations
+
+### Logging System
+- **Freeplane uses proprietary logging utilities** (not standard Java logging)
+- Standard Java logging configuration in `logging.properties` only affects Swing and other Java log records
+- For Freeplane-specific logging, use the proprietary logging utilities directly
+- Use `LogUtils.warn()` and similar methods for Freeplane logging (as seen in existing codebase)
 
 ## Distribution and Packaging
 - Multi-platform support (Windows, macOS, Linux)

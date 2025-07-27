@@ -46,20 +46,16 @@ import org.freeplane.view.swing.map.NodeView;
  * @author Dimitry Polivaev
  * 19.06.2013
  */
-public class NodeFolder {
+public class NodeFolder implements MouseTimerDelegate.ActionProvider {
     static {
         migratePropertyFromSelectionMethodIfUserCustomized();
     }
 
     private static final String FOLDING_ON_MOUSE_OVER = "folding_on_mouse_over";
-    private static final String MOUSE_OVER_TIMING = "mouse_over_timing";
-    private static final String MOUSE_OVER_DELAY = "mouse_over_delay";
     private static final String FOLDING_DISABLED = "disabled";
     private static final String FOLDING_TOGGLE = "toggle";
     private static final String FOLDING_UNFOLD_ONLY = "unfold_only";
     private static final String FOLDING_PREVIEW = "preview";
-    private static final String TIMING_IMMEDIATE = "immediate";
-    private static final String TIMING_DELAYED = "delayed";
 
     protected class TimeDelayedFolding implements ActionListener {
         private final MouseEvent mouseEvent;
@@ -129,55 +125,15 @@ public class NodeFolder {
         }
     }
 
-    private Rectangle controlRegionForDelayedFolding;
-    private Timer timerForDelayedFolding;
-    private TimeDelayedFolding delayedFolding;
+    private final MouseTimerDelegate timerDelegate = new MouseTimerDelegate();
     private NodeModel previewUnfoldedNode = null;
 
     public void createTimer(final MouseEvent e) {
-        if (controlRegionForDelayedFolding != null && controlRegionForDelayedFolding.contains(e.getPoint())) {
-            return;
-        }
-
-        stopTimerForDelayedFolding();
-
-        Window focusedWindow = FocusManager.getCurrentManager().getFocusedWindow();
-        if (focusedWindow == null) {
-            return;
-        }
-        if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof JTextComponent) {
-            return;
-        }
-
-        controlRegionForDelayedFolding = getControlRegion(e.getPoint());
-        final String foldingBehavior = ResourceController.getResourceController().getProperty(FOLDING_ON_MOUSE_OVER);
-
-        if (foldingBehavior.equals(FOLDING_DISABLED)) {
-            return;
-        }
-
-        delayedFolding = new TimeDelayedFolding(e, foldingBehavior);
-        final String timing = ResourceController.getResourceController().getProperty(MOUSE_OVER_TIMING);
-
-        if (timing.equals(TIMING_IMMEDIATE)) {
-            delayedFolding.actionPerformed(new ActionEvent(this, 0, ""));
-            return;
-        }
-
-        final int mouseOverDelay = ResourceController.getResourceController().getIntProperty(
-                MOUSE_OVER_DELAY, 100);
-        timerForDelayedFolding = new Timer(mouseOverDelay, delayedFolding);
-        timerForDelayedFolding.setRepeats(false);
-        timerForDelayedFolding.start();
+        timerDelegate.createTimer(e, this);
     }
 
     public void stopTimerForDelayedFolding() {
-        if (timerForDelayedFolding != null) {
-            timerForDelayedFolding.stop();
-        }
-        timerForDelayedFolding = null;
-        controlRegionForDelayedFolding = null;
-        delayedFolding = null;
+        timerDelegate.stopTimer();
     }
 
     public void onMouseExited() {
@@ -209,13 +165,20 @@ public class NodeFolder {
         }
     }
 
-    protected Rectangle getControlRegion(final Point2D p) {
-        final int side = 8;
-        return new Rectangle((int) (p.getX() - side / 2), (int) (p.getY() - side / 2), side, side);
+    @Override
+    public ActionListener createDelayedAction(MouseEvent e) {
+        final String foldingBehavior = ResourceController.getResourceController().getProperty(FOLDING_ON_MOUSE_OVER);
+        return new TimeDelayedFolding(e, foldingBehavior);
+    }
+
+    @Override
+    public boolean isActionEnabled() {
+        final String foldingBehavior = ResourceController.getResourceController().getProperty(FOLDING_ON_MOUSE_OVER);
+        return !foldingBehavior.equals(FOLDING_DISABLED);
     }
 
     public NodeView getRelatedNodeView(MouseEvent e) {
-        return (NodeView) SwingUtilities.getAncestorOfClass(NodeView.class, e.getComponent());
+        return timerDelegate.getRelatedNodeView(e);
     }
 
     private static void migratePropertyFromSelectionMethodIfUserCustomized() {
@@ -242,11 +205,11 @@ public class NodeFolder {
     private static void migrateFoldingSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
         switch (selectionMethod) {
             case "selection_method_direct":
-                rc.setProperty(MOUSE_OVER_TIMING, TIMING_IMMEDIATE);
+                rc.setProperty(MouseTimerDelegate.MOUSE_OVER_TIMING, MouseTimerDelegate.TIMING_IMMEDIATE);
                 rc.setProperty(FOLDING_ON_MOUSE_OVER, FOLDING_TOGGLE);
                 break;
             case "selection_method_delayed":
-                rc.setProperty(MOUSE_OVER_TIMING, TIMING_DELAYED);
+                rc.setProperty(MouseTimerDelegate.MOUSE_OVER_TIMING, MouseTimerDelegate.TIMING_DELAYED);
                 rc.setProperty(FOLDING_ON_MOUSE_OVER, FOLDING_TOGGLE);
                 break;
             case "selection_method_by_click":
@@ -256,6 +219,6 @@ public class NodeFolder {
     }
 
     public void trackWindowForComponent(Component c) {
-        // TODO: Implement window tracking if needed for folding behavior
+        timerDelegate.trackWindowForComponent(c);
     }
 }
