@@ -20,21 +20,13 @@
 package org.freeplane.view.swing.ui;
 
 import java.awt.Component;
-import java.awt.KeyboardFocusManager;
-import java.awt.Rectangle;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Point2D;
 
-import javax.swing.FocusManager;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.text.JTextComponent;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -127,13 +119,18 @@ public class NodeFolder implements MouseTimerDelegate.ActionProvider {
 
     private final MouseTimerDelegate timerDelegate = new MouseTimerDelegate();
     private NodeModel previewUnfoldedNode = null;
+    private TimeDelayedFolding delayedFolding;
 
     public void createTimer(final MouseEvent e) {
+        if(delayedFolding != null && delayedFolding.wasFired) {
+            return;
+        }
         timerDelegate.createTimer(e, this);
     }
 
     public void stopTimerForDelayedFolding() {
         timerDelegate.stopTimer();
+        delayedFolding = null;
     }
 
     public void onMouseExited() {
@@ -168,7 +165,8 @@ public class NodeFolder implements MouseTimerDelegate.ActionProvider {
     @Override
     public ActionListener createDelayedAction(MouseEvent e) {
         final String foldingBehavior = ResourceController.getResourceController().getProperty(FOLDING_ON_MOUSE_OVER);
-        return new TimeDelayedFolding(e, foldingBehavior);
+        delayedFolding = new TimeDelayedFolding(e, foldingBehavior);
+        return delayedFolding;
     }
 
     @Override
@@ -183,7 +181,7 @@ public class NodeFolder implements MouseTimerDelegate.ActionProvider {
 
     private static void migratePropertyFromSelectionMethodIfUserCustomized() {
         ResourceController rc = ResourceController.getResourceController();
-        
+
         if (shouldMigrateFoldingMethodFromSelectionMethod(rc)) {
             String selectionMethod = rc.getProperty("selection_method");
             migrateFoldingSettingsFromSelectionMethod(rc, selectionMethod);

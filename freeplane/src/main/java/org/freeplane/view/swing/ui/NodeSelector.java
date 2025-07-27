@@ -21,20 +21,15 @@ package org.freeplane.view.swing.ui;
 
 import java.awt.AWTEvent;
 import java.awt.Component;
-import java.awt.KeyboardFocusManager;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
-import java.awt.Window;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Point2D;
 
 import javax.swing.FocusManager;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.text.JTextComponent;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.Compat;
@@ -216,7 +211,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 
 	private static void migrateSelectionPropertiesFromLegacyMethod() {
 		ResourceController rc = ResourceController.getResourceController();
-		
+
 		if (shouldMigrateSelectionMethod(rc)) {
 			String selectionMethod = rc.getProperty("selection_method");
 			migrateSelectionSettingsFromSelectionMethod(rc, selectionMethod);
@@ -224,7 +219,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	}
 
 	private static boolean shouldMigrateSelectionMethod(ResourceController rc) {
-		return rc.isPropertySetByUser("selection_method") && 
+		return rc.isPropertySetByUser("selection_method") &&
 			   !rc.isPropertySetByUser(SELECTION_ON_MOUSE_OVER);
 	}
 
