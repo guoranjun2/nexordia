@@ -66,6 +66,13 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Use `check_translation` and `format_translation` gradle tasks
 - Support for 25+ languages including RTL languages
 
+#### Translation Key Conventions
+- **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
+- **Separator titles**: Use `OptionPanel.separator.{name}={title}` for section headers
+- **Choice values**: Combo box options use same key as preference choice value
+- **Alphabetical sorting**: Properties are sorted alphabetically ignoring case (intentional)
+- **Always run format_translation**: After any translation file changes to maintain sorting
+
 ### Testing
 - JUnit 4.13.2 with Hamcrest and Mockito
 - AssertJ for fluent assertions
