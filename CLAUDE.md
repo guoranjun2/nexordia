@@ -55,6 +55,7 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - **Incremental refactoring** - small testable steps with commits after each step
 - **Extract only what's used** - avoid speculative generality
 - **Single responsibility** - each extracted class should have clear purpose
+- **Remove unused imports** - Clean up imports after coding changes to keep code tidy
 
 ### OSGi Bundle Configuration
 - Plugin bundles require `Bundle-Activator` and `Require-Bundle: org.freeplane.core`
