@@ -61,7 +61,7 @@ public class NodeFolder {
     private static final String TIMING_IMMEDIATE = "immediate";
     private static final String TIMING_DELAYED = "delayed";
 
-    protected static class TimeDelayedFolding implements ActionListener {
+    protected class TimeDelayedFolding implements ActionListener {
         private final MouseEvent mouseEvent;
         private final String foldingBehavior;
         private boolean wasFired;
@@ -132,7 +132,7 @@ public class NodeFolder {
     private Rectangle controlRegionForDelayedFolding;
     private Timer timerForDelayedFolding;
     private TimeDelayedFolding delayedFolding;
-    private static NodeModel previewUnfoldedNode = null;
+    private NodeModel previewUnfoldedNode = null;
 
     public void createTimer(final MouseEvent e) {
         if (controlRegionForDelayedFolding != null && controlRegionForDelayedFolding.contains(e.getPoint())) {
@@ -193,7 +193,13 @@ public class NodeFolder {
         return previewUnfoldedNode == node;
     }
 
-    private static void restorePreviewUnfoldedNode() {
+    public void onNodeFoldedByUser(NodeModel node) {
+        if (previewUnfoldedNode == node) {
+            previewUnfoldedNode = null;
+        }
+    }
+
+    private void restorePreviewUnfoldedNode() {
         if (previewUnfoldedNode != null && !previewUnfoldedNode.isFolded()) {
             Controller controller = Controller.getCurrentController();
             ModeController modeController = controller.getModeController();

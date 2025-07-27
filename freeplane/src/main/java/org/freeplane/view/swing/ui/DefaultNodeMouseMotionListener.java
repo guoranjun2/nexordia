@@ -133,8 +133,10 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 						doubleClickTimer.start(new Runnable() {
 							@Override
 							public void run() {
-								MouseEventActor.INSTANCE.withMouseEvent( () ->
-									mapController.toggleFoldedAndScroll(node));
+								MouseEventActor.INSTANCE.withMouseEvent( () -> {
+									mapController.toggleFoldedAndScroll(node);
+									nodeFolder.onNodeFoldedByUser(node);
+								});
 							}
 						});
 					}
@@ -158,7 +160,9 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 		}
 
 		if(inside && e.getButton() == 1 &&  ! e.isAltDown()) {
-            nodeFolder.makePreviewUnfoldingPermanent();
+            if (nodeFolder.isPreviewUnfolded(node)) {
+                nodeFolder.makePreviewUnfoldingPermanent();
+            }
             nodeSelector.extendSelection(e, ! isDelayedFoldingActive);
         }
 	}
@@ -276,11 +280,18 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 					return;
 
 				final NodeModel node = nodeView.getNode();
+				if (nodeFolder.isPreviewUnfolded(node)) {
+					nodeFolder.makePreviewUnfoldingPermanent();
+					return;
+				}
+				
 				final ModeController mc = nodeView.getMap().getModeController();
 				final MapController mapController = mc.getMapController();
 				doubleClickTimer.cancel();
-				MouseEventActor.INSTANCE.withMouseEvent( () ->
-				mapController.toggleFoldedAndScroll(node));
+				MouseEventActor.INSTANCE.withMouseEvent( () -> {
+					mapController.toggleFoldedAndScroll(node);
+					nodeFolder.onNodeFoldedByUser(node);
+				});
 				return;
 			}
 
