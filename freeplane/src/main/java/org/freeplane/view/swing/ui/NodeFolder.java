@@ -185,6 +185,14 @@ public class NodeFolder {
         restorePreviewUnfoldedNode();
     }
 
+    public void makePreviewUnfoldingPermanent() {
+        previewUnfoldedNode = null;
+    }
+
+    public boolean isPreviewUnfolded(NodeModel node) {
+        return previewUnfoldedNode == node;
+    }
+
     private static void restorePreviewUnfoldedNode() {
         if (previewUnfoldedNode != null && !previewUnfoldedNode.isFolded()) {
             Controller controller = Controller.getCurrentController();
