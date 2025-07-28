@@ -43,6 +43,11 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - `src/viewer/resources` - Viewer-specific resources
 - `src/external/resources` - External resources (templates, XSLT transformations)
 
+**CRITICAL**: Full project structure has double `freeplane/` directory nesting:
+- Project root: `/path/to/freeplane/freeplane/` (outer = git repo, inner = gradle project)
+- Translation files: `freeplane/src/editor/resources/translations/Resources_*.properties`
+- **Never use relative paths** - always specify full path structure to avoid confusion
+
 ### Build Output
 - `BIN/` - Global build output directory containing the complete application
 - Plugin JARs are copied to `BIN/plugins/{plugin.id}/lib/`
@@ -111,6 +116,16 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - **All non-ASCII characters must be Unicode-escaped**: Use `\uXXXX` format (e.g., `\u041E` for Cyrillic О)
 - **Arabic text example**: `مفعل` becomes `\u0645\u0641\u0639\u0644`
 - **Accented characters example**: `Activé` becomes `Activ\u00E9`
+
+#### MANDATORY: Unicode Conversion Tool Usage
+- **ALWAYS use `native2ascii` tool** for converting UTF-8 text to proper Unicode escapes
+- **NEVER use generic text editors** or automated translation tools directly on .properties files
+- **Required workflow**: UTF-8 temp file → `native2ascii input.txt output.properties` → merge into target file
+- **Validation step**: After changes, verify with `file *.properties` (must show "ASCII text", not binary)
+- **Corruption prevention**: Prevents double UTF-8 encoding, broken escapes, and null byte injection
+- **Always run**: `gradle format_translation` after any translation file modifications
+
+**Why Critical**: Automated tools without proper Java properties support cause systematic Unicode corruption (null bytes, double encoding, broken escapes) that affects all translation files and breaks Weblate integration.
 
 #### Translation Key Conventions
 - **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
