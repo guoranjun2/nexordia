@@ -96,6 +96,16 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Use `check_translation` and `format_translation` gradle tasks
 - Support for 25+ languages including RTL languages
 
+#### Translation File Encoding
+- **CRITICAL**: Properties files use ISO-8859-1 encoding with Unicode escapes
+- **Non-ASCII characters**: Must be Unicode-escaped (e.g., `\u041E` for Cyrillic О)
+- **Examples**: 
+  - Russian: `OptionPanel.enabled=\u0412\u043A\u043B\u044E\u0447\u0435\u043D\u043E`
+  - Chinese: `OptionPanel.immediate=\u7ACB\u5373`
+  - Arabic: `OptionPanel.disabled=\u0645\u0639\u0637\u0644`
+- **Tool requirement**: Use tools that properly handle Unicode escaping for non-Latin scripts
+- **Verification**: Check existing translations in target language for proper escape patterns
+
 #### Translation Key Conventions
 - **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
 - **Separator titles**: Use `OptionPanel.separator.{name}={title}` for section headers
