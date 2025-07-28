@@ -308,11 +308,6 @@
 				<number name="mouse_over_delay" min="50" max="5000" />
 			</separator>
 			<separator name="selection">
-				<combo name="selection_method">
-					<choice value="selection_method_direct" />
-					<choice value="selection_method_delayed" />
-					<choice value="selection_method_by_click" />
-				</combo>
 				<combo name="siblingSelection" enum="org.freeplane.view.swing.map.SiblingSelection"/>
 				<number name="time_for_delayed_selection" />
 				<boolean name="synchronizeSelectionOnlyOnBranchChange" />
