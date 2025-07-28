@@ -73,7 +73,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 
 	private static final String SELECTION_ON_MOUSE_OVER = "selection_on_mouse_over";
 	private static final String SELECTION_DISABLED = "disabled";
-	private static final String SELECTION_ENABLED = "enabled";
+	private static final String SELECTION_IMMEDIATE = "immediate";
 	private static boolean mouseWasMoved = false;
 	private final MovedMouseEventFilter windowMouseTracker = new MovedMouseEventFilter();
 	private final MouseTimerDelegate timerDelegate = new MouseTimerDelegate();
@@ -123,7 +123,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		}
 		
 		final String selectionBehavior = getSelectionBehavior();
-		if (selectionBehavior.equals(SELECTION_ENABLED)) {
+		if (selectionBehavior.equals(SELECTION_IMMEDIATE)) {
 			ActionListener action = createDelayedAction(e);
 			action.actionPerformed(new ActionEvent(this, 0, ""));
 			return;
@@ -213,7 +213,12 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 
 	private String getSelectionBehavior() {
 		ResourceController rc = ResourceController.getResourceController();
-		return rc.getProperty(SELECTION_ON_MOUSE_OVER, SELECTION_ENABLED);
+		String behavior = rc.getProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
+		if ("enabled".equals(behavior)) {
+			behavior = SELECTION_IMMEDIATE;
+			rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
+		}
+		return behavior;
 	}
 
 
@@ -234,12 +239,11 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	private static void migrateSelectionSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
 		switch (selectionMethod) {
 			case "selection_method_direct":
-				rc.setProperty(MouseTimerDelegate.MOUSE_OVER_TIMING, MouseTimerDelegate.TIMING_IMMEDIATE);
-				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_ENABLED);
+				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
 				break;
 			case "selection_method_delayed":
 				rc.setProperty(MouseTimerDelegate.MOUSE_OVER_TIMING, MouseTimerDelegate.TIMING_DELAYED);
-				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_ENABLED);
+				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
 				break;
 			case "selection_method_by_click":
 				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_DISABLED);

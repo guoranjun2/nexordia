@@ -293,7 +293,7 @@
 			<separator name="mouse_over_behavior">
 				<combo name="selection_on_mouse_over">
 					<choice value="disabled" />
-					<choice value="enabled" />
+					<choice value="immediate" />
 				</combo>
 				<combo name="folding_on_mouse_over">
 					<choice value="disabled" />
