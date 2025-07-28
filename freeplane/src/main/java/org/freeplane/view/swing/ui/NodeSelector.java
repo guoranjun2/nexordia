@@ -5,16 +5,16 @@
  *  This file author is Dimitry
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU General License as published by
  *  the Free Software Foundation, either version 2 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU General License for more details.
  *
- *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU General License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.freeplane.view.swing.ui;
@@ -50,6 +50,30 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
     static {
         migrateSelectionPropertiesFromLegacyMethod();
     }
+	private static void migrateSelectionPropertiesFromLegacyMethod() {
+		ResourceController rc = ResourceController.getResourceController();
+
+		final boolean shouldMigrateSelectionMethod = rc.isPropertySetByUser("selection_method") &&
+		   !rc.isPropertySetByUser(MOUSE_OVER_SELECTION_TIMING);
+		if (shouldMigrateSelectionMethod) {
+			String selectionMethod = rc.getProperty("selection_method");
+			migrateSelectionSettingsFromSelectionMethod(rc, selectionMethod);
+		}
+	}
+
+	private static void migrateSelectionSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
+		switch (selectionMethod) {
+			case "selection_method_direct":
+				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
+				break;
+			case "selection_method_delayed":
+				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_DELAYED);
+				break;
+			case "selection_method_by_click":
+				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_DISABLED);
+				break;
+		}
+	}
 
     static {
         Toolkit.getDefaultToolkit().addAWTEventListener(
@@ -71,14 +95,15 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
         );
     }
 
-	private static final String SELECTION_ON_MOUSE_OVER = "selection_on_mouse_over";
+	private static final String MOUSE_OVER_SELECTION_TIMING = "mouse_over_selection_timing";
 	private static final String SELECTION_DISABLED = "disabled";
+	private static final String SELECTION_DELAYED = "delayed";
 	private static final String SELECTION_IMMEDIATE = "immediate";
 	private static boolean mouseWasMoved = false;
 	private final MovedMouseEventFilter windowMouseTracker = new MovedMouseEventFilter();
 	private final MouseTimerDelegate timerDelegate = new MouseTimerDelegate();
 
-	protected static class TimeDelayedSelection implements ActionListener {
+	static class TimeDelayedSelection implements ActionListener {
 		private final MouseEvent mouseEvent;
 
 		TimeDelayedSelection(final MouseEvent e) {
@@ -114,21 +139,24 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	}
 
 
-	public void createTimer(final MouseEvent e) {
+	void createTimer(final MouseEvent e) {
 		if(! mouseWasMoved) {
 			return;
 		}
 		if (!isInside(e)) {
 			return;
 		}
-		
-		final String selectionBehavior = getSelectionBehavior();
-		if (selectionBehavior.equals(SELECTION_IMMEDIATE)) {
+
+		final String selectionTiming = getSelectionBehavior();
+		if (selectionTiming.equals(SELECTION_DISABLED)) {
+			return;
+		}
+		if (selectionTiming.equals(SELECTION_IMMEDIATE)) {
 			ActionListener action = createDelayedAction(e);
 			action.actionPerformed(new ActionEvent(this, 0, ""));
 			return;
 		}
-		
+		// SELECTION_DELAYED case
 		timerDelegate.createTimer(e, this);
 	}
 
@@ -152,7 +180,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		return !selectionBehavior.equals(SELECTION_DISABLED);
 	}
 
-	public boolean shouldSelectOnClick(MouseEvent e) {
+	boolean shouldSelectOnClick(MouseEvent e) {
 		if (isInside(e)) {
 			final NodeView nodeView = getRelatedNodeView(e);
 			return !nodeView.isSelected() || Controller.getCurrentController().getSelection().size() != 1;
@@ -160,7 +188,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		return false;
 	}
 
-	public void extendSelection(final MouseEvent e, boolean scrollNodeTree) {
+	void extendSelection(final MouseEvent e, boolean scrollNodeTree) {
 		final Controller controller = Controller.getCurrentController();
 		final NodeView nodeView = getRelatedNodeView(e);
 		final NodeModel newlySelectedNode = nodeView.getNode();
@@ -189,7 +217,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		}
 	}
 
-	public void selectSingleNode(MouseEvent e) {
+	void selectSingleNode(MouseEvent e) {
 		final NodeView nodeV = getRelatedNodeView(e);
 		final Controller controller = Controller.getCurrentController();
 		if (!((MapView) controller.getMapViewManager().getMapViewComponent()).isSelected(nodeV)) {
@@ -202,52 +230,22 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		return timerDelegate.getRelatedNodeView(e);
 	}
 
-	public boolean isRelevant(MouseEvent e) {
+	boolean isRelevant(MouseEvent e) {
 		return windowMouseTracker.isRelevant(e);
 	}
 
-	public void trackWindowForComponent(Component c) {
+	void trackWindowForComponent(Component c) {
 		windowMouseTracker.trackWindowForComponent(c);
 		timerDelegate.trackWindowForComponent(c);
 	}
 
 	private String getSelectionBehavior() {
 		ResourceController rc = ResourceController.getResourceController();
-		String behavior = rc.getProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
+		String behavior = rc.getProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
 		if ("enabled".equals(behavior)) {
 			behavior = SELECTION_IMMEDIATE;
-			rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
+			rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
 		}
 		return behavior;
-	}
-
-
-	private static void migrateSelectionPropertiesFromLegacyMethod() {
-		ResourceController rc = ResourceController.getResourceController();
-
-		if (shouldMigrateSelectionMethod(rc)) {
-			String selectionMethod = rc.getProperty("selection_method");
-			migrateSelectionSettingsFromSelectionMethod(rc, selectionMethod);
-		}
-	}
-
-	private static boolean shouldMigrateSelectionMethod(ResourceController rc) {
-		return rc.isPropertySetByUser("selection_method") &&
-			   !rc.isPropertySetByUser(SELECTION_ON_MOUSE_OVER);
-	}
-
-	private static void migrateSelectionSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
-		switch (selectionMethod) {
-			case "selection_method_direct":
-				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
-				break;
-			case "selection_method_delayed":
-				rc.setProperty(MouseTimerDelegate.MOUSE_OVER_TIMING, MouseTimerDelegate.TIMING_DELAYED);
-				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_IMMEDIATE);
-				break;
-			case "selection_method_by_click":
-				rc.setProperty(SELECTION_ON_MOUSE_OVER, SELECTION_DISABLED);
-				break;
-		}
 	}
 }

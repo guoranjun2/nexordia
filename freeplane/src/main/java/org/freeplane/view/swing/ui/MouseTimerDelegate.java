@@ -41,10 +41,7 @@ import org.freeplane.view.swing.map.NodeView;
  * @author Dimitry Polivaev
  */
 public class MouseTimerDelegate {
-    protected static final String MOUSE_OVER_TIMING = "mouse_over_timing";
     protected static final String MOUSE_OVER_DELAY = "mouse_over_delay";
-    protected static final String TIMING_IMMEDIATE = "immediate";
-    protected static final String TIMING_DELAYED = "delayed";
 
     private Rectangle controlRegionForDelayedAction;
     private Timer timerForDelayedAction;
@@ -77,13 +74,7 @@ public class MouseTimerDelegate {
         }
 
         delayedAction = actionProvider.createDelayedAction(e);
-        final String timing = getMouseOverTiming();
-
-        if (timing.equals(TIMING_IMMEDIATE)) {
-            delayedAction.actionPerformed(new ActionEvent(this, 0, ""));
-            return;
-        }
-
+        
         final int mouseOverDelay = getMouseOverDelay();
         timerForDelayedAction = new Timer(mouseOverDelay, delayedAction);
         timerForDelayedAction.setRepeats(false);
@@ -108,10 +99,6 @@ public class MouseTimerDelegate {
         return (NodeView) SwingUtilities.getAncestorOfClass(NodeView.class, e.getComponent());
     }
 
-    private String getMouseOverTiming() {
-        ResourceController rc = ResourceController.getResourceController();
-        return rc.getProperty(MOUSE_OVER_TIMING, TIMING_DELAYED);
-    }
 
     private int getMouseOverDelay() {
         ResourceController rc = ResourceController.getResourceController();

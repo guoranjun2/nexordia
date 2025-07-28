@@ -106,6 +106,12 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - **Tool requirement**: Use tools that properly handle Unicode escaping for non-Latin scripts
 - **Verification**: Check existing translations in target language for proper escape patterns
 
+#### Translation File Encoding Requirements
+- **Properties files MUST use ISO-8859-1 encoding** with Unicode escapes for non-ASCII characters
+- **All non-ASCII characters must be Unicode-escaped**: Use `\uXXXX` format (e.g., `\u041E` for Cyrillic О)
+- **Arabic text example**: `مفعل` becomes `\u0645\u0641\u0639\u0644`
+- **Accented characters example**: `Activé` becomes `Activ\u00E9`
+
 #### Translation Key Conventions
 - **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
 - **Separator titles**: Use `OptionPanel.separator.{name}={title}` for section headers
@@ -155,6 +161,13 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Follow existing patterns rather than reinventing
 - Check method signatures carefully (compilation catches parameter mismatches)
 - Use existing controller methods rather than lower-level operations
+
+### Java Code Quality Standards
+- **Reduce visibility**: Use package-private classes for internal UI components, only expose what clients need
+- **Static organization**: Static blocks first, constants grouped after, inner classes positioned strategically
+- **Inner class optimization**: Static when no outer instance access needed, non-static when accessing outer fields
+- **Migration pattern**: Clean separation of initialization logic from business logic using static blocks with helper methods at bottom
+- **Field organization**: Instance fields grouped logically after constants, methods ordered by visibility
 
 ### Logging System
 - **Freeplane uses proprietary logging utilities** (not standard Java logging)
