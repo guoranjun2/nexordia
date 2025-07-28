@@ -147,6 +147,27 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 
 **Why Critical**: Automated tools without proper Java properties support cause systematic Unicode corruption (null bytes, double encoding, broken escapes) that affects all translation files and breaks Weblate integration.
 
+#### MANDATORY: Automated Translation Validation
+**For any automated translation work (Claude Code, translation tools), ALWAYS validate after editing .properties files:**
+
+```bash
+# 1. Check file integrity (must be ASCII text)
+file freeplane/src/editor/resources/translations/Resources_*.properties | grep -v "ASCII text"
+
+# 2. Check for broken Unicode escapes  
+cd freeplane/src/editor/resources/translations/
+grep -l 'u[0-9][0-9][0-9][0-9]' *.properties
+
+# 3. Validate git diff before commit
+git diff | head -20  # Verify only expected changes, no deletions
+```
+
+**Validation Rules for Automated Tools:**
+- **STOP immediately** if any file shows as binary/HTML instead of ASCII text
+- **STOP immediately** if broken Unicode patterns found (u0159 instead of \u0159)
+- **STOP immediately** if git diff shows unexpected content deletions
+- **Always run** `gradle format_translation` after any translation changes
+
 #### Translation Key Conventions
 - **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
 - **Separator titles**: Use `OptionPanel.separator.{name}={title}` for section headers
