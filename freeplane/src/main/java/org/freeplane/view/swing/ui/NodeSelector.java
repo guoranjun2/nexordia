@@ -121,6 +121,14 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		if (!isInside(e)) {
 			return;
 		}
+		
+		final String selectionBehavior = getSelectionBehavior();
+		if (selectionBehavior.equals(SELECTION_ENABLED)) {
+			ActionListener action = createDelayedAction(e);
+			action.actionPerformed(new ActionEvent(this, 0, ""));
+			return;
+		}
+		
 		timerDelegate.createTimer(e, this);
 	}
 
