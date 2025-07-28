@@ -43,10 +43,30 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - `src/viewer/resources` - Viewer-specific resources
 - `src/external/resources` - External resources (templates, XSLT transformations)
 
-**CRITICAL**: Full project structure has double `freeplane/` directory nesting:
-- Project root: `/path/to/freeplane/freeplane/` (outer = git repo, inner = gradle project)
-- Translation files: `freeplane/src/editor/resources/translations/Resources_*.properties`
-- **Never use relative paths** - always specify full path structure to avoid confusion
+### Project Directory Structure
+**CRITICAL**: From the git repository root (where development happens), the structure is:
+
+```
+. (git repository root - where Claude Code starts)
+├── freeplane/                               ← Main Gradle subproject  
+│   ├── src/editor/resources/translations/   ← Translation files location
+│   ├── src/viewer/resources/
+│   └── src/main/java/
+├── freeplane_api/                           ← API subproject  
+├── freeplane_framework/                     ← Framework subproject
+├── JOrtho_0.4_freeplane/                    ← Spell checking component
+└── other subprojects...
+```
+
+**Key Paths from Git Root**:
+- **Translation files**: `freeplane/src/editor/resources/translations/Resources_*.properties`
+- **Main source**: `freeplane/src/main/java/`
+- **Build output**: `BIN/` (global build directory)
+
+**Path Usage**:
+- All development paths are relative to git repository root
+- The `freeplane/` subdirectory contains the main application subproject
+- Absolute paths vary between installations and should not be used in committed files
 
 ### Build Output
 - `BIN/` - Global build output directory containing the complete application
@@ -97,9 +117,9 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Core module exports packages for plugin consumption
 
 ### Translation System
-- Translation files in `src/*/resources/translations/Resources_*.properties`
-- Use `check_translation` and `format_translation` gradle tasks
-- Support for 25+ languages including RTL languages
+- **Translation files location**: `freeplane/src/editor/resources/translations/Resources_*.properties` (relative to git root)
+- **Gradle tasks**: `gradle check_translation` and `gradle format_translation` 
+- **Language support**: 25+ languages including RTL languages (Arabic, Hebrew)
 
 #### Translation File Encoding
 - **CRITICAL**: Properties files use ISO-8859-1 encoding with Unicode escapes
