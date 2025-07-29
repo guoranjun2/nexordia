@@ -310,7 +310,6 @@
 			</separator>
 			<separator name="selection">
 				<combo name="siblingSelection" enum="org.freeplane.view.swing.map.SiblingSelection"/>
-				<number name="time_for_delayed_selection" />
 				<boolean name="synchronizeSelectionOnlyOnBranchChange" />
 			</separator>
 			<separator name="scrollling">
