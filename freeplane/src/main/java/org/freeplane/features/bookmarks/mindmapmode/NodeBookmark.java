@@ -49,7 +49,7 @@ public class NodeBookmark {
 		}
 		else
 			selectedNode = node;
-		if(! NodeVisibility.isHidden(selectedNode)){
+		if(asRoot || ! NodeVisibility.isHidden(selectedNode)){
 			if(selection.getSelectionRoot() != selectedNode
 					&& ! selectedNode.isDescendantOf(selection.getSelectionRoot())) {
 				mapViewManager.setViewRoot(node.getMap().getRootNode());
