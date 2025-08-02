@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.function.Function;
 
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
@@ -51,7 +52,9 @@ import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
@@ -198,7 +201,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
 						((Window)topLevelAncestor).setIconImages(iconImages);
 
-						createBookmarkToolbarPaneForFrame((Window) topLevelAncestor, addedWindow);
+						createAuxillaryPaneForFrame((Window) topLevelAncestor, (FloatingWindow) addedWindow);
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -739,7 +742,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		return orderedMapViews;
 	}
 
-	private void createBookmarkToolbarPaneForFrame(Window frame, DockingWindow floatingWindow) {
+	private void createAuxillaryPaneForFrame(Window frame, Component rootWindow) {
 		if (frame instanceof JFrame) {
 			JFrame jFrame = (JFrame) frame;
 			Container contentPane = jFrame.getContentPane();
@@ -749,13 +752,14 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 				centralComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
 			}
 
-			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(floatingWindow);
+			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
+			AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(bookmarkToolbarPane);
 			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
 
 			if (centralComponent != null) {
 				contentPane.remove(centralComponent);
 			}
-			contentPane.add(bookmarkToolbarPane, BorderLayout.CENTER);
+			contentPane.add(splitPane, BorderLayout.CENTER);
 		}
 	}
 
@@ -763,6 +767,34 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		BookmarkToolbarPane bookmarkToolbarPane = bookmarkToolbarPanes.remove(frame);
 		if (bookmarkToolbarPane != null) {
 			bookmarkToolbarPane.dispose();
+		}
+	}
+
+	void insertComponentIntoAllFloatingWindows(Function<JRootPane, JComponent> componentFactory) {
+		visitAllFloatingWindows(window -> {
+			final Container topLevelAncestor = window.getTopLevelAncestor();
+			if (topLevelAncestor instanceof RootPaneContainer) {
+				final JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
+				final JComponent component = componentFactory.apply(rootPane);
+				final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
+				final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+				if (centerComponent instanceof AuxillaryEditorSplitPane) {
+					((AuxillaryEditorSplitPane) centerComponent).insertComponentIntoSplitPane(component);
+				}
+			}
+		});
+	}
+
+	private void visitAllFloatingWindows(java.util.function.Consumer<FloatingWindow> visitor) {
+		visitAllFloatingWindowsRecursive(rootWindow, visitor);
+	}
+
+	private void visitAllFloatingWindowsRecursive(DockingWindow window, java.util.function.Consumer<FloatingWindow> visitor) {
+		if (window instanceof FloatingWindow) {
+			visitor.accept((FloatingWindow) window);
+		}
+		for (int i = 0; i < window.getChildWindowCount(); i++) {
+			visitAllFloatingWindowsRecursive(window.getChildWindow(i), visitor);
 		}
 	}
 

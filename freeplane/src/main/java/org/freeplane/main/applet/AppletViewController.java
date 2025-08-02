@@ -24,9 +24,11 @@ import java.awt.Component;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.function.Function;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
@@ -111,6 +113,13 @@ class AppletViewController extends FrameController implements IMapViewChangeList
 		mComponentInSplitPane = pMindMapComponent;
 		mapContentBox.add(pMindMapComponent, BorderLayout.SOUTH);
 		mapContentBox.revalidate();
+	}
+
+	@Override
+	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
+		final JRootPane rootPane = applet.getRootPane();
+		final JComponent component = componentFactory.apply(rootPane);
+		insertComponentIntoSplitPane(component);
 	}
 
 	@Override

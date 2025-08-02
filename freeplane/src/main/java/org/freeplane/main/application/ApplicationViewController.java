@@ -36,10 +36,12 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
@@ -97,6 +99,14 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
 		mSplitPane.insertComponentIntoSplitPane(pMindMapComponent);
+	}
+
+	@Override
+	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
+		final JRootPane rootPane = frame.getRootPane();
+		final JComponent component = componentFactory.apply(rootPane);
+		mSplitPane.insertComponentIntoSplitPane(component);
+		mapViewWindows.insertComponentIntoAllFloatingWindows(componentFactory);
 	}
 
 	@Override
@@ -200,10 +210,10 @@ class ApplicationViewController extends FrameController {
 		frame.getContentPane().setLayout(new BorderLayout());
 		// --- Set Note Window Location ---
 		// disable all hotkeys for JSplitPane
+		mapViewWindows = new MapViewDockingWindows();
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		mSplitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
 		mSplitPane.setResizeWeight(1.0d);
-		mapViewWindows = new MapViewDockingWindows();
 		Container contentPane = frame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
         contentPane.add(mSplitPane, BorderLayout.CENTER);

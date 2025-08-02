@@ -24,10 +24,12 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.io.IOException;
 import java.net.URL;
+import java.util.function.Function;
 
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLayeredPane;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
@@ -73,6 +75,11 @@ class DialogController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
 		throw new UnsupportedOperationException();
 	}
 

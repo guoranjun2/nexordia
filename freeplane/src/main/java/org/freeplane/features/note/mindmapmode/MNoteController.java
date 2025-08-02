@@ -20,6 +20,7 @@
 package org.freeplane.features.note.mindmapmode;
 
 import java.awt.Component;
+import java.awt.Frame;
 import java.awt.KeyboardFocusManager;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -280,7 +281,7 @@ public class MNoteController extends NoteController {
 
 	void showNotesPanel() {
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "true");
-		Controller.getCurrentModeController().getController().getViewController().insertComponentIntoSplitPane(getNotePanel());
+		Controller.getCurrentModeController().getController().getViewController().insertComponentIntoAllSplitPanes(this::getNotePanel);
 		getNotePanel().setVisible(true);
 		getNotePanel().revalidate();
 	}
@@ -338,7 +339,14 @@ public class MNoteController extends NoteController {
 	}
 
 	NotePanel getNotePanel() {
-		final JRootPane rootPane = ((RootPaneContainer)UITools.getCurrentFrame()).getRootPane();
+		final Frame currentFrame = UITools.getCurrentFrame();
+		if (!(currentFrame instanceof RootPaneContainer))
+			return null;
+		final JRootPane rootPane = ((RootPaneContainer)currentFrame).getRootPane();
+		return getNotePanel(rootPane);
+	}
+
+	NotePanel getNotePanel(JRootPane rootPane) {
 		NotePanel notePanel = (NotePanel) rootPane.getClientProperty(NotePanel.class);
 		if (notePanel == null) {
 			notePanel = new NotePanel(noteManager, new NoteDocumentListener());

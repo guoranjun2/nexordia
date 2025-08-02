@@ -25,9 +25,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JRootPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.util.Hyperlink;
@@ -59,6 +61,8 @@ public interface ViewController {
 	public void init(Controller controller);
 
 	public void insertComponentIntoSplitPane(JComponent noteViewerComponent);
+
+	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory);
 
 	public boolean isMenubarVisible();
 
