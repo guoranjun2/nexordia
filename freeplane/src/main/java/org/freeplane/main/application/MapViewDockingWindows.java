@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.swing.BorderFactory;
@@ -744,26 +745,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	}
 
 
-	void insertComponentIntoAllFloatingWindows(Function<JRootPane, JComponent> componentFactory) {
-		visitAllFloatingWindows(window -> {
-			final Container topLevelAncestor = window.getTopLevelAncestor();
-			if (topLevelAncestor instanceof RootPaneContainer) {
-				final JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
-				final JComponent component = componentFactory.apply(rootPane);
-				final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
-				final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
-				if (centerComponent instanceof AuxillaryEditorSplitPane) {
-					((AuxillaryEditorSplitPane) centerComponent).insertComponentIntoSplitPane(component);
-				}
-			}
-		});
-	}
-
-	private void visitAllFloatingWindows(java.util.function.Consumer<FloatingWindow> visitor) {
+	void visitAllFloatingWindows(Consumer<FloatingWindow> visitor) {
 		visitAllFloatingWindowsRecursive(rootWindow, visitor);
 	}
 
-	private void visitAllFloatingWindowsRecursive(DockingWindow window, java.util.function.Consumer<FloatingWindow> visitor) {
+	private void visitAllFloatingWindowsRecursive(DockingWindow window, Consumer<FloatingWindow> visitor) {
 		if (window instanceof FloatingWindow) {
 			visitor.accept((FloatingWindow) window);
 		}

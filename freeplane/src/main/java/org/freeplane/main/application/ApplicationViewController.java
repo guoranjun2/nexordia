@@ -111,7 +111,20 @@ class ApplicationViewController extends FrameController {
 		final JRootPane rootPane = frame.getRootPane();
 		final JComponent component = componentFactory.apply(rootPane);
 		mSplitPane.insertComponentIntoSplitPane(component);
-		mapViewWindows.insertComponentIntoAllFloatingWindows(componentFactory);
+		mapViewWindows.visitAllFloatingWindows(this::insertComponentIntoFloatingWindow);
+	}
+
+	private void insertComponentIntoFloatingWindow(JComponent windowComponent) {
+		final Container topLevelAncestor = windowComponent.getTopLevelAncestor();
+		if (topLevelAncestor instanceof RootPaneContainer) {
+			final JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
+			final JComponent component = activeComponentFactory.apply(rootPane);
+			final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
+			final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+			if (centerComponent instanceof AuxillaryEditorSplitPane) {
+				((AuxillaryEditorSplitPane) centerComponent).insertComponentIntoSplitPane(component);
+			}
+		}
 	}
 
 	void createAuxillaryPaneForFloatingWindow(Window frame, Component rootWindow) {

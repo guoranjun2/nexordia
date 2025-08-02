@@ -23,10 +23,10 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 
 class AuxillaryEditorSplitPane extends JSplitPane {
-	private static final String SPLIT_PANE_LAST_LEFT_POSITION = "split_pane_last_left_position";
-	private static final String SPLIT_PANE_LAST_POSITION = "split_pane_last_position";
-	private static final String SPLIT_PANE_LAST_RIGHT_POSITION = "split_pane_last_right_position";
-	private static final String SPLIT_PANE_LAST_TOP_POSITION = "split_pane_last_top_position";
+	private static final String AUX_SPLIT_PANE_LAST_LEFT_POSITION = "aux_split_pane_last_left_position";
+	private static final String AUX_SPLIT_PANE_LAST_POSITION = "aux_split_pane_last_position";
+	private static final String AUX_SPLIT_PANE_LAST_RIGHT_POSITION = "aux_split_pane_last_right_position";
+	private static final String AUX_SPLIT_PANE_LAST_TOP_POSITION = "aux_split_pane_last_top_position";
 
 
 	private static final long serialVersionUID = 1L;
@@ -60,7 +60,6 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			super.setLayout(new SplitPaneLayoutManagerDecorator(layout));
 	}
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		// --- Save the Component --
 		auxillaryComponent = pMindMapComponent;
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 		setLeftComponent(null);
@@ -94,21 +93,21 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	}
 	private void resetDividerLocation() {
-		int lastSplitPanePosition = -1;
+		double lastSplitPanePosition = Double.NaN;
 		if ("right".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_RIGHT_POSITION, -1);
+			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_RIGHT_POSITION, Double.NaN);
 		}
 		else if ("left".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_LEFT_POSITION, -1);
+			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_LEFT_POSITION, Double.NaN);
 		}
 		else if ("top".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_TOP_POSITION, -1);
+			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_TOP_POSITION, Double.NaN);
 		}
 		else if ("bottom".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_POSITION, -1);
+			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
 		}
 
-		if (lastSplitPanePosition != -1) {
+		if (!Double.isNaN(lastSplitPanePosition)) {
 			setDividerLocation(lastSplitPanePosition);
 			setDividerLocation(lastSplitPanePosition);
 		}
@@ -119,17 +118,28 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 
 	void saveSplitPanePosition() {
+		double proportionalLocation = getProportionalDividerLocation();
 		if ("right".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_RIGHT_POSITION, "" + getLastDividerLocation());
+			resourceController.setProperty(AUX_SPLIT_PANE_LAST_RIGHT_POSITION, String.valueOf(proportionalLocation));
 		}
 		else if ("left".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_LEFT_POSITION, "" + getLastDividerLocation());
+			resourceController.setProperty(AUX_SPLIT_PANE_LAST_LEFT_POSITION, String.valueOf(proportionalLocation));
 		}
 		else if ("top".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_TOP_POSITION, "" + getLastDividerLocation());
+			resourceController.setProperty(AUX_SPLIT_PANE_LAST_TOP_POSITION, String.valueOf(proportionalLocation));
 		}
-		else { // "bottom".equals(mLocationPreferenceValue) also covered
-			resourceController.setProperty(SPLIT_PANE_LAST_POSITION, "" + getLastDividerLocation());
+		else {
+			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(proportionalLocation));
+		}
+	}
+
+	public double getProportionalDividerLocation() {
+		if (getOrientation() == VERTICAL_SPLIT) {
+			int height = getHeight() - getDividerSize();
+			return height > 0 ? (double) getDividerLocation() / height : 0.0;
+		} else {
+			int width = getWidth() - getDividerSize();
+			return width > 0 ? (double) getDividerLocation() / width : 0.0;
 		}
 	}
 
