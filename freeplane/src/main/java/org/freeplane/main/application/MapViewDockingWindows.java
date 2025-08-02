@@ -133,9 +133,10 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private byte[] emptyConfigurations;
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
-	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
+	private final ApplicationViewController applicationViewController;
 
-	public MapViewDockingWindows() {
+	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
+		this.applicationViewController = applicationViewController;
 		viewSerializer = new MapViewSerializer();
 		rootWindow = new RootWindow(viewSerializer);
 		configureDefaultDockingWindowProperties();
@@ -201,7 +202,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
 						((Window)topLevelAncestor).setIconImages(iconImages);
 
-						createAuxillaryPaneForFrame((Window) topLevelAncestor, (FloatingWindow) addedWindow);
+						applicationViewController.createAuxillaryPaneForFloatingWindow((Window) topLevelAncestor, addedWindow);
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -233,7 +234,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                 else if(removedWindow instanceof FloatingWindow) {
                     final Container topLevelAncestor = removedWindow.getTopLevelAncestor();
                     if(topLevelAncestor instanceof Window) {
-                        removeBookmarkToolbarPaneForFrame((Window) topLevelAncestor);
+                        applicationViewController.removeAuxillaryPaneForFloatingWindow((Window) topLevelAncestor);
                     }
                 }
             }
@@ -742,33 +743,6 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		return orderedMapViews;
 	}
 
-	private void createAuxillaryPaneForFrame(Window frame, Component rootWindow) {
-		if (frame instanceof JFrame) {
-			JFrame jFrame = (JFrame) frame;
-			Container contentPane = jFrame.getContentPane();
-
-			Component centralComponent = null;
-			if (contentPane.getLayout() instanceof BorderLayout) {
-				centralComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
-			}
-
-			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
-			AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(bookmarkToolbarPane);
-			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
-
-			if (centralComponent != null) {
-				contentPane.remove(centralComponent);
-			}
-			contentPane.add(splitPane, BorderLayout.CENTER);
-		}
-	}
-
-	private void removeBookmarkToolbarPaneForFrame(Window frame) {
-		BookmarkToolbarPane bookmarkToolbarPane = bookmarkToolbarPanes.remove(frame);
-		if (bookmarkToolbarPane != null) {
-			bookmarkToolbarPane.dispose();
-		}
-	}
 
 	void insertComponentIntoAllFloatingWindows(Function<JRootPane, JComponent> componentFactory) {
 		visitAllFloatingWindows(window -> {

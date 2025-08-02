@@ -27,6 +27,7 @@ import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
@@ -68,6 +70,8 @@ class ApplicationViewController extends FrameController {
 	final private NavigationNextMapAction navigationNextMap;
 	final private NavigationPreviousMapAction navigationPreviousMap;
 	private MapViewDockingWindows mapViewWindows;
+	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
+	private Function<JRootPane, JComponent> activeComponentFactory;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame) {
 		super(controller, mapViewController, "");
@@ -103,10 +107,50 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
+		activeComponentFactory = componentFactory;
 		final JRootPane rootPane = frame.getRootPane();
 		final JComponent component = componentFactory.apply(rootPane);
 		mSplitPane.insertComponentIntoSplitPane(component);
 		mapViewWindows.insertComponentIntoAllFloatingWindows(componentFactory);
+	}
+
+	void createAuxillaryPaneForFloatingWindow(Window frame, Component rootWindow) {
+		if (frame instanceof JFrame) {
+			JFrame jFrame = (JFrame) frame;
+			Container contentPane = jFrame.getContentPane();
+
+			Component centralComponent = null;
+			if (contentPane.getLayout() instanceof BorderLayout) {
+				centralComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+			}
+
+			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
+			AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(bookmarkToolbarPane);
+			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
+
+			if (centralComponent != null) {
+				contentPane.remove(centralComponent);
+			}
+			contentPane.add(splitPane, BorderLayout.CENTER);
+
+			insertActiveComponentsIntoSplitPane(splitPane, frame);
+		}
+	}
+
+	private void insertActiveComponentsIntoSplitPane(AuxillaryEditorSplitPane splitPane, Window frame) {
+		if (activeComponentFactory != null && frame instanceof RootPaneContainer) {
+			final JRootPane rootPane = ((RootPaneContainer) frame).getRootPane();
+			final JComponent component = activeComponentFactory.apply(rootPane);
+			splitPane.insertComponentIntoSplitPane(component);
+		}
+	}
+
+
+	void removeAuxillaryPaneForFloatingWindow(Window frame) {
+		BookmarkToolbarPane bookmarkToolbarPane = bookmarkToolbarPanes.remove(frame);
+		if (bookmarkToolbarPane != null) {
+			bookmarkToolbarPane.dispose();
+		}
 	}
 
 	@Override
@@ -141,6 +185,7 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void removeSplitPane() {
+		activeComponentFactory = null;
 		mSplitPane.removeSplitPane();
 	}
 
@@ -210,7 +255,7 @@ class ApplicationViewController extends FrameController {
 		frame.getContentPane().setLayout(new BorderLayout());
 		// --- Set Note Window Location ---
 		// disable all hotkeys for JSplitPane
-		mapViewWindows = new MapViewDockingWindows();
+		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		mSplitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
 		mSplitPane.setResizeWeight(1.0d);
