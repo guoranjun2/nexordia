@@ -43,6 +43,31 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - `src/viewer/resources` - Viewer-specific resources
 - `src/external/resources` - External resources (templates, XSLT transformations)
 
+### Project Directory Structure
+**CRITICAL**: From the git repository root (where development happens), the structure is:
+
+```
+. (git repository root - where Claude Code starts)
+├── freeplane/                               ← Main Gradle subproject  
+│   ├── src/editor/resources/translations/   ← Translation files location
+│   ├── src/viewer/resources/
+│   └── src/main/java/
+├── freeplane_api/                           ← API subproject  
+├── freeplane_framework/                     ← Framework subproject
+├── JOrtho_0.4_freeplane/                    ← Spell checking component
+└── other subprojects...
+```
+
+**Key Paths from Git Root**:
+- **Translation files**: `freeplane/src/editor/resources/translations/Resources_*.properties`
+- **Main source**: `freeplane/src/main/java/`
+- **Build output**: `BIN/` (global build directory)
+
+**Path Usage**:
+- All development paths are relative to git repository root
+- The `freeplane/` subdirectory contains the main application subproject
+- Absolute paths vary between installations and should not be used in committed files
+
 ### Build Output
 - `BIN/` - Global build output directory containing the complete application
 - Plugin JARs are copied to `BIN/plugins/{plugin.id}/lib/`
@@ -92,9 +117,56 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Core module exports packages for plugin consumption
 
 ### Translation System
-- Translation files in `src/*/resources/translations/Resources_*.properties`
-- Use `check_translation` and `format_translation` gradle tasks
-- Support for 25+ languages including RTL languages
+- **Translation files location**: `freeplane/src/editor/resources/translations/Resources_*.properties` (relative to git root)
+- **Gradle tasks**: `gradle check_translation` and `gradle format_translation` 
+- **Language support**: 25+ languages including RTL languages (Arabic, Hebrew)
+
+#### Translation File Encoding
+- **CRITICAL**: Properties files use ISO-8859-1 encoding with Unicode escapes
+- **Non-ASCII characters**: Must be Unicode-escaped (e.g., `\u041E` for Cyrillic О)
+- **Examples**: 
+  - Russian: `OptionPanel.enabled=\u0412\u043A\u043B\u044E\u0447\u0435\u043D\u043E`
+  - Chinese: `OptionPanel.immediate=\u7ACB\u5373`
+  - Arabic: `OptionPanel.disabled=\u0645\u0639\u0637\u0644`
+- **Tool requirement**: Use tools that properly handle Unicode escaping for non-Latin scripts
+- **Verification**: Check existing translations in target language for proper escape patterns
+
+#### Translation File Encoding Requirements
+- **Properties files MUST use ISO-8859-1 encoding** with Unicode escapes for non-ASCII characters
+- **All non-ASCII characters must be Unicode-escaped**: Use `\uXXXX` format (e.g., `\u041E` for Cyrillic О)
+- **Arabic text example**: `مفعل` becomes `\u0645\u0641\u0639\u0644`
+- **Accented characters example**: `Activé` becomes `Activ\u00E9`
+
+#### MANDATORY: Unicode Conversion Tool Usage
+- **ALWAYS use `native2ascii` tool** for converting UTF-8 text to proper Unicode escapes
+- **NEVER use generic text editors** or automated translation tools directly on .properties files
+- **Required workflow**: UTF-8 temp file → `native2ascii input.txt output.properties` → merge into target file
+- **Validation step**: After changes, verify with `file *.properties` (must show "ASCII text", not binary)
+- **Corruption prevention**: Prevents double UTF-8 encoding, broken escapes, and null byte injection
+- **Always run**: `gradle format_translation` after any translation file modifications
+
+**Why Critical**: Automated tools without proper Java properties support cause systematic Unicode corruption (null bytes, double encoding, broken escapes) that affects all translation files and breaks Weblate integration.
+
+#### MANDATORY: Automated Translation Validation
+**For any automated translation work (Claude Code, translation tools), ALWAYS validate after editing .properties files:**
+
+```bash
+# 1. Check file integrity (must be ASCII text)
+file freeplane/src/editor/resources/translations/Resources_*.properties | grep -v "ASCII text"
+
+# 2. Check for broken Unicode escapes  
+cd freeplane/src/editor/resources/translations/
+grep -l 'u[0-9][0-9][0-9][0-9]' *.properties
+
+# 3. Validate git diff before commit
+git diff | head -20  # Verify only expected changes, no deletions
+```
+
+**Validation Rules for Automated Tools:**
+- **STOP immediately** if any file shows as binary/HTML instead of ASCII text
+- **STOP immediately** if broken Unicode patterns found (u0159 instead of \u0159)
+- **STOP immediately** if git diff shows unexpected content deletions
+- **Always run** `gradle format_translation` after any translation changes
 
 #### Translation Key Conventions
 - **OptionPanel prefix**: UI preference keys use `OptionPanel.{key}={value}` format
@@ -145,6 +217,13 @@ Freeplane is a Java-based mind mapping application built with OSGi architecture 
 - Follow existing patterns rather than reinventing
 - Check method signatures carefully (compilation catches parameter mismatches)
 - Use existing controller methods rather than lower-level operations
+
+### Java Code Quality Standards
+- **Reduce visibility**: Use package-private classes for internal UI components, only expose what clients need
+- **Static organization**: Static blocks first, constants grouped after, inner classes positioned strategically
+- **Inner class optimization**: Static when no outer instance access needed, non-static when accessing outer fields
+- **Migration pattern**: Clean separation of initialization logic from business logic using static blocks with helper methods at bottom
+- **Field organization**: Instance fields grouped logically after constants, methods ordered by visibility
 
 ### Logging System
 - **Freeplane uses proprietary logging utilities** (not standard Java logging)
