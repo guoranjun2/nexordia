@@ -98,7 +98,7 @@ public class SurveyRunner {
 				
 			}
 		});
-		final int userDecision = JOptionPane.showOptionDialog(UITools.getCurrentFrame(), messageComponent, title, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION,
+		final int userDecision = JOptionPane.showOptionDialog(UITools.getFrame(), messageComponent, title, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION,
 				null,
 				options, remindMeLater);
 		switch(userDecision) {

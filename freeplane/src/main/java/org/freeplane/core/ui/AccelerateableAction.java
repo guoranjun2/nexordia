@@ -63,7 +63,7 @@ public class AccelerateableAction implements IFreeplaneAction {
         String text = TextUtils.getText(SET_ACCELERATOR_ON_NEXT_CLICK_ACTION);
 		if(accelerator != null)
 			text = TextUtils.format("SetAccelerator.keystrokeDetected", toString(accelerator)) + "\n" + text;
-		final Component frame = Controller.getCurrentController().getViewController().getMenuComponent();
+		final Component frame = Controller.getCurrentController().getViewController().getCurrentRootComponent();
 		setAcceleratorOnNextClickActionDialog = UITools.createCancelDialog(frame, title, text);
 		setAcceleratorOnNextClickActionDialog.addComponentListener(new ComponentAdapter() {
 			@Override
@@ -94,7 +94,7 @@ public class AccelerateableAction implements IFreeplaneAction {
         String title = TextUtils.getText("NewNodeLinkedToMenu.dialogTitle");
         String doneButtonText = TextUtils.getText("done");
         String text  = TextUtils.format("NewNodeLinkedToMenu.dialogText", doneButtonText);
-        final Component frame = Controller.getCurrentController().getViewController().getMenuComponent();
+        final Component frame = Controller.getCurrentController().getViewController().getCurrentRootComponent();
         newNodeLinkedToMenuItemDialog = UITools.createCancelDialog(frame, title, text, doneButtonText);
         newNodeLinkedToMenuItemDialog.addComponentListener(new ComponentAdapter() {
             @Override

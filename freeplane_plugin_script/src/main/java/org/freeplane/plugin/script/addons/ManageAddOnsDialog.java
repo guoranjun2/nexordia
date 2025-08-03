@@ -33,7 +33,7 @@ public class ManageAddOnsDialog extends JDialog {
 	private JTabbedPane tabbedPane;
 
 	public ManageAddOnsDialog(final List<AddOnProperties> addOns) {
-		super((Frame) UITools.getMenuComponent(), TextUtils.getText("ManageAddOnsAction.text"), true);
+		super((Frame) UITools.getCurrentRootComponent(), TextUtils.getText("ManageAddOnsAction.text"), true);
 		// stolen from FileRevisionsDialog - no idea if actually needed
 		if (getOwner() != null) {
 			final Window[] ownedWindows = getOwner().getOwnedWindows();

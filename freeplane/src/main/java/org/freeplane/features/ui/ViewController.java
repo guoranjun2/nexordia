@@ -137,7 +137,7 @@ public interface ViewController {
 
 	public void nextMapView();
 	public Component getCurrentRootComponent();
-	public Component getMenuComponent();
+
 	public List<? extends Component> getMapViewVector();
 
 	public void openMapNextView();

@@ -140,7 +140,7 @@ class SignedScriptHandler {
 
 	public String signScript(final String pScript) {
 		final ScriptContents content = new ScriptContents(pScript);
-		final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getCurrentFrame(), false);
+		final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getFrame(), false);
 		pwdDialog.setModal(true);
 		pwdDialog.setVisible(true);
 		if (pwdDialog.getResult() == EnterPasswordDialog.CANCEL) {

@@ -13,12 +13,12 @@ public class SwingPasswordStrategy implements PasswordStrategy {
     private boolean isCancelled;
 
     public StringBuilder getPassword(NodeModel node) {
-        final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getCurrentFrame(), false);
+        final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getFrame(), false);
 		return getPassword(pwdDialog, node);
     }
 
     public StringBuilder getPasswordWithConfirmation(NodeModel node) {
-        final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getCurrentFrame(), true);
+        final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getFrame(), true);
 		return getPassword(pwdDialog, node);
     }
 

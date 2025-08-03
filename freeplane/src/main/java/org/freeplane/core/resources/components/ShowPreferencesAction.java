@@ -82,7 +82,7 @@ public class ShowPreferencesAction extends AFreeplaneAction {
 			}
 		}
 		if(dialog == null){
-			dialog= createDialog((Window) UITools.getMenuComponent());
+			dialog= createDialog((Window) UITools.getCurrentRootComponent());
 		}
 		dialog.setResizable(true);
 		dialog.setUndecorated(false);
@@ -97,7 +97,7 @@ public class ShowPreferencesAction extends AFreeplaneAction {
 					ResourceController.getResourceController().setProperty(key, newProperty);
 				}
 				if (propertiesChanged) {
-					JOptionPane.showMessageDialog(UITools.getMenuComponent(), TextUtils
+					JOptionPane.showMessageDialog(UITools.getCurrentRootComponent(), TextUtils
 					    .getText("option_changes_may_require_restart"));
 					ResourceController.getResourceController().saveProperties();
 					UITools.resetMenuBarOnMac();

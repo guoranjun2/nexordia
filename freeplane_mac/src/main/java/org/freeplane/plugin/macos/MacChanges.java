@@ -174,7 +174,7 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 			AFreeplaneAction action = modeController.getAction("ShowPreferencesAction");
 			if(action == null)
 				return;
-			Component menuComponent = UITools.getMenuComponent();
+			Component menuComponent = UITools.getCurrentRootComponent();
 			if(menuComponent == null || ! menuComponent.isShowing())
 				return;
 			action.actionPerformed(null);

@@ -586,7 +586,7 @@ public abstract class AFilterComposerDialog extends JDialog implements IMapViewC
 	private final ConditionalStyleModel context;
 
 	public AFilterComposerDialog(String title, boolean modal, Variant variant, ConditionalStyleModel context) {
-		super(UITools.getCurrentFrame(), title, modal);
+		super(UITools.getFrame(), title, modal);
 		this.context = context;
 		filterController = FilterController.getCurrentFilterController();
 		editor = new FilterConditionEditor(filterController, variant);

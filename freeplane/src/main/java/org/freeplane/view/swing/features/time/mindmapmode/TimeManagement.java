@@ -378,7 +378,7 @@ class TimeManagement implements PropertyChangeListener, IMapSelectionListener {
 			return;
 		}
 		TimeManagement.sCurrentlyOpenTimeManagement = this;
-		dialog = new JDialog(UITools.getCurrentFrame(), false /*not modal*/);
+		dialog = new JDialog(UITools.getFrame(), false /*not modal*/);
 		final JTimePanel timePanel =createTimePanel(dialog, true, 4);
 		nodeSelectionListener = new INodeSelectionListener() {
 			@Override

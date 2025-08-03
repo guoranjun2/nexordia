@@ -535,7 +535,7 @@ public class UserInputListenerFactory implements IUserInputListenerFactory {
 				LogUtils.warn(e);
 				String myMessage = TextUtils.format("menu_error", genericStructure.getPath(), e.getMessage());
 				UITools.backOtherWindows();
-				JOptionPane.showMessageDialog(UITools.getMenuComponent(), myMessage, "Freeplane", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(UITools.getCurrentRootComponent(), myMessage, "Freeplane", JOptionPane.ERROR_MESSAGE);
 				System.exit(-1);
 			}
 			throw new RuntimeException("Error in menu resource " + menuStructureResource, e);

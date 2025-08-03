@@ -108,7 +108,7 @@ public class EditStylesAction extends AFreeplaneAction {
 			Controller.setCurrentController ((Controller) dialog.getRootPane().getClientProperty(Controller.class));
 			return;
 		}
-		Frame parentFrame = UITools.getCurrentFrame();
+		Frame parentFrame = UITools.getFrame();
 		dialog = new JDialog(parentFrame);
 		dialog.applyComponentOrientation(parentFrame.getComponentOrientation());
 		dialog.setLocationRelativeTo(mainController.getViewController().getCurrentRootComponent());

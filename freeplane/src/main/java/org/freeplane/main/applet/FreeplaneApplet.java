@@ -97,7 +97,7 @@ public class FreeplaneApplet extends JApplet {
 				appletLock.unlock();
 				JOptionPane.getFrameForComponent(this).getMostRecentFocusOwner().requestFocus();
 				if(currentController != null){
-					((FreeplaneApplet)(currentController.getViewController().getMenuComponent())).getGlassPane().setVisible(true);
+					((FreeplaneApplet)(currentController.getViewController().getCurrentRootComponent())).getGlassPane().setVisible(true);
 				}
 			}
 			setVisible(false);

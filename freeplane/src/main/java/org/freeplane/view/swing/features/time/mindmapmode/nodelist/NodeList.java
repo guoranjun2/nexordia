@@ -552,7 +552,7 @@ class NodeList implements IExtension {
 		);
 
 		sorter = new TableSorter(mFlatNodeTableFilterModel);
-		dialog = new JDialog(UITools.getCurrentFrame(), modal /* modal */);
+		dialog = new JDialog(UITools.getFrame(), modal /* modal */);
 		dialog.setTitle(TextUtils.format(windowTitle, mapTitle));
 		dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		final WindowAdapter windowListener = new WindowAdapter() {

@@ -355,7 +355,7 @@ public class LastOpenedList implements IMapViewChangeListener, IMapChangeListene
 			LogUtils.warn(ex);
 			final String message = TextUtils.format("remove_file_from_list_on_error", recentFile.restorable);
 			UITools.showFrame();
-			final Component frame = UITools.getMenuComponent();
+			final Component frame = UITools.getCurrentRootComponent();
 			JTextArea messageArea = new JTextArea(message);
 			messageArea.setLineWrap(true);
 			messageArea.setWrapStyleWord(true);

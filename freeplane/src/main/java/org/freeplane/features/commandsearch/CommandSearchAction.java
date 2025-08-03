@@ -68,7 +68,7 @@ public class CommandSearchAction extends AFreeplaneAction {
     }
 
     private void createDialog() {
-        commandSearchDialog = new CommandSearchDialog(UITools.getCurrentFrame(), sharedSearchHistory);
+        commandSearchDialog = new CommandSearchDialog(UITools.getFrame(), sharedSearchHistory);
         commandSearchDialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {

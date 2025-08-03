@@ -391,7 +391,7 @@ public class MEdgeController extends EdgeController {
 		jscrollpane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		jscrollpane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 600));
 		String title = TextUtils.getText("editEdgeColors");
-		final int status = JOptionPane.showConfirmDialog(UITools.getCurrentFrame(), jscrollpane, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		final int status = JOptionPane.showConfirmDialog(UITools.getFrame(), jscrollpane, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		switch(status)
 		{
 		case JOptionPane.OK_OPTION:

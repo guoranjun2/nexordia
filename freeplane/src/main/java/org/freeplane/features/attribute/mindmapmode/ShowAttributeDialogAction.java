@@ -43,7 +43,7 @@ class ShowAttributeDialogAction extends AFreeplaneAction {
 
 	public void actionPerformed(final ActionEvent e) {
 		if (frame == null) {
-			frame = UITools.getCurrentFrame();
+			frame = UITools.getFrame();
 		}
 		if (getAttributeDialog().isVisible() == false && Controller.getCurrentController().getMap() != null) {
 			getAttributeDialog().pack();

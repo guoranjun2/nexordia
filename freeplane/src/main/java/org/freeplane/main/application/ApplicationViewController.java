@@ -340,9 +340,9 @@ class ApplicationViewController extends FrameController {
 	public void setFullScreen(boolean fullScreen) {
 		super.setFullScreen(fullScreen);
 		if(fullScreen)
-			mapViewWindows.setTabAreaInvisiblePolicy((JFrame) UITools.getCurrentRootComponent());
+			mapViewWindows.setTabAreaInvisiblePolicy();
 		else
-			mapViewWindows.setTabAreaVisiblePolicy((JFrame)UITools.getCurrentRootComponent());
+			mapViewWindows.setTabAreaVisiblePolicy();
 	}
 
 	@Override
@@ -351,10 +351,6 @@ class ApplicationViewController extends FrameController {
 		return mapViewComponent != null ? SwingUtilities.getRoot(mapViewComponent) : frame;
 	}
 
-	@Override
-	public Component getMenuComponent() {
-		return frame;
-	}
 
 	@Override
 	public List<? extends Component> getMapViewVector() {

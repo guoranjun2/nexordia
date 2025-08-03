@@ -131,7 +131,7 @@ public class HotKeyInfoAction extends AFreeplaneAction{
 		UITools.setScrollbarIncrement(scrollPane);
 		scrollPane.setPreferredSize(new Dimension(preferredSize.width, 600));
 		JOptionPane pane = new JOptionPane(scrollPane, JOptionPane.INFORMATION_MESSAGE);
-		JDialog dialog = pane.createDialog(UITools.getMenuComponent(), title);
+		JDialog dialog = pane.createDialog(UITools.getCurrentRootComponent(), title);
 		 // the line below is added to the example from the docs
 		 dialog.setModal(false); // this says not to block background components
 		dialog.setResizable(true);

@@ -310,7 +310,7 @@ class ScriptEditorPanel extends JDialog {
 
 	public ScriptEditorPanel( final IScriptModel pScriptModel,
 	                         final boolean pHasNewScriptFunctionality) {
-		super(UITools.getCurrentFrame(), false /* non modal */);
+		super(UITools.getFrame(), false /* non modal */);
 		mScriptModel = pScriptModel;
 		String scriptTitle = pScriptModel.getTitle();
 		this.setTitle(TextUtils.getText("plugins/ScriptEditor/window.title") +

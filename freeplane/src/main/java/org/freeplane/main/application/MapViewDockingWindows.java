@@ -189,7 +189,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 					final DockingWindowProperties windowProperties = addedWindow.getWindowProperties();
 					windowProperties.setDockEnabled(false);
 					windowProperties.setUndockEnabled(false);
-					if(UITools.getCurrentFrame().isResizable())
+					if(UITools.getFrame().isResizable())
 						setTabAreaVisiblePolicy((TabWindow) addedWindow);
 					else
 						setTabAreaPolicy((TabWindow) addedWindow, TabAreaVisiblePolicy.NEVER);
@@ -198,7 +198,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 					final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
 					if(topLevelAncestor instanceof Window){
 						if(iconColorReplacer == null)
-							iconColorReplacer = new IconColorReplacer(((Window) UITools.getMenuComponent()).getIconImages());
+							iconColorReplacer = new IconColorReplacer(((Window) UITools.getCurrentRootComponent()).getIconImages());
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
 						((Window)topLevelAncestor).setIconImages(iconImages);
 
@@ -741,9 +741,8 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		tabAreaProperties.setTabAreaVisiblePolicy(tabAreaVisiblePolicy);
 	}
 
-	public void setTabAreaVisiblePolicy(JFrame frame){
-		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow : frame.getContentPane().getComponent(0));
-		setTabAreaVisiblePolicies(window);
+	public void setTabAreaVisiblePolicy(){
+		setTabAreaVisiblePolicies(rootWindow);
 	}
 
 	private void setTabAreaVisiblePolicies(DockingWindow parentWindow) {
@@ -756,9 +755,8 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		}
 	}
 
-	public void setTabAreaInvisiblePolicy(JFrame frame){
-		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow : frame.getContentPane().getComponent(0));
-		setTabAreaInvisiblePolicies(window);
+	public void setTabAreaInvisiblePolicy(){
+		setTabAreaInvisiblePolicies(rootWindow);
 	}
 
 	private void setTabAreaInvisiblePolicies(DockingWindow parentWindow) {

@@ -95,7 +95,7 @@ public class OptionalDontShowMeAgainDialog {
 		//		this.controller = controller;
 		Controller controller = Controller.getCurrentController();
         this.explanationId = explanationId != null ? explanationId : messageId + ".explanation";
-		this.parentComponent = UITools.getCurrentFrame();
+		this.parentComponent = UITools.getFrame();
 		final IMapSelection selection = controller.getSelection();
 		if (selection != null) {
 			this.node = selection.getSelected();

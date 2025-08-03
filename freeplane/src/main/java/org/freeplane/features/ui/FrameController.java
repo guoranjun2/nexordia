@@ -258,7 +258,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	private JComponent getMainContentPane() {
-		return (JComponent) ((RootPaneContainer) getMenuComponent()).getContentPane();
+		return (JComponent) ((RootPaneContainer) getCurrentRootComponent()).getContentPane();
 	}
 
 	@Override
@@ -298,7 +298,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	protected boolean isMenuComponentInFullScreenMode() {
-		return isFullScreenEnabled(getMenuComponent());
+		return isFullScreenEnabled(getCurrentRootComponent());
 	}
 
 	@Override

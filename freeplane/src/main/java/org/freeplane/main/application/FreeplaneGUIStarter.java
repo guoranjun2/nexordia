@@ -310,7 +310,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 
 			private void showFrame() {
 				splash.toBack();
-				frame = (JFrame) viewController.getMenuComponent();
+				frame = (JFrame) viewController.getCurrentRootComponent();
 				final int extendedState = frame.getExtendedState();
 				contentPane = frame.getContentPane();
 				contentPane.setVisible(false);
