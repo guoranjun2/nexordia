@@ -19,23 +19,19 @@ import javax.swing.SwingUtilities;
 import org.freeplane.core.resources.ResourceController;
 
 class AuxillaryEditorSplitPane extends JSplitPane {
-	private static final String AUX_SPLIT_PANE_LAST_LEFT_POSITION = "aux_split_pane_last_left_position";
 	private static final String AUX_SPLIT_PANE_LAST_POSITION = "aux_split_pane_last_position";
-	private static final String AUX_SPLIT_PANE_LAST_RIGHT_POSITION = "aux_split_pane_last_right_position";
-	private static final String AUX_SPLIT_PANE_LAST_TOP_POSITION = "aux_split_pane_last_top_position";
 
 
 	private static final long serialVersionUID = 1L;
 	private JComponent auxillaryComponent;
 	private Component mainComponent;
 	/** Contains the value where the Note Window should be displayed (right, left, top, bottom) */
-	private String auxillaryComponentLocation;
+	private static String auxillaryComponentLocation = ResourceController.getResourceController().getProperty("note_location", "bottom");;
 	final private ApplicationResourceController resourceController;
 
 
 	public AuxillaryEditorSplitPane(Component mainComponent) {
 		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
-		auxillaryComponentLocation = resourceController.getProperty("note_location", "bottom");
 		this.mainComponent = mainComponent;
 		setLeftComponent(mainComponent);
 		setRightComponent(null);
@@ -90,14 +86,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 	private void resetDividerLocation() {
 		double lastSplitPanePosition = Double.NaN;
-		if ("right".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_RIGHT_POSITION, Double.NaN);
-		}
-		else if ("left".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_LEFT_POSITION, Double.NaN);
-		}
-		else if ("top".equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_TOP_POSITION, Double.NaN);
+		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
+			lastSplitPanePosition = 1.0 - resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
 		}
 		else if ("bottom".equals(auxillaryComponentLocation)) {
 			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
@@ -115,14 +105,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	void saveSplitPanePosition() {
 		double proportionalLocation = getProportionalDividerLocation();
-		if ("right".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_RIGHT_POSITION, String.valueOf(proportionalLocation));
-		}
-		else if ("left".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_LEFT_POSITION, String.valueOf(proportionalLocation));
-		}
-		else if ("top".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_TOP_POSITION, String.valueOf(proportionalLocation));
+		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
+			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(1.0 - proportionalLocation));
 		}
 		else {
 			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(proportionalLocation));
@@ -143,7 +127,7 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		if(location == null || location.equals(auxillaryComponentLocation))
 			return;
 		saveSplitPanePosition();
-		this.auxillaryComponentLocation = resourceController.getProperty("note_location");
+		auxillaryComponentLocation = resourceController.getProperty("note_location");
 		if(getLeftComponent() != null && getRightComponent() != null){
 			insertComponentIntoSplitPane(auxillaryComponent);
 		}

@@ -135,7 +135,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
 	private final ApplicationViewController applicationViewController;
-	private java.awt.Dimension capturedCenterSize = null;
+	private java.awt.Dimension capturedWindowSize = null;
 
 	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
 		this.applicationViewController = applicationViewController;
@@ -251,12 +251,6 @@ class MapViewDockingWindows implements IMapViewChangeListener {
             }
 		});
 
-		new InternalFrameAdapter() {
-			@Override
-            public void internalFrameClosing(InternalFrameEvent e) {
-            }
-		};
-
 		addTabsPopupMenu(rootWindow);
 
 	}
@@ -265,27 +259,19 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		Container topLevelAncestor = removedFromWindow.getTopLevelAncestor();
 		if (topLevelAncestor instanceof RootPaneContainer) {
 			JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
-			Container contentPane = rootPane.getContentPane();
-
-			if (contentPane.getLayout() instanceof BorderLayout) {
-				Component centerComponent = ((BorderLayout) contentPane.getLayout())
-					.getLayoutComponent(contentPane, BorderLayout.CENTER);
-				if (centerComponent != null) {
-					capturedCenterSize = centerComponent.getSize();
-				}
-			}
+			capturedWindowSize = rootPane.getSize();
 		}
 	}
 
 	private void applyCapturedSize(Container topLevelAncestor) {
-		if (capturedCenterSize != null && topLevelAncestor instanceof RootPaneContainer) {
+		if (capturedWindowSize != null && topLevelAncestor instanceof RootPaneContainer) {
 			// Use InfoNode's exact same logic from setInternalSize()
-			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedCenterSize);
+			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedWindowSize);
 			((Window) topLevelAncestor).pack();
 			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(null);
 
 			// Reset for next use
-			capturedCenterSize = null;
+			capturedWindowSize = null;
 		}
 	}
 
