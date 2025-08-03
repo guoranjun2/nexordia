@@ -105,11 +105,6 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
-		throw methodNotImplementedException();
-	}
-
-	@Override
 	public boolean isMenubarVisible() {
 		throw methodNotImplementedException();
 	}
@@ -154,7 +149,7 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public void removeSplitPane() {
+	public void removeAuxiliaryComponent() {
 		throw methodNotImplementedException();
 	}
 

@@ -400,12 +400,6 @@ abstract public class FrameController implements ViewController {
 		statusPanel.repaint();
 	}
 
-	/**
-	 *
-	 */
-	@Override
-	abstract public void removeSplitPane();
-
 	@Override
 	public void saveProperties() {
 	}

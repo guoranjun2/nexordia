@@ -109,17 +109,10 @@ class AppletViewController extends FrameController implements IMapViewChangeList
 		if (mComponentInSplitPane == pMindMapComponent) {
 			return;
 		}
-		removeSplitPane();
+		removeAuxiliaryComponent();
 		mComponentInSplitPane = pMindMapComponent;
 		mapContentBox.add(pMindMapComponent, BorderLayout.SOUTH);
 		mapContentBox.revalidate();
-	}
-
-	@Override
-	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
-		final JRootPane rootPane = applet.getRootPane();
-		final JComponent component = componentFactory.apply(rootPane);
-		insertComponentIntoSplitPane(component);
 	}
 
 	@Override
@@ -139,7 +132,7 @@ class AppletViewController extends FrameController implements IMapViewChangeList
 	}
 
 	@Override
-	public void removeSplitPane() {
+	public void removeAuxiliaryComponent() {
 		if (mComponentInSplitPane != null) {
 			mapContentBox.remove(mComponentInSplitPane);
 			mapContentBox.revalidate();

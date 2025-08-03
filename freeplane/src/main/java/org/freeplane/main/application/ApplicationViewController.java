@@ -37,14 +37,13 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Function;
 
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JRootPane;
 import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
@@ -65,13 +64,10 @@ class ApplicationViewController extends FrameController {
 
 	// // 	final private Controller controller;
 	final private JFrame frame;
-	/** Contains the Note Window Component */
-	private AuxillaryEditorSplitPane mSplitPane;
 	final private NavigationNextMapAction navigationNextMap;
 	final private NavigationPreviousMapAction navigationPreviousMap;
 	private MapViewDockingWindows mapViewWindows;
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
-	private Function<JRootPane, JComponent> activeComponentFactory;
 	private final FrameComponentMover frameComponentMover = new FrameComponentMover();
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame) {
@@ -93,7 +89,8 @@ class ApplicationViewController extends FrameController {
 	public void changeNoteWindowLocation(String location) {
 		final ResourceController resourceController = ResourceController.getResourceController();
 		resourceController.setProperty("note_location", location);
-		mSplitPane.changeNoteWindowLocation(location);
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.changeNoteWindowLocation(location);
 	}
 
 	@Override
@@ -103,28 +100,25 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		mSplitPane.insertComponentIntoSplitPane(pMindMapComponent);
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.insertComponentIntoSplitPane(pMindMapComponent);
 	}
 
-	@Override
-	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
-		activeComponentFactory = componentFactory;
-		final JRootPane rootPane = frame.getRootPane();
-		final JComponent component = componentFactory.apply(rootPane);
-		mSplitPane.insertComponentIntoSplitPane(component);
+	private AuxillaryEditorSplitPane getSplitPane() {
+		final Component currentRootComponent = getCurrentRootComponent();
+		if(currentRootComponent instanceof RootPaneContainer)
+			return getSplitPane((RootPaneContainer) currentRootComponent);
+		else
+			return null;
 	}
 
-	private void insertComponentIntoFloatingWindow(JComponent windowComponent) {
-		final Container topLevelAncestor = windowComponent.getTopLevelAncestor();
-		if (topLevelAncestor instanceof RootPaneContainer) {
-			final JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
-			final JComponent component = activeComponentFactory.apply(rootPane);
-			final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
-			final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
-			if (centerComponent instanceof AuxillaryEditorSplitPane) {
-				((AuxillaryEditorSplitPane) centerComponent).insertComponentIntoSplitPane(component);
-			}
+	public AuxillaryEditorSplitPane getSplitPane(final RootPaneContainer topLevelAncestor) {
+		final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
+		final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+		if (centerComponent instanceof AuxillaryEditorSplitPane) {
+			return (AuxillaryEditorSplitPane) centerComponent;
 		}
+		return null;
 	}
 
 	void createAuxillaryPaneForFloatingWindow(Window frame, Component rootWindow) {
@@ -194,20 +188,21 @@ class ApplicationViewController extends FrameController {
 	}
 
 	@Override
-	public void removeSplitPane() {
-		activeComponentFactory = null;
-		mSplitPane.removeSplitPane();
+	public void removeAuxiliaryComponent() {
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.removeAuxiliaryComponent();
 	}
+
 
 	@Override
 	public void saveProperties() {
 		if(mapViewWindows == null)
 			return;
-		mSplitPane.saveSplitPanePosition();
+		getSplitPane().saveSplitPanePosition();
 		final ApplicationResourceController resourceController = (ApplicationResourceController)ResourceController.getResourceController();
 		if (frame.isResizable()) {
 			final int winState = frame.getExtendedState() & ~Frame.ICONIFIED;
-			if (JFrame.MAXIMIZED_BOTH != (winState & JFrame.MAXIMIZED_BOTH)) {
+			if (Frame.MAXIMIZED_BOTH != (winState & Frame.MAXIMIZED_BOTH)) {
 				resourceController.setProperty("appwindow_x", String.valueOf(frame.getX()));
 				resourceController.setProperty("appwindow_y", String.valueOf(frame.getY()));
 				resourceController.setProperty("appwindow_width", String.valueOf(frame.getWidth()));
@@ -267,12 +262,12 @@ class ApplicationViewController extends FrameController {
 		// disable all hotkeys for JSplitPane
 		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
-		mSplitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
+		AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
 		frameComponentMover.install();
-		mSplitPane.setResizeWeight(1.0d);
+		splitPane.setResizeWeight(1.0d);
 		Container contentPane = frame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
-        contentPane.add(mSplitPane, BorderLayout.CENTER);
+        contentPane.add(splitPane, BorderLayout.CENTER);
 		initFrame(frame);
 		super.init(controller);
 	}
@@ -289,7 +284,7 @@ class ApplicationViewController extends FrameController {
                         frameIcon("512x512")
 			            ));
 		}
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(final WindowEvent e) {
@@ -342,7 +337,7 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void setFullScreen(final JFrame frame, boolean fullScreen) {
 		super.setFullScreen(frame, fullScreen);
-		mapViewWindows.setTabAreaVisiblePolicy(frame, fullScreen);
+		mapViewWindows.setTabAreaVisiblePolicy(frame, ! fullScreen);
 	}
 
 	@Override

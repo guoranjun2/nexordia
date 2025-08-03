@@ -79,11 +79,6 @@ class DialogController extends FrameController {
 	}
 
 	@Override
-	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void openDocument(final Hyperlink link) throws IOException {
 		new Browser().openDocument(link);
 	}
@@ -124,7 +119,7 @@ class DialogController extends FrameController {
 	}
 
 	@Override
-	public void removeSplitPane() {
+	public void removeAuxiliaryComponent() {
 		throw new UnsupportedOperationException();
 	}
 

@@ -152,27 +152,6 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			insertComponentIntoSplitPane(auxillaryComponent);
 		}
 	}
-	public void removeSplitPane() {
-		saveSplitPanePosition();
-		setLeftComponent(null);
-		setRightComponent(null);
-		setLeftComponent(mainComponent);
-		final Controller controller = Controller.getCurrentModeController().getController();
-		final IMapSelection selection = controller.getSelection();
-		if(selection == null){
-			return;
-		}
-		final NodeModel node = selection.getSelected();
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				final Component component = controller.getMapViewManager().getComponent(node);
-				if (component != null) {
-					component.requestFocus();
-				}
-			}
-		});
-	}
 
 	public JComponent getAuxiliaryComponent() {
 		return auxillaryComponent;

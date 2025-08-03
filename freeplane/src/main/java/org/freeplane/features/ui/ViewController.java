@@ -63,8 +63,6 @@ public interface ViewController {
 
 	public void insertComponentIntoSplitPane(JComponent noteViewerComponent);
 
-	public void insertComponentIntoAllSplitPanes(Function<JRootPane, JComponent> componentFactory);
-
 	public boolean isMenubarVisible();
 
 	boolean isFullScreenEnabled();
@@ -87,10 +85,7 @@ public interface ViewController {
 
 	public void removeStatus(final String key);
 
-	/**
-	 *
-	 */
-	public void removeSplitPane();
+	public void removeAuxiliaryComponent();
 
 	public void saveProperties();
 

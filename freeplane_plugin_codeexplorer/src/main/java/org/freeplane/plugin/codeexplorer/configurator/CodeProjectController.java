@@ -126,7 +126,7 @@ public class CodeProjectController implements IExtension {
     private void hideControlPanel() {
         Controller controller = modeController.getController();
         controller.getMapViewManager().removeMapSelectionListener(configurator);
-        modeController.getController().getViewController().removeSplitPane();
+        modeController.getController().getViewController().removeAuxiliaryComponent();
         informationPanel = null;
         configurator = null;
         codeDependenciesPanel = null;

@@ -189,7 +189,7 @@ public class MNoteController extends NoteController {
 	void hideNotesPanel() {
 	    noteManager.saveNote();
 		notePanel.setVisible(false);
-		Controller.getCurrentModeController().getController().getViewController().removeSplitPane();
+		Controller.getCurrentModeController().getController().getViewController().removeAuxiliaryComponent();
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "false");
 	}
 
