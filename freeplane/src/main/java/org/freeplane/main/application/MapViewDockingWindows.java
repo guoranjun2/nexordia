@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
@@ -76,7 +75,6 @@ import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.url.mindmapmode.DroppedMindMapOpener;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
-import org.freeplane.view.swing.map.overview.BookmarkToolbarPane;
 import org.freeplane.view.swing.map.overview.MapViewPane;
 import org.freeplane.view.swing.ui.DefaultMapMouseListener;
 
@@ -205,7 +203,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						((Window)topLevelAncestor).setIconImages(iconImages);
 
 						applicationViewController.createAuxillaryPaneForFloatingWindow((Window) topLevelAncestor, addedWindow);
-						
+
 						// Apply captured size using InfoNode's own pattern
 						applyCapturedSize(topLevelAncestor);
 					}
@@ -232,7 +230,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
 				// Capture CENTER component size from main frame before removal
 				captureCenterComponentSize(removedFromWindow);
-				
+
 				if(removedWindow instanceof TabWindow) {
 	                if (removedFromWindow == rootWindow) {
 	                	final TabAreaProperties tabAreaProperties = ((TabWindow)removedWindow).getTabWindowProperties().getTabbedPanelProperties().getTabAreaProperties();
@@ -263,7 +261,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		if (topLevelAncestor instanceof RootPaneContainer) {
 			JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
 			Container contentPane = rootPane.getContentPane();
-			
+
 			if (contentPane.getLayout() instanceof BorderLayout) {
 				Component centerComponent = ((BorderLayout) contentPane.getLayout())
 					.getLayoutComponent(contentPane, BorderLayout.CENTER);
@@ -280,7 +278,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedCenterSize);
 			((Window) topLevelAncestor).pack();
 			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(null);
-			
+
 			// Reset for next use
 			capturedCenterSize = null;
 		}

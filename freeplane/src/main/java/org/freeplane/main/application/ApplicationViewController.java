@@ -72,6 +72,7 @@ class ApplicationViewController extends FrameController {
 	private MapViewDockingWindows mapViewWindows;
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
 	private Function<JRootPane, JComponent> activeComponentFactory;
+	private final FrameComponentMover frameComponentMover = new FrameComponentMover();
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame) {
 		super(controller, mapViewController, "");
@@ -131,7 +132,6 @@ class ApplicationViewController extends FrameController {
 		if (frame instanceof JFrame) {
 			JFrame jFrame = (JFrame) frame;
 			Container contentPane = jFrame.getContentPane();
-
 			Component centralComponent = null;
 			if (contentPane.getLayout() instanceof BorderLayout) {
 				centralComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
@@ -144,6 +144,7 @@ class ApplicationViewController extends FrameController {
 			if (centralComponent != null) {
 				contentPane.remove(centralComponent);
 			}
+			contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
 			contentPane.add(splitPane, BorderLayout.CENTER);
 
 			insertActiveComponentsIntoSplitPane(splitPane, frame);
@@ -191,6 +192,7 @@ class ApplicationViewController extends FrameController {
 		if (!super.quit()) {
 			return false;
 		}
+		frameComponentMover.uninstall();
 		controller.fireApplicationStopped();
 		frame.dispose();
 		return true;
@@ -271,6 +273,7 @@ class ApplicationViewController extends FrameController {
 		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		mSplitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
+		frameComponentMover.install();
 		mSplitPane.setResizeWeight(1.0d);
 		Container contentPane = frame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
