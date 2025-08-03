@@ -514,12 +514,13 @@ abstract public class FrameController implements ViewController {
 	}
 
 	public void setFullScreen(final boolean fullScreen) {
-		if (fullScreen == isFullScreenEnabled()) {
-			return;
-		}
 		final JFrame frame = (JFrame) getCurrentRootComponent();
+		setFullScreen(frame, fullScreen);
+	}
+
+	public void setFullScreen(final JFrame frame, final boolean fullScreen) {
 		if(Compat.isMacOsX())
-			setFullScreenOnMac(fullScreen, frame);
+			setFullScreenOnMac(frame, fullScreen);
 		else
 			setFullScreenOnNonMac(frame, fullScreen);
 		ToolTipManager.sharedInstance().setEnabled(true);
@@ -528,7 +529,15 @@ abstract public class FrameController implements ViewController {
 	@Override
 	public void fullScreenToggled(JFrame frame, boolean fullScreen) {
 		if (! Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
-		frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, fullScreen);
+			frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, Boolean.valueOf(fullScreen));
+			setFullScreen(frame, fullScreen);
+		}
+	}
+
+	private void setFullScreenOnMac(final JFrame frame, final boolean fullScreen) {
+		if (! Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY)))
+			Compat.setFullScreenOnMac(frame, fullScreen);
+		if (Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
 			ResourceController.getResourceController().firePropertyChanged(FULLSCREEN_ENABLED_PROPERTY,
 				    Boolean.toString(fullScreen), Boolean.toString(!fullScreen));
 			final Controller controller = getController();
@@ -542,9 +551,6 @@ abstract public class FrameController implements ViewController {
 		}
 	}
 
-	private void setFullScreenOnMac(final boolean fullScreen, final JFrame frame) {
-		Compat.setFullScreenOnMac(frame, fullScreen);
-	}
 
 	private void setFullScreenOnNonMac(JFrame frame, final boolean fullScreen) {
 		frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, fullScreen);
