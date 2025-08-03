@@ -135,6 +135,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
 	private final ApplicationViewController applicationViewController;
+	private java.awt.Dimension capturedCenterSize = null;
 
 	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
 		this.applicationViewController = applicationViewController;
@@ -204,6 +205,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						((Window)topLevelAncestor).setIconImages(iconImages);
 
 						applicationViewController.createAuxillaryPaneForFloatingWindow((Window) topLevelAncestor, addedWindow);
+						
+						// Apply captured size using InfoNode's own pattern
+						applyCapturedSize(topLevelAncestor);
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -226,6 +230,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 			@Override
             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
+				// Capture CENTER component size from main frame before removal
+				captureCenterComponentSize(removedFromWindow);
+				
 				if(removedWindow instanceof TabWindow) {
 	                if (removedFromWindow == rootWindow) {
 	                	final TabAreaProperties tabAreaProperties = ((TabWindow)removedWindow).getTabWindowProperties().getTabbedPanelProperties().getTabAreaProperties();
@@ -249,6 +256,34 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 		addTabsPopupMenu(rootWindow);
 
+	}
+
+	private void captureCenterComponentSize(DockingWindow removedFromWindow) {
+		Container topLevelAncestor = removedFromWindow.getTopLevelAncestor();
+		if (topLevelAncestor instanceof RootPaneContainer) {
+			JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
+			Container contentPane = rootPane.getContentPane();
+			
+			if (contentPane.getLayout() instanceof BorderLayout) {
+				Component centerComponent = ((BorderLayout) contentPane.getLayout())
+					.getLayoutComponent(contentPane, BorderLayout.CENTER);
+				if (centerComponent != null) {
+					capturedCenterSize = centerComponent.getSize();
+				}
+			}
+		}
+	}
+
+	private void applyCapturedSize(Container topLevelAncestor) {
+		if (capturedCenterSize != null && topLevelAncestor instanceof RootPaneContainer) {
+			// Use InfoNode's exact same logic from setInternalSize()
+			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedCenterSize);
+			((Window) topLevelAncestor).pack();
+			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(null);
+			
+			// Reset for next use
+			capturedCenterSize = null;
+		}
 	}
 
 	private void addTabsPopupMenu(DockingWindow dockingWindow){
