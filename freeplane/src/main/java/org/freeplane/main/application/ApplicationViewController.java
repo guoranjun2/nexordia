@@ -342,10 +342,7 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void setFullScreen(final JFrame frame, boolean fullScreen) {
 		super.setFullScreen(frame, fullScreen);
-		if(fullScreen)
-			mapViewWindows.setTabAreaInvisiblePolicy(frame);
-		else
-			mapViewWindows.setTabAreaVisiblePolicy(frame);
+		mapViewWindows.setTabAreaVisiblePolicy(frame, fullScreen);
 	}
 
 	@Override

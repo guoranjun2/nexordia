@@ -122,6 +122,7 @@ import net.infonode.util.Direction;
 
 class MapViewDockingWindows implements IMapViewChangeListener {
 
+	private static final String FREEPLANE_FLOATING_WINDOW = "freeplaneFloatingWindow";
 	private static final String CUSTOMIZED_TAB_NAME_PROPERTY = "customizedTabName";
     // // 	final private Controller controller;
 	private static final String OPENED_NOW = "openedNow_1.3.04";
@@ -197,21 +198,19 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                 }
 				else if(addedWindow instanceof FloatingWindow) {
 					final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
-					if(topLevelAncestor instanceof Window){
+					if(topLevelAncestor instanceof JFrame){
 						if(iconColorReplacer == null)
 							iconColorReplacer = new IconColorReplacer(((Window) UITools.getCurrentRootComponent()).getIconImages());
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
-						((Window)topLevelAncestor).setIconImages(iconImages);
+						final JFrame frame = (JFrame)topLevelAncestor;
+						frame.getRootPane().putClientProperty(FREEPLANE_FLOATING_WINDOW, addedWindow);
+						frame.setIconImages(iconImages);
 
 						applicationViewController.createAuxillaryPaneForFloatingWindow((Window) topLevelAncestor, addedWindow);
 
-						// Apply captured size using InfoNode's own pattern
 						applyCapturedSize(topLevelAncestor);
 
-						// Register full screen listener for floating window frame
-						if(topLevelAncestor instanceof JFrame) {
-							Compat.registerFullScreenListener((JFrame) topLevelAncestor);
-						}
+						Compat.registerFullScreenListener(frame);
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -747,10 +746,13 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		tabAreaProperties.setTabAreaVisiblePolicy(tabAreaVisiblePolicy);
 	}
 
-	public void setTabAreaVisiblePolicy(JFrame frame){
+	public void setTabAreaVisiblePolicy(JFrame frame, boolean visible){
 		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow
-				: ((Container)frame.getContentPane().getComponent(0)).getComponent(0));
-		setTabAreaVisiblePolicies(window);
+				: frame.getRootPane().getClientProperty(FREEPLANE_FLOATING_WINDOW));
+		if(visible)
+			setTabAreaVisiblePolicies(window);
+		else
+			setTabAreaInvisiblePolicies(window);
 	}
 
 	private void setTabAreaVisiblePolicies(DockingWindow parentWindow) {
@@ -761,12 +763,6 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 			if (!(window instanceof FloatingWindow))
 				setTabAreaVisiblePolicies(window);
 		}
-	}
-
-	public void setTabAreaInvisiblePolicy(JFrame frame){
-		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow
-				: ((Container)frame.getContentPane().getComponent(0)).getComponent(0));
-		setTabAreaInvisiblePolicies(window);
 	}
 
 	private void setTabAreaInvisiblePolicies(DockingWindow parentWindow) {
