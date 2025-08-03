@@ -112,7 +112,6 @@ class ApplicationViewController extends FrameController {
 		final JRootPane rootPane = frame.getRootPane();
 		final JComponent component = componentFactory.apply(rootPane);
 		mSplitPane.insertComponentIntoSplitPane(component);
-		mapViewWindows.visitAllFloatingWindows(this::insertComponentIntoFloatingWindow);
 	}
 
 	private void insertComponentIntoFloatingWindow(JComponent windowComponent) {
@@ -152,11 +151,7 @@ class ApplicationViewController extends FrameController {
 	}
 
 	private void insertActiveComponentsIntoSplitPane(AuxillaryEditorSplitPane splitPane, Window frame) {
-		if (activeComponentFactory != null && frame instanceof RootPaneContainer) {
-			final JRootPane rootPane = ((RootPaneContainer) frame).getRootPane();
-			final JComponent component = activeComponentFactory.apply(rootPane);
-			splitPane.insertComponentIntoSplitPane(component);
-		}
+		// Do not create new components - let FrameComponentMover handle moving the existing component
 	}
 
 

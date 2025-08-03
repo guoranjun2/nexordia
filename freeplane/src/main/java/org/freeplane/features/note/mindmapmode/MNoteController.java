@@ -20,19 +20,15 @@
 package org.freeplane.features.note.mindmapmode;
 
 import java.awt.Component;
-import java.awt.Frame;
 import java.awt.KeyboardFocusManager;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import javax.swing.JRootPane;
-import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.undo.IActor;
 import org.freeplane.features.map.IExtensionCopier;
 import org.freeplane.features.map.IMapSelection;
@@ -113,7 +109,7 @@ public class MNoteController extends NoteController {
 
 		private void docEvent() {
 			final Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-			if (focusOwner == null || !SwingUtilities.isDescendingFrom(focusOwner, getNotePanel())) {
+			if (focusOwner == null || !SwingUtilities.isDescendingFrom(focusOwner, notePanel)) {
 				return;
 			}
 			final ModeController modeController = Controller.getCurrentModeController();
@@ -139,6 +135,7 @@ public class MNoteController extends NoteController {
 	public static final String RESOURCES_USE_DEFAULT_FONT_FOR_NOTES_TOO = "resources_use_default_font_for_notes_too";
 	public static final String RESOURCES_USE_MARGIN_TOP_ZERO_FOR_NOTES = "resources_use_margin_top_zero_for_notes";
 	static final String RESOURCES_USE_SPLIT_PANE = "use_split_pane";
+	private static NotePanel notePanel;
 
 	public static MNoteController getController() {
 	    return (MNoteController) NoteController.getController();
@@ -191,7 +188,7 @@ public class MNoteController extends NoteController {
 
 	void hideNotesPanel() {
 	    noteManager.saveNote();
-		getNotePanel().setVisible(false);
+		notePanel.setVisible(false);
 		Controller.getCurrentModeController().getController().getViewController().removeSplitPane();
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "false");
 	}
@@ -201,7 +198,7 @@ public class MNoteController extends NoteController {
 		final ModeController modeController = Controller.getCurrentModeController();
 		final Controller controller = modeController.getController();
 		final IMapSelection selection = controller.getSelection();
-		if (selection == null || getNotePanel() == null) {
+		if (selection == null || notePanel == null) {
 			return;
 		}
 		final NodeModel selected = selection.getSelected();
@@ -280,10 +277,14 @@ public class MNoteController extends NoteController {
 	}
 
 	void showNotesPanel() {
+		if (notePanel == null) {
+			notePanel = new NotePanel(noteManager, new NoteDocumentListener());
+			noteManager.updateEditor();
+		}
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "true");
-		Controller.getCurrentModeController().getController().getViewController().insertComponentIntoAllSplitPanes(this::getNotePanel);
-		getNotePanel().setVisible(true);
-		getNotePanel().revalidate();
+		Controller.getCurrentModeController().getController().getViewController().insertComponentIntoSplitPane(notePanel);
+		notePanel.setVisible(true);
+		notePanel.revalidate();
 	}
 
 	public void stopEditing() {
@@ -295,7 +296,7 @@ public class MNoteController extends NoteController {
 
 	boolean isEditing() {
 		final Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        return focusOwner != null && getNotePanel() != null && SwingUtilities.isDescendingFrom(focusOwner, getNotePanel());
+        return focusOwner != null && notePanel != null && SwingUtilities.isDescendingFrom(focusOwner, notePanel);
 	}
 
 	 void setFocusToMap() {
@@ -307,12 +308,13 @@ public class MNoteController extends NoteController {
 	public void shutdownController() {
 		Controller.getCurrentModeController().getMapController().removeNodeSelectionListener(noteManager);
 		Controller.getCurrentController().getMapViewManager().removeMapSelectionListener(noteManager);
-		if (getNotePanel() == null) {
+		if (notePanel == null) {
 			return;
 		}
-		getNotePanel().getActionMap().remove("jumpToMapAction");
+		notePanel.getActionMap().remove("jumpToMapAction");
 		if (shouldUseSplitPane()) {
 			hideNotesPanel();
+			notePanel = null;
 		}
 	}
 
@@ -339,20 +341,6 @@ public class MNoteController extends NoteController {
 	}
 
 	NotePanel getNotePanel() {
-		final Frame currentFrame = UITools.getCurrentFrame();
-		if (!(currentFrame instanceof RootPaneContainer))
-			return null;
-		final JRootPane rootPane = ((RootPaneContainer)currentFrame).getRootPane();
-		return getNotePanel(rootPane);
-	}
-
-	NotePanel getNotePanel(JRootPane rootPane) {
-		NotePanel notePanel = (NotePanel) rootPane.getClientProperty(NotePanel.class);
-		if (notePanel == null) {
-			notePanel = new NotePanel(noteManager, new NoteDocumentListener());
-			rootPane.putClientProperty(NotePanel.class, notePanel);
-			noteManager.updateEditor();
-		}
 		return notePanel;
 	}
 }

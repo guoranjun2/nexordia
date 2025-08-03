@@ -25,6 +25,7 @@ import java.awt.Window;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
@@ -74,6 +75,8 @@ class FrameComponentMover implements PropertyChangeListener {
 		moveComponentIfExists(fromContentPane, toContentPane, BorderLayout.EAST);
 		moveComponentIfExists(fromContentPane, toContentPane, BorderLayout.WEST);
 
+		moveAuxiliaryComponents(fromFrame, toFrame);
+
 		fromContentPane.revalidate();
 		fromContentPane.repaint();
 		toContentPane.revalidate();
@@ -103,5 +106,30 @@ class FrameComponentMover implements PropertyChangeListener {
 			fromPane.remove(component);
 			toPane.add(component, position);
 		}
+	}
+
+	private void moveAuxiliaryComponents(JFrame fromFrame, JFrame toFrame) {
+		AuxillaryEditorSplitPane fromSplitPane = findAuxiliarySplitPane(fromFrame);
+		AuxillaryEditorSplitPane toSplitPane = findAuxiliarySplitPane(toFrame);
+		
+		if (fromSplitPane != null && toSplitPane != null) {
+			JComponent auxiliaryComponent = fromSplitPane.getAuxiliaryComponent();
+			if (auxiliaryComponent != null) {
+				fromSplitPane.removeAuxiliaryComponent();
+				toSplitPane.insertComponentIntoSplitPane(auxiliaryComponent);
+			}
+		}
+	}
+
+	private AuxillaryEditorSplitPane findAuxiliarySplitPane(JFrame frame) {
+		Container contentPane = frame.getContentPane();
+		if (contentPane.getLayout() instanceof BorderLayout) {
+			Component centerComponent = ((BorderLayout) contentPane.getLayout())
+				.getLayoutComponent(contentPane, BorderLayout.CENTER);
+			if (centerComponent instanceof AuxillaryEditorSplitPane) {
+				return (AuxillaryEditorSplitPane) centerComponent;
+			}
+		}
+		return null;
 	}
 }

@@ -173,4 +173,18 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			}
 		});
 	}
+
+	public JComponent getAuxiliaryComponent() {
+		return auxillaryComponent;
+	}
+
+	public void removeAuxiliaryComponent() {
+		if (auxillaryComponent != null) {
+			saveSplitPanePosition();
+			setLeftComponent(null);
+			setRightComponent(null);
+			setLeftComponent(mainComponent);
+			auxillaryComponent = null;
+		}
+	}
 }
