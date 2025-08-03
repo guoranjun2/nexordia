@@ -525,9 +525,10 @@ abstract public class FrameController implements ViewController {
 		ToolTipManager.sharedInstance().setEnabled(true);
 	}
 
-	private void setFullScreenOnMac(final boolean fullScreen, final JFrame frame) {
-		Compat.setFullScreenOnMac(frame, fullScreen);
-		if (Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
+	@Override
+	public void fullScreenToggled(JFrame frame, boolean fullScreen) {
+		if (! Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
+		frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, fullScreen);
 			ResourceController.getResourceController().firePropertyChanged(FULLSCREEN_ENABLED_PROPERTY,
 				    Boolean.toString(fullScreen), Boolean.toString(!fullScreen));
 			final Controller controller = getController();
@@ -539,6 +540,10 @@ abstract public class FrameController implements ViewController {
 				}
 			}
 		}
+	}
+
+	private void setFullScreenOnMac(final boolean fullScreen, final JFrame frame) {
+		Compat.setFullScreenOnMac(frame, fullScreen);
 	}
 
 	private void setFullScreenOnNonMac(JFrame frame, final boolean fullScreen) {

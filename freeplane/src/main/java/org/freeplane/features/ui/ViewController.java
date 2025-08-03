@@ -29,6 +29,7 @@ import java.util.function.Function;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JRootPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
@@ -143,4 +144,8 @@ public interface ViewController {
 	public void openMapNextView();
 
 	public void openMapPreviousView();
+
+	default void fullScreenToggled(JFrame frame, boolean isFullScreen) {
+		// Default empty implementation
+	}
 }

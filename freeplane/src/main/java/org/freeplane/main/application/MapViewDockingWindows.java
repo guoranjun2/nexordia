@@ -67,6 +67,7 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.FileOpener;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.MapModel;
@@ -206,6 +207,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 						// Apply captured size using InfoNode's own pattern
 						applyCapturedSize(topLevelAncestor);
+
+						// Register full screen listener for floating window frame
+						if(topLevelAncestor instanceof JFrame) {
+							Compat.registerFullScreenListener((JFrame) topLevelAncestor);
+						}
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -741,8 +747,10 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		tabAreaProperties.setTabAreaVisiblePolicy(tabAreaVisiblePolicy);
 	}
 
-	public void setTabAreaVisiblePolicy(){
-		setTabAreaVisiblePolicies(rootWindow);
+	public void setTabAreaVisiblePolicy(JFrame frame){
+		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow
+				: ((Container)frame.getContentPane().getComponent(0)).getComponent(0));
+		setTabAreaVisiblePolicies(window);
 	}
 
 	private void setTabAreaVisiblePolicies(DockingWindow parentWindow) {
@@ -755,8 +763,10 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		}
 	}
 
-	public void setTabAreaInvisiblePolicy(){
-		setTabAreaInvisiblePolicies(rootWindow);
+	public void setTabAreaInvisiblePolicy(JFrame frame){
+		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow
+				: ((Container)frame.getContentPane().getComponent(0)).getComponent(0));
+		setTabAreaInvisiblePolicies(window);
 	}
 
 	private void setTabAreaInvisiblePolicies(DockingWindow parentWindow) {
