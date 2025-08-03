@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.util.Hyperlink;
@@ -139,4 +140,8 @@ public interface ViewController {
 	public void openMapNextView();
 
 	public void openMapPreviousView();
+
+	default void fullScreenToggled(JFrame frame, boolean isFullScreen) {
+		// Default empty implementation
+	}
 }

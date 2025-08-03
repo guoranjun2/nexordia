@@ -387,6 +387,9 @@ class ApplicationViewController extends FrameController {
 		    .parseInt(ResourceController.getResourceController().getProperty("appwindow_state", "0"));
 		win_state = ((win_state & Frame.ICONIFIED) != 0) ? Frame.NORMAL : win_state;
 		frame.setExtendedState(win_state);
+		
+		// Register full screen listener for macOS
+		Compat.registerFullScreenListener(frame);
 	}
 
 
