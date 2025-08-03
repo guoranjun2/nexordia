@@ -387,7 +387,7 @@ class ApplicationViewController extends FrameController {
 		    .parseInt(ResourceController.getResourceController().getProperty("appwindow_state", "0"));
 		win_state = ((win_state & Frame.ICONIFIED) != 0) ? Frame.NORMAL : win_state;
 		frame.setExtendedState(win_state);
-		
+
 		// Register full screen listener for macOS
 		Compat.registerFullScreenListener(frame);
 	}
@@ -413,12 +413,12 @@ class ApplicationViewController extends FrameController {
 	}
 
 	@Override
-	public void setFullScreen(boolean fullScreen) {
-		super.setFullScreen(fullScreen);
+	public void setFullScreen(final JFrame frame, boolean fullScreen) {
+		super.setFullScreen(frame, fullScreen);
 		if(fullScreen)
-			mapViewWindows.setTabAreaInvisiblePolicy((JFrame) UITools.getCurrentRootComponent());
+			mapViewWindows.setTabAreaInvisiblePolicy(frame);
 		else
-			mapViewWindows.setTabAreaVisiblePolicy((JFrame)UITools.getCurrentRootComponent());
+			mapViewWindows.setTabAreaVisiblePolicy(frame);
 	}
 
 	@Override
