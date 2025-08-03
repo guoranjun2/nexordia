@@ -27,12 +27,15 @@ import java.beans.PropertyChangeListener;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 
 import org.freeplane.core.util.Compat;
 
 class FrameComponentMover implements PropertyChangeListener {
 	private JFrame lastFocusedFrame = null;
+
+	public FrameComponentMover(JFrame frame) {
+		lastFocusedFrame = frame;
+	}
 
 	public void install() {
 		KeyboardFocusManager.getCurrentKeyboardFocusManager()
@@ -111,7 +114,7 @@ class FrameComponentMover implements PropertyChangeListener {
 	private void moveAuxiliaryComponents(JFrame fromFrame, JFrame toFrame) {
 		AuxillaryEditorSplitPane fromSplitPane = findAuxiliarySplitPane(fromFrame);
 		AuxillaryEditorSplitPane toSplitPane = findAuxiliarySplitPane(toFrame);
-		
+
 		if (fromSplitPane != null && toSplitPane != null) {
 			JComponent auxiliaryComponent = fromSplitPane.getAuxiliaryComponent();
 			if (auxiliaryComponent != null) {

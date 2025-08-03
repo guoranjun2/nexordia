@@ -6,7 +6,6 @@
 package org.freeplane.main.application;
 
 import java.awt.Component;
-import java.awt.EventQueue;
 import java.awt.KeyboardFocusManager;
 import java.awt.LayoutManager;
 import java.awt.LayoutManager2;
@@ -18,9 +17,6 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.features.map.IMapSelection;
-import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.mode.Controller;
 
 class AuxillaryEditorSplitPane extends JSplitPane {
 	private static final String AUX_SPLIT_PANE_LAST_LEFT_POSITION = "aux_split_pane_last_left_position";

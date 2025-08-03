@@ -68,7 +68,7 @@ class ApplicationViewController extends FrameController {
 	final private NavigationPreviousMapAction navigationPreviousMap;
 	private MapViewDockingWindows mapViewWindows;
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
-	private final FrameComponentMover frameComponentMover = new FrameComponentMover();
+	private final FrameComponentMover frameComponentMover;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame) {
 		super(controller, mapViewController, "");
@@ -80,6 +80,7 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(new NavigationMapNextViewAction());
 		controller.addAction(new NavigationMapPreviousViewAction());
 		this.frame = frame;
+		this.frameComponentMover = new FrameComponentMover(frame);
 	}
 
 	/**
@@ -343,7 +344,14 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public Component getCurrentRootComponent() {
 		final Component mapViewComponent = selectedMapView();
-		return mapViewComponent != null ? SwingUtilities.getRoot(mapViewComponent) : frame;
+		if (mapViewComponent == null) {
+			return frame;
+		}
+		final Component rootComponent = SwingUtilities.getRoot(mapViewComponent);
+		if (rootComponent != null)
+			return rootComponent;
+		else
+			return frame;
 	}
 
 
