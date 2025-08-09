@@ -142,7 +142,8 @@ public class DefaultMapMouseListener implements IMouseListener {
             e.consume();
             return;
 		}
-		if(! SwingUtilities.getWindowAncestor(e.getComponent()).isFocused())
+		if(! SwingUtilities.getWindowAncestor(e.getComponent()).isFocused()
+				|| mapView != null && ! mapView.isValid())
 			return;
 		boolean isCtrlEvent = Compat.isCtrlEvent(e) || Compat.isCtrlShiftEvent(e);
         if(isCtrlEvent && e.getButton() == MouseEvent.BUTTON1

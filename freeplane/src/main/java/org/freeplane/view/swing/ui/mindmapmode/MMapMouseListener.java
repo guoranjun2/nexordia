@@ -109,6 +109,7 @@ public class MMapMouseListener extends DefaultMapMouseListener{
 
 	}
 
+	@Override
 	public void mousePressed(final MouseEvent e) {
 		super.mousePressed(e);
 		if(Compat.isPopupTrigger(e))
@@ -116,6 +117,8 @@ public class MMapMouseListener extends DefaultMapMouseListener{
 		if(! SwingUtilities.getWindowAncestor(e.getComponent()).isFocused())
 			return;
 		final MapView mapView = (MapView) e.getComponent();
+		if (! mapView.isValid())
+			return;
 		if(mapView.getClientProperty(Connectors.class) != null)
 			return;
 		final Object object = mapView.detectView(new Point(originX, originY));
