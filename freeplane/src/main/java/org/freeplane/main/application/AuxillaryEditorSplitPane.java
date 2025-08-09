@@ -81,10 +81,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		}
 		setContinuousLayout(true);
 		setOneTouchExpandable(false);
-		SwingUtilities.invokeLater(this::resetDividerLocation);
+		SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(this::restoreDividerLocation));
 
 	}
-	private void resetDividerLocation() {
+	private void restoreDividerLocation() {
 		double lastSplitPanePosition = Double.NaN;
 		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
 			lastSplitPanePosition = 1.0 - resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
