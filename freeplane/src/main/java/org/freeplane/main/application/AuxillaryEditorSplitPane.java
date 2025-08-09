@@ -161,13 +161,22 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		return auxillaryComponent;
 	}
 
+
+	@Override
+	public void remove(Component component) {
+		if(component == auxillaryComponent)
+			removeAuxiliaryComponent();
+		else
+			super.remove(component);
+	}
+
 	public void removeAuxiliaryComponent() {
 		if (auxillaryComponent != null) {
+			auxillaryComponent = null;
+			dividerLocationIsRestored = false;
 			setLeftComponent(null);
 			setRightComponent(null);
 			setLeftComponent(mainComponent);
-			auxillaryComponent = null;
-			dividerLocationIsRestored = false;
 		}
 	}
 }
