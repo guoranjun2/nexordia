@@ -2996,7 +2996,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		if(isDisplayable() && ! selection.selectionChanged && isFrameLayoutCompleted()) {
 			if(scrollsViewAfterLayout ) {
 				scrollsViewAfterLayout  = false;
-				mapScroller.scrollView();
+				SwingUtilities.invokeLater(mapScroller::scrollView);
 			}
 			else
 				setAnchorContentLocation();

@@ -9,6 +9,8 @@ import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.awt.LayoutManager;
 import java.awt.LayoutManager2;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.JComponent;
@@ -53,6 +55,14 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
 		auxillaryComponent = pMindMapComponent;
+		pMindMapComponent.addHierarchyListener(new HierarchyListener() {
+			@Override
+			public void hierarchyChanged(HierarchyEvent e) {
+				if(e.getID() == HierarchyEvent.DISPLAYABILITY_CHANGED && pMindMapComponent.isShowing())
+				pMindMapComponent.removeHierarchyListener(this);
+				SwingUtilities.invokeLater(AuxillaryEditorSplitPane.this::restoreDividerLocation);
+			}
+		});
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 		setLeftComponent(null);
 		setRightComponent(null);
@@ -81,7 +91,6 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		}
 		setContinuousLayout(true);
 		setOneTouchExpandable(false);
-		SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(this::restoreDividerLocation));
 
 	}
 	private void restoreDividerLocation() {
@@ -104,6 +113,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 
 	void saveSplitPanePosition() {
+		if(! isValid())
+			return;
 		double proportionalLocation = getProportionalDividerLocation();
 		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
 			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(1.0 - proportionalLocation));
@@ -126,7 +137,6 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	public void changeNoteWindowLocation(String location) {
 		if(location == null || location.equals(auxillaryComponentLocation))
 			return;
-		saveSplitPanePosition();
 		auxillaryComponentLocation = resourceController.getProperty("note_location");
 		if(getLeftComponent() != null && getRightComponent() != null){
 			insertComponentIntoSplitPane(auxillaryComponent);
