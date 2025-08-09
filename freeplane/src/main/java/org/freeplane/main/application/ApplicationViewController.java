@@ -199,7 +199,6 @@ class ApplicationViewController extends FrameController {
 	public void saveProperties() {
 		if(mapViewWindows == null)
 			return;
-		getSplitPane().saveSplitPanePosition();
 		final ApplicationResourceController resourceController = (ApplicationResourceController)ResourceController.getResourceController();
 		if (frame.isResizable()) {
 			final int winState = frame.getExtendedState() & ~Frame.ICONIFIED;
