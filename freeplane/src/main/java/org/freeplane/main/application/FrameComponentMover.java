@@ -112,12 +112,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	private void moveMenuBar(JFrame fromFrame, JFrame toFrame) {
 		javax.swing.JMenuBar menuBar = fromFrame.getJMenuBar();
 		if (menuBar != null) {
-			if(Compat.isMacOsX()) {
-				System.setProperty("apple.laf.useScreenMenuBar", "true");
-				fromFrame.setJMenuBar(null);
-				toFrame.setJMenuBar(menuBar);
-				System.setProperty("apple.laf.useScreenMenuBar", "false");
-			} else {
+			if(!Compat.isMacOsX()) {
 				fromFrame.setJMenuBar(null);
 				toFrame.setJMenuBar(menuBar);
 			}
