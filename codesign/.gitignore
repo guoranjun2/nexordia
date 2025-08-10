@@ -2,4 +2,4 @@
 !.gitignore
 !codesign-example.bat
 !sign-jars-on-mac.sh
-
+!deploy-github-release.sh
