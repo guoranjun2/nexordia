@@ -134,11 +134,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private byte[] emptyConfigurations;
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
-	private final ApplicationViewController applicationViewController;
 	private java.awt.Dimension capturedWindowSize = null;
 
 	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
-		this.applicationViewController = applicationViewController;
 		viewSerializer = new MapViewSerializer();
 		rootWindow = new RootWindow(viewSerializer);
 		configureDefaultDockingWindowProperties();

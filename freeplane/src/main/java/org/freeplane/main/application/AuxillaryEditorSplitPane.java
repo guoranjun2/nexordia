@@ -31,6 +31,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	final private ApplicationResourceController resourceController;
 
 
+	private String mode;
+
 	public AuxillaryEditorSplitPane(Component mainComponent) {
 		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
 		this.mainComponent = mainComponent;
@@ -54,7 +56,12 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		else
 			super.setLayout(new SplitPaneLayoutManagerDecorator(layout));
 	}
-	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
+	void insertComponentIntoSplitPane(final JComponent pMindMapComponent, String mode) {
+		this.mode = mode;
+		insertComponentIntoSplitPane(pMindMapComponent);
+	}
+
+	private void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
 		auxillaryComponent = pMindMapComponent;
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 		setLeftComponent(null);
@@ -85,6 +92,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		setContinuousLayout(true);
 		setOneTouchExpandable(false);
 		super.setDividerLocation(0);
+		revalidate();
+		repaint();
 	}
 
 
@@ -170,13 +179,23 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			super.remove(component);
 	}
 
-	public void removeAuxiliaryComponent() {
+	void removeAuxiliaryComponent() {
 		if (auxillaryComponent != null) {
 			auxillaryComponent = null;
 			dividerLocationIsRestored = false;
 			setLeftComponent(null);
 			setRightComponent(null);
 			setLeftComponent(mainComponent);
+		}
+	}
+
+	public void moveAuxillaryComponentTo(AuxillaryEditorSplitPane toSplitPane, String targetMode) {
+		if (auxillaryComponent != null) {
+			final boolean isModeSame = targetMode.equals(mode);
+			if(isModeSame)
+				toSplitPane.insertComponentIntoSplitPane(auxillaryComponent, mode);
+			else
+				removeAuxiliaryComponent();
 		}
 	}
 }

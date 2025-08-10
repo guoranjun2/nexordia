@@ -81,6 +81,7 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(new NavigationMapPreviousViewAction());
 		this.frame = frame;
 		this.frameComponentMover = new FrameComponentMover(frame);
+		controller.getMapViewManager().addMapViewChangeListener(frameComponentMover);
 	}
 
 	/**
@@ -102,7 +103,7 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
 		final AuxillaryEditorSplitPane splitPane = getSplitPane();
-		splitPane.insertComponentIntoSplitPane(pMindMapComponent);
+		splitPane.insertComponentIntoSplitPane(pMindMapComponent, Controller.getCurrentModeController().getModeName());
 	}
 
 	private AuxillaryEditorSplitPane getSplitPane() {

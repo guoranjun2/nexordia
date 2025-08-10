@@ -20,17 +20,20 @@ package org.freeplane.main.application;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.EventQueue;
 import java.awt.KeyboardFocusManager;
 import java.awt.Window;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import org.freeplane.core.util.Compat;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.ui.IMapViewChangeListener;
 
-class FrameComponentMover implements PropertyChangeListener {
+class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListener{
 	private JFrame lastFocusedFrame = null;
 
 	public FrameComponentMover(JFrame frame) {
@@ -47,10 +50,24 @@ class FrameComponentMover implements PropertyChangeListener {
 			.removePropertyChangeListener("focusedWindow", this);
 	}
 
+
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		Window newFocusedWindow = (Window) evt.getNewValue();
+		final Component selectedComponent = Controller.getCurrentController().getMapViewManager().getSelectedComponent();
+		if(SwingUtilities.getWindowAncestor(selectedComponent) == newFocusedWindow)
+			afterFocusedWindowChange(newFocusedWindow);
+	}
 
+	@Override
+	public void afterViewChange(Component oldView, Component newView) {
+		if(newView == null)
+			return;
+		Window newFocusedWindow = SwingUtilities.getWindowAncestor(newView);
+		afterFocusedWindowChange(newFocusedWindow);
+	}
+
+	private void afterFocusedWindowChange(Window newFocusedWindow) {
 		if (newFocusedWindow instanceof JFrame) {
 			JFrame currentFrame = (JFrame) newFocusedWindow;
 
@@ -116,11 +133,8 @@ class FrameComponentMover implements PropertyChangeListener {
 		AuxillaryEditorSplitPane toSplitPane = findAuxiliarySplitPane(toFrame);
 
 		if (fromSplitPane != null && toSplitPane != null) {
-			JComponent auxiliaryComponent = fromSplitPane.getAuxiliaryComponent();
-			if (auxiliaryComponent != null) {
-				fromSplitPane.removeAuxiliaryComponent();
-				toSplitPane.insertComponentIntoSplitPane(auxiliaryComponent);
-			}
+			EventQueue.invokeLater(() ->
+				fromSplitPane.moveAuxillaryComponentTo(toSplitPane, Controller.getCurrentModeController().getModeName()));
 		}
 	}
 
