@@ -1,4 +1,9 @@
 ==============================
+1.12.13
+==============================
+UI elements follow selected map
+
+==============================
 1.12.12
 ==============================
 Node bookmarks (Navigate->Bookmark node, pop-up->Bookmark node)
