@@ -87,7 +87,9 @@ class UiEntryCreator implements EmojiConstants {
 			}
 			def emojiEntriesFile = new File(emojiDirectory, 'xml/images/emoji/xml/emojientries.xml')
 			emojiEntriesFile.parentFile.mkdirs()
-			emojiEntriesFile.withOutputStream {new XmlNodePrinter(new PrintWriter(new OutputStreamWriter(it, 'UTF-8'))).print(root)}
+			emojiEntriesFile.withWriter('UTF-8') { writer ->
+				writer.write(groovy.xml.XmlUtil.serialize(root))
+			}
 		}
 		
 		return this
