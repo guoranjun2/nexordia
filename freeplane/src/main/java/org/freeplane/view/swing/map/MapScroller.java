@@ -335,7 +335,7 @@ class MapScroller {
 			scrollNode(scrolledNode, scrollingDirective, slowScroll);
 		}
 
-		if(scrollsNodeTreeToVisible) {
+		if(scrollsNodeTreeToVisible && scrolledNode != null) {
 			scrollNodeTreeToVisible(scrolledNode, slowScroll);
 		}
         showSelectedAfterScroll();
