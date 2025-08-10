@@ -26,12 +26,14 @@ import java.awt.Window;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.IMapViewChangeListener;
+import org.freeplane.features.ui.IMapViewManager;
 
 class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListener{
 	private JFrame lastFocusedFrame = null;
@@ -54,9 +56,13 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		Window newFocusedWindow = (Window) evt.getNewValue();
-		final Component selectedComponent = Controller.getCurrentController().getMapViewManager().getSelectedComponent();
-		if(SwingUtilities.getWindowAncestor(selectedComponent) == newFocusedWindow)
+		final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
+		final JComponent selectedComponent = mapViewManager.getMapViewComponent();
+		final JComponent containedMapView = mapViewManager.findMapViewContainedIn(newFocusedWindow);
+		if(selectedComponent == containedMapView)
 			afterFocusedWindowChange(newFocusedWindow);
+		else if(containedMapView != null)
+			mapViewManager.changeToMapView(containedMapView);
 	}
 
 	@Override

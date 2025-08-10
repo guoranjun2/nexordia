@@ -132,9 +132,6 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         }
     }
 
-    private boolean containsMapView(MapView mapView) {
-        return SwingUtilities.isDescendingFrom(mapView, rootWindow);
-    }
 
     private boolean isMindMapEditor(MapView mapView) {
         return mapView.getModeController().getModeName().equals(MModeController.MODENAME);
@@ -153,26 +150,8 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
     }
 
     private void refreshToolbarForContainedMapViews() {
-        List<? extends Component> mapViews = Controller.getCurrentController().getMapViewManager().getMapViews();
-        MapView foundMapView = null;
-        MapView selectedMapView = null;
-
-        for (Component view : mapViews) {
-            if (view instanceof MapView) {
-                MapView mapView = (MapView) view;
-                if (mapView.isShowing() && containsMapView(mapView)) {
-                    if (foundMapView == null) {
-                        foundMapView = mapView;
-                    }
-                    if (mapView.isSelected()) {
-                        selectedMapView = mapView;
-                        break;
-                    }
-                }
-            }
-        }
-
-        MapView mapViewToUse = selectedMapView != null ? selectedMapView : foundMapView;
+        final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
+		MapView mapViewToUse = (MapView) mapViewManager.findMapViewContainedIn(rootWindow);
         if (mapViewToUse != null) {
             updateToolbarForMapView(mapViewToUse);
         } else {
@@ -188,7 +167,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         }
     }
 
-    private void updateToolbarForMapView(MapView mapView) {
+	private void updateToolbarForMapView(MapView mapView) {
     	if(currentSelectedMapView == mapView)
     		return;
         if (currentMap != null) {

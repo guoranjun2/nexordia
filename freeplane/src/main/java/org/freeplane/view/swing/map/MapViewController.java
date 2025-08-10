@@ -568,6 +568,31 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 	}
 
 	@Override
+	public JComponent findMapViewContainedIn(Component ancestor) {
+        MapView foundMapView = null;
+        MapView selectedMapView = null;
+
+        for (Component view : mapViewVector) {
+            if (view instanceof MapView) {
+                MapView mapView = (MapView) view;
+                if (mapView.isShowing() && SwingUtilities.isDescendingFrom(mapView, ancestor)) {
+                    if (foundMapView == null) {
+                        foundMapView = mapView;
+                    }
+                    if (mapView.isSelected()) {
+                        selectedMapView = mapView;
+                        break;
+                    }
+                }
+            }
+        }
+
+        MapView mapViewToUse = selectedMapView != null ? selectedMapView : foundMapView;
+		return mapViewToUse;
+
+	}
+
+	@Override
 	public Configurable getMapViewConfiguration() {
 		return getMapView();
 	}
