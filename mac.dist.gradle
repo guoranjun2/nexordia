@@ -17,14 +17,14 @@ task macosapp_extractzip {
     def zipExtracted = 'build/zip-extracted'
 
     doFirst {
-      if(! binZip.archivePath.exists())
-        ant.fail("File ${binZip.archivePath.path} not found")
+      if(! binZip.archiveFile.get().asFile.exists())
+        ant.fail("File ${binZip.archiveFile.get().asFile.path} not found")
       
       delete zipExtracted
       mkdir zipExtracted
       
       copy {
-        from(zipTree(binZip.archivePath))
+        from(zipTree(binZip.archiveFile.get().asFile))
         into(zipExtracted)
       }
       macosapp_input_dir = zipExtracted + '/' + file(zipExtracted).list()[0] 
