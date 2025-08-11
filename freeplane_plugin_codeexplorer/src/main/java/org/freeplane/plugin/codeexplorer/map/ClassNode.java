@@ -86,13 +86,13 @@ public class ClassNode extends CodeNode {
         String simpleName = javaClass.getSimpleName();
         if(simpleName.isEmpty()) {
             final String fullName = javaClass.getName();
-            if (javaClass.isAnonymousClass()) {
+            if (javaClass.isAnonymousClass() && javaClass.getEnclosingClass().isPresent()) {
                 JavaClass enclosingNamedClass = findEnclosingNamedClass(javaClass.getEnclosingClass().get());
                 return getSimpleName(enclosingNamedClass) + fullName.substring(enclosingNamedClass.getName().length());
             }
             if(javaClass.isArray())
                 return getSimpleName(javaClass.getBaseComponentType()) + "[]";
-            if(javaClass.isMemberClass()) {
+            if(javaClass.isMemberClass() && javaClass.getEnclosingClass().isPresent()) {
                 JavaClass enclosingNamedClass = javaClass.getEnclosingClass().get();
                 return fullName.substring(enclosingNamedClass.getName().length() + 1);
             }
