@@ -232,20 +232,100 @@ createGitHubRelease() {
 }
 
 uploadReleaseAssets() {
-    echo "Uploading release assets individually..."
+    echo "Uploading release assets (2 in parallel)..."
     echo "========================================"
     echo "Total assets to check: ${#ASSETS[@]}"
     
+    local next_asset_index=0
+    local active_pids=()
+    local pid_to_asset=()
+    local failed_uploads=()
     local successful_uploads=0
+    local max_parallel=2
     
-    for i in "${!ASSETS[@]}"; do
-        local asset="${ASSETS[$i]}"
-        echo ""
-        echo "[$((i + 1))/${#ASSETS[@]}] Processing asset..."
-        
-        uploadAsset "$asset"
-        successful_uploads=$((successful_uploads + 1))
+    startNextUpload() {
+        if [ $next_asset_index -lt ${#ASSETS[@]} ]; then
+            local asset="${ASSETS[$next_asset_index]}"
+            local asset_name=$(basename "$asset")
+            local index=$next_asset_index
+            
+            echo ""
+            echo "[$((index + 1))/${#ASSETS[@]}] Starting upload: $asset_name"
+            
+            (
+                uploadAsset "$asset"
+                echo $? > "/tmp/upload_status_$$_$index.txt"
+            ) &
+            
+            local pid=$!
+            active_pids+=($pid)
+            pid_to_asset[$pid]="$asset_name"
+            next_asset_index=$((next_asset_index + 1))
+        fi
+    }
+    
+    # Start initial uploads up to max_parallel
+    while [ ${#active_pids[@]} -lt $max_parallel ] && [ $next_asset_index -lt ${#ASSETS[@]} ]; do
+        startNextUpload
     done
+    
+    # Process uploads as they complete
+    while [ ${#active_pids[@]} -gt 0 ] || [ $next_asset_index -lt ${#ASSETS[@]} ]; do
+        # Wait for any background job to finish
+        if [ ${#active_pids[@]} -gt 0 ]; then
+            local finished_pid
+            wait -n ${active_pids[@]} 2>/dev/null
+            local wait_result=$?
+            
+            # Find which PID finished
+            local new_active_pids=()
+            for pid in "${active_pids[@]}"; do
+                if kill -0 $pid 2>/dev/null; then
+                    new_active_pids+=($pid)
+                else
+                    finished_pid=$pid
+                    
+                    # Check the actual exit status from the status file
+                    local status_file="/tmp/upload_status_$$_*.txt"
+                    for f in $status_file; do
+                        if [ -f "$f" ]; then
+                            local status=$(cat "$f")
+                            rm -f "$f"
+                            if [ "$status" -eq 0 ]; then
+                                successful_uploads=$((successful_uploads + 1))
+                            else
+                                failed_uploads+=("${pid_to_asset[$pid]}")
+                            fi
+                            break
+                        fi
+                    done
+                fi
+            done
+            active_pids=("${new_active_pids[@]}")
+            
+            # Start next upload if available
+            if [ $next_asset_index -lt ${#ASSETS[@]} ]; then
+                startNextUpload
+            fi
+        fi
+    done
+    
+    # Clean up any remaining status files
+    rm -f /tmp/upload_status_$$_*.txt
+    
+    # Check if any uploads failed
+    if [ ${#failed_uploads[@]} -gt 0 ]; then
+        echo ""
+        echo "========================================"
+        echo "Upload failed for the following assets:"
+        for asset in "${failed_uploads[@]}"; do
+            echo "  ✗ $asset"
+        done
+        echo ""
+        echo "Exiting on failure. You can resume by running the script again."
+        echo "Already uploaded assets will be skipped."
+        exit 1
+    fi
     
     echo ""
     echo "========================================"
@@ -271,6 +351,11 @@ uploadReleaseAssets() {
 }
 
 processRelease() {
+    echo "Pushing tags to remote repository..."
+    git push --tags
+    echo "✓ Tags pushed successfully"
+    echo ""
+    
     createGitHubRelease
     uploadReleaseAssets
 }
