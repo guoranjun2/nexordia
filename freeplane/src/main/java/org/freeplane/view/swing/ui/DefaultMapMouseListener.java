@@ -176,11 +176,11 @@ public class DefaultMapMouseListener implements IMouseListener {
 	 */
 	@Override
 	public void mouseDragged(final MouseEvent e) {
-		if(originX == -1)
-			return;
         rectangleMemorizer.mouseDragged(e);
         if(e.isConsumed())
             return;
+		if(originX == -1)
+			return;
 		final JComponent component = (JComponent) e.getComponent();
 		final MapView mapView = MapView.getMapView(component);
 		if(mapView == null)
