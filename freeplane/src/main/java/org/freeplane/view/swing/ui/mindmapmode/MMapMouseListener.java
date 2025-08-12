@@ -61,13 +61,13 @@ public class MMapMouseListener extends DefaultMapMouseListener{
 	}
 
 	public void mouseDragged(final MouseEvent e) {
-		if(originX == -1)
-			return;
 		final MapView mapView = (MapView) e.getComponent();
 		if (connectorView == null || !mapView.getLayoutType().equals(MapViewLayout.MAP)) {
 			super.mouseDragged(e);
 			return;
 		}
+		if(originX == -1)
+			return;
 		ConnectorModel connector = connectorView.getConnector();
 		final NodeModel target = connector.getTarget();
 		if(target == null) {

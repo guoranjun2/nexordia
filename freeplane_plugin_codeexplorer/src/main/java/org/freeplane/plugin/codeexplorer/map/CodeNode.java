@@ -50,7 +50,7 @@ public abstract class CodeNode extends NodeModel {
     }
 
     public static JavaClass findEnclosingNamedClass(JavaClass javaClass) {
-        if (javaClass.isAnonymousClass())
+        if (javaClass.isAnonymousClass() && javaClass.getEnclosingClass().isPresent())
             return findEnclosingNamedClass(javaClass.getEnclosingClass().get());
         else
             if(javaClass.isArray())
@@ -59,7 +59,7 @@ public abstract class CodeNode extends NodeModel {
                 return javaClass;
     }
     public static JavaClass findEnclosingTopLevelClass(JavaClass javaClass) {
-        if (javaClass.isNestedClass())
+        if (javaClass.isNestedClass() && javaClass.getEnclosingClass().isPresent())
             return findEnclosingTopLevelClass(javaClass.getEnclosingClass().get());
         else
             if(javaClass.isArray())
@@ -73,9 +73,12 @@ public abstract class CodeNode extends NodeModel {
             return hasValidTopLevelClass(javaClass.getBaseComponentType());
         if(javaClass.isTopLevelClass())
             return -1 == javaClass.getSimpleName().indexOf('-');
-        for(JavaClass enclosingClass = javaClass.getEnclosingClass().get();;
-                enclosingClass = enclosingClass.getEnclosingClass().get()) {
-            if(! classSourceLocationOf(enclosingClass).equals(classSourceLocationOf(javaClass)))
+        for(Optional<JavaClass> extectedEnclosingClass = javaClass.getEnclosingClass();;
+                extectedEnclosingClass = extectedEnclosingClass.get().getEnclosingClass()) {
+        	if(! extectedEnclosingClass.isPresent())
+        		return true;
+            final JavaClass enclosingClass = extectedEnclosingClass.get();
+			if(! classSourceLocationOf(enclosingClass).equals(classSourceLocationOf(javaClass)))
                 return false;
             if(enclosingClass.isTopLevelClass())
                 return true;
