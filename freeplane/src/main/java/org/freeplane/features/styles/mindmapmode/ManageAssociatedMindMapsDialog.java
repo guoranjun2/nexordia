@@ -37,7 +37,7 @@ public class ManageAssociatedMindMapsDialog{
     
     public ManageAssociatedMindMapsDialog(String title, final MapModel map){
         this.map = map;
-        Frame owner = UITools.getFrame();
+        Frame owner = UITools.getCurrentFrame();
         dialog = new JDialog(owner);
         FormBuilder formBuilder = FormBuilder.create().columns("p, 3dlu, fill:3dlu:grow, 3dlu, p")
                 .rows("p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p, 3dlu, p");
@@ -144,7 +144,7 @@ public class ManageAssociatedMindMapsDialog{
                     TextUtils.getText(fileChooserTitleProperty)
             );
             JFileChooser fileChooser = previewWithOptions.getFileChooser();
-            final int returnVal = fileChooser.showOpenDialog(UITools.getFrame());
+            final int returnVal = fileChooser.showOpenDialog(UITools.getCurrentFrame());
             if (returnVal != JFileChooser.APPROVE_OPTION) {
                 return;
             }

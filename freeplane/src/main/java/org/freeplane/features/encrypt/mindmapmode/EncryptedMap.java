@@ -49,7 +49,7 @@ class EncryptedMap extends AFreeplaneAction {
 	 * @param e 
 	 */
 	private StringBuilder getUsersPassword() {
-		final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getFrame(), true);
+		final EnterPasswordDialog pwdDialog = new EnterPasswordDialog(UITools.getCurrentFrame(), true);
 		pwdDialog.setModal(true);
 		pwdDialog.show();
 		if (pwdDialog.getResult() == EnterPasswordDialog.CANCEL) {

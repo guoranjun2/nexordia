@@ -324,7 +324,7 @@ public class MModeControllerFactory {
 		final JTabbedPane formattingPanel = UITools.getFreeplaneTabbedPanel();
 		Box resisableTabs = new CollapseableBoxBuilder("styleScrollPaneVisible").createBox(formattingPanel, Direction.RIGHT);
 		userInputListenerFactory.addToolBar("/format", ViewController.RIGHT, resisableTabs);
-		final JRootPane rootPane = ((RootPaneContainer)frameController.getCurrentRootComponent()).getRootPane();
+		final JRootPane rootPane = ((RootPaneContainer)frameController.getMenuComponent()).getRootPane();
 		final FButtonBar fButtonToolBar = new FButtonBar(rootPane);
 		UIComponentVisibilityDispatcher.install(fButtonToolBar, "fbarVisible");
 		fButtonToolBar.setVisible(ResourceController.getResourceController().getBooleanProperty("fbarVisible"));

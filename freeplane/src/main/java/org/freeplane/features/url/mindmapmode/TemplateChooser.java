@@ -65,7 +65,7 @@ class TemplateChooser {
 
 
 	File chosenTemplateFile() {
-		int option = JOptionPane.showConfirmDialog(UITools.getFrame(), verticalBox, TextUtils.getText("select_template"),
+		int option = JOptionPane.showConfirmDialog(UITools.getCurrentFrame(), verticalBox, TextUtils.getText("select_template"),
 			JOptionPane.PLAIN_MESSAGE);
 		final String selectedTemplate = (String) templateComboBox.getSelectedItem();
 		if(option == JOptionPane.CLOSED_OPTION)

@@ -206,7 +206,7 @@ public class MMapViewController extends MapViewController implements IEditBaseCr
             final String text = TextUtils.getText("save_unsaved") + "\n" + map.getTitle();
             final String title = TextUtils.getText("SaveAction.text");
             Component dialogParent;
-            final Frame viewFrame = UITools.getFrame();
+            final Frame viewFrame = UITools.getCurrentFrame();
             if(viewFrame != null && viewFrame.isShowing() && viewFrame.getExtendedState() != Frame.ICONIFIED)
                 dialogParent = viewFrame;
             else

@@ -209,25 +209,22 @@ public class UITools {
 			});
 	}
 
-	/**
-	 * Use {@link #getFrame()}
-	 */
-	@Deprecated
 	public static Frame getCurrentFrame() {
-		return getFrame();
+		final Component currentRootComponent = getCurrentRootComponent();
+		return frameOf(currentRootComponent);
 	}
 
-	static public Component getMenuComponent(){
-		for(Window frame = getFrame(); frame != null; frame = frame.getOwner()) {
-			if(frame instanceof Frame &&  ((Frame)frame).getMenuBar() != null)
-				return frame;
-		}
-		return null;
+	private static Frame frameOf(final Component currentRootComponent) {
+		return currentRootComponent instanceof Frame ? (Frame)currentRootComponent : JOptionPane.getFrameForComponent(currentRootComponent);
 	}
 
 	public static Frame getFrame() {
-		final Component currentRootComponent = getCurrentRootComponent();
-		return currentRootComponent instanceof Frame ? (Frame)currentRootComponent : JOptionPane.getFrameForComponent(currentRootComponent);
+		final Component mainFrame = Controller.getCurrentController().getViewController().getMainFrameComponent();
+		return frameOf(mainFrame);
+	}
+
+	static public Component getMenuComponent(){
+		return Controller.getCurrentController().getViewController().getMenuComponent();
 	}
 
 	static public Component getCurrentRootComponent(){

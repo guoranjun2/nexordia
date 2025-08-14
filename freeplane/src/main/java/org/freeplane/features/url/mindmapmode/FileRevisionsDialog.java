@@ -207,7 +207,7 @@ class FileRevisionsDialog extends JDialog {
 	}
 
 	public FileRevisionsDialog(final File file, final File[] revisions, AlternativeFileMode mode) {
-		super((Frame) UITools.getCurrentRootComponent(), true);
+		super((Frame) UITools.getMenuComponent(), true);
 		if(mode == AlternativeFileMode.ALL)
 			keyBase = ALL_KEY_BASE;
 		else if(mode == AlternativeFileMode.AUTOSAVE)
@@ -256,7 +256,7 @@ class FileRevisionsDialog extends JDialog {
 
 		pack();
 		UITools.showFrame();
-		setLocationRelativeTo(UITools.getCurrentRootComponent());
+		setLocationRelativeTo(UITools.getMenuComponent());
 		setVisible(true);
 	}
 

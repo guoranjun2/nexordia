@@ -332,7 +332,7 @@ public class ReminderHook extends PersistentNodeHook implements IExtension {
 
 		String information = modeController.getExtension(TextController.class).getText(node);
 		String title = TextUtils.getText("reminderNotification");
-		final int option = JOptionPane.showOptionDialog(UITools.getFrame(), new JLabel(information), title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, NotificationOptions.values(), NotificationOptions.SELECT_NODE);
+		final int option = JOptionPane.showOptionDialog(UITools.getCurrentFrame(), new JLabel(information), title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, NotificationOptions.values(), NotificationOptions.SELECT_NODE);
 		if(option >= 0) {
 			switch(NotificationOptions.values()[option]){
 			case SELECT_NODE:

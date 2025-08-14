@@ -177,6 +177,11 @@ class AppletViewController extends FrameController implements IMapViewChangeList
 
 
 	@Override
+	public Component getMainFrameComponent() {
+		return applet;
+	}
+
+	@Override
 	public void openMapNextView() {
 		throw new RuntimeException("Method not implemented");
 	}

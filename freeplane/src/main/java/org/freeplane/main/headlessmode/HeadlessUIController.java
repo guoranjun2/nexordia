@@ -256,6 +256,11 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
+	public Component getMainFrameComponent() {
+		throw methodNotImplementedException();
+	}
+
+	@Override
 	protected boolean isMenuComponentInFullScreenMode() {
 		return false;
 	}

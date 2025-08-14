@@ -117,7 +117,7 @@ public class SelectMenuItemDialog extends JDialog {
 	}
 
 	public SelectMenuItemDialog(final NodeModel node, boolean enableNonLeafNodes) {
-		super((Frame) UITools.getCurrentRootComponent(), TextUtils.getText("select_menu_item_dialog"), true);
+		super((Frame) UITools.getMenuComponent(), TextUtils.getText("select_menu_item_dialog"), true);
 		this.enableNonLeafNodes = enableNonLeafNodes;
 		Controller.getCurrentController().getMapViewManager().scrollNodeToVisible(node);
 		UITools.setDialogLocationRelativeTo(this, node);

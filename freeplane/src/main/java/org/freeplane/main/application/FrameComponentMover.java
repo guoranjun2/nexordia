@@ -150,4 +150,10 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		}
 		return null;
 	}
+
+	public JFrame getMenuFrame() {
+		return lastFocusedFrame;
+	}
+
+
 }

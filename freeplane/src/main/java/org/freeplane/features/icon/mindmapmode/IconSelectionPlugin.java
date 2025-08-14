@@ -82,7 +82,7 @@ public class IconSelectionPlugin extends AFreeplaneAction {
 		for (AFreeplaneAction aFreeplaneAction : iconActions)
 			actions.add((IconDescription) aFreeplaneAction);
 
-		selectionDialog = new IconSelectionPopupDialog(UITools.getFrame(), actions);
+		selectionDialog = new IconSelectionPopupDialog(UITools.getCurrentFrame(), actions);
 		ActionPanel controls = mIconController.createActionPanelWithControlActions();
 		selectionDialog.addActionPanel(controls);
 		final NodeModel selected = controller.getSelection().getSelected();

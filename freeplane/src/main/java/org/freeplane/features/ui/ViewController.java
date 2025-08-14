@@ -20,6 +20,7 @@
 package org.freeplane.features.ui;
 
 import java.awt.Component;
+import java.awt.Window;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -133,7 +134,10 @@ public interface ViewController {
 
 	public void nextMapView();
 	public Component getCurrentRootComponent();
-
+	default Component getMenuComponent() {
+		return getMainFrameComponent();
+	}
+	public Component getMainFrameComponent();
 	public List<? extends Component> getMapViewVector();
 
 	public void openMapNextView();

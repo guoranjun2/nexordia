@@ -35,7 +35,7 @@ public class PopupDialog {
             optionComponent = scrollPane;
         }
         JOptionPane pane = new JOptionPane(optionComponent);
-        Component menuComponent = UITools.getCurrentRootComponent();
+        Component menuComponent = UITools.getMenuComponent();
         final JDialog d = pane.createDialog(menuComponent, popup.getName());
         d.getRootPane().applyComponentOrientation(menuComponent.getComponentOrientation());
         d.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);

@@ -189,7 +189,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 					final DockingWindowProperties windowProperties = addedWindow.getWindowProperties();
 					windowProperties.setDockEnabled(false);
 					windowProperties.setUndockEnabled(false);
-					if(UITools.getFrame().isResizable())
+					if(UITools.getCurrentFrame().isResizable())
 						setTabAreaVisiblePolicy((TabWindow) addedWindow);
 					else
 						setTabAreaPolicy((TabWindow) addedWindow, TabAreaVisiblePolicy.NEVER);
@@ -198,7 +198,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 					final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
 					if(topLevelAncestor instanceof JFrame){
 						if(iconColorReplacer == null)
-							iconColorReplacer = new IconColorReplacer(((Window) UITools.getCurrentRootComponent()).getIconImages());
+							iconColorReplacer = new IconColorReplacer((UITools.getFrame()).getIconImages());
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
 						final JFrame frame = (JFrame)topLevelAncestor;
 						frame.getRootPane().putClientProperty(FREEPLANE_FLOATING_WINDOW, addedWindow);

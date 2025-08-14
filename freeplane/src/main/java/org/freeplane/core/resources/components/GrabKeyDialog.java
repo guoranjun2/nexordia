@@ -244,7 +244,7 @@ public class GrabKeyDialog extends JDialog {
 	private IKeystrokeValidator validator;
 
 	public GrabKeyDialog(final String input, final int modifierMask) {
-		super((Window) UITools.getCurrentRootComponent(), ModalityType.APPLICATION_MODAL);
+		super((Window) UITools.getMenuComponent(), ModalityType.APPLICATION_MODAL);
 		setTitle(GrabKeyDialog.getText("grab-key.title"));
 		init(input, modifierMask);
 	}

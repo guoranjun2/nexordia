@@ -64,7 +64,7 @@ public class SaveAcceleratorPresetsAction extends AFreeplaneAction {
 		}
 		final File keysetFile = new File(acceleratorsUserDirectory, keyset + ".properties");
 		if (keysetFile.exists()) {
-			final int confirm = JOptionPane.showConfirmDialog(UITools.getCurrentRootComponent(), TextUtils
+			final int confirm = JOptionPane.showConfirmDialog(UITools.getMenuComponent(), TextUtils
 			    .getText("overwrite_keyset_question"), "Freeplane", JOptionPane.YES_NO_OPTION);
 			if (confirm != JOptionPane.YES_OPTION) {
 				return;
@@ -102,7 +102,7 @@ public class SaveAcceleratorPresetsAction extends AFreeplaneAction {
 
 
         FocusRequestor.requestFocus(inputField);
-        int result = JOptionPane.showConfirmDialog(UITools.getCurrentRootComponent(), dialogComponents,
+        int result = JOptionPane.showConfirmDialog(UITools.getMenuComponent(), dialogComponents,
                 TextUtils.getText("enter_keyset_name"),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String presetName = result == JOptionPane.OK_OPTION ? inputField.getText() : "";

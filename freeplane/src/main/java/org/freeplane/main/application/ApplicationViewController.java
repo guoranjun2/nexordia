@@ -63,7 +63,7 @@ class ApplicationViewController extends FrameController {
     }
 
 	// // 	final private Controller controller;
-	final private JFrame frame;
+	final private JFrame mainFrame;
 	final private NavigationNextMapAction navigationNextMap;
 	final private NavigationPreviousMapAction navigationPreviousMap;
 	private MapViewDockingWindows mapViewWindows;
@@ -79,7 +79,7 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(navigationNextMap);
 		controller.addAction(new NavigationMapNextViewAction());
 		controller.addAction(new NavigationMapPreviousViewAction());
-		this.frame = frame;
+		this.mainFrame = frame;
 		this.frameComponentMover = new FrameComponentMover(frame);
 		controller.getMapViewManager().addMapViewChangeListener(frameComponentMover);
 	}
@@ -185,7 +185,7 @@ class ApplicationViewController extends FrameController {
 		}
 		frameComponentMover.uninstall();
 		controller.fireApplicationStopped();
-		frame.dispose();
+		mainFrame.dispose();
 		return true;
 	}
 
@@ -201,13 +201,13 @@ class ApplicationViewController extends FrameController {
 		if(mapViewWindows == null)
 			return;
 		final ApplicationResourceController resourceController = (ApplicationResourceController)ResourceController.getResourceController();
-		if (frame.isResizable()) {
-			final int winState = frame.getExtendedState() & ~Frame.ICONIFIED;
+		if (mainFrame.isResizable()) {
+			final int winState = mainFrame.getExtendedState() & ~Frame.ICONIFIED;
 			if (Frame.MAXIMIZED_BOTH != (winState & Frame.MAXIMIZED_BOTH)) {
-				resourceController.setProperty("appwindow_x", String.valueOf(frame.getX()));
-				resourceController.setProperty("appwindow_y", String.valueOf(frame.getY()));
-				resourceController.setProperty("appwindow_width", String.valueOf(frame.getWidth()));
-				resourceController.setProperty("appwindow_height", String.valueOf(frame.getHeight()));
+				resourceController.setProperty("appwindow_x", String.valueOf(mainFrame.getX()));
+				resourceController.setProperty("appwindow_y", String.valueOf(mainFrame.getY()));
+				resourceController.setProperty("appwindow_width", String.valueOf(mainFrame.getWidth()));
+				resourceController.setProperty("appwindow_height", String.valueOf(mainFrame.getHeight()));
 			}
 			resourceController.setProperty("appwindow_state", String.valueOf(winState));
 		}
@@ -219,11 +219,11 @@ class ApplicationViewController extends FrameController {
 	protected void setFreeplaneMenuBar(final FreeplaneMenuBar menuBar) {
 	    if(Compat.isMacOsX()) {
 	        System.setProperty("apple.laf.useScreenMenuBar", "true");
-            frame.setJMenuBar(menuBar);
+            getMenuComponent().setJMenuBar(menuBar);
             System.setProperty("apple.laf.useScreenMenuBar", "false");
         }
 	    else
-	        frame.setJMenuBar(menuBar);
+	    	getMenuComponent().setJMenuBar(menuBar);
 	}
 
 	/*
@@ -232,19 +232,19 @@ class ApplicationViewController extends FrameController {
 	 */
 	@Override
 	public void setTitle(final String frameTitle) {
-		frame.setTitle(frameTitle);
+		mainFrame.setTitle(frameTitle);
 		mapViewWindows.setTitle();
 	}
 
 	@Override
 	public void setWaitingCursor(final boolean waiting) {
 		if (waiting) {
-			frame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			frame.getRootPane().getGlassPane().setVisible(true);
+			mainFrame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			mainFrame.getRootPane().getGlassPane().setVisible(true);
 		}
 		else {
-			frame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-			frame.getRootPane().getGlassPane().setVisible(false);
+			mainFrame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			mainFrame.getRootPane().getGlassPane().setVisible(false);
 		}
 	}
 
@@ -258,7 +258,7 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void init(Controller controller) {
-		frame.getContentPane().setLayout(new BorderLayout());
+		mainFrame.getContentPane().setLayout(new BorderLayout());
 		// --- Set Note Window Location ---
 		// disable all hotkeys for JSplitPane
 		mapViewWindows = new MapViewDockingWindows(this);
@@ -266,10 +266,10 @@ class ApplicationViewController extends FrameController {
 		AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
 		frameComponentMover.install();
 		splitPane.setResizeWeight(1.0d);
-		Container contentPane = frame.getContentPane();
+		Container contentPane = mainFrame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
         contentPane.add(splitPane, BorderLayout.CENTER);
-		initFrame(frame);
+		initFrame(mainFrame);
 		super.init(controller);
 	}
 
@@ -345,15 +345,25 @@ class ApplicationViewController extends FrameController {
 	public Component getCurrentRootComponent() {
 		final Component mapViewComponent = selectedMapView();
 		if (mapViewComponent == null) {
-			return frame;
+			return mainFrame;
 		}
 		final Component rootComponent = SwingUtilities.getRoot(mapViewComponent);
 		if (rootComponent != null)
 			return rootComponent;
 		else
-			return frame;
+			return mainFrame;
 	}
 
+
+	@Override
+	public JFrame getMainFrameComponent() {
+		return mainFrame;
+	}
+
+	@Override
+	public JFrame getMenuComponent() {
+		return frameComponentMover.getMenuFrame();
+	}
 
 	@Override
 	public List<? extends Component> getMapViewVector() {
