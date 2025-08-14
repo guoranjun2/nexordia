@@ -2713,7 +2713,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	public void selectAsTheOnlyOneSelected(final NodeView newSelected, final boolean requestFocus) {
 		newSelected.invalidate();
-		if (requestFocus && ! newSelected.focused()) {
+		if (requestFocus && ! newSelected.focused() && isShowing()) {
 			newSelected.requestFocusInWindow();
 		}
 		selection.select(newSelected);

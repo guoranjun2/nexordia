@@ -28,28 +28,41 @@ import java.beans.PropertyChangeListener;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JMenuBar;
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.resources.IFreeplanePropertyListener;
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
 
-class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListener{
-	private JFrame lastFocusedFrame = null;
+class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListener, IFreeplanePropertyListener {
+	private static final String UI_ELEMENTS_FOLLOW_SELECTED_MAP_PROPERTY = "ui_elements_follow_selected_map";
+	private JFrame lastUIFrame = null;
+	private boolean uiElementsFollowSelectedMap;
 
 	public FrameComponentMover(JFrame frame) {
-		lastFocusedFrame = frame;
+		lastUIFrame = frame;
+		uiElementsFollowSelectedMap = uiElementsFollowSelectedMap();
 	}
 
-	public void install() {
+	public void installFocusListener() {
 		KeyboardFocusManager.getCurrentKeyboardFocusManager()
 			.addPropertyChangeListener("focusedWindow", this);
+		ResourceController.getResourceController().addPropertyChangeListener(this);
 	}
 
 	public void uninstall() {
 		KeyboardFocusManager.getCurrentKeyboardFocusManager()
 			.removePropertyChangeListener("focusedWindow", this);
+	}
+
+	void moveUIElements() {
+		 final Window uiFrame = findUIFrame();
+		 afterUIWindowChange(uiFrame);
 	}
 
 
@@ -59,29 +72,47 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
 		final JComponent selectedComponent = mapViewManager.getMapViewComponent();
 		final JComponent containedMapView = mapViewManager.findMapViewContainedIn(newFocusedWindow);
-		if(selectedComponent == containedMapView)
-			afterFocusedWindowChange(newFocusedWindow);
-		else if(containedMapView != null)
+		if(selectedComponent == containedMapView) {
+			if(uiElementsFollowSelectedMap)
+				afterUIWindowChange(newFocusedWindow);
+		} else if(containedMapView != null)
 			mapViewManager.changeToMapView(containedMapView);
 	}
 
 	@Override
-	public void afterViewChange(Component oldView, Component newView) {
-		if(newView == null)
-			return;
-		Window newFocusedWindow = SwingUtilities.getWindowAncestor(newView);
-		afterFocusedWindowChange(newFocusedWindow);
+	public void propertyChanged(String propertyName, String newValue, String oldValue) {
+		if(propertyName.equals(UI_ELEMENTS_FOLLOW_SELECTED_MAP_PROPERTY)) {
+			uiElementsFollowSelectedMap = Boolean.parseBoolean(newValue);
+			Window menuWindow = findUIFrame();
+			afterUIWindowChange(menuWindow);
+		}
 	}
 
-	private void afterFocusedWindowChange(Window newFocusedWindow) {
+	private Window findUIFrame() {
+		return uiElementsFollowSelectedMap ? UITools.getCurrentFrame() : UITools.getFrame();
+	}
+
+	@Override
+	public void afterViewChange(Component oldView, Component newView) {
+		if(newView != null && uiElementsFollowSelectedMap) {
+			Window newFocusedWindow = SwingUtilities.getWindowAncestor(newView);
+			afterUIWindowChange(newFocusedWindow);
+		}
+	}
+
+	private boolean uiElementsFollowSelectedMap() {
+		return ResourceController.getResourceController().getBooleanProperty(UI_ELEMENTS_FOLLOW_SELECTED_MAP_PROPERTY);
+	}
+
+	private void afterUIWindowChange(Window newFocusedWindow) {
 		if (newFocusedWindow instanceof JFrame) {
 			JFrame currentFrame = (JFrame) newFocusedWindow;
 
-			if (lastFocusedFrame != null && lastFocusedFrame != currentFrame) {
-				moveNonCenterComponents(lastFocusedFrame, currentFrame);
+			if (lastUIFrame != null && lastUIFrame != currentFrame) {
+				moveNonCenterComponents(lastUIFrame, currentFrame);
 			}
 
-			lastFocusedFrame = currentFrame;
+			lastUIFrame = currentFrame;
 		}
 	}
 
@@ -110,14 +141,16 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	}
 
 	private void moveMenuBar(JFrame fromFrame, JFrame toFrame) {
-		javax.swing.JMenuBar menuBar = fromFrame.getJMenuBar();
+		JMenuBar menuBar = fromFrame.getJMenuBar();
 		if (menuBar != null) {
-			if(!Compat.isMacOsX()) {
-				fromFrame.setJMenuBar(null);
-				toFrame.setJMenuBar(menuBar);
-			}
+			if(Compat.isMacOsX()) {
+		        System.setProperty("apple.laf.useScreenMenuBar", "true");
+		        toFrame.setJMenuBar(menuBar);
+	            System.setProperty("apple.laf.useScreenMenuBar", "false");
+	        }
+		    else
+		    	toFrame.setJMenuBar(menuBar);
 		}
-
 	}
 
 	private void moveComponentIfExists(Container fromPane, Container toPane, String position) {
@@ -151,9 +184,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		return null;
 	}
 
-	public JFrame getMenuFrame() {
-		return lastFocusedFrame;
+	public JFrame getUIFrame() {
+		return lastUIFrame;
 	}
-
-
 }

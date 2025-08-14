@@ -98,6 +98,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 // // 	private Controller controller;
 	private FreeplaneSplashModern splash = null;
     private boolean startupFinished = false;
+	private FrameComponentMover frameComponentMover;
 	private ApplicationViewController viewController;
 	/** allows to disable loadLastMap(s) if there already is a second instance running. */
 	private boolean dontLoadLastMaps;
@@ -207,8 +208,8 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 					controller.addAction(new CloseAllMapsAction(mapViewController));
 					controller.addAction(new CloseAllOtherMapsAction(mapViewController));
 
-
-					viewController = new ApplicationViewController(controller, mapViewController, frame);
+					frameComponentMover = new FrameComponentMover(frame);
+					viewController = new ApplicationViewController(controller, mapViewController, frame, frameComponentMover);
 					splash = new FreeplaneSplashModern(frame);
 					mapViewController.addMapViewChangeListener(applicationResourceController.getLastOpenedList());
 				}
@@ -310,7 +311,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 
 			private void showFrame() {
 				splash.toBack();
-				frame = (JFrame) viewController.getMenuComponent();
+				frame = viewController.getMainFrameComponent();
 				final int extendedState = frame.getExtendedState();
 				contentPane = frame.getContentPane();
 				contentPane.setVisible(false);
@@ -333,6 +334,11 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 					if(options.shouldStopAfterLaunch())
 						System.exit(0);
 				});
+				controller.getMapViewManager().addMapViewChangeListener(frameComponentMover);
+				frameComponentMover.moveUIElements();
+				viewController.setFreeplaneMenuBar(controller.getModeController().getUserInputListenerFactory().getMenuBar());
+				frameComponentMover.installFocusListener();
+
 			}
 
 			private void focusCurrentView(Runnable onFocus) {

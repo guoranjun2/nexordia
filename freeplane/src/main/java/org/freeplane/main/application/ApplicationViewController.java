@@ -70,7 +70,7 @@ class ApplicationViewController extends FrameController {
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
 	private final FrameComponentMover frameComponentMover;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
-	                                 final JFrame frame) {
+	                                 final JFrame frame, FrameComponentMover frameComponentMover) {
 		super(controller, mapViewController, "");
 //		this.controller = controller;
 		navigationPreviousMap = new NavigationPreviousMapAction();
@@ -80,8 +80,7 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(new NavigationMapNextViewAction());
 		controller.addAction(new NavigationMapPreviousViewAction());
 		this.mainFrame = frame;
-		this.frameComponentMover = new FrameComponentMover(frame);
-		controller.getMapViewManager().addMapViewChangeListener(frameComponentMover);
+		this.frameComponentMover = frameComponentMover;
 	}
 
 	/**
@@ -183,7 +182,6 @@ class ApplicationViewController extends FrameController {
 		if (!super.quit()) {
 			return false;
 		}
-		frameComponentMover.uninstall();
 		controller.fireApplicationStopped();
 		mainFrame.dispose();
 		return true;
@@ -217,13 +215,17 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	protected void setFreeplaneMenuBar(final FreeplaneMenuBar menuBar) {
-	    if(Compat.isMacOsX()) {
+	    final JFrame menuComponent = getMenuComponent();
+		if(! menuComponent.isVisible()) {
+			return;
+		}
+		if(Compat.isMacOsX()) {
 	        System.setProperty("apple.laf.useScreenMenuBar", "true");
-            getMenuComponent().setJMenuBar(menuBar);
+            menuComponent.setJMenuBar(menuBar);
             System.setProperty("apple.laf.useScreenMenuBar", "false");
         }
 	    else
-	    	getMenuComponent().setJMenuBar(menuBar);
+	    	menuComponent.setJMenuBar(menuBar);
 	}
 
 	/*
@@ -264,7 +266,6 @@ class ApplicationViewController extends FrameController {
 		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
-		frameComponentMover.install();
 		splitPane.setResizeWeight(1.0d);
 		Container contentPane = mainFrame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
@@ -362,7 +363,7 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public JFrame getMenuComponent() {
-		return frameComponentMover.getMenuFrame();
+		return mainFrame.getMenuBar() != null ? mainFrame : frameComponentMover.getUIFrame();
 	}
 
 	@Override
