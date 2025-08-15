@@ -870,10 +870,10 @@ public class UITools {
 
     public static void resetMenuBarOnMac() {
         if(Compat.isMacOsX()) {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            final Frame frame = getFrame();
+            final Frame frame = frameOf(getMenuComponent());
             if(frame != null) {
                 final MenuBar menuBar = frame.getMenuBar();
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
                 frame.setMenuBar(null);
                 frame.setMenuBar(menuBar);
                 System.setProperty("apple.laf.useScreenMenuBar", "false");
