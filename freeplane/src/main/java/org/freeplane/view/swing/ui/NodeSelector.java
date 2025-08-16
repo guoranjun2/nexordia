@@ -47,7 +47,12 @@ import org.freeplane.view.swing.map.NodeView;
  * 19.06.2013
  */
 public class NodeSelector implements MouseTimerDelegate.ActionProvider {
-    static {
+    private static final String SELECTION_INSIDE_SELECTED_WINDOW = "selection_inside.selected_window";
+	private static final String SELECTION_INSIDE_ANY_MAP = "selection_inside.any_map";
+	private static final String SELECTION_INSIDE_SELECTED_MAP_VIEW = "selection_inside.selected_map_view";
+	private static final String MOUSE_OVER_SELECTION_INSIDE = "mouse_over_selection_inside";
+
+	static {
         migrateSelectionPropertiesFromLegacyMethod();
     }
 	private static void migrateSelectionPropertiesFromLegacyMethod() {
@@ -147,7 +152,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 			return;
 		}
 
-		final String selectionTiming = getSelectionBehavior();
+		final String selectionTiming = getSelectionBehavior(e.getComponent());
 		if (selectionTiming.equals(SELECTION_DISABLED)) {
 			return;
 		}
@@ -175,8 +180,8 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	}
 
 	@Override
-	public boolean isActionEnabled() {
-		final String selectionBehavior = getSelectionBehavior();
+	public boolean isActionEnabled(MouseEvent e) {
+		final String selectionBehavior = getSelectionBehavior(e.getComponent());
 		return !selectionBehavior.equals(SELECTION_DISABLED);
 	}
 
@@ -239,13 +244,26 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		timerDelegate.trackWindowForComponent(c);
 	}
 
-	private String getSelectionBehavior() {
+	private String getSelectionBehavior(Component c) {
 		ResourceController rc = ResourceController.getResourceController();
 		String behavior = rc.getProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
-		if ("enabled".equals(behavior)) {
+		if (SELECTION_DISABLED.equals(behavior)) {
+			return SELECTION_DISABLED;
+		} else if ("enabled".equals(behavior)) {
 			behavior = SELECTION_IMMEDIATE;
 			rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
 		}
-		return behavior;
+		String selectionInside = rc.getProperty(MOUSE_OVER_SELECTION_INSIDE, SELECTION_INSIDE_SELECTED_MAP_VIEW);
+		switch (selectionInside) {
+		case SELECTION_INSIDE_ANY_MAP:
+			return behavior;
+		case SELECTION_INSIDE_SELECTED_MAP_VIEW:
+			final MapView map = (MapView) SwingUtilities.getAncestorOfClass(MapView.class, c);
+			return map != null && map.isSelected() ? behavior : SELECTION_DISABLED;
+		case SELECTION_INSIDE_SELECTED_WINDOW:
+			return  SwingUtilities.getWindowAncestor(c).isFocused() ? behavior : SELECTION_DISABLED;
+		default:
+			return SELECTION_DISABLED;
+		}
 	}
 }

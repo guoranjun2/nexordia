@@ -192,7 +192,7 @@ class NodeFolder implements MouseTimerDelegate.ActionProvider {
     }
 
     @Override
-    public boolean isActionEnabled() {
+    public boolean isActionEnabled(MouseEvent e) {
         final String foldingTiming = ResourceController.getResourceController().getProperty(MOUSE_OVER_FOLDING_TIMING);
         return !foldingTiming.equals(FOLDING_DISABLED);
     }

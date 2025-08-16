@@ -49,7 +49,7 @@ public class MouseTimerDelegate {
 
     public interface ActionProvider {
         ActionListener createDelayedAction(MouseEvent e);
-        boolean isActionEnabled();
+        boolean isActionEnabled(MouseEvent e);
     }
 
     public void createTimer(final MouseEvent e, ActionProvider actionProvider) {
@@ -69,12 +69,12 @@ public class MouseTimerDelegate {
 
         controlRegionForDelayedAction = getControlRegion(e.getPoint());
 
-        if (!actionProvider.isActionEnabled()) {
+        if (!actionProvider.isActionEnabled(e)) {
             return;
         }
 
         delayedAction = actionProvider.createDelayedAction(e);
-        
+
         final int mouseOverDelay = getMouseOverDelay();
         timerForDelayedAction = new Timer(mouseOverDelay, delayedAction);
         timerForDelayedAction.setRepeats(false);

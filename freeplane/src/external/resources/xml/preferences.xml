@@ -297,6 +297,11 @@
 					<choice value="delayed" />
 					<choice value="immediate" />
 				</combo>
+				<combo name="mouse_over_selection_inside">
+					<choice value="selection_inside.selected_map_view" />
+					<choice value="selection_inside.selected_window" />
+					<choice value="selection_inside.any_map" />
+				</combo>
 				<combo name="mouse_over_folding_timing">
 					<choice value="disabled" />
 					<choice value="delayed" />
