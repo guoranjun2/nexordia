@@ -299,6 +299,7 @@
 				</combo>
 				<combo name="mouse_over_selection_inside">
 					<choice value="selection_inside.selected_map_view" />
+					<choice value="selection_inside.same_map" />
 					<choice value="selection_inside.selected_window" />
 					<choice value="selection_inside.any_map" />
 				</combo>

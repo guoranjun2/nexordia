@@ -48,7 +48,8 @@ import org.freeplane.view.swing.map.NodeView;
  * 19.06.2013
  */
 public class NodeSelector implements MouseTimerDelegate.ActionProvider {
-    private static final String SELECTION_INSIDE_SELECTED_WINDOW = "selection_inside.selected_window";
+    private static final String SELECTION_INSIDE_SAME_MAP = "selection_inside.same_map";
+	private static final String SELECTION_INSIDE_SELECTED_WINDOW = "selection_inside.selected_window";
 	private static final String SELECTION_INSIDE_ANY_MAP = "selection_inside.any_map";
 	private static final String SELECTION_INSIDE_SELECTED_MAP_VIEW = "selection_inside.selected_map_view";
 	private static final String MOUSE_OVER_SELECTION_INSIDE = "mouse_over_selection_inside";
@@ -261,6 +262,13 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		case SELECTION_INSIDE_SELECTED_MAP_VIEW: {
 			final MapView map = (MapView) SwingUtilities.getAncestorOfClass(MapView.class, c);
 			return map != null && map.isSelected() ? behavior : SELECTION_DISABLED;
+		}
+		case SELECTION_INSIDE_SAME_MAP: {
+			final MapView map = (MapView) SwingUtilities.getAncestorOfClass(MapView.class, c);
+			if( map == null)
+				return SELECTION_DISABLED;
+			final IMapSelection selection = map.getModeController().getController().getSelection();
+			return selection != null  && map.getMap() == selection.getMap() ? behavior : SELECTION_DISABLED;
 		}
 		case SELECTION_INSIDE_SELECTED_WINDOW: {
 			final Window windowAncestor = SwingUtilities.getWindowAncestor(c);
