@@ -23,6 +23,7 @@ import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -257,11 +258,14 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		switch (selectionInside) {
 		case SELECTION_INSIDE_ANY_MAP:
 			return behavior;
-		case SELECTION_INSIDE_SELECTED_MAP_VIEW:
+		case SELECTION_INSIDE_SELECTED_MAP_VIEW: {
 			final MapView map = (MapView) SwingUtilities.getAncestorOfClass(MapView.class, c);
 			return map != null && map.isSelected() ? behavior : SELECTION_DISABLED;
-		case SELECTION_INSIDE_SELECTED_WINDOW:
-			return  SwingUtilities.getWindowAncestor(c).isFocused() ? behavior : SELECTION_DISABLED;
+		}
+		case SELECTION_INSIDE_SELECTED_WINDOW: {
+			final Window windowAncestor = SwingUtilities.getWindowAncestor(c);
+			return  windowAncestor != null && windowAncestor.isFocused() ? behavior : SELECTION_DISABLED;
+		}
 		default:
 			return SELECTION_DISABLED;
 		}
