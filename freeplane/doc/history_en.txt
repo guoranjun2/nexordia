@@ -2,6 +2,7 @@
 1.12.13
 ==============================
 UI elements follow selected map
+Add user option "Mouse over selection scope"
 
 ==============================
 1.12.12
