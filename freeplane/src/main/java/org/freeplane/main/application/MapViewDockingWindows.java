@@ -431,6 +431,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						window.setExtendedState(frameState & ~Frame.ICONIFIED);
 					if(dockedView.isMinimized())
 						dockedView.restore();
+					else
+						dockedView.restoreFocus();
+					focusMapViewLater((MapView) pNewMap, () -> {/**/});
 					return;
 				}
 			}

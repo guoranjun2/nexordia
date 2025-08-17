@@ -267,7 +267,8 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mousePressed(final MouseEvent e) {
 		final MapView mapView = MapView.getMapView(e.getComponent());
-		mapView.select();
+		if(! mapView.isSelected())
+			mapView.select();
 		doubleClickTimer.cancel();
 		popupMenuIsShown = false;
 		if (Compat.isPopupTrigger(e)) {
