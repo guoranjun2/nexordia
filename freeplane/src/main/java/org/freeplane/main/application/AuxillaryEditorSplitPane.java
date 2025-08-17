@@ -37,9 +37,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
 		this.mainComponent = mainComponent;
 		setLeftComponent(mainComponent);
-		setRightComponent(null);
 		dividerLocationIsRestored = false;
 		setResizeWeight(0.5);
+		setContinuousLayout(true);
+		setOneTouchExpandable(false);
 	}
 
 	@Override
@@ -56,44 +57,75 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		else
 			super.setLayout(new SplitPaneLayoutManagerDecorator(layout));
 	}
-	void insertComponentIntoSplitPane(final JComponent pMindMapComponent, String mode) {
+	void insertComponentIntoSplitPane(final JComponent pAuxillaryComponent, String mode) {
 		this.mode = mode;
-		insertComponentIntoSplitPane(pMindMapComponent);
+		insertComponentIntoSplitPane(pAuxillaryComponent);
 	}
 
-	private void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		auxillaryComponent = pMindMapComponent;
+	private void insertComponentIntoSplitPane(final JComponent pAuxillaryComponent) {
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		setLeftComponent(null);
-		setRightComponent(null);
-		if ("right".equals(auxillaryComponentLocation)) {
-			setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			setLeftComponent(mainComponent);
-			setRightComponent(pMindMapComponent);
-		}
-		else if ("left".equals(auxillaryComponentLocation)) {
-			setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			setLeftComponent(pMindMapComponent);
-			setRightComponent(mainComponent);
-		}
-		else if ("top".equals(auxillaryComponentLocation)) {
-			setOrientation(JSplitPane.VERTICAL_SPLIT);
-			setLeftComponent(pMindMapComponent);
-			setRightComponent(mainComponent);
+		if (JSplitPane.RIGHT.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+			if(getOrientation() != JSplitPane.HORIZONTAL_SPLIT)
+				setOrientation(JSplitPane.HORIZONTAL_SPLIT);
 		}
 		else {
-			setOrientation(JSplitPane.VERTICAL_SPLIT);
-			setLeftComponent(mainComponent);
-			setRightComponent(pMindMapComponent);
+			if(getOrientation() != JSplitPane.VERTICAL_SPLIT)
+				setOrientation(JSplitPane.VERTICAL_SPLIT);
+		}
+		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+			if(getRightComponent() != mainComponent) {
+				repositionComponent(mainComponent, JSplitPane.RIGHT);
+			}
+			if(getLeftComponent() != pAuxillaryComponent) {
+				if(auxillaryComponent == pAuxillaryComponent)
+					repositionComponent(auxillaryComponent, JSplitPane.LEFT);
+				else {
+					auxillaryComponent = pAuxillaryComponent;
+					setLeftComponent(pAuxillaryComponent);
+				}
+			}
+		}
+		else {
+			if(getLeftComponent() != mainComponent) {
+				repositionComponent(mainComponent, JSplitPane.LEFT);
+				dividerLocationIsRestored = false;
+			}
+			if(getRightComponent() != pAuxillaryComponent) {
+				if(auxillaryComponent == pAuxillaryComponent)
+					repositionComponent(auxillaryComponent, JSplitPane.RIGHT);
+				else {
+					auxillaryComponent = pAuxillaryComponent;
+					setRightComponent(pAuxillaryComponent);
+				}
+				dividerLocationIsRestored = false;
+			}
 		}
 		if(focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, this)) {
 		    focusOwner.requestFocusInWindow();
 		}
-		setContinuousLayout(true);
-		setOneTouchExpandable(false);
-		super.setDividerLocation(0);
 		revalidate();
 		repaint();
+	}
+
+	private void repositionComponent(Component component, String constraints) {
+		if(JSplitPane.RIGHT.equals(constraints)) {
+			rightComponent = component;
+			if(leftComponent == component)
+				leftComponent = null;
+		} else {
+			leftComponent = component;
+			if(rightComponent == component)
+				rightComponent = null;
+		}
+		final LayoutManager layoutMgr = getLayout();
+		if (layoutMgr != null) {
+			layoutMgr.removeLayoutComponent(component);
+		    if (layoutMgr instanceof LayoutManager2) {
+		        ((LayoutManager2)layoutMgr).addLayoutComponent(component, constraints);
+		    } else {
+		        layoutMgr.addLayoutComponent(constraints, component);
+		    }
+		}
 	}
 
 
@@ -181,11 +213,9 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	void removeAuxiliaryComponent() {
 		if (auxillaryComponent != null) {
+			super.remove(auxillaryComponent);
 			auxillaryComponent = null;
 			dividerLocationIsRestored = false;
-			setLeftComponent(null);
-			setRightComponent(null);
-			setLeftComponent(mainComponent);
 		}
 	}
 

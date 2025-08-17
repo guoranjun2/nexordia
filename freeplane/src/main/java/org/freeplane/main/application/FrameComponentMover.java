@@ -109,10 +109,11 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 			JFrame currentFrame = (JFrame) newFocusedWindow;
 
 			if (lastUIFrame != null && lastUIFrame != currentFrame) {
-				moveNonCenterComponents(lastUIFrame, currentFrame);
+				EventQueue.invokeLater(() ->
+					moveNonCenterComponents(lastUIFrame, currentFrame));
 			}
-
-			lastUIFrame = currentFrame;
+			else
+				lastUIFrame = currentFrame;
 		}
 	}
 
@@ -138,6 +139,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		fromContentPane.repaint();
 		toContentPane.revalidate();
 		toContentPane.repaint();
+		lastUIFrame = toFrame;
 	}
 
 	private void moveMenuBar(JFrame fromFrame, JFrame toFrame) {
