@@ -65,12 +65,16 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	private void insertComponentIntoSplitPane(final JComponent pAuxillaryComponent) {
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 		if (JSplitPane.RIGHT.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
-			if(getOrientation() != JSplitPane.HORIZONTAL_SPLIT)
+			if(getOrientation() != JSplitPane.HORIZONTAL_SPLIT) {
 				setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+				dividerLocationIsRestored = false;
+			}
 		}
 		else {
-			if(getOrientation() != JSplitPane.VERTICAL_SPLIT)
+			if(getOrientation() != JSplitPane.VERTICAL_SPLIT) {
 				setOrientation(JSplitPane.VERTICAL_SPLIT);
+				dividerLocationIsRestored = false;
+			}
 		}
 		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
 			if(getRightComponent() != mainComponent) {
@@ -145,10 +149,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		if(dividerLocationIsRestored || auxillaryComponent == null)
 			return;
 		double lastSplitPanePosition = Double.NaN;
-		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
+		if (JSplitPane.LEFT.equals(auxillaryComponentLocation) || JSplitPane.TOP.equals(auxillaryComponentLocation)) {
 			lastSplitPanePosition = 1.0 - resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
 		}
-		else if ("bottom".equals(auxillaryComponentLocation)) {
+		else {
 			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
 		}
 
