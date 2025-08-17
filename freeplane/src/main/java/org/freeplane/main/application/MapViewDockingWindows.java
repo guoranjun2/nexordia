@@ -22,6 +22,7 @@ package org.freeplane.main.application;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Image;
@@ -134,9 +135,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private byte[] emptyConfigurations;
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
-	private java.awt.Dimension capturedWindowSize = null;
+	private Dimension capturedWindowSize = null;
+	private final ApplicationViewController applicationViewController;
 
 	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
+		this.applicationViewController = applicationViewController;
 		viewSerializer = new MapViewSerializer();
 		rootWindow = new RootWindow(viewSerializer);
 		configureDefaultDockingWindowProperties();
@@ -544,7 +547,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		}
 	}
 	private void viewSelectionChanged(final Component mapView) {
-		if (!mPaneSelectionUpdate) {
+		if (!mPaneSelectionUpdate ||
+				! SwingUtilities.isDescendingFrom(mapView, applicationViewController.getMenuComponent())
+				&& ! FrameComponentMover.selectedMapFollowsActiveWindow()) {
 			return;
 		}
 		Controller controller = Controller.getCurrentController();

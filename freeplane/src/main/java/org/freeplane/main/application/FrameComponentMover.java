@@ -80,7 +80,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 			mapViewManager.changeToMapView(containedMapView);
 	}
 
-	private boolean selectedMapFollowsActiveWindow() {
+	static boolean selectedMapFollowsActiveWindow() {
 		return ResourceController.getResourceController().getBooleanProperty(SELECTED_MAP_FOLLOWS_ACTIVE_WINDOW);
 	}
 
