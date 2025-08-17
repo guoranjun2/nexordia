@@ -40,6 +40,7 @@ import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
 
 class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListener, IFreeplanePropertyListener {
+	private static final String SELECTED_MAP_FOLLOWS_ACTIVE_WINDOW = "selected_map_follows_active_window";
 	private static final String UI_ELEMENTS_FOLLOW_SELECTED_MAP_PROPERTY = "ui_elements_follow_selected_map";
 	private JFrame lastUIFrame = null;
 	private boolean uiElementsFollowSelectedMap;
@@ -75,8 +76,12 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		if(selectedComponent == containedMapView) {
 			if(uiElementsFollowSelectedMap)
 				afterUIWindowChange(newFocusedWindow);
-		} else if(containedMapView != null)
+		} else if(containedMapView != null && selectedMapFollowsActiveWindow())
 			mapViewManager.changeToMapView(containedMapView);
+	}
+
+	private boolean selectedMapFollowsActiveWindow() {
+		return ResourceController.getResourceController().getBooleanProperty(SELECTED_MAP_FOLLOWS_ACTIVE_WINDOW);
 	}
 
 	@Override

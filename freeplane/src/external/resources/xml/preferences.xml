@@ -318,6 +318,7 @@
 			<separator name="selection">
 				<combo name="siblingSelection" enum="org.freeplane.view.swing.map.SiblingSelection"/>
 				<boolean name="synchronizeSelectionOnlyOnBranchChange" />
+				<boolean name="selected_map_follows_active_window" />
 			</separator>
 			<separator name="scrollling">
 				<number name="scrollbar_increment" />
