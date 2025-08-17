@@ -36,7 +36,13 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	public AuxillaryEditorSplitPane(Component mainComponent) {
 		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
 		this.mainComponent = mainComponent;
-		setLeftComponent(mainComponent);
+		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+			setLeftComponent(null);
+			setRightComponent(mainComponent);
+		} else {
+			setLeftComponent(mainComponent);
+			setRightComponent(null);
+		}
 		dividerLocationIsRestored = false;
 		setResizeWeight(0.5);
 		setContinuousLayout(true);
