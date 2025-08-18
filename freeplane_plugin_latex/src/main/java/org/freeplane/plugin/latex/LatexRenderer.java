@@ -7,10 +7,8 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.util.function.Supplier;
 
-import javax.swing.Icon;
 import javax.swing.JEditorPane;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.JRestrictedSizeScrollPane;
@@ -61,15 +59,7 @@ public class LatexRenderer extends AbstractContentTransformer implements IEditBa
 			return content;
 		int widthWithInsets;
 		if(component instanceof ZoomableLabel) {
-			final ZoomableLabel label = (ZoomableLabel)component;
-			if (label.getVerticalTextPosition() != SwingConstants.BOTTOM) {
-				final Icon icon = label.getIcon();
-				int iconWidth = icon != null ? icon.getIconWidth() : 0;
-				int iconWithGapWidth = iconWidth > 0 ? iconWidth + label.getIconTextGap() : 0;
-				widthWithInsets = label.getMaximumWidth() - iconWithGapWidth;
-			}
-			else
-				widthWithInsets = label.getMaximumWidth();
+			widthWithInsets = ((ZoomableLabel)component).getMaximumTextAreaWidth();
 		}
 		else {
 			widthWithInsets = component.getWidth();

@@ -351,4 +351,19 @@ public class ZoomableLabel extends JLabel {
 		} else
 			ui.releaseLayout(this);
 	}
+
+	public int getMaximumTextAreaWidth() {
+		int textWidth;
+		final float zoom = getZoom();
+		final int maximumWidth = (int) (zoom == 1f ? getMaximumWidth() : getMaximumWidth() / zoom);
+		if (getVerticalTextPosition() != SwingConstants.BOTTOM) {
+			final Icon icon = getIcon();
+			int iconWidth = icon != null ? icon.getIconWidth() : 0;
+			int iconWithGapWidth = iconWidth > 0 ? iconWidth + getIconTextGap() : 0;
+			textWidth = maximumWidth - iconWithGapWidth;
+		}
+		else
+			textWidth = maximumWidth;
+		return textWidth;
+	}
 }
