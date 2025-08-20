@@ -372,7 +372,7 @@ public class MainView extends ZoomableLabel {
 
 	public FoldingMark foldingMarkType(MapController mapController, NodeView nodeView) {
 		if (nodeView.isFolded() || nodeView.hasHiddenChildren()) {
-			return FoldingMark.FOLDING_CIRCLE_FOLDED;
+			return nodeView.isFoldable() ? FoldingMark.FOLDING_CIRCLE_FOLDED : FoldingMark.INVISIBLE;
 		}
 		Filter filter = nodeView.getMap().getFilter();
 		for (final NodeView childView : nodeView.getChildrenViews()) {
