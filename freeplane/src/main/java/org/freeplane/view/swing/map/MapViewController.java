@@ -853,9 +853,6 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		final ModeController oldModeController = controller.getModeController();
 		ModeController newModeController = oldModeController;
 		if (pNewMap != null) {
-			final IMapSelection mapSelection = getMapSelection();
-			final NodeModel selected = mapSelection.getSelected();
-			mapSelection.scrollNodeToVisible(selected);
 			setZoomComboBox(getZoom());
 			obtainFocusForSelected();
 			newModeController = getModeController(pNewMap);
