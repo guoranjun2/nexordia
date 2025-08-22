@@ -85,3 +85,27 @@ jobs:
           rsync -avz -e "ssh -o StrictHostKeyChecking=accept-new" \
             assets/ \
             "$SF_USER@$SF_HOST:$SF_BASE/freeplane stable/archive/${{ steps.version.outputs.version }}/"
+
+      - name: Set default downloads
+        if: ${{ !inputs.dry_run }}
+        run: |
+          # Set macOS default
+          curl -H "Accept: application/json" \
+            -X PUT \
+            -d "default=mac" \
+            -d "api_key=${{ secrets.SF_API_KEY }}" \
+            "https://sourceforge.net/projects/freeplane/files/freeplane%20stable/Freeplane-${{ steps.version.outputs.version }}-apple.dmg"
+          
+          # Set Windows default  
+          curl -H "Accept: application/json" \
+            -X PUT \
+            -d "default=windows" \
+            -d "api_key=${{ secrets.SF_API_KEY }}" \
+            "https://sourceforge.net/projects/freeplane/files/freeplane%20stable/Freeplane-Setup-${{ steps.version.outputs.version }}.exe"
+          
+          # Set default for others (Linux, BSD, Solaris)
+          curl -H "Accept: application/json" \
+            -X PUT \
+            -d "default=linux&default=bsd&default=solaris&default=others" \
+            -d "api_key=${{ secrets.SF_API_KEY }}" \
+            "https://sourceforge.net/projects/freeplane/files/freeplane%20stable/freeplane_bin-${{ steps.version.outputs.version }}.zip"
