@@ -75,16 +75,13 @@ jobs:
       - name: Upload to stable directory
         if: ${{ !inputs.dry_run }}
         run: |
-          scp -o StrictHostKeyChecking=accept-new \
-            assets/* \
+          rsync -avz -e "ssh -o StrictHostKeyChecking=accept-new" \
+            assets/ \
             "$SF_USER@$SF_HOST:$SF_BASE/freeplane stable/"
 
       - name: Upload to archive directory
         if: ${{ !inputs.dry_run }}
         run: |
-          ssh -o StrictHostKeyChecking=accept-new \
-            "$SF_USER@$SF_HOST" \
-            "mkdir -p '$SF_BASE/freeplane stable/archive/${{ steps.version.outputs.version }}'"
-          scp -o StrictHostKeyChecking=accept-new \
-            assets/* \
+          rsync -avz -e "ssh -o StrictHostKeyChecking=accept-new" \
+            assets/ \
             "$SF_USER@$SF_HOST:$SF_BASE/freeplane stable/archive/${{ steps.version.outputs.version }}/"
