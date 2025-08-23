@@ -8,14 +8,14 @@ package org.freeplane.view.swing.map.outline;
 import java.util.ArrayList;
 import java.util.List;
 
-class TreeNode {
+public class TreeNode {
     final String title;
     final String id;
     final List<TreeNode> children = new ArrayList<>();
     private int expansionLevel = 0;
     TreeNode parent = null;
 
-    TreeNode(String title, String id) {
+    public TreeNode(String title, String id) {
         this.title = title;
         this.id = id;
     }

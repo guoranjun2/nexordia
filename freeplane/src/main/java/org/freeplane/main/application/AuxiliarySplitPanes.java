@@ -9,6 +9,8 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
+import org.freeplane.view.swing.map.outline.OutlinePane;
+import org.freeplane.view.swing.map.outline.DemoTreeFactory;
 
 /**
  * Manager for N-level nested auxiliary split panes. Creates and manages 
@@ -64,6 +66,14 @@ class AuxiliarySplitPanes {
             
             // Next level uses this pane as its main component
             currentMain = pane;
+        }
+        
+        // Initialize level 1 with OutlinePane on the left (if it exists)
+        if (numLevels >= 2) {
+            // First set the location to left for level 1
+            changeNoteWindowLocation(1, "left");
+            OutlinePane outlinePane = new OutlinePane(DemoTreeFactory.createDemoRoot());
+            insertComponentIntoSplitPane(1, outlinePane, "outline");
         }
     }
     
