@@ -121,10 +121,8 @@ class ExportBranchAction extends AFreeplaneAction {
 			Side nodeSide = existingNode.getSide();
 			final File oldFile = parentMap.getFile();
 
-			final URI newUri = LinkController.toLinkTypeDependantURI(oldFile, chosenFile);
-			final URI oldUri = LinkController.toLinkTypeDependantURI(chosenFile, file);
-			((MLinkController) LinkController.getController()).setLink(existingNode,
-			    oldUri, LinkController.LINK_ABSOLUTE);
+			final URI oldUri = LinkController.toLinkTypeDependantURI(chosenFile, file).resolve("#" + existingNode.createID());
+			((MLinkController) LinkController.getController()).setLink(existingNode, oldUri, LinkController.LINK_ABSOLUTE);
 			final int nodePosition = parent.getIndex(existingNode);
 			modeController.undoableResolveParentExtensions(LogicalStyleKeys.NODE_STYLE, existingNode);
 			final MMapController mMapController = (MMapController) modeController.getMapController();
@@ -168,10 +166,12 @@ class ExportBranchAction extends AFreeplaneAction {
 			((MFileManager) UrlManager.getController()).save(newMap, chosenFile);
             final Side side = nodeSide;
 			final NodeModel newNode = mMapController.addNewNode(parent, nodePosition, node -> {
+				node.setID(existingNode.getID());
                 node.setSide(side);
                 modeController.copyExtensions(LogicalStyleKeys.NODE_STYLE, existingNode, node);
                 node.setText(existingNode.getText());
             });
+			final URI newUri = LinkController.toLinkTypeDependantURI(oldFile, chosenFile);
 			((MLinkController) LinkController.getController()).setLink(newNode, newUri, LinkController.LINK_ABSOLUTE);
 			newMap.releaseResources();
 			existingNode.setParent(null);

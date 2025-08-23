@@ -454,6 +454,10 @@ public abstract class ResourceController {
 
     abstract public void secureProperty(String key);
 
+    public boolean isPropertySetByUser(String key) {
+        return false;
+    }
+
     public String loadString(String path) {
     	try(Scanner s = new Scanner(getResourceStream(path))){
     		s.useDelimiter("\\A");

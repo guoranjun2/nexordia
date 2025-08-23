@@ -222,7 +222,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	@Override
-	public void changeNoteWindowLocation() {
+	public void changeNoteWindowLocation(String location) {
 	}
 
 	@Override
@@ -258,7 +258,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	private JComponent getMainContentPane() {
-		return (JComponent) ((RootPaneContainer) getMenuComponent()).getContentPane();
+		return (JComponent) ((RootPaneContainer) getCurrentRootComponent()).getContentPane();
 	}
 
 	@Override
@@ -298,7 +298,7 @@ abstract public class FrameController implements ViewController {
 	}
 
 	protected boolean isMenuComponentInFullScreenMode() {
-		return isFullScreenEnabled(getMenuComponent());
+		return isFullScreenEnabled(getCurrentRootComponent());
 	}
 
 	@Override
@@ -399,12 +399,6 @@ abstract public class FrameController implements ViewController {
 		statusPanel.revalidate();
 		statusPanel.repaint();
 	}
-
-	/**
-	 *
-	 */
-	@Override
-	abstract public void removeSplitPane();
 
 	@Override
 	public void saveProperties() {
@@ -514,19 +508,29 @@ abstract public class FrameController implements ViewController {
 	}
 
 	public void setFullScreen(final boolean fullScreen) {
-		if (fullScreen == isFullScreenEnabled()) {
-			return;
-		}
 		final JFrame frame = (JFrame) getCurrentRootComponent();
+		setFullScreen(frame, fullScreen);
+	}
+
+	public void setFullScreen(final JFrame frame, final boolean fullScreen) {
 		if(Compat.isMacOsX())
-			setFullScreenOnMac(fullScreen, frame);
+			setFullScreenOnMac(frame, fullScreen);
 		else
 			setFullScreenOnNonMac(frame, fullScreen);
 		ToolTipManager.sharedInstance().setEnabled(true);
 	}
 
-	private void setFullScreenOnMac(final boolean fullScreen, final JFrame frame) {
-		Compat.setFullScreenOnMac(frame, fullScreen);
+	@Override
+	public void fullScreenToggled(JFrame frame, boolean fullScreen) {
+		if (! Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
+			frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, Boolean.valueOf(fullScreen));
+			setFullScreen(frame, fullScreen);
+		}
+	}
+
+	private void setFullScreenOnMac(final JFrame frame, final boolean fullScreen) {
+		if (! Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY)))
+			Compat.setFullScreenOnMac(frame, fullScreen);
 		if (Boolean.valueOf(fullScreen).equals(frame.getRootPane().getClientProperty(FULLSCREEN_ENABLED_PROPERTY))) {
 			ResourceController.getResourceController().firePropertyChanged(FULLSCREEN_ENABLED_PROPERTY,
 				    Boolean.toString(fullScreen), Boolean.toString(!fullScreen));
@@ -540,6 +544,7 @@ abstract public class FrameController implements ViewController {
 			}
 		}
 	}
+
 
 	private void setFullScreenOnNonMac(JFrame frame, final boolean fullScreen) {
 		frame.getRootPane().putClientProperty(FULLSCREEN_ENABLED_PROPERTY, fullScreen);

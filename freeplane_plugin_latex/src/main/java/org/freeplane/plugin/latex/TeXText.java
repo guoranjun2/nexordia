@@ -1,6 +1,7 @@
 package org.freeplane.plugin.latex;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 
 import javax.swing.JFrame;
@@ -25,7 +26,7 @@ public class TeXText
         rawText = t;
     }
 
-	public TeXIcon createTeXIcon(int style, int size, int align, int maxWidth) {
+	public TeXIcon createTeXIcon(Color fgColor, int style, int size, int align, int maxWidth) {
 
         StringBuffer sb = new StringBuffer();
         if (Controller.getCurrentController() != null && ResourceController.getResourceController() != null)
@@ -70,6 +71,7 @@ public class TeXText
 
         //tf.createTeXIcon(style, size, TeXConstants.UNIT_PIXEL, maxWidth, align, TeXConstants.UNIT_PIXEL, 40f);
 		return tf.new TeXIconBuilder()
+			.setFGColor(fgColor)
 			.setStyle(style)
 			.setSize(size)
 			.setWidth(TeXConstants.UNIT_PIXEL, maxWidth, align)
@@ -96,7 +98,7 @@ public class TeXText
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JLabel jl = new JLabel();
 //        jl.setIcon(tf.createTeXIcon(12, TeXConstants.ALIGN_CENTER));
-        jl.setIcon(tf.createTeXIcon(TeXConstants.STYLE_DISPLAY, 16, TeXConstants.ALIGN_LEFT, 400));
+        jl.setIcon(tf.createTeXIcon(Color.BLACK, TeXConstants.STYLE_DISPLAY, 16, TeXConstants.ALIGN_LEFT, 400));
 
         Container cp = jf.getContentPane();
         cp.setLayout(new BorderLayout());

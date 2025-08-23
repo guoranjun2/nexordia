@@ -23,6 +23,7 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
 
 import org.freeplane.core.extension.IExtension;
 import org.freeplane.core.ui.components.UITools;
@@ -65,6 +66,8 @@ public class MMapMouseListener extends DefaultMapMouseListener{
 			super.mouseDragged(e);
 			return;
 		}
+		if(originX == -1)
+			return;
 		ConnectorModel connector = connectorView.getConnector();
 		final NodeModel target = connector.getTarget();
 		if(target == null) {
@@ -106,11 +109,16 @@ public class MMapMouseListener extends DefaultMapMouseListener{
 
 	}
 
+	@Override
 	public void mousePressed(final MouseEvent e) {
 		super.mousePressed(e);
 		if(Compat.isPopupTrigger(e))
 			return;
+		if(! SwingUtilities.getWindowAncestor(e.getComponent()).isFocused())
+			return;
 		final MapView mapView = (MapView) e.getComponent();
+		if (! mapView.isValid())
+			return;
 		if(mapView.getClientProperty(Connectors.class) != null)
 			return;
 		final Object object = mapView.detectView(new Point(originX, originY));

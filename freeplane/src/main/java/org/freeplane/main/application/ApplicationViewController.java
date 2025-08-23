@@ -24,14 +24,10 @@ import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.Image;
-import java.awt.KeyboardFocusManager;
-import java.awt.LayoutManager;
-import java.awt.LayoutManager2;
 import java.awt.Rectangle;
-import java.awt.event.KeyEvent;
+import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -45,48 +41,36 @@ import java.util.Locale;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JSplitPane;
-import javax.swing.KeyStroke;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.Hyperlink;
-import org.freeplane.features.map.IMapSelection;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FrameController;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.overview.BookmarkToolbarPane;
 
 class ApplicationViewController extends FrameController {
-	private static final String SPLIT_PANE_LAST_LEFT_POSITION = "split_pane_last_left_position";
-	private static final String SPLIT_PANE_LAST_POSITION = "split_pane_last_position";
-	private static final String SPLIT_PANE_LAST_RIGHT_POSITION = "split_pane_last_right_position";
-	private static final String SPLIT_PANE_LAST_TOP_POSITION = "split_pane_last_top_position";
-
-
-    private static Image frameIcon(String size) {
+	private static Image frameIcon(String size) {
         return new ImageIcon(ResourceController.getResourceController().getResource(
                 "/images/Freeplane_frame_icon_"+ size + ".png")).getImage();
     }
 
 	// // 	final private Controller controller;
-	final private JFrame frame;
-	/** Contains the value where the Note Window should be displayed (right, left, top, bottom) */
-	private String mLocationPreferenceValue;
-	/** Contains the Note Window Component */
-	private JComponent mMindMapComponent;
-	private JSplitPane mSplitPane;
+	final private JFrame mainFrame;
 	final private NavigationNextMapAction navigationNextMap;
 	final private NavigationPreviousMapAction navigationPreviousMap;
-	final private ApplicationResourceController resourceController;
-	private JComponent mapPane;
 	private MapViewDockingWindows mapViewWindows;
+	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
+	private final FrameComponentMover frameComponentMover;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
-	                                 final JFrame frame) {
+	                                 final JFrame frame, FrameComponentMover frameComponentMover) {
 		super(controller, mapViewController, "");
 //		this.controller = controller;
 		navigationPreviousMap = new NavigationPreviousMapAction();
@@ -95,24 +79,19 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(navigationNextMap);
 		controller.addAction(new NavigationMapNextViewAction());
 		controller.addAction(new NavigationMapPreviousViewAction());
-		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
-		this.frame = frame;
+		this.mainFrame = frame;
+		this.frameComponentMover = frameComponentMover;
 	}
 
 	/**
 	 * Called from the Controller, when the Location of the Note Window is changed on the Menu->View->Note Window Location
 	 */
 	@Override
-	public void changeNoteWindowLocation() {
-		saveSplitPanePosition();
-		mLocationPreferenceValue = resourceController.getProperty("note_location");
-		if(mMindMapComponent != null){
-			insertComponentIntoSplitPane(mMindMapComponent);
-		}
-	}
-
-	public String getAdjustableProperty(final String label) {
-		return resourceController.getProperty(label);
+	public void changeNoteWindowLocation(String location) {
+		final ResourceController resourceController = ResourceController.getResourceController();
+		resourceController.setProperty("note_location", location);
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.changeNoteWindowLocation(location);
 	}
 
 	@Override
@@ -122,61 +101,59 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		// --- Save the Component --
-		mMindMapComponent = pMindMapComponent;
-		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		mSplitPane.setLeftComponent(null);
-		mSplitPane.setRightComponent(null);
-		if ("right".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			mSplitPane.setLeftComponent(mapPane);
-			mSplitPane.setRightComponent(pMindMapComponent);
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
-			mSplitPane.setLeftComponent(pMindMapComponent);
-			mSplitPane.setRightComponent(mapPane);
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			mSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-			mSplitPane.setLeftComponent(pMindMapComponent);
-			mSplitPane.setRightComponent(mapPane);
-		}
-		else {
-			mSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-			mSplitPane.setLeftComponent(mapPane);
-			mSplitPane.setRightComponent(pMindMapComponent);
-		}
-		if(focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, mSplitPane)) {
-		    focusOwner.requestFocusInWindow();
-		}
-		mSplitPane.setContinuousLayout(true);
-		mSplitPane.setOneTouchExpandable(false);
-		SwingUtilities.invokeLater(this::resetDividerLocation);
-
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.insertComponentIntoSplitPane(pMindMapComponent, Controller.getCurrentModeController().getModeName());
 	}
-	private void resetDividerLocation() {
-		int lastSplitPanePosition = -1;
-		if ("right".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_RIGHT_POSITION, -1);
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_LEFT_POSITION, -1);
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_TOP_POSITION, -1);
-		}
-		else if ("bottom".equals(mLocationPreferenceValue)) {
-			lastSplitPanePosition = resourceController.getIntProperty(SPLIT_PANE_LAST_POSITION, -1);
-		}
 
-		if (lastSplitPanePosition != -1) {
-			mSplitPane.setDividerLocation(lastSplitPanePosition);
-			mSplitPane.setDividerLocation(lastSplitPanePosition);
+	private AuxillaryEditorSplitPane getSplitPane() {
+		final Component currentRootComponent = getCurrentRootComponent();
+		if(currentRootComponent instanceof RootPaneContainer)
+			return getSplitPane((RootPaneContainer) currentRootComponent);
+		else
+			return null;
+	}
+
+	public AuxillaryEditorSplitPane getSplitPane(final RootPaneContainer topLevelAncestor) {
+		final Container contentPane = ((JFrame) topLevelAncestor).getContentPane();
+		final Component centerComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+		if (centerComponent instanceof AuxillaryEditorSplitPane) {
+			return (AuxillaryEditorSplitPane) centerComponent;
 		}
-		else {
-			mSplitPane.setDividerLocation(0.5);
-			mSplitPane.setDividerLocation(0.5);
+		return null;
+	}
+
+	void createAuxillaryPaneForFloatingWindow(Window frame, Component rootWindow) {
+		if (frame instanceof JFrame) {
+			JFrame jFrame = (JFrame) frame;
+			Container contentPane = jFrame.getContentPane();
+			Component centralComponent = null;
+			if (contentPane.getLayout() instanceof BorderLayout) {
+				centralComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+			}
+
+			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
+			AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(bookmarkToolbarPane);
+			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
+
+			if (centralComponent != null) {
+				contentPane.remove(centralComponent);
+			}
+			contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
+			contentPane.add(splitPane, BorderLayout.CENTER);
+
+			insertActiveComponentsIntoSplitPane(splitPane, frame);
+		}
+	}
+
+	private void insertActiveComponentsIntoSplitPane(AuxillaryEditorSplitPane splitPane, Window frame) {
+		// Do not create new components - let FrameComponentMover handle moving the existing component
+	}
+
+
+	void removeAuxillaryPaneForFloatingWindow(Window frame) {
+		BookmarkToolbarPane bookmarkToolbarPane = bookmarkToolbarPanes.remove(frame);
+		if (bookmarkToolbarPane != null) {
+			bookmarkToolbarPane.dispose();
 		}
 	}
 
@@ -206,46 +183,29 @@ class ApplicationViewController extends FrameController {
 			return false;
 		}
 		controller.fireApplicationStopped();
-		frame.dispose();
+		mainFrame.dispose();
 		return true;
 	}
 
 	@Override
-	public void removeSplitPane() {
-		saveSplitPanePosition();
-		mMindMapComponent = null;
-		mSplitPane.setLeftComponent(null);
-		mSplitPane.setRightComponent(null);
-		mSplitPane.setLeftComponent(mapPane);
-		final Controller controller = Controller.getCurrentModeController().getController();
-		final IMapSelection selection = controller.getSelection();
-		if(selection == null){
-			return;
-		}
-		final NodeModel node = selection.getSelected();
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				final Component component = controller.getMapViewManager().getComponent(node);
-				if (component != null) {
-					component.requestFocus();
-				}
-			}
-		});
+	public void removeAuxiliaryComponent() {
+		final AuxillaryEditorSplitPane splitPane = getSplitPane();
+		splitPane.removeAuxiliaryComponent();
 	}
+
 
 	@Override
 	public void saveProperties() {
 		if(mapViewWindows == null)
 			return;
-		saveSplitPanePosition();
-		if (frame.isResizable()) {
-			final int winState = frame.getExtendedState() & ~Frame.ICONIFIED;
-			if (JFrame.MAXIMIZED_BOTH != (winState & JFrame.MAXIMIZED_BOTH)) {
-				resourceController.setProperty("appwindow_x", String.valueOf(frame.getX()));
-				resourceController.setProperty("appwindow_y", String.valueOf(frame.getY()));
-				resourceController.setProperty("appwindow_width", String.valueOf(frame.getWidth()));
-				resourceController.setProperty("appwindow_height", String.valueOf(frame.getHeight()));
+		final ApplicationResourceController resourceController = (ApplicationResourceController)ResourceController.getResourceController();
+		if (mainFrame.isResizable()) {
+			final int winState = mainFrame.getExtendedState() & ~Frame.ICONIFIED;
+			if (Frame.MAXIMIZED_BOTH != (winState & Frame.MAXIMIZED_BOTH)) {
+				resourceController.setProperty("appwindow_x", String.valueOf(mainFrame.getX()));
+				resourceController.setProperty("appwindow_y", String.valueOf(mainFrame.getY()));
+				resourceController.setProperty("appwindow_width", String.valueOf(mainFrame.getWidth()));
+				resourceController.setProperty("appwindow_height", String.valueOf(mainFrame.getHeight()));
 			}
 			resourceController.setProperty("appwindow_state", String.valueOf(winState));
 		}
@@ -253,33 +213,19 @@ class ApplicationViewController extends FrameController {
 		resourceController.getLastOpenedList().saveProperties();
 	}
 
-	private void saveSplitPanePosition() {
-		if (mSplitPane == null) {
-			return;
-		}
-		if ("right".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_RIGHT_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else if ("left".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_LEFT_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else if ("top".equals(mLocationPreferenceValue)) {
-			resourceController.setProperty(SPLIT_PANE_LAST_TOP_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-		else { // "bottom".equals(mLocationPreferenceValue) also covered
-			resourceController.setProperty(SPLIT_PANE_LAST_POSITION, "" + mSplitPane.getLastDividerLocation());
-		}
-	}
-
 	@Override
 	protected void setFreeplaneMenuBar(final FreeplaneMenuBar menuBar) {
-	    if(Compat.isMacOsX()) {
+	    final JFrame menuComponent = getMenuComponent();
+		if(! menuComponent.isVisible()) {
+			return;
+		}
+		if(Compat.isMacOsX()) {
 	        System.setProperty("apple.laf.useScreenMenuBar", "true");
-            frame.setJMenuBar(menuBar);
+            menuComponent.setJMenuBar(menuBar);
             System.setProperty("apple.laf.useScreenMenuBar", "false");
         }
 	    else
-	        frame.setJMenuBar(menuBar);
+	    	menuComponent.setJMenuBar(menuBar);
 	}
 
 	/*
@@ -288,19 +234,19 @@ class ApplicationViewController extends FrameController {
 	 */
 	@Override
 	public void setTitle(final String frameTitle) {
-		frame.setTitle(frameTitle);
+		mainFrame.setTitle(frameTitle);
 		mapViewWindows.setTitle();
 	}
 
 	@Override
 	public void setWaitingCursor(final boolean waiting) {
 		if (waiting) {
-			frame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			frame.getRootPane().getGlassPane().setVisible(true);
+			mainFrame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			mainFrame.getRootPane().getGlassPane().setVisible(true);
 		}
 		else {
-			frame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-			frame.getRootPane().getGlassPane().setVisible(false);
+			mainFrame.getRootPane().getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			mainFrame.getRootPane().getGlassPane().setVisible(false);
 		}
 	}
 
@@ -314,38 +260,17 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void init(Controller controller) {
-		frame.getContentPane().setLayout(new BorderLayout());
+		mainFrame.getContentPane().setLayout(new BorderLayout());
 		// --- Set Note Window Location ---
-		mLocationPreferenceValue = resourceController.getProperty("note_location", "bottom");
 		// disable all hotkeys for JSplitPane
-		mSplitPane = new JSplitPane(){
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed){
-				return false;
-			}
-
-			@Override
-			public void setLayout(LayoutManager layout) {
-				if(layout == null || layout instanceof SplitPaneLayoutManagerDecorator)
-					super.setLayout(layout);
-				else if(layout instanceof LayoutManager2)
-					super.setLayout(new SplitPaneLayoutManager2Decorator((LayoutManager2) layout));
-				else
-					super.setLayout(new SplitPaneLayoutManagerDecorator(layout));
-			}
-
-		};
-		mSplitPane.setResizeWeight(1.0d);
-		mapViewWindows = new MapViewDockingWindows();
-		mapPane = mapViewWindows.getMapPane();
-		Container contentPane = frame.getContentPane();
+		mapViewWindows = new MapViewDockingWindows(this);
+		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
+		AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
+		splitPane.setResizeWeight(1.0d);
+		Container contentPane = mainFrame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
-        contentPane.add(mSplitPane, BorderLayout.CENTER);
-		mSplitPane.setLeftComponent(mapPane);
-		mSplitPane.setRightComponent(null);
-		initFrame(frame);
+        contentPane.add(splitPane, BorderLayout.CENTER);
+		initFrame(mainFrame);
 		super.init(controller);
 	}
 
@@ -361,7 +286,7 @@ class ApplicationViewController extends FrameController {
                         frameIcon("512x512")
 			            ));
 		}
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(final WindowEvent e) {
@@ -386,6 +311,9 @@ class ApplicationViewController extends FrameController {
 		    .parseInt(ResourceController.getResourceController().getProperty("appwindow_state", "0"));
 		win_state = ((win_state & Frame.ICONIFIED) != 0) ? Frame.NORMAL : win_state;
 		frame.setExtendedState(win_state);
+
+		// Register full screen listener for macOS
+		Compat.registerFullScreenListener(frame);
 	}
 
 
@@ -409,23 +337,33 @@ class ApplicationViewController extends FrameController {
 	}
 
 	@Override
-	public void setFullScreen(boolean fullScreen) {
-		super.setFullScreen(fullScreen);
-		if(fullScreen)
-			mapViewWindows.setTabAreaInvisiblePolicy((JFrame) UITools.getCurrentRootComponent());
-		else
-			mapViewWindows.setTabAreaVisiblePolicy((JFrame)UITools.getCurrentRootComponent());
+	public void setFullScreen(final JFrame frame, boolean fullScreen) {
+		super.setFullScreen(frame, fullScreen);
+		mapViewWindows.setTabAreaVisiblePolicy(frame, ! fullScreen);
 	}
 
 	@Override
 	public Component getCurrentRootComponent() {
 		final Component mapViewComponent = selectedMapView();
-		return mapViewComponent != null ? SwingUtilities.getRoot(mapViewComponent) : frame;
+		if (mapViewComponent == null) {
+			return mainFrame;
+		}
+		final Component rootComponent = SwingUtilities.getRoot(mapViewComponent);
+		if (rootComponent != null)
+			return rootComponent;
+		else
+			return mainFrame;
+	}
+
+
+	@Override
+	public JFrame getMainFrameComponent() {
+		return mainFrame;
 	}
 
 	@Override
-	public Component getMenuComponent() {
-		return frame;
+	public JFrame getMenuComponent() {
+		return mainFrame.getMenuBar() != null ? mainFrame : frameComponentMover.getUIFrame();
 	}
 
 	@Override

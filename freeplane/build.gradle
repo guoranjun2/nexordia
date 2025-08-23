@@ -33,7 +33,7 @@ dependencies {
             'com.jgoodies:jgoodies-forms:1.9.0',
             'com.jgoodies:jgoodies-common:1.8.1'
 
-	lib  ('org.freeplane.lightdev:simplyhtml:0.19.11') {
+	lib  ('org.freeplane.lightdev:simplyhtml:0.19.12') {
 		exclude module: 'javahelp'
 		exclude module: 'mnemonicsetter'
 	}
@@ -293,11 +293,21 @@ task copyOSGiManifest(type: Copy) {
      into(globalBin + '/core/' + pluginid + '/META-INF/')
 }
 
-class PartialJar extends Jar {
-	@Internal String[] includedClasses
-}
+// Define jar content patterns to avoid duplication
+ext.editorJarIncludes = [
+    "**/application/**",
+    "**/mindmapmode/**",
+    "**/ortho/**",
+    "**/filemode/**",
+    "**/core/resources/ui/**",
+    "translations/**"
+]
 
-task editorJar(type: PartialJar) {
+ext.osgiJarIncludes = [
+    "**/osgi/**"
+]
+
+task editorJar(type: Jar) {
     // use '= project.manifest' to avoid that an OSGi manifest is created!
     manifest = project.java.manifest {
         attributes("Manifest-Version": "1.0",
@@ -305,34 +315,22 @@ task editorJar(type: PartialJar) {
     }
     archiveBaseName = 'freeplaneeditor'
     dependsOn classes
-	includedClasses = [
-				"**/application/**",
-				"**/mindmapmode/**",
-				"**/ortho/**",
-				"**/filemode/**",
-				"**/core/resources/ui/**",
-				"translations/**"
-	]
-
     from (sourceSets.main.output) {
-				include(includedClasses)
+        include editorJarIncludes
     }
     from (sourceSets.editor.resources)
     includeEmptyDirs = false
 }
 
-task osgiJar(type: PartialJar) {
+task osgiJar(type: Jar) {
 	// use '= project.manifest' to avoid that an OSGi manifest is created!
 	manifest = project.java.manifest {
 		attributes("Manifest-Version": "1.0")
 	}
 	archiveBaseName = 'freeplaneosgi'
 	dependsOn classes
-	includedClasses = [
-				"**/osgi/**"
-	]
     from (sourceSets.main.output) {
-				include(includedClasses)
+        include osgiJarIncludes
     }
     includeEmptyDirs = false
 }
@@ -352,8 +350,8 @@ task viewerJar(type: Jar) {
     dependsOn classes
     dependsOn createEmojiList
     from (sourceSets.main.output) {
-        exclude (editorJar.includedClasses)
-        exclude (osgiJar.includedClasses )
+        exclude editorJarIncludes
+        exclude osgiJarIncludes
     }
     from (sourceSets.viewer.output)
     from (files("${project.buildDir}/emoji/xml"))

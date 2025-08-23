@@ -18,7 +18,6 @@ import org.freeplane.features.link.LinkController;
 import org.freeplane.features.map.FoldingController;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
@@ -30,6 +29,7 @@ import org.freeplane.view.swing.map.NodeView;
  */
 public class DefaultNodeMouseMotionListener implements IMouseListener {
 	protected final NodeSelector nodeSelector;
+	protected final NodeFolder nodeFolder;
 	private static final String FOLD_ON_CLICK_INSIDE = "fold_on_click_inside";
 	static final String OPEN_LINKS_ON_PLAIN_CLICKS = "openLinksOnPlainClicks";
 	/**
@@ -43,6 +43,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 //		mc = modeController;
 		doubleClickTimer = new DoubleClickTimer();
 		nodeSelector = new NodeSelector();
+		nodeFolder = new NodeFolder();
 	}
 
 
@@ -126,13 +127,15 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 			if(Compat.isPlainEvent(e)){
 				if(inside && (e.getClickCount() == 1 && foldsOnClickInside()
 				        || ! (mc.canEdit(node.getMap()) && editsOnDoubleClick()))){
-					if (!nodeSelector.shouldSelectOnClick(e)) {
+					if (!nodeSelector.shouldSelectOnClick(e) && !nodeFolder.isPreviewUnfolded(node)) {
 					    isDelayedFoldingActive = true;
 						doubleClickTimer.start(new Runnable() {
 							@Override
 							public void run() {
-								MouseEventActor.INSTANCE.withMouseEvent( () ->
-									mapController.toggleFoldedAndScroll(node));
+								MouseEventActor.INSTANCE.withMouseEvent( () -> {
+									nodeFolder.stopTimerForDelayedFolding();
+									mapController.toggleFoldedAndScroll(node);
+								});
 							}
 						});
 					}
@@ -149,13 +152,18 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 
 		if (inside && Compat.isCtrlShiftEvent(e) && !nodeSelector.shouldSelectOnClick(e)) {
 			doubleClickTimer.cancel();
-			MouseEventActor.INSTANCE.withMouseEvent( () ->
-				mapController.toggleFoldedAndScroll(node));
+			MouseEventActor.INSTANCE.withMouseEvent( () -> {
+				nodeFolder.stopTimerForDelayedFolding();
+				mapController.toggleFoldedAndScroll(node);
+			});
 			e.consume();
 			return;
 		}
 
 		if(inside && e.getButton() == 1 &&  ! e.isAltDown()) {
+            if (nodeFolder.isPreviewUnfolded(node)) {
+                nodeFolder.makePreviewUnfoldingPermanent();
+            }
             nodeSelector.extendSelection(e, ! isDelayedFoldingActive);
         }
 	}
@@ -185,6 +193,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseDragged(final MouseEvent e) {
 		nodeSelector.stopTimerForDelayedSelection();
+		nodeFolder.stopTimerForDelayedFolding();
 		if (nodeSelector.isInside(e))
 			nodeSelector.extendSelection(e, false);
 	}
@@ -197,7 +206,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseEntered(final MouseEvent e) {
 		if (nodeSelector.isRelevant(e)) {
-			nodeSelector.createTimer(e, isInFoldingControl(e));
+			if (isInFoldingControl(e)) {
+				nodeFolder.createTimer(e);
+			} else {
+				nodeSelector.createTimer(e);
+			}
 			mouseMoved(e);
 		}
 	}
@@ -205,9 +218,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseExited(final MouseEvent e) {
 		nodeSelector.stopTimerForDelayedSelection();
+		nodeFolder.onMouseExited();
 		final MainView v = (MainView) e.getSource();
 		v.setMouseArea(MouseArea.OUT);
 		nodeSelector.trackWindowForComponent(v);
+		nodeFolder.trackWindowForComponent(v);
 	}
 
 	@Override
@@ -242,13 +257,18 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
         if (node.getCursor().getType() != requiredCursor.getType() || requiredCursor.getType() == Cursor.CUSTOM_CURSOR && node.getCursor() != requiredCursor) {
         	node.setCursor(requiredCursor);
         }
-		nodeSelector.createTimer(e, isInFoldingControl(e));
+		if (isInFoldingControl(e)) {
+			nodeFolder.createTimer(e);
+		} else {
+			nodeSelector.createTimer(e);
+		}
 	}
 
 	@Override
 	public void mousePressed(final MouseEvent e) {
 		final MapView mapView = MapView.getMapView(e.getComponent());
-		mapView.select();
+		if(! mapView.isSelected())
+			mapView.select();
 		doubleClickTimer.cancel();
 		popupMenuIsShown = false;
 		if (Compat.isPopupTrigger(e)) {
@@ -263,11 +283,18 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 					return;
 
 				final NodeModel node = nodeView.getNode();
+				if (nodeFolder.isPreviewUnfolded(node)) {
+					nodeFolder.makePreviewUnfoldingPermanent();
+					return;
+				}
+
 				final ModeController mc = nodeView.getMap().getModeController();
 				final MapController mapController = mc.getMapController();
 				doubleClickTimer.cancel();
-				MouseEventActor.INSTANCE.withMouseEvent( () ->
-				mapController.toggleFoldedAndScroll(node));
+				MouseEventActor.INSTANCE.withMouseEvent( () -> {
+					nodeFolder.stopTimerForDelayedFolding();
+					mapController.toggleFoldedAndScroll(node);
+				});
 				return;
 			}
 
@@ -276,6 +303,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseReleased(final MouseEvent e) {
 		nodeSelector.stopTimerForDelayedSelection();
+		nodeFolder.stopTimerForDelayedFolding();
         if (Compat.isPopupTrigger(e))
             showPopupMenu(e);
 	}
@@ -287,6 +315,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 		if (inside || inFoldingRegion) {
 			if(inside){
 				nodeSelector.stopTimerForDelayedSelection();
+				nodeFolder.stopTimerForDelayedFolding();
 				new NodePopupMenuDisplayer().showNodePopupMenu(e);
 			}
 			else if(inFoldingRegion){

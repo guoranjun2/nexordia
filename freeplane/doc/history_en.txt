@@ -1,4 +1,12 @@
 ==============================
+1.12.13
+==============================
+Add user option "UI elements follow selected map
+Add user option "Selected map follows active window"
+Add user option "Mouse over selection scope"
+Bug fixes
+
+==============================
 1.12.12
 ==============================
 Node bookmarks (Navigate->Bookmark node, pop-up->Bookmark node)

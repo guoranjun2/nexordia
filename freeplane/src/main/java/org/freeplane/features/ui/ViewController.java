@@ -20,14 +20,18 @@
 package org.freeplane.features.ui;
 
 import java.awt.Component;
+import java.awt.Window;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JRootPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.util.Hyperlink;
@@ -46,7 +50,7 @@ public interface ViewController {
 	public static final int RIGHT = 2;
 	public static final int TOP = 0;
 
-	public void changeNoteWindowLocation();
+	public void changeNoteWindowLocation(String location);
 
 	public void err(final String msg);
 
@@ -82,10 +86,7 @@ public interface ViewController {
 
 	public void removeStatus(final String key);
 
-	/**
-	 *
-	 */
-	public void removeSplitPane();
+	public void removeAuxiliaryComponent();
 
 	public void saveProperties();
 
@@ -133,10 +134,17 @@ public interface ViewController {
 
 	public void nextMapView();
 	public Component getCurrentRootComponent();
-	public Component getMenuComponent();
+	default Component getMenuComponent() {
+		return getMainFrameComponent();
+	}
+	public Component getMainFrameComponent();
 	public List<? extends Component> getMapViewVector();
 
 	public void openMapNextView();
 
 	public void openMapPreviousView();
+
+	default void fullScreenToggled(JFrame frame, boolean isFullScreen) {
+		// Default empty implementation
+	}
 }

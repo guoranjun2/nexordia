@@ -9,7 +9,9 @@ task binZip(type: Zip) {
 
     from(globalBin) {
         include('freeplane.sh')
-        fileMode = 0755
+        filePermissions {
+            unix(0755)
+        }
     }
 
     from(rootDir) {

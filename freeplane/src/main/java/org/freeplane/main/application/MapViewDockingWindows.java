@@ -19,8 +19,10 @@
  */
 package org.freeplane.main.application;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Image;
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
@@ -50,7 +53,9 @@ import javax.swing.JFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
@@ -63,6 +68,7 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.FileOpener;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.MapModel;
@@ -117,6 +123,7 @@ import net.infonode.util.Direction;
 
 class MapViewDockingWindows implements IMapViewChangeListener {
 
+	private static final String FREEPLANE_FLOATING_WINDOW = "freeplaneFloatingWindow";
 	private static final String CUSTOMIZED_TAB_NAME_PROPERTY = "customizedTabName";
     // // 	final private Controller controller;
 	private static final String OPENED_NOW = "openedNow_1.3.04";
@@ -128,8 +135,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private byte[] emptyConfigurations;
 	private final MapViewSerializer viewSerializer;
 	private DockingWindowsTheme theme;
+	private Dimension capturedWindowSize = null;
+	private final ApplicationViewController applicationViewController;
 
-	public MapViewDockingWindows() {
+	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
+		this.applicationViewController = applicationViewController;
 		viewSerializer = new MapViewSerializer();
 		rootWindow = new RootWindow(viewSerializer);
 		configureDefaultDockingWindowProperties();
@@ -189,11 +199,19 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                 }
 				else if(addedWindow instanceof FloatingWindow) {
 					final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
-					if(topLevelAncestor instanceof Window){
+					if(topLevelAncestor instanceof JFrame){
 						if(iconColorReplacer == null)
-							iconColorReplacer = new IconColorReplacer(((Window) UITools.getMenuComponent()).getIconImages());
+							iconColorReplacer = new IconColorReplacer((UITools.getFrame()).getIconImages());
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
-						((Window)topLevelAncestor).setIconImages(iconImages);
+						final JFrame frame = (JFrame)topLevelAncestor;
+						frame.getRootPane().putClientProperty(FREEPLANE_FLOATING_WINDOW, addedWindow);
+						frame.setIconImages(iconImages);
+
+						applicationViewController.createAuxillaryPaneForFloatingWindow((Window) topLevelAncestor, addedWindow);
+
+						applyCapturedSize(topLevelAncestor);
+
+						Compat.registerFullScreenListener(frame);
 					}
 				}
 				setTabPolicies(addedWindow);
@@ -216,23 +234,46 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 			@Override
             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
+				// Capture CENTER component size from main frame before removal
+				captureCenterComponentSize(removedFromWindow);
+
 				if(removedWindow instanceof TabWindow) {
 	                if (removedFromWindow == rootWindow) {
 	                	final TabAreaProperties tabAreaProperties = ((TabWindow)removedWindow).getTabWindowProperties().getTabbedPanelProperties().getTabAreaProperties();
 	                    tabAreaProperties.setTabAreaVisiblePolicy(TabAreaVisiblePolicy.ALWAYS);
                     }
                 }
+                else if(removedWindow instanceof FloatingWindow) {
+                    final Container topLevelAncestor = removedWindow.getTopLevelAncestor();
+                    if(topLevelAncestor instanceof Window) {
+                        applicationViewController.removeAuxillaryPaneForFloatingWindow((Window) topLevelAncestor);
+                    }
+                }
             }
 		});
 
-		new InternalFrameAdapter() {
-			@Override
-            public void internalFrameClosing(InternalFrameEvent e) {
-            }
-		};
-
 		addTabsPopupMenu(rootWindow);
 
+	}
+
+	private void captureCenterComponentSize(DockingWindow removedFromWindow) {
+		Container topLevelAncestor = removedFromWindow.getTopLevelAncestor();
+		if (topLevelAncestor instanceof RootPaneContainer) {
+			JRootPane rootPane = ((RootPaneContainer) topLevelAncestor).getRootPane();
+			capturedWindowSize = rootPane.getSize();
+		}
+	}
+
+	private void applyCapturedSize(Container topLevelAncestor) {
+		if (capturedWindowSize != null && topLevelAncestor instanceof RootPaneContainer) {
+			// Use InfoNode's exact same logic from setInternalSize()
+			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedWindowSize);
+			((Window) topLevelAncestor).pack();
+			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(null);
+
+			// Reset for next use
+			capturedWindowSize = null;
+		}
 	}
 
 	private void addTabsPopupMenu(DockingWindow dockingWindow){
@@ -509,7 +550,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		}
 	}
 	private void viewSelectionChanged(final Component mapView) {
-		if (!mPaneSelectionUpdate) {
+		if (!mPaneSelectionUpdate ||
+				! SwingUtilities.isDescendingFrom(mapView, applicationViewController.getMenuComponent())
+				&& ! FrameComponentMover.selectedMapFollowsActiveWindow()) {
 			return;
 		}
 		Controller controller = Controller.getCurrentController();
@@ -518,7 +561,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		}
 	}
 
-	public JComponent getMapPane() {
+	public RootWindow getRootWindow() {
 	    return rootWindow;
     }
 
@@ -692,9 +735,13 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		tabAreaProperties.setTabAreaVisiblePolicy(tabAreaVisiblePolicy);
 	}
 
-	public void setTabAreaVisiblePolicy(JFrame frame){
-		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow : frame.getContentPane().getComponent(0));
-		setTabAreaVisiblePolicies(window);
+	public void setTabAreaVisiblePolicy(JFrame frame, boolean visible){
+		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow
+				: frame.getRootPane().getClientProperty(FREEPLANE_FLOATING_WINDOW));
+		if(visible)
+			setTabAreaVisiblePolicies(window);
+		else
+			setTabAreaInvisiblePolicies(window);
 	}
 
 	private void setTabAreaVisiblePolicies(DockingWindow parentWindow) {
@@ -705,11 +752,6 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 			if (!(window instanceof FloatingWindow))
 				setTabAreaVisiblePolicies(window);
 		}
-	}
-
-	public void setTabAreaInvisiblePolicy(JFrame frame){
-		DockingWindow window = (DockingWindow) (JOptionPane.getFrameForComponent(rootWindow) == frame ? rootWindow : frame.getContentPane().getComponent(0));
-		setTabAreaInvisiblePolicies(window);
 	}
 
 	private void setTabAreaInvisiblePolicies(DockingWindow parentWindow) {
@@ -726,6 +768,20 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 		final ArrayList<Component> orderedMapViews = new ArrayList<Component>(mapViews.size());
 		addMapViews(orderedMapViews, rootWindow);
 		return orderedMapViews;
+	}
+
+
+	void visitAllFloatingWindows(Consumer<FloatingWindow> visitor) {
+		visitAllFloatingWindowsRecursive(rootWindow, visitor);
+	}
+
+	private void visitAllFloatingWindowsRecursive(DockingWindow window, Consumer<FloatingWindow> visitor) {
+		if (window instanceof FloatingWindow) {
+			visitor.accept((FloatingWindow) window);
+		}
+		for (int i = 0; i < window.getChildWindowCount(); i++) {
+			visitAllFloatingWindowsRecursive(window.getChildWindow(i), visitor);
+		}
 	}
 
 	private void addMapViews(ArrayList<Component> orderedMapViews, DockingWindow window) {

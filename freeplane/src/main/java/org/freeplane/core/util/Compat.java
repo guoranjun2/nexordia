@@ -159,6 +159,21 @@ public class Compat {
 		}
 	}
 
+	public static void registerFullScreenListener(JFrame frame) {
+		if (!isMacOsX()) {
+			return;
+		}
+		try {
+			final Class<?> macChanges = Controller.class.getClassLoader().loadClass(
+			    "org.freeplane.plugin.macos.MacChanges");
+			final Method method = macChanges.getMethod("registerFullScreenListenerForWindow", JFrame.class);
+			method.invoke(null, frame);
+		}
+		catch (final Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 
 	private static String userFpDir = null;
 	private static Boolean isApplet = null;

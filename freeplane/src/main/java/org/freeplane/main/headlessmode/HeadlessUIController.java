@@ -29,10 +29,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JRootPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.util.Hyperlink;
@@ -69,7 +71,7 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public void changeNoteWindowLocation() {
+	public void changeNoteWindowLocation(String location) {
 		throw methodNotImplementedException();
 	}
 
@@ -147,7 +149,7 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public void removeSplitPane() {
+	public void removeAuxiliaryComponent() {
 		throw methodNotImplementedException();
 	}
 
@@ -254,7 +256,7 @@ public class HeadlessUIController extends FrameController {
 	}
 
 	@Override
-	public Component getMenuComponent() {
+	public Component getMainFrameComponent() {
 		throw methodNotImplementedException();
 	}
 

@@ -93,6 +93,7 @@
 		<tab name="Appearance">
 			<separator name="look_and_feel">
 				<group name="lookandfeel" />
+				<boolean name="ui_elements_follow_selected_map" />
                 <number name="monitor_size_inches" min="1" max="200" step="0.1" />
                 <number name="display_scale" min="50" max="200" />
 				<boolean name="resources_use_default_font_for_notes_too" />
@@ -290,15 +291,34 @@
 				<boolean name="cut_nodes_without_question" />
 				<boolean name="remove_notes_without_question" />
 			</separator>
-			<separator name="selection">
-				<combo name="selection_method">
-					<choice value="selection_method_direct" />
-					<choice value="selection_method_delayed" />
-					<choice value="selection_method_by_click" />
+			<separator name="mouse_over_behavior">
+				<combo name="mouse_over_selection_timing">
+					<choice value="disabled" />
+					<choice value="delayed" />
+					<choice value="immediate" />
 				</combo>
+				<combo name="mouse_over_selection_inside">
+					<choice value="selection_inside.selected_map_view" />
+					<choice value="selection_inside.same_map" />
+					<choice value="selection_inside.selected_window" />
+					<choice value="selection_inside.any_map" />
+				</combo>
+				<combo name="mouse_over_folding_timing">
+					<choice value="disabled" />
+					<choice value="delayed" />
+					<choice value="immediate" />
+				</combo>
+				<combo name="mouse_over_folding_action">
+					<choice value="toggle" />
+					<choice value="unfold_only" />
+					<choice value="preview" />
+				</combo>
+				<number name="mouse_over_delay" min="50" max="5000" />
+			</separator>
+			<separator name="selection">
 				<combo name="siblingSelection" enum="org.freeplane.view.swing.map.SiblingSelection"/>
-				<number name="time_for_delayed_selection" />
 				<boolean name="synchronizeSelectionOnlyOnBranchChange" />
+				<boolean name="selected_map_follows_active_window" />
 			</separator>
 			<separator name="scrollling">
 				<number name="scrollbar_increment" />

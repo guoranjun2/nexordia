@@ -389,4 +389,9 @@ public class ApplicationResourceController extends ResourceController {
         if(! securedProps.containsKey(key))
             securedProps.setProperty(key, props.getProperty(key));
     }
+
+    @Override
+    public boolean isPropertySetByUser(String key) {
+        return props.containsKey(key);
+    }
 }

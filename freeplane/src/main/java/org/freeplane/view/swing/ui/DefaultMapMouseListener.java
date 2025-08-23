@@ -142,6 +142,9 @@ public class DefaultMapMouseListener implements IMouseListener {
             e.consume();
             return;
 		}
+		if(! SwingUtilities.getWindowAncestor(e.getComponent()).isFocused()
+				|| mapView != null && ! mapView.isValid())
+			return;
 		boolean isCtrlEvent = Compat.isCtrlEvent(e) || Compat.isCtrlShiftEvent(e);
         if(isCtrlEvent && e.getButton() == MouseEvent.BUTTON1
 		     || !isCtrlEvent && e.getButton() == MouseEvent.BUTTON3)
@@ -176,6 +179,8 @@ public class DefaultMapMouseListener implements IMouseListener {
         rectangleMemorizer.mouseDragged(e);
         if(e.isConsumed())
             return;
+		if(originX == -1)
+			return;
 		final JComponent component = (JComponent) e.getComponent();
 		final MapView mapView = MapView.getMapView(component);
 		if(mapView == null)

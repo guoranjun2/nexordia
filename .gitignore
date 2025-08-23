@@ -23,6 +23,9 @@
 #Ignore everything form theia
 .theia/
 
+#Ignore Claude Code configuration
+.claude/
+
 # e.g. hs_err_pid*.log
 *.log
 
@@ -255,3 +258,6 @@ gradle-app.setting
 
 # # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
 # gradle/wrapper/gradle-wrapper.properties
+*.backup
+*.temp
+.!*

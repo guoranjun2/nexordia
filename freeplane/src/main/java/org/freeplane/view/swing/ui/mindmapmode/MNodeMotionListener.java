@@ -205,7 +205,8 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 	@Override
 	public void mousePressed(MouseEvent e) {
 		final MapView mapView = MapView.getMapView(e.getComponent());
-		mapView.select();
+		if(! mapView.isSelected())
+			mapView.select();
 		doubleClickTimer.cancel();
 		ModeController modeController = mapView.getModeController();
 		if (modeController.canEdit(mapView.getMap()) && editsOnDoubleClick())

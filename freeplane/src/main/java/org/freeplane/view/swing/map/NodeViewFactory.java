@@ -217,7 +217,21 @@ class NodeViewFactory {
 				final NoteModel note = NoteModel.getNote(model);
 				if (note != null) {
 					String text = note.getText();
-					if(text != null) {
+					if(text != null && ! text.isEmpty()) {
+						if (noteView == null) {
+							noteView = NodeViewFactory.getInstance().createNoteViewer();
+							nodeView.addContent(noteView, NodeView.NOTE_VIEWER_POSITION);
+						}
+						noteView.setFont(map.getNoteFont());
+						noteView.setComponentOrientation(nodeView.getMainView().getComponentOrientation());
+						noteView.setForeground(map.getNoteForeground());
+						final Color noteBackground = map.getNoteBackground();
+						noteView.setBackground(noteBackground != null ? noteBackground : map.getBackground());
+						noteView.setHorizontalAlignment(map.getNoteHorizontalAlignment());
+						NodeCss noteCss = map.getNoteCss();
+						noteView.setStyleSheet(noteCss.css, noteCss.getStyleSheet());
+						noteView.setMinimumWidth(minNodeWidth);
+						noteView.setMaximumWidth(maxNodeWidth);
 						try {
 							TextController textController = map.getModeController().getExtension(TextController.class);
 							final Object transformedContent = textController.getTransformedObject(model, note, text, noteView);
@@ -228,6 +242,8 @@ class NodeViewFactory {
 							LogUtils.warn(e.getMessage());
 							newText = TextUtils.format("MainView.errorUpdateText", text, e.getLocalizedMessage());
 						}
+						noteView.updateText(newText);
+						noteView.setTextRenderingIcon(newIcon);
 					}
 				}
 			}
@@ -241,25 +257,8 @@ class NodeViewFactory {
 				nodeView.removeContent(NodeView.NOTE_VIEWER_POSITION);
 				return;
 			}
-			if (noteView == null && (newText != null || newIcon != null)) {
-				noteView = NodeViewFactory.getInstance().createNoteViewer();
-				nodeView.addContent(noteView, NodeView.NOTE_VIEWER_POSITION);
-			}
-			Objects.requireNonNull(noteView);
-			noteView.setFont(map.getNoteFont());
-			noteView.setComponentOrientation(nodeView.getMainView().getComponentOrientation());
-			noteView.setForeground(map.getNoteForeground());
-			final Color noteBackground = map.getNoteBackground();
-			noteView.setBackground(noteBackground != null ? noteBackground : map.getBackground());
-			noteView.setHorizontalAlignment(map.getNoteHorizontalAlignment());
-			noteView.updateText(newText);
-			noteView.setTextRenderingIcon(newIcon);
-			NodeCss noteCss = map.getNoteCss();
-			noteView.setStyleSheet(noteCss.css, noteCss.getStyleSheet());
 		}
 		if(noteView != null) {
-			noteView.setMinimumWidth(minNodeWidth);
-			noteView.setMaximumWidth(maxNodeWidth);
 			noteView.revalidate();
 			map.repaint();
 		}
@@ -281,6 +280,13 @@ class NodeViewFactory {
 				detailContent = createDetailView();
 				nodeView.addContent(detailContent, NodeView.DETAIL_VIEWER_POSITION);
 			}
+			detailContent.setMinimumWidth(minNodeWidth);
+			detailContent.setMaximumWidth(maxNodeWidth);
+			detailContent.setForeground(map.getDetailForeground());
+			detailContent.setBackground(map.getDetailBackground());
+			detailContent.setComponentOrientation(nodeView.getMainView().getComponentOrientation());
+			NodeCss detailCss = map.getDetailCss();
+			detailContent.setStyleSheet(detailCss.css, detailCss.getStyleSheet());
 			if (detailText.isHidden()) {
 				final ArrowIcon icon = ArrowIcon.DOWN;
 				detailContent.setIcon(icon);
@@ -305,15 +311,8 @@ class NodeViewFactory {
 				}
 				detailContent.updateText(text);
 			}
-			detailContent.setForeground(map.getDetailForeground());
-			detailContent.setBackground(map.getDetailBackground());
-			detailContent.setComponentOrientation(nodeView.getMainView().getComponentOrientation());
-			NodeCss detailCss = map.getDetailCss();
-			detailContent.setStyleSheet(detailCss.css, detailCss.getStyleSheet());
 		}
 		if(detailContent != null) {
-			detailContent.setMinimumWidth(minNodeWidth);
-			detailContent.setMaximumWidth(maxNodeWidth);
 			detailContent.revalidate();
 			map.repaint();
 		}

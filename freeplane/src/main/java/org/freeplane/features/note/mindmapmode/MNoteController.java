@@ -188,8 +188,7 @@ public class MNoteController extends NoteController {
 
 	void hideNotesPanel() {
 	    noteManager.saveNote();
-		notePanel.setVisible(false);
-		Controller.getCurrentModeController().getController().getViewController().removeSplitPane();
+		Controller.getCurrentModeController().getController().getViewController().removeAuxiliaryComponent();
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "false");
 	}
 
@@ -283,7 +282,6 @@ public class MNoteController extends NoteController {
 		}
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "true");
 		Controller.getCurrentModeController().getController().getViewController().insertComponentIntoSplitPane(notePanel);
-		notePanel.setVisible(true);
 		notePanel.revalidate();
 	}
 
@@ -343,5 +341,4 @@ public class MNoteController extends NoteController {
 	NotePanel getNotePanel() {
 		return notePanel;
 	}
-
 }

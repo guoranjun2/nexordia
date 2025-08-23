@@ -209,22 +209,26 @@ public class UITools {
 			});
 	}
 
-	static public Component getCurrentRootComponent(){
-		return Controller.getCurrentController().getViewController().getCurrentRootComponent();
-	}
-
 	public static Frame getCurrentFrame() {
 		final Component currentRootComponent = getCurrentRootComponent();
+		return frameOf(currentRootComponent);
+	}
+
+	private static Frame frameOf(final Component currentRootComponent) {
 		return currentRootComponent instanceof Frame ? (Frame)currentRootComponent : JOptionPane.getFrameForComponent(currentRootComponent);
 	}
 
 	public static Frame getFrame() {
-		final Component currentRootComponent = getMenuComponent();
-		return currentRootComponent instanceof Frame ? (Frame)currentRootComponent : JOptionPane.getFrameForComponent(currentRootComponent);
+		final Component mainFrame = Controller.getCurrentController().getViewController().getMainFrameComponent();
+		return frameOf(mainFrame);
 	}
 
 	static public Component getMenuComponent(){
 		return Controller.getCurrentController().getViewController().getMenuComponent();
+	}
+
+	static public Component getCurrentRootComponent(){
+		return Controller.getCurrentController().getViewController().getCurrentRootComponent();
 	}
 
 	/** returns a KeyStroke if possible and null otherwise. */
@@ -651,7 +655,7 @@ public class UITools {
     }
 
 	public static void backOtherWindows() {
-	    Component owner = getMenuComponent();
+	    Component owner = getCurrentRootComponent();
 		if(owner instanceof Window){
         	final Window[] ownedWindows = ((Window) owner).getOwnedWindows();
         	for(Window w : ownedWindows){
@@ -772,7 +776,7 @@ public class UITools {
 	}
 
 	public static void showFrame() {
-		final Component component = UITools.getMenuComponent();
+		final Component component = UITools.getCurrentRootComponent();
 		if(component instanceof Window) {
 			Window window = (Window) component;
 			final Window[] ownedWindows = window.getOwnedWindows();
@@ -866,10 +870,10 @@ public class UITools {
 
     public static void resetMenuBarOnMac() {
         if(Compat.isMacOsX()) {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-            final Frame frame = getFrame();
+            final Frame frame = frameOf(getMenuComponent());
             if(frame != null) {
                 final MenuBar menuBar = frame.getMenuBar();
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
                 frame.setMenuBar(null);
                 frame.setMenuBar(menuBar);
                 System.setProperty("apple.laf.useScreenMenuBar", "false");

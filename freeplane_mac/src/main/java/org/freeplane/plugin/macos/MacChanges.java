@@ -39,6 +39,8 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.util.function.Predicate;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -54,6 +56,7 @@ import org.freeplane.features.link.LinkController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.ViewController;
+import org.freeplane.features.ui.FrameController;
 import org.freeplane.main.application.MacOptions;
 
 
@@ -64,6 +67,8 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 	private final Controller controller;
 
 	private final static Predicate<Window> toggleFullScreenMethod = getToggleFullScreenMethod();
+	private final static Map<Window, Boolean> fullScreenStates = new ConcurrentHashMap<>();
+	private static Object fullScreenListener;
 
 	private static Predicate<Window> getToggleFullScreenMethod(){
 		try {
@@ -92,9 +97,23 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 	}
 
 	public static void setFullScreen(JFrame window, boolean requestFullScreen) {
-		boolean hasFullScreen = window.getY() == 0;
-		if(hasFullScreen == requestFullScreen || toggleFullScreenMethod.test(window))
-			window.getRootPane().putClientProperty(ViewController.FULLSCREEN_ENABLED_PROPERTY, requestFullScreen);
+		boolean hasFullScreen = fullScreenStates.getOrDefault(window, false);
+		if(hasFullScreen != requestFullScreen)
+			toggleFullScreenMethod.test(window);
+	}
+
+	public static void registerFullScreenListenerForWindow(JFrame window) {
+		if (fullScreenListener == null) {
+			return;
+		}
+		try {
+			Class<?> fullScreenUtilities = Class.forName("com.apple.eawt.FullScreenUtilities");
+			Class<?> fullScreenListenerClass = Class.forName("com.apple.eawt.FullScreenListener");
+			fullScreenUtilities.getMethod("addFullScreenListenerTo", java.awt.Window.class, fullScreenListenerClass)
+				.invoke(null, window, fullScreenListener);
+		} catch (Exception e) {
+			LogUtils.warn("Failed to register FullScreenListener for window", e);
+		}
 	}
 
 	private MacChanges(Controller controller) {
@@ -114,6 +133,10 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 			fmMacApplication.setOpenFileHandler(this);
 			fmMacApplication.setOpenURIHandler(this);
 			fmMacApplication.setQuitHandler(this);
+
+			// Register global full screen listener
+			registerFullScreenListener();
+
 			// wait until handleOpenFile finishes if it was called in event thread
 			try {
 				EventQueue.invokeAndWait(new Runnable() {
@@ -174,7 +197,7 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 			AFreeplaneAction action = modeController.getAction("ShowPreferencesAction");
 			if(action == null)
 				return;
-			Component menuComponent = UITools.getMenuComponent();
+			Component menuComponent = UITools.getCurrentRootComponent();
 			if(menuComponent == null || ! menuComponent.isShowing())
 				return;
 			action.actionPerformed(null);
@@ -217,6 +240,40 @@ public class MacChanges implements  AboutHandler, OpenFilesHandler, PreferencesH
 			AFreeplaneAction action = modeController.getController().getAction("AboutAction");
 			if(action != null)
 				action.actionPerformed(null);
+		}
+	}
+
+	private void registerFullScreenListener() {
+		try {
+			Class<?> fullScreenListenerClass = Class.forName("com.apple.eawt.FullScreenListener");
+
+			Object listener = java.lang.reflect.Proxy.newProxyInstance(
+				fullScreenListenerClass.getClassLoader(),
+				new Class[] { fullScreenListenerClass },
+				(proxy, method, args) -> {
+					if ("windowEnteredFullScreen".equals(method.getName()) ||
+						"windowExitedFullScreen".equals(method.getName())) {
+						Object windowEvent = args[0];
+						Object window = windowEvent.getClass().getMethod("getWindow").invoke(windowEvent);
+
+						if (window instanceof JFrame) {
+							boolean isFullScreen = "windowEnteredFullScreen".equals(method.getName());
+							fullScreenStates.put((JFrame) window, isFullScreen);
+							ViewController viewController = controller.getViewController();
+							if (viewController != null) {
+								viewController.fullScreenToggled((JFrame) window, isFullScreen);
+							}
+						}
+					}
+					return null;
+				}
+			);
+
+			// Store the listener for later use
+			fullScreenListener = listener;
+
+		} catch (Exception e) {
+			LogUtils.warn("Failed to register FullScreenListener", e);
 		}
 	}
 }

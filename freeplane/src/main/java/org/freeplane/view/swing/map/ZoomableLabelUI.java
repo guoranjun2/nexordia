@@ -47,13 +47,36 @@ import org.freeplane.core.util.TextUtils;
  * 23.08.2009
  */
 public class ZoomableLabelUI extends BasicLabelUI {
+	private static final char RLM = '\u200F';
+	private static final char LRM = '\u200E';
+
+	private static String bidiSafe(JLabel lbl, String s) {
+	    if (s == null || s.isEmpty() || BasicHTML.isHTMLString(s))
+	        return s;
+
+	    boolean compLTR = lbl.getComponentOrientation().isLeftToRight();
+	    int i = 0;
+	    while (i < s.length()) {
+	        int cp = s.codePointAt(i);
+	        byte dir = Character.getDirectionality(cp);
+	        if (dir == Character.DIRECTIONALITY_LEFT_TO_RIGHT) {
+	            return compLTR ? s : RLM + s;
+	        }
+	        if (dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT
+	            || dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC) {
+	            return compLTR ? LRM + s : s;
+	        }
+	        i += Character.charCount(cp);      // skip neutrals, whitespace, punctuation
+	    }
+	    return s;   // no strong character found
+	}
+
 	private boolean isPainting = false;
 
 	static ZoomableLabelUI labelUI = new ZoomableLabelUI();
 	private Rectangle iconR = new Rectangle();
 	private Rectangle textR = new Rectangle();
 	private Rectangle viewR = new Rectangle();
-	private LayoutData layoutData = new LayoutData(viewR, textR, iconR);
 
 	public static class LayoutData{
 		final public Rectangle viewR;
@@ -99,6 +122,7 @@ public class ZoomableLabelUI extends BasicLabelUI {
 	protected String layoutCL(final JLabel label, final FontMetrics fontMetrics, final String text, final Icon icon,
 			final Rectangle viewR, final Rectangle iconR, final Rectangle textR) {
 		LayoutData preferredLayoutData = (LayoutData) label.getClientProperty("preferredLayoutData");
+		final String bidiSafeText = bidiSafe(label, text);
 		if(preferredLayoutData != null) {
 			viewR.x = preferredLayoutData.viewR.x;
 			viewR.y = preferredLayoutData.viewR.y;
@@ -112,11 +136,11 @@ public class ZoomableLabelUI extends BasicLabelUI {
 			iconR.y = preferredLayoutData.iconR.y;
 			iconR.width = preferredLayoutData.iconR.width;
 			iconR.height = preferredLayoutData.iconR.height;
-			return text;
+			return bidiSafeText;
 		}
 		final ZoomableLabel zLabel = (ZoomableLabel) label;
 		final float zoom = zLabel.getZoom();
-		final float scale = zoom == 1f ? 1f : zoom * 0.99f;
+		final float scale = zoom;
 		if (isPainting) {
 			final Insets insets = zLabel.getInsets();
 			final int width = zLabel.getWidth();
@@ -151,8 +175,8 @@ public class ZoomableLabelUI extends BasicLabelUI {
 
 						if(viewPreferredWidth > availableTextWidth){
 							v.setWidth(availableTextWidth);
-							layoutCompoundLabel(text, icon, viewR, iconR, textR, zLabel);
-							return text;
+							layoutCompoundLabel(bidiSafeText, icon, viewR, iconR, textR, zLabel);
+							return bidiSafeText;
 						}
 						else if(currentWidth != viewPreferredWidth)
 							v.resetWidth();
@@ -164,10 +188,10 @@ public class ZoomableLabelUI extends BasicLabelUI {
 		if(textRenderingIcon != null){
 			layoutLabelWithTextIcon(textRenderingIcon, icon, viewR, iconR, textR, zLabel);
 		} else
-            layoutCompoundLabel(text, icon, viewR, iconR, textR, zLabel);
+            layoutCompoundLabel(bidiSafeText, icon, viewR, iconR, textR, zLabel);
 
 		if(! isPainting)
-			return text;
+			return bidiSafeText;
 
 		int reservedIconWidth = iconR.width == 0 ? 0 : iconR.width + label.getIconTextGap();
 		int availableTextWidth = viewR.width;
@@ -228,21 +252,33 @@ public class ZoomableLabelUI extends BasicLabelUI {
 			}
 			break;
 		}}
-		return text;
+		if (zLabel.useFractionalMetrics()) {
+			final int alignment = zLabel.getEffectiveHorizontalAlignment();
+			final int shift = (int) (textR.width * (1 - EXTRA_SCALING_FACTOR));
+			if (alignment == SwingConstants.RIGHT) {
+				textR.x += shift;
+			} else if (alignment == SwingConstants.CENTER) {
+				textR.x += shift/2;
+			}
+			if(iconR.x != viewR.x)
+				iconR.x += shift;
+		}
+
+		return bidiSafeText;
 	}
 
     private void layoutCompoundLabel(final String text, final Icon icon, final Rectangle viewR,
             final Rectangle iconR, final Rectangle textR, final ZoomableLabel zLabel) {
         int verticalTextPosition = zLabel.getVerticalTextPosition();
         SwingUtilities.layoutCompoundLabel(
-        (JComponent) zLabel,
+        zLabel,
         zLabel.getFontMetrics(),
         text,
         icon,
         zLabel.getVerticalAlignment(),
         zLabel.getHorizontalAlignment(),
         verticalTextPosition,
-        verticalTextPosition != SwingConstants.BOTTOM ? SwingConstants.TRAILING : SwingConstants.CENTER,
+        verticalTextPosition != SwingConstants.BOTTOM ? SwingConstants.LEFT : SwingConstants.CENTER,
         viewR,
         iconR,
         textR,
@@ -288,14 +324,18 @@ public class ZoomableLabelUI extends BasicLabelUI {
 			}
 		}
 	}
+	final static float EXTRA_SCALING_FACTOR = 0.97f;
 
 	@Override
 	public void paint(final Graphics g, final JComponent label) {
-		final ZoomableLabel mainView = (ZoomableLabel) label;
-		if (!mainView.useFractionalMetrics()) {
+		paint(g, (ZoomableLabel) label);
+	}
+
+	private void paint(final Graphics g, final ZoomableLabel label) {
+		if (!label.useFractionalMetrics()) {
 			try {
 				isPainting = true;
-				superPaintSafe(g, mainView);
+				superPaintSafe(g, label);
 			}
 			finally {
 				isPainting = false;
@@ -309,11 +349,10 @@ public class ZoomableLabelUI extends BasicLabelUI {
 			g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, newRenderingHintFM);
 		}
 		final AffineTransform transform = g2.getTransform();
-		final float factor = 0.97f;
-		final float zoom = mainView.getZoom() * factor;
-		if(mainView.getVerticalAlignment() == SwingConstants.CENTER) {
+		final float zoom = label.getZoom() * EXTRA_SCALING_FACTOR;
+		if(label.getVerticalAlignment() == SwingConstants.CENTER) {
 			final float translationFactorY = 0.5f;
-			g2.translate(0, mainView.getHeight() * (1f - factor) * translationFactorY);
+			g2.translate(0, label.getHeight() * (1f - EXTRA_SCALING_FACTOR) * translationFactorY);
 		}
 		g2.scale(zoom, zoom);
 		final boolean htmlViewSet = null != label.getClientProperty(BasicHTML.propertyKey);
@@ -322,7 +361,7 @@ public class ZoomableLabelUI extends BasicLabelUI {
 			if(htmlViewSet){
 				ScaledHTML.resetPainter();
 			}
-			superPaintSafe(g, mainView);
+			superPaintSafe(g, label);
 		}
 		finally {
 			isPainting = false;
@@ -393,7 +432,7 @@ public class ZoomableLabelUI extends BasicLabelUI {
 		ZoomableLabel lbl = ((ZoomableLabel) e.getSource());
 		String propertyName = e.getPropertyName();
 		if (propertyName == "text" || "font" == propertyName || "foreground" == propertyName
-				|| "horizontalAlignment" == propertyName
+				|| "horizontalAlignment" == propertyName || "componentOrientation" == propertyName
 				|| ("ancestor" == propertyName || "graphicsConfiguration" == propertyName) && e.getNewValue() != null
 				|| ZoomableLabel.CUSTOM_CSS == propertyName)
 			updateRendererOnPropertyChange(lbl, propertyName);

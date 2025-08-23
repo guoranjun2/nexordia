@@ -2444,4 +2444,8 @@ public class NodeView extends JComponent implements INodeView {
 	public boolean allowsCompactLayout() {
 		return map.allowsCompactLayout();
 	}
+
+	boolean isFoldable() {
+		return getMap().getFilter().isFoldable(viewedNode);
+	}
 }
