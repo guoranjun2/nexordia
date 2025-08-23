@@ -170,25 +170,38 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	}
 
 	private void moveAuxiliaryComponents(JFrame fromFrame, JFrame toFrame) {
-		AuxillaryEditorSplitPane fromSplitPane = findAuxiliarySplitPane(fromFrame);
-		AuxillaryEditorSplitPane toSplitPane = findAuxiliarySplitPane(toFrame);
+		AuxiliarySplitPanes fromSplitPanes = findAuxiliarySplitPanes(fromFrame);
+		AuxiliarySplitPanes toSplitPanes = findAuxiliarySplitPanes(toFrame);
 
-		if (fromSplitPane != null && toSplitPane != null) {
+		if (fromSplitPanes != null && toSplitPanes != null) {
 			EventQueue.invokeLater(() ->
-				fromSplitPane.moveAuxillaryComponentTo(toSplitPane, Controller.getCurrentModeController().getModeName()));
+				moveAuxiliaryComponentBetweenManagers(fromSplitPanes, toSplitPanes));
 		}
 	}
 
-	private AuxillaryEditorSplitPane findAuxiliarySplitPane(JFrame frame) {
+	private AuxiliarySplitPanes findAuxiliarySplitPanes(JFrame frame) {
 		Container contentPane = frame.getContentPane();
 		if (contentPane.getLayout() instanceof BorderLayout) {
 			Component centerComponent = ((BorderLayout) contentPane.getLayout())
 				.getLayoutComponent(contentPane, BorderLayout.CENTER);
 			if (centerComponent instanceof AuxillaryEditorSplitPane) {
-				return (AuxillaryEditorSplitPane) centerComponent;
+				AuxillaryEditorSplitPane rootPane = (AuxillaryEditorSplitPane) centerComponent;
+				return rootPane.getManager();
 			}
 		}
 		return null;
+	}
+
+	private void moveAuxiliaryComponentBetweenManagers(AuxiliarySplitPanes fromManager, AuxiliarySplitPanes toManager) {
+		String modeName = Controller.getCurrentModeController().getModeName();
+
+		for (int level = 0; level < fromManager.getNumLevels(); level++) {
+			AuxillaryEditorSplitPane fromPane = fromManager.getPane(level);
+			if (level < toManager.getNumLevels()) {
+				AuxillaryEditorSplitPane toPane = toManager.getPane(level);
+				fromPane.moveAuxillaryComponentTo(toPane, modeName);
+			}
+		}
 	}
 
 	public JFrame getUIFrame() {

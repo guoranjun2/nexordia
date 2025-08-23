@@ -16,27 +16,26 @@ import javax.swing.JSplitPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
-import org.freeplane.core.resources.ResourceController;
-
 class AuxillaryEditorSplitPane extends JSplitPane {
-	private static final String AUX_SPLIT_PANE_LAST_POSITION = "aux_split_pane_last_position";
-
-
 	private static final long serialVersionUID = 1L;
 	private JComponent auxillaryComponent;
 	private Component mainComponent;
 	private boolean dividerLocationIsRestored;
-	/** Contains the value where the Note Window should be displayed (right, left, top, bottom) */
-	private static String auxillaryComponentLocation = ResourceController.getResourceController().getProperty("note_location", "bottom");
-	final private ApplicationResourceController resourceController;
-
+	final private AuxiliarySplitPaneController controller;
+	private String currentLocation;
+	private AuxiliarySplitPanes manager;
 
 	private String mode;
 
 	public AuxillaryEditorSplitPane(Component mainComponent) {
-		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
+		this(mainComponent, new AuxiliarySplitPaneController("aux_split_pane_last_position", "note_location", "bottom"));
+	}
+
+	public AuxillaryEditorSplitPane(Component mainComponent, AuxiliarySplitPaneController controller) {
+		this.controller = controller;
 		this.mainComponent = mainComponent;
-		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		this.currentLocation = controller.getLocation();
+		if (JSplitPane.TOP.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			setLeftComponent(null);
 			setRightComponent(mainComponent);
 		} else {
@@ -70,7 +69,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	private void insertComponentIntoSplitPane(final JComponent pAuxillaryComponent) {
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		if (JSplitPane.RIGHT.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		this.currentLocation = controller.getLocation();
+		if (JSplitPane.RIGHT.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			if(getOrientation() != JSplitPane.HORIZONTAL_SPLIT) {
 				setOrientation(JSplitPane.HORIZONTAL_SPLIT);
 				dividerLocationIsRestored = false;
@@ -82,7 +82,7 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 				dividerLocationIsRestored = false;
 			}
 		}
-		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		if (JSplitPane.TOP.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			if(getRightComponent() != mainComponent) {
 				repositionComponent(mainComponent, JSplitPane.RIGHT);
 			}
@@ -155,11 +155,11 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		if(dividerLocationIsRestored || auxillaryComponent == null)
 			return;
 		double lastSplitPanePosition = Double.NaN;
-		if (JSplitPane.LEFT.equals(auxillaryComponentLocation) || JSplitPane.TOP.equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = 1.0 - resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
+		if (JSplitPane.LEFT.equals(currentLocation) || JSplitPane.TOP.equals(currentLocation)) {
+			lastSplitPanePosition = 1.0 - controller.getPosition(Double.NaN);
 		}
 		else {
-			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
+			lastSplitPanePosition = controller.getPosition(Double.NaN);
 		}
 
 		if (Double.isNaN(lastSplitPanePosition)) {
@@ -181,11 +181,11 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	private void saveSplitPanePosition() {
 		double proportionalLocation = getProportionalDividerLocation();
-		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(1.0 - proportionalLocation));
+		if ("left".equals(currentLocation) || "top".equals(currentLocation)) {
+			controller.setPosition(1.0 - proportionalLocation);
 		}
 		else {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(proportionalLocation));
+			controller.setPosition(proportionalLocation);
 		}
 	}
 
@@ -200,9 +200,13 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 
 	public void changeNoteWindowLocation(String location) {
-		if(location == null || location.equals(auxillaryComponentLocation))
+		if(location == null || location.equals(currentLocation))
 			return;
-		auxillaryComponentLocation = resourceController.getProperty("note_location");
+		
+		// Update the controller's location and save current location
+		controller.setLocation(location);
+		
+		// Re-layout if we have both components
 		if(getLeftComponent() != null && getRightComponent() != null){
 			insertComponentIntoSplitPane(auxillaryComponent);
 		}
@@ -210,6 +214,22 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	public JComponent getAuxiliaryComponent() {
 		return auxillaryComponent;
+	}
+	
+	/**
+	 * Sets the manager that created this split pane.
+	 * This allows access back to the nested structure manager.
+	 */
+	void setManager(AuxiliarySplitPanes manager) {
+		this.manager = manager;
+	}
+	
+	/**
+	 * Gets the manager that created this split pane.
+	 * @return the manager or null if this was created directly
+	 */
+	public AuxiliarySplitPanes getManager() {
+		return manager;
 	}
 
 

@@ -90,8 +90,10 @@ class ApplicationViewController extends FrameController {
 	public void changeNoteWindowLocation(String location) {
 		final ResourceController resourceController = ResourceController.getResourceController();
 		resourceController.setProperty("note_location", location);
-		final AuxillaryEditorSplitPane splitPane = getSplitPane();
-		splitPane.changeNoteWindowLocation(location);
+		final AuxiliarySplitPanes splitPanes = getSplitPanes();
+		if (splitPanes != null) {
+			splitPanes.changeNoteWindowLocation(0, location);
+		}
 	}
 
 	@Override
@@ -101,8 +103,10 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		final AuxillaryEditorSplitPane splitPane = getSplitPane();
-		splitPane.insertComponentIntoSplitPane(pMindMapComponent, Controller.getCurrentModeController().getModeName());
+		final AuxiliarySplitPanes splitPanes = getSplitPanes();
+		if (splitPanes != null) {
+			splitPanes.insertComponentIntoSplitPane(0, pMindMapComponent, Controller.getCurrentModeController().getModeName());
+		}
 	}
 
 	private AuxillaryEditorSplitPane getSplitPane() {
@@ -111,6 +115,14 @@ class ApplicationViewController extends FrameController {
 			return getSplitPane((RootPaneContainer) currentRootComponent);
 		else
 			return null;
+	}
+	
+	/**
+	 * Gets the AuxiliarySplitPanes manager for note operations.
+	 */
+	private AuxiliarySplitPanes getSplitPanes() {
+		AuxillaryEditorSplitPane splitPane = getSplitPane();
+		return splitPane != null ? splitPane.getManager() : null;
 	}
 
 	public AuxillaryEditorSplitPane getSplitPane(final RootPaneContainer topLevelAncestor) {
@@ -132,7 +144,8 @@ class ApplicationViewController extends FrameController {
 			}
 
 			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
-			AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(bookmarkToolbarPane);
+			AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(bookmarkToolbarPane);
+			AuxillaryEditorSplitPane splitPane = splitPanes.getRootPane();
 			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
 
 			if (centralComponent != null) {
@@ -189,8 +202,10 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void removeAuxiliaryComponent() {
-		final AuxillaryEditorSplitPane splitPane = getSplitPane();
-		splitPane.removeAuxiliaryComponent();
+		final AuxiliarySplitPanes splitPanes = getSplitPanes();
+		if (splitPanes != null) {
+			splitPanes.removeAuxiliaryComponent(0);
+		}
 	}
 
 
@@ -265,7 +280,8 @@ class ApplicationViewController extends FrameController {
 		// disable all hotkeys for JSplitPane
 		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
-		AuxillaryEditorSplitPane splitPane = new AuxillaryEditorSplitPane(mainBookmarkToolbarPane);
+		AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(mainBookmarkToolbarPane);
+		AuxillaryEditorSplitPane splitPane = splitPanes.getRootPane();
 		splitPane.setResizeWeight(1.0d);
 		Container contentPane = mainFrame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
