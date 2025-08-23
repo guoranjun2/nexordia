@@ -243,6 +243,7 @@ class ScrollableTreePanel extends JPanel {
 
     public void selectNodeById(String nodeId) {
         selection.selectNode(nodeId);
+        repaint();
     }
 
     public String getSelectedNodeId() {

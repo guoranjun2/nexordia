@@ -52,12 +52,7 @@ class NodePositioning {
         FlatNode flatNode = visibleState.getFlatNode(node);
         if (flatNode == null) return null;
         
-        int iconX;
-        if (flatNode.depth == 0) {
-            iconX = Math.max(0, buttonBounds.x - geometry.iconDiameter);
-        } else {
-            iconX = buttonBounds.x - geometry.iconDiameter;
-        }
+        int iconX = buttonBounds.x + buttonBounds.width;
         
         int iconY = buttonBounds.y + (buttonBounds.height - geometry.iconDiameter) / 2;
         return new Point(iconX, iconY);

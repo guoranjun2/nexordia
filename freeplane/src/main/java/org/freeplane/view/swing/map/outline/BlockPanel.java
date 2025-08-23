@@ -52,12 +52,11 @@ class BlockPanel extends JPanel {
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
+        button.addActionListener(e -> {
+            parentPanel.selectNodeById(flat.node.id);
+        });
+        
         button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                parentPanel.selectNodeById(flat.node.id);
-            }
-
             @Override
             public void mouseEntered(MouseEvent e) {
                 parentPanel.onContentButtonHovered(flat.node);
