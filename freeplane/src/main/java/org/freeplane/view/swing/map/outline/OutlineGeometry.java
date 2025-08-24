@@ -1,8 +1,6 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Dimension;
-import java.awt.Point;
-import java.awt.Rectangle;
 
 import javax.swing.JButton;
 
@@ -26,7 +24,7 @@ class OutlineGeometry {
         final Dimension preferredButtonSize = sampleButton.getPreferredSize();
         this.arrowAreaWidth = Math.round(preferredButtonSize.width * 60 / 13);
         this.indent = arrowAreaWidth / 2;
-        this.rowHeight = Math.round(preferredButtonSize.height * 30 / 17);
+        this.rowHeight = Math.round(preferredButtonSize.height);
 
         this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
         this.navButtonsTotalWidth = 3 * navButtonWidth;

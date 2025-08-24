@@ -93,7 +93,6 @@ class ScrollableTreePanel extends JPanel {
         void updateVisibleBlocks() {
         if (viewport == null) return;
 
-        visibleState.updateVisibleNodes();
         clearBlocks();
         createVisibleBlocks();
         updatePreferredFromActualBlocks();
@@ -428,17 +427,12 @@ class ScrollableTreePanel extends JPanel {
     }
 
     void updateVisibleBlocksAndBreadcrumb() {
-        BreadcrumbState state = calculateBreadcrumbState();
+        visibleState.updateVisibleNodes();                   // 1. Update list first
+        BreadcrumbState state = calculateBreadcrumbState();  // 2. Calculate using new list  
         if (state != null) {
-            breadcrumbPanel.update(state);
-            if (state.levelReductionFirstVisibleNodeIndex >= 0) {
-                updateVisibleBlocks(state.levelReductionFirstVisibleNodeIndex);
-            }
-            else
-                updateVisibleBlocks();
+            breadcrumbPanel.update(state);                   // 3. Update height
         }
-        else
-            updateVisibleBlocks();
+        updateVisibleBlocks();                               // 4. Create blocks (no duplicate updateVisibleNodes)
     }
 
     private BreadcrumbState calculateBreadcrumbState() {

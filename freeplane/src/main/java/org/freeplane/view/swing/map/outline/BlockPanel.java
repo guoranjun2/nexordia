@@ -21,7 +21,7 @@ class BlockPanel extends JPanel {
 
     private final int breadcrumbNodeCount;
     private final OutlineSelection selection;
-    
+
     BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
@@ -47,19 +47,21 @@ class BlockPanel extends JPanel {
 
     private void createActionButton(FlatNode flat, int y, int rowHeight, int indent, ScrollableTreePanel parentPanel, int idx) {
         String buttonText = flat.node.title;
-        JButton button = new JButton(buttonText);
+        JButton button = new JButton();
+        button.setFont(button.getFont().deriveFont(8f));
+        button.setText(buttonText);
 
         int actionX = parentPanel.geometry.calculateTextButtonX(flat.depth);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
-        
+
         // Store the node reference with the button for selection checking
         button.putClientProperty("treeNode", flat.node);
 
         button.addActionListener(e -> {
             parentPanel.selectNodeById(flat.node.id);
         });
-        
+
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -91,7 +93,7 @@ class BlockPanel extends JPanel {
                     if (buttonNode != null && selection.isSelected(buttonNode)) {
                         // Check if the selected node is in the breadcrumb area
                         boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
-                        
+
                         // Only paint selection circle if the node is NOT in breadcrumb area
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
