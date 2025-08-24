@@ -45,13 +45,18 @@ class BreadcrumbPanel extends JPanel {
 
             int actionX = treePanel.geometry.calculateTextButtonX(depth);
 
-            JButton breadcrumbButton = new JButton(node.title);
+            JButton breadcrumbButton = new JButton();
+            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
+            breadcrumbButton.setText(node.title);
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, treePanel.geometry.rowHeight);
+            
+            // Store the node reference with the button for selection checking
+            breadcrumbButton.putClientProperty("treeNode", node);
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
             breadcrumbButton.addActionListener(e -> {
-                treePanel.setSelectedNodeId(nodeToSelect.id);
+                treePanel.selectNodeById(nodeToSelect.id);
                 treePanel.requestFocusInWindow();
             });
 
@@ -64,13 +69,6 @@ class BreadcrumbPanel extends JPanel {
 
             add(breadcrumbButton);
 
-            if (selection.isSelected(node)) {
-                SelectionIndicator selectionIndicator = new SelectionIndicator(treePanel.selectionIcon, breadcrumbButton);
-                add(selectionIndicator);
-                
-                // Update position after button is positioned
-                javax.swing.SwingUtilities.invokeLater(() -> selectionIndicator.updatePosition());
-            }
         }
 
         TreeNode hoveredNode = treePanel.getVisibleState().getHoveredNode();
@@ -97,6 +95,7 @@ class BreadcrumbPanel extends JPanel {
         revalidate();
         repaint();
 	}
+
 
     public Rectangle calculateBounds() {
         int width = treePanel.viewport != null ? treePanel.viewport.getViewportWidth() : scrollPane.getViewport().getWidth();
@@ -126,6 +125,22 @@ class BreadcrumbPanel extends JPanel {
     @Override
     protected void paintComponent(java.awt.Graphics g) {
         super.paintComponent(g);
+
+        // Paint selection indicators for selected breadcrumb buttons
+        for (java.awt.Component comp : getComponents()) {
+            if (comp instanceof JButton) {
+                JButton btn = (JButton) comp;
+                TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
+                if (buttonNode != null && selection.isSelected(buttonNode)) {
+                    javax.swing.Icon icon = treePanel.selectionIcon;
+                    
+                    java.awt.Point iconPosition = treePanel.getNodePositioning().calculateSelectionIconPosition(buttonNode, comp.getBounds());
+                    if (iconPosition != null) {
+                        icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
+                    }
+                }
+            }
+        }
 
         // Debug: Paint a horizontal line at the bottom of the breadcrumb panel
         if (currentBreadcrumbHeight > 0) {
