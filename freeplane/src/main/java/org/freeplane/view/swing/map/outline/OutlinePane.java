@@ -56,10 +56,8 @@ public class OutlinePane extends JPanel {
      */
     public void refreshTree() {
         SwingUtilities.invokeLater(() -> {
-            treePanel.revalidate();
-            treePanel.repaint();
+            treePanel.updateVisibleBlocksAndBreadcrumb();
         });
-        performInitialSetup();
     }
     
     /**
@@ -71,6 +69,14 @@ public class OutlinePane extends JPanel {
     public void setRootNode(TreeNode newRootNode) {
         if (newRootNode == null) {
             newRootNode = new TreeNode("No Data", "empty");
+        }
+        
+        // Clean up old tree listeners to prevent memory leaks
+        if (treePanel != null) {
+            TreeNode oldRoot = treePanel.getRoot();
+            if (oldRoot != null) {
+                NodeTreeFactory.cleanupTree(oldRoot);
+            }
         }
         
         // Remove old components

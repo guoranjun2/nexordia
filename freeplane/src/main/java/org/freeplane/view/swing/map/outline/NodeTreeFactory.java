@@ -64,21 +64,22 @@ public class NodeTreeFactory {
     }
     
     /**
-     * Recursively creates TreeNode hierarchy from NodeModel hierarchy.
-     * Use simple TreeNode objects like the demo to avoid virtual scrolling issues.
+     * Recursively creates MapTreeNode hierarchy from NodeModel hierarchy.
      * 
      * @param nodeModel the NodeModel to convert
-     * @param outlinePane unused, kept for compatibility
-     * @return TreeNode representing this node and its children
+     * @param outlinePane the OutlinePane for refresh callbacks
+     * @return MapTreeNode representing this node and its children
      */
-    private static TreeNode createMapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
-        // Create simple TreeNode like the demo - no listeners for now
-        String nodeText = org.freeplane.features.text.TextController.getController().getShortPlainText(nodeModel);
-        TreeNode treeNode = new TreeNode(nodeText, nodeModel.getID());
+    private static MapTreeNode createMapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
+        // Create the MapTreeNode for this NodeModel
+        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane);
+        
+        // Register as a listener for node changes
+        nodeModel.addViewer(treeNode);
         
         // Recursively create children
         for (NodeModel childNode : nodeModel.getChildren()) {
-            TreeNode childTreeNode = createMapTreeNode(childNode, outlinePane);
+            MapTreeNode childTreeNode = createMapTreeNode(childNode, outlinePane);
             treeNode.addChild(childTreeNode);
         }
         
@@ -87,11 +88,13 @@ public class NodeTreeFactory {
     
     /**
      * Cleanup all listeners for a tree hierarchy.
-     * No cleanup needed for simple TreeNode objects.
+     * Call this when replacing or destroying a tree to prevent memory leaks.
      * 
      * @param rootTreeNode the root of the tree to cleanup
      */
     public static void cleanupTree(TreeNode rootTreeNode) {
-        // No cleanup needed for simple TreeNode objects
+        if (rootTreeNode instanceof MapTreeNode) {
+            ((MapTreeNode) rootTreeNode).cleanupListeners();
+        }
     }
 }

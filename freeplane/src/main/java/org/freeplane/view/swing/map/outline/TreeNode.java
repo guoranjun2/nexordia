@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TreeNode {
-    final String title;
+    String title;
     final String id;
     final List<TreeNode> children = new ArrayList<>();
     private int expansionLevel = 0;
@@ -18,6 +18,10 @@ public class TreeNode {
     public TreeNode(String title, String id) {
         this.title = title;
         this.id = id;
+    }
+    
+    public void setTitle(String newTitle) {
+        this.title = newTitle;
     }
 
     public void addChild(TreeNode child) {

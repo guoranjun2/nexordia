@@ -242,6 +242,10 @@ class ScrollableTreePanel extends JPanel {
     public NodePositioning getNodePositioning() {
         return nodePositioning;
     }
+    
+    public TreeNode getRoot() {
+        return root;
+    }
 
 
 

@@ -16,43 +16,53 @@ import org.freeplane.features.text.TextController;
  * live updates when the underlying node changes.
  */
 public class MapTreeNode extends TreeNode implements INodeView {
-    
+
     private final NodeModel nodeModel;
     private final OutlinePane outlinePane;
-    
+
     public MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
         super(getNodeText(nodeModel), nodeModel.getID());
         this.nodeModel = nodeModel;
         this.outlinePane = outlinePane;
     }
-    
+
+    /**
+     * Get current title from the NodeModel (may have changed since creation).
+     * Override the final title field behavior for live updates.
+     */
+    public String getCurrentTitle() {
+        return getNodeText(nodeModel);
+    }
+
     private static String getNodeText(NodeModel nodeModel) {
         return TextController.getController().getShortPlainText(nodeModel);
     }
-    
+
     public NodeModel getNodeModel() {
         return nodeModel;
     }
-    
+
     @Override
     public void nodeChanged(NodeChangeEvent event) {
         if (event.getNode() == nodeModel) {
-            // Update the title when node text changes
+            // Update the title and repaint
             String newText = getNodeText(nodeModel);
-            // Since title is final, we need to update via the parent TreeNode mechanism
-            // Demo has no refresh calls - keep it simple for now
+            setTitle(newText);
+
+            if (outlinePane != null) {
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    outlinePane.refreshTree();
+                });
+            }
         }
     }
-    
+
     @Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
         if (parent == nodeModel) {
-            // Create new MapTreeNode for the inserted child
-            MapTreeNode childTreeNode = new MapTreeNode(child, outlinePane);
-            
-            // Register the new node as a listener
-            child.addViewer(childTreeNode);
-            
+            // Create new MapTreeNode hierarchy recursively
+            MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
+
             // Add to our children at the correct index
             if (newIndex < children.size()) {
                 children.add(newIndex, childTreeNode);
@@ -60,15 +70,32 @@ public class MapTreeNode extends TreeNode implements INodeView {
                 children.add(childTreeNode);
             }
             childTreeNode.parent = this;
-            
-            // Demo has no refresh calls - keep it simple for now
+
+            // Trigger efficient repaint
+            if (outlinePane != null) {
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    outlinePane.refreshTree();
+                });
+            }
         }
     }
-    
+
+    private static MapTreeNode createMapTreeNodeRecursively(NodeModel nodeModel, OutlinePane outlinePane) {
+        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane);
+        nodeModel.addViewer(treeNode);
+
+        for (NodeModel childNode : nodeModel.getChildren()) {
+            MapTreeNode childTreeNode = createMapTreeNodeRecursively(childNode, outlinePane);
+            treeNode.addChild(childTreeNode);
+        }
+
+        return treeNode;
+    }
+
     @Override
     public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
         NodeModel deletedNode = nodeDeletionEvent.node;
-        
+
         // Find and remove the corresponding TreeNode child
         MapTreeNode toRemove = null;
         for (TreeNode child : children) {
@@ -80,32 +107,37 @@ public class MapTreeNode extends TreeNode implements INodeView {
                 }
             }
         }
-        
+
         if (toRemove != null) {
             // Cleanup: unregister the deleted node as a listener
             deletedNode.removeViewer(toRemove);
-            
+
             // Remove from children
             children.remove(toRemove);
             toRemove.parent = null;
-            
+
             // Recursively cleanup child listeners
             toRemove.cleanupListeners();
-            
-            // Demo has no refresh calls - keep it simple for now
+
+            // Trigger efficient repaint
+            if (outlinePane != null) {
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    outlinePane.refreshTree();
+                });
+            }
         }
     }
-    
+
     @Override
     public boolean hasStandardLayoutWithRootNode(NodeModel root) {
         return false; // We're not a standard layout
     }
-    
+
     @Override
     public boolean isTopOrLeft() {
         return true; // Outline is typically on the left
     }
-    
+
     /**
      * Recursively cleanup all INodeView listeners for this node and its children.
      * Called when the tree is being destroyed or replaced.
@@ -115,7 +147,7 @@ public class MapTreeNode extends TreeNode implements INodeView {
         if (nodeModel != null) {
             nodeModel.removeViewer(this);
         }
-        
+
         // Recursively cleanup children
         for (TreeNode child : children) {
             if (child instanceof MapTreeNode) {
@@ -123,7 +155,7 @@ public class MapTreeNode extends TreeNode implements INodeView {
             }
         }
     }
-    
+
     /**
      * Get the current text of the underlying node (may have changed since creation).
      */

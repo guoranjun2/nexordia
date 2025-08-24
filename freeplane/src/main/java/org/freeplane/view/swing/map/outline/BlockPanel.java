@@ -52,6 +52,9 @@ class BlockPanel extends JPanel {
         int actionX = parentPanel.geometry.calculateTextButtonX(flat.depth);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
+        
+        // Store the node reference with the button for selection checking
+        button.putClientProperty("treeNode", flat.node);
 
         button.addActionListener(e -> {
             parentPanel.selectNodeById(flat.node.id);
@@ -81,20 +84,19 @@ class BlockPanel extends JPanel {
         }
 
         if (parentPanel != null) {
-            TreeNode selected = selection.getSelectedNode();
             for (Component comp : getComponents()) {
                 if (comp instanceof JButton) {
                     JButton btn = (JButton) comp;
-                    String buttonText = btn.getText();
-                    if (selected != null && buttonText.equals(selected.title)) {
+                    TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
+                    if (buttonNode != null && selection.isSelected(buttonNode)) {
                         // Check if the selected node is in the breadcrumb area
-                        boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(selected, parentPanel.geometry.rowHeight);
+                        boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
                         
                         // Only paint selection circle if the node is NOT in breadcrumb area
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 
-                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(selected, comp.getBounds());
+                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(buttonNode, comp.getBounds());
                             if (iconPosition != null) {
                                 icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
                             }
