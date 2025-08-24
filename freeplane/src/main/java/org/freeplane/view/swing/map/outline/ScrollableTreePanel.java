@@ -453,7 +453,7 @@ class ScrollableTreePanel extends JPanel {
 
 	public void attachNavigationNode(TreeNode node,
 	        boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
-		visibleState.setHoveredNode(isBreadCrumb ? null : node);
+		visibleState.setHoveredNode(node);
 		navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
 	}
 }
