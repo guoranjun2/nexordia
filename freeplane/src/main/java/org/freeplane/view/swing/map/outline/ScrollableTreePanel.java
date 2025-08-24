@@ -189,7 +189,7 @@ class ScrollableTreePanel extends JPanel {
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
         int height = breadcrumbAreaHeight + contentNodesCount * geometry.rowHeight;
         int maxWidth = calculateActualRequiredWidth();
-        setPreferredSize(new Dimension(maxWidth, Math.max(height, 600)));
+        setPreferredSize(new Dimension(maxWidth, height));
 
         for (BlockPanel panel : visibleState.getBlockPanels().values()) {
             Dimension currentSize = panel.getSize();
