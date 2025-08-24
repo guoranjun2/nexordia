@@ -15,9 +15,9 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
 public class OutlinePane extends JPanel {
-    private final JScrollPane treeScrollPane;
-    private final ScrollableTreePanel treePanel;
-    private final BreadcrumbPanel breadcrumbPanel;
+    private JScrollPane treeScrollPane;
+    private ScrollableTreePanel treePanel;
+    private BreadcrumbPanel breadcrumbPanel;
 
     public OutlinePane(TreeNode rootNode) {
         // Create BreadcrumbPanel first
@@ -31,7 +31,7 @@ public class OutlinePane extends JPanel {
         treePanel.setScrollPane(this.treeScrollPane);
 
         // Wire BreadcrumbPanel with its dependencies
-        breadcrumbPanel.initialize(treePanel, treeScrollPane, treePanel.selection);
+        breadcrumbPanel.initialize(treePanel, treeScrollPane, treePanel.getSelection());
 
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 1L;
@@ -48,7 +48,90 @@ public class OutlinePane extends JPanel {
         add(treeScrollPane, BorderLayout.CENTER);
 
         setupScrollListeners();
+    }
+    
+    /**
+     * Refresh the tree display to reflect changes in the underlying tree structure.
+     * Called when nodes are added, removed, or modified.
+     */
+    public void refreshTree() {
+        SwingUtilities.invokeLater(() -> {
+            treePanel.revalidate();
+            treePanel.repaint();
+        });
         performInitialSetup();
+    }
+    
+    /**
+     * Replace the root node and refresh the entire tree display.
+     * Used to switch from placeholder/demo data to real map data.
+     * 
+     * @param newRootNode the new root node for the tree
+     */
+    public void setRootNode(TreeNode newRootNode) {
+        if (newRootNode == null) {
+            newRootNode = new TreeNode("No Data", "empty");
+        }
+        
+        // Remove old components
+        remove(treeScrollPane);
+        remove(breadcrumbPanel);
+        
+        // Create new breadcrumb panel (avoid state persistence)
+        BreadcrumbPanel newBreadcrumbPanel = new BreadcrumbPanel();
+        
+        // Create new tree panel like in constructor (avoid updateRoot complexity)
+        ScrollableTreePanel newTreePanel = new ScrollableTreePanel(newRootNode, newBreadcrumbPanel);
+        JScrollPane newScrollPane = new JScrollPane(newTreePanel);
+        
+        // Set up the scroll pane connection
+        newTreePanel.setScrollPane(newScrollPane);
+        
+        // Wire BreadcrumbPanel with its dependencies
+        newBreadcrumbPanel.initialize(newTreePanel, newScrollPane, newTreePanel.getSelection());
+        
+        // Update references
+        this.treePanel = newTreePanel;
+        this.treeScrollPane = newScrollPane;
+        this.breadcrumbPanel = newBreadcrumbPanel;
+        
+        // Add new components
+        add(breadcrumbPanel);
+        add(treeScrollPane, BorderLayout.CENTER);
+        
+        // Setup scroll listeners for new scroll pane
+        setupScrollListenersForScrollPane(newScrollPane);
+        
+        // Perform initial setup
+        performInitialSetup();
+        
+        // Refresh layout
+        revalidate();
+        repaint();
+    }
+    
+    /**
+     * Setup scroll listeners for a given scroll pane.
+     * Extracted from setupScrollListeners() to support dynamic scroll pane replacement.
+     */
+    private void setupScrollListenersForScrollPane(JScrollPane scrollPane) {
+        scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
+                panel.updateVisibleBlocksAndBreadcrumb();
+            } else {
+                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
+                panel.updateVisibleBlocks();
+            }
+        });
+        
+        scrollPane.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
+                panel.updateVisibleBlocks();
+            }
+        });
     }
 
     private void setupScrollListeners() {

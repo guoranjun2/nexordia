@@ -37,14 +37,14 @@ class ScrollableTreePanel extends JPanel {
     private final BreadcrumbPanel breadcrumbPanel;
     final OutlineGeometry geometry;
     private final ExpansionControls expansionControls;
-    final NodePositioning nodePositioning;
+    private NodePositioning nodePositioning;
     final BreadcrumbPath breadcrumbPath;
     OutlineViewport viewport;
 
-    private final TreeNode root;
-    final OutlineSelection selection;
+    private TreeNode root;
+    private OutlineSelection selection;
     private final int blockSize;
-    final VisibleOutlineState visibleState;
+    private VisibleOutlineState visibleState;
 
     public ScrollableTreePanel(TreeNode root, BreadcrumbPanel breadcrumbPanel) {
 		this(root, BLOCK_SIZE, breadcrumbPanel);
@@ -228,6 +228,19 @@ class ScrollableTreePanel extends JPanel {
             updateVisibleBlocks();
             SwingUtilities.invokeLater(this::scrollToSelectedNode);
         }
+    }
+    
+    
+    public OutlineSelection getSelection() {
+        return selection;
+    }
+    
+    public VisibleOutlineState getVisibleState() {
+        return visibleState;
+    }
+    
+    public NodePositioning getNodePositioning() {
+        return nodePositioning;
     }
 
 

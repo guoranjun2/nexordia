@@ -8,6 +8,7 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -87,13 +88,13 @@ class BlockPanel extends JPanel {
                     String buttonText = btn.getText();
                     if (selected != null && buttonText.equals(selected.title)) {
                         // Check if the selected node is in the breadcrumb area
-                        boolean isInBreadcrumb = parentPanel.visibleState.isNodeInBreadcrumbArea(selected, parentPanel.geometry.rowHeight);
+                        boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(selected, parentPanel.geometry.rowHeight);
                         
                         // Only paint selection circle if the node is NOT in breadcrumb area
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 
-                            java.awt.Point iconPosition = parentPanel.nodePositioning.calculateSelectionIconPosition(selected, comp.getBounds());
+                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(selected, comp.getBounds());
                             if (iconPosition != null) {
                                 icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
                             }

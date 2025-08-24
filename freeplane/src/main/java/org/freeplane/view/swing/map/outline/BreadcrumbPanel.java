@@ -67,10 +67,13 @@ class BreadcrumbPanel extends JPanel {
             if (selection.isSelected(node)) {
                 SelectionIndicator selectionIndicator = new SelectionIndicator(treePanel.selectionIcon, breadcrumbButton);
                 add(selectionIndicator);
+                
+                // Update position after button is positioned
+                javax.swing.SwingUtilities.invokeLater(() -> selectionIndicator.updatePosition());
             }
         }
 
-        TreeNode hoveredNode = treePanel.visibleState.getHoveredNode();
+        TreeNode hoveredNode = treePanel.getVisibleState().getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
             boolean isInBreadcrumb = treePanel.breadcrumbPath.isNodeInBreadcrumbPath(hoveredNode, currentBreadcrumbNodes);
 
@@ -141,6 +144,11 @@ class BreadcrumbPanel extends JPanel {
             setOpaque(false);
             setFocusable(false);
 
+            // Position will be updated in updatePosition() after layout is complete
+            setBounds(0, 0, icon.getIconWidth(), treePanel.geometry.rowHeight);
+        }
+        
+        private void updatePosition() {
             int iconX = targetButton.getX() - icon.getIconWidth();
             setBounds(iconX, targetButton.getY(), icon.getIconWidth(), treePanel.geometry.rowHeight);
         }
