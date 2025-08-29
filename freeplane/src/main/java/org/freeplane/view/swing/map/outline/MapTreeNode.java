@@ -15,12 +15,12 @@ import org.freeplane.features.text.TextController;
  * TreeNode that wraps a NodeModel and implements INodeView to receive
  * live updates when the underlying node changes.
  */
-public class MapTreeNode extends TreeNode implements INodeView {
+class MapTreeNode extends TreeNode implements INodeView {
 
     private final NodeModel nodeModel;
     private final OutlinePane outlinePane;
 
-    public MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
+    MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
         super(getNodeText(nodeModel), nodeModel.getID());
         this.nodeModel = nodeModel;
         this.outlinePane = outlinePane;
@@ -30,7 +30,7 @@ public class MapTreeNode extends TreeNode implements INodeView {
      * Get current title from the NodeModel (may have changed since creation).
      * Override the final title field behavior for live updates.
      */
-    public String getCurrentTitle() {
+    String getCurrentTitle() {
         return getNodeText(nodeModel);
     }
 
@@ -38,12 +38,12 @@ public class MapTreeNode extends TreeNode implements INodeView {
         return TextController.getController().getShortPlainText(nodeModel);
     }
 
-    public NodeModel getNodeModel() {
+    NodeModel getNodeModel() {
         return nodeModel;
     }
 
     @Override
-    public void nodeChanged(NodeChangeEvent event) {
+	public void nodeChanged(NodeChangeEvent event) {
         if (event.getNode() == nodeModel) {
             // Update the title and repaint
             String newText = getNodeText(nodeModel);
@@ -142,7 +142,7 @@ public class MapTreeNode extends TreeNode implements INodeView {
      * Recursively cleanup all INodeView listeners for this node and its children.
      * Called when the tree is being destroyed or replaced.
      */
-    public void cleanupListeners() {
+    void cleanupListeners() {
         // Unregister ourselves
         if (nodeModel != null) {
             nodeModel.removeViewer(this);
@@ -159,7 +159,7 @@ public class MapTreeNode extends TreeNode implements INodeView {
     /**
      * Get the current text of the underlying node (may have changed since creation).
      */
-    public String getCurrentText() {
+    String getCurrentText() {
         return getNodeText(nodeModel);
     }
 }

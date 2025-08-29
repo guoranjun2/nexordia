@@ -14,12 +14,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
-public class OutlinePane extends JPanel {
+class OutlinePane extends JPanel {
     private JScrollPane treeScrollPane;
     private ScrollableTreePanel treePanel;
     private BreadcrumbPanel breadcrumbPanel;
 
-    public OutlinePane(TreeNode rootNode) {
+    OutlinePane(TreeNode rootNode) {
         // Create BreadcrumbPanel first
         this.breadcrumbPanel = new BreadcrumbPanel();
 
@@ -49,28 +49,28 @@ public class OutlinePane extends JPanel {
 
         setupScrollListeners();
     }
-    
+
     /**
      * Refresh the tree display to reflect changes in the underlying tree structure.
      * Called when nodes are added, removed, or modified.
      */
-    public void refreshTree() {
+    void refreshTree() {
         SwingUtilities.invokeLater(() -> {
             treePanel.updateVisibleBlocksAndBreadcrumb();
         });
     }
-    
+
     /**
      * Replace the root node and refresh the entire tree display.
      * Used to switch from placeholder/demo data to real map data.
-     * 
+     *
      * @param newRootNode the new root node for the tree
      */
-    public void setRootNode(TreeNode newRootNode) {
+    void setRootNode(TreeNode newRootNode) {
         if (newRootNode == null) {
             newRootNode = new TreeNode("No Data", "empty");
         }
-        
+
         // Clean up old tree listeners to prevent memory leaks
         if (treePanel != null) {
             TreeNode oldRoot = treePanel.getRoot();
@@ -78,44 +78,44 @@ public class OutlinePane extends JPanel {
                 NodeTreeFactory.cleanupTree(oldRoot);
             }
         }
-        
+
         // Remove old components
         remove(treeScrollPane);
         remove(breadcrumbPanel);
-        
+
         // Create new breadcrumb panel (avoid state persistence)
         BreadcrumbPanel newBreadcrumbPanel = new BreadcrumbPanel();
-        
+
         // Create new tree panel like in constructor (avoid updateRoot complexity)
         ScrollableTreePanel newTreePanel = new ScrollableTreePanel(newRootNode, newBreadcrumbPanel);
         JScrollPane newScrollPane = new JScrollPane(newTreePanel);
-        
+
         // Set up the scroll pane connection
         newTreePanel.setScrollPane(newScrollPane);
-        
+
         // Wire BreadcrumbPanel with its dependencies
         newBreadcrumbPanel.initialize(newTreePanel, newScrollPane, newTreePanel.getSelection());
-        
+
         // Update references
         this.treePanel = newTreePanel;
         this.treeScrollPane = newScrollPane;
         this.breadcrumbPanel = newBreadcrumbPanel;
-        
+
         // Add new components
         add(breadcrumbPanel);
         add(treeScrollPane, BorderLayout.CENTER);
-        
+
         // Setup scroll listeners for new scroll pane
         setupScrollListenersForScrollPane(newScrollPane);
-        
+
         // Perform initial setup
         performInitialSetup();
-        
+
         // Refresh layout
         revalidate();
         repaint();
     }
-    
+
     /**
      * Setup scroll listeners for a given scroll pane.
      * Extracted from setupScrollListeners() to support dynamic scroll pane replacement.
@@ -130,7 +130,7 @@ public class OutlinePane extends JPanel {
                 panel.updateVisibleBlocks();
             }
         });
-        
+
         scrollPane.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {

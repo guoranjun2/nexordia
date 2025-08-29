@@ -136,10 +136,9 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-    void updateVisibleBlocks(int startFromNodeIndex) {
+    private void updateVisibleBlocks(int startFromNodeIndex) {
         if (viewport == null) return;
 
-        visibleState.updateVisibleNodes();
         clearBlocks();
 
         // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)

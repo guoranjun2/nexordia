@@ -5,10 +5,10 @@
  */
 package org.freeplane.view.swing.map.outline;
 
-public class DemoTreeFactory {
+class DemoTreeFactory {
     private static int nodeCounter = 1;
 
-    public static TreeNode createDemoRoot() {
+    static TreeNode createDemoRoot() {
         nodeCounter = 1; // Reset counter for each new tree
         TreeNode root = new TreeNode("Root", "root");
         createRandomChildren(root, 1, 5);
