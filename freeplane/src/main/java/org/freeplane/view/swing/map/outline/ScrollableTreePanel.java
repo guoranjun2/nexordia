@@ -171,12 +171,22 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void clearBlocks() {
+        // Remove tracked block panels
         for (BlockPanel panel : visibleState.getBlockPanels().values()) {
             remove(panel);
         }
         visibleState.clearBlockPanels();
 
+        // Defensive cleanup: remove any BlockPanel still attached but not tracked
         Component[] components = getComponents();
+        for (Component comp : components) {
+            if (comp instanceof BlockPanel) {
+                remove(comp);
+            }
+        }
+
+        // Remove any stray buttons (not navigation buttons)
+        components = getComponents();
         for (Component comp : components) {
             if (comp instanceof JButton && !isNavigationButton((JButton) comp)) {
                 remove(comp);
@@ -330,23 +340,22 @@ class ScrollableTreePanel extends JPanel {
         void refreshWithBreadcrumbs() {
         TreeNode preservedHoveredNode = visibleState.getHoveredNode();
         SwingUtilities.invokeLater(() -> {
-        	   updateVisibleBlocksAndBreadcrumb();
-               refreshPanel();
+            // Hide current nav buttons to avoid transient misplacement during rebuild
+            navButtons.hideNavigationButtons();
 
-            // Immediately recreate navigation buttons for the hovered node if it has children
+            // Single-pass rebuild: updates breadcrumb and blocks with correct positioning
+            updateVisibleBlocksAndBreadcrumb();
+
+            // Recreate navigation buttons for the hovered node if it has children
             if (preservedHoveredNode != null && !preservedHoveredNode.children.isEmpty()) {
-                SwingUtilities.invokeLater(() -> {
-                    visibleState.setHoveredNode(preservedHoveredNode);
-                    // Check if node is in breadcrumb area
-                    boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(preservedHoveredNode, geometry.rowHeight);
+                visibleState.setHoveredNode(preservedHoveredNode);
+                boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(preservedHoveredNode, geometry.rowHeight);
 
-                    if (isInBreadcrumb) {
-                       breadcrumbPanel.updateNavigationButtons();
-                    } else {
-                        // Node is in main content
-                        navButtons.attachToNode(preservedHoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
-                    }
-                });
+                if (isInBreadcrumb) {
+                    breadcrumbPanel.updateNavigationButtons();
+                } else {
+                    navButtons.attachToNode(preservedHoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
+                }
             }
         });
     }
