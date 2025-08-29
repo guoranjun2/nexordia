@@ -151,8 +151,6 @@ class ScrollableTreePanel extends JPanel {
         // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         viewport.setViewPosition(startFromNodeIndex, breadcrumbAreaHeight);
-        System.out.println("updateVisibleBlocks: startFromNodeIndex=" + startFromNodeIndex +
-                          ", breadcrumbAreaHeight=" + breadcrumbAreaHeight);
 
         createVisibleBlocks();
         updatePreferredFromActualBlocks();

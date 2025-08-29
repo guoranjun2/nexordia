@@ -53,8 +53,6 @@ class BreadcrumbPath {
 
         List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(firstFullyVisibleNode);
         int newBreadcrumbHeight = newBreadcrumbNodes.size() * geometry.rowHeight;
-        System.out.println(newBreadcrumbNodes);
-        System.out.println("" + newBreadcrumbHeight + "/" + firstFullyVisibleNode);
         return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, firstFullyVisibleNodeIndex);
     }
 
