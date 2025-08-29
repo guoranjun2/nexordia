@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import javax.swing.JButton;
 
 class OutlineGeometry {
-	private final int arrowAreaWidth;
     final int indent;
     final int rowHeight;
     final int navButtonWidth;
@@ -22,9 +21,8 @@ class OutlineGeometry {
 
         // Use exact original calculations with multipliers
         final Dimension preferredButtonSize = sampleButton.getPreferredSize();
-        this.arrowAreaWidth = Math.round(preferredButtonSize.width * 60 / 13);
-        this.indent = arrowAreaWidth / 2;
         this.rowHeight = Math.round(preferredButtonSize.height);
+        this.indent = rowHeight;
 
         this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
         this.navButtonsTotalWidth = 3 * navButtonWidth;
