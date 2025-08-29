@@ -57,6 +57,7 @@ class ScrollableTreePanel extends JPanel {
         this.root = root;
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
+        root.applyExpansionLevel(1);
         this.selection = new OutlineSelection(root);
         this.visibleState = new VisibleOutlineState(root);
 
@@ -67,7 +68,6 @@ class ScrollableTreePanel extends JPanel {
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
 
-        root.applyExpansionLevel(1);
 
         setBackground(Color.WHITE);
         setFocusable(true);
@@ -330,7 +330,7 @@ class ScrollableTreePanel extends JPanel {
         void refreshWithBreadcrumbs() {
         TreeNode preservedHoveredNode = visibleState.getHoveredNode();
         SwingUtilities.invokeLater(() -> {
-               updateVisibleBlocksAndBreadcrumb();
+        	   updateVisibleBlocksAndBreadcrumb();
                refreshPanel();
 
             // Immediately recreate navigation buttons for the hovered node if it has children
@@ -468,14 +468,22 @@ class ScrollableTreePanel extends JPanel {
     	return breadcrumbPanel.getCurrentBreadcrumbNodes();
     }
 
-    void updateVisibleBlocksAndBreadcrumb() {
-        visibleState.updateVisibleNodes();                   // 1. Update list first
-        BreadcrumbState state = calculateBreadcrumbState();  // 2. Calculate using new list
-        if (state != null) {
-            breadcrumbPanel.update(state);                   // 3. Update height
-            updateVisibleBlocks(state.firstVisibleNodeIndex);                               // 4. Create blocks (no duplicate updateVisibleNodes)
-        }
+    void updateVisibleNodes() {
+        visibleState.updateVisibleNodes();
+        updateVisibleBlocksAndBreadcrumb();
     }
+
+	void updateVisibleBlocksAndBreadcrumb() {
+		BreadcrumbState state = calculateBreadcrumbState();
+	    if (state != null) {
+	        breadcrumbPanel.update(state);
+	        updateVisibleBlocks(state.firstVisibleNodeIndex);
+	    }
+	    else {
+	        // Breadcrumb unchanged; still refresh visible blocks in place
+	        updateVisibleBlocks();
+	    }
+	}
 
     private BreadcrumbState calculateBreadcrumbState() {
         List<TreeNode> currentBreadcrumbNodes = getCurrentBreadcrumbNodes();

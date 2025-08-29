@@ -15,6 +15,7 @@ class VisibleOutlineState {
     VisibleOutlineState(TreeNode root) {
         this.root = root;
         this.hoveredNode = root;
+        updateVisibleNodes();
     }
 
     void updateVisibleNodes() {

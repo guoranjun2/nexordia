@@ -56,7 +56,7 @@ class OutlinePane extends JPanel {
      */
     void refreshTree() {
         SwingUtilities.invokeLater(() -> {
-            treePanel.updateVisibleBlocksAndBreadcrumb();
+            treePanel.updateVisibleNodes();
         });
     }
 

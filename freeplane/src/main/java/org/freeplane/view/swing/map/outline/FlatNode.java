@@ -13,4 +13,9 @@ class FlatNode {
         this.node = node;
         this.depth = depth;
     }
+
+	@Override
+	public String toString() {
+		return "FlatNode [node=" + node + ", depth=" + depth + "]";
+	}
 }
