@@ -1,8 +1,4 @@
-/*
- * Created on 23 Aug 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
@@ -55,7 +51,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     @Override
     public void afterViewClose(Component oldView) {
         SwingUtilities.invokeLater(() -> {
-            // Check if there's still an active map
+            
             try {
                 Component mapViewComponent = Controller.getCurrentController()
                         .getMapViewManager().getMapViewComponent();
@@ -85,10 +81,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void updateTreeFromMap(MapView mapView) {
         try {
-            // Clean up old tree listeners
+            
             cleanupCurrentTree();
 
-            // Create new tree from map
+            
             TreeNode newRoot = NodeTreeFactory.createTreeFromMap(mapView, this);
 
             if (newRoot != null) {

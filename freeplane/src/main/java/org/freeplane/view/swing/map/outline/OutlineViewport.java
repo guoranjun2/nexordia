@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.awt.Point;
 import java.util.List;
 
+import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 
 class OutlineViewport {
@@ -44,8 +45,8 @@ class OutlineViewport {
     }
     
     private void scrollToRect(Rectangle targetRect) {
-        if (scrollPane.getParent() instanceof javax.swing.JComponent) {
-            ((javax.swing.JComponent) scrollPane.getParent()).scrollRectToVisible(targetRect);
+        if (scrollPane.getParent() instanceof JComponent) {
+            ((JComponent) scrollPane.getParent()).scrollRectToVisible(targetRect);
         }
     }
     

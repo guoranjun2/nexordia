@@ -1,8 +1,4 @@
-/*
- * Created on 23 Aug 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 import javax.swing.JComponent;
@@ -24,7 +20,7 @@ class NodeTreeFactory {
      */
     static TreeNode createTreeFromCurrentMap(OutlinePane outlinePane) {
         try {
-            // Get the current map view
+            
             JComponent mapViewComponent = Controller.getCurrentController()
                     .getMapViewManager().getMapViewComponent();
 
@@ -33,7 +29,7 @@ class NodeTreeFactory {
                 return createTreeFromMap(mapView, outlinePane);
             }
         } catch (Exception e) {
-            // Fallback to demo data if anything goes wrong
+            
             System.err.println("Failed to create tree from current map: " + e.getMessage());
             e.printStackTrace();
         }
@@ -58,7 +54,7 @@ class NodeTreeFactory {
             return null;
         }
 
-        // Create the tree recursively
+        
         return createMapTreeNode(rootNode, outlinePane);
     }
 
@@ -70,13 +66,13 @@ class NodeTreeFactory {
      * @return MapTreeNode representing this node and its children
      */
     private static MapTreeNode createMapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
-        // Create the MapTreeNode for this NodeModel
+        
         MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane);
 
-        // Register as a listener for node changes
+        
         nodeModel.addViewer(treeNode);
 
-        // Recursively create children
+        
         for (NodeModel childNode : nodeModel.getChildren()) {
             MapTreeNode childTreeNode = createMapTreeNode(childNode, outlinePane);
             treeNode.addChild(childTreeNode);

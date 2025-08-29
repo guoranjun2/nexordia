@@ -1,8 +1,3 @@
-/*
- * Created on 8 Jul 2025
- *
- * author dimitry
- */
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
@@ -14,6 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.KeyboardFocusManager;
 import java.awt.Window;
 import java.util.List;
+import java.util.ArrayList;
 
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
@@ -24,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.Icon;
 
 class ScrollableTreePanel extends JPanel {
     private static final int BLOCK_SIZE = 50;
@@ -43,7 +40,7 @@ class ScrollableTreePanel extends JPanel {
     private final int blockSize;
     private VisibleOutlineState visibleState;
 
-    // Cached state to avoid unnecessary block rebuilds
+    
     private int lastFirstBlock = -1;
     private int lastLastBlock = -1;
     private int lastBreadcrumbAreaHeight = -1;
@@ -63,7 +60,7 @@ class ScrollableTreePanel extends JPanel {
         this.selection = new OutlineSelection(root);
         this.visibleState = new VisibleOutlineState(root);
 
-        this.geometry = new OutlineGeometry(new javax.swing.JButton("▶"));
+        this.geometry = new OutlineGeometry(new JButton("▶"));
         this.expansionControls = new ExpansionControls(this);
         this.nodePositioning = new NodePositioning(root, geometry, visibleState);
         this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
@@ -100,7 +97,7 @@ class ScrollableTreePanel extends JPanel {
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = isWithinOutline(prevFocus);
 
-        // Fast-path: If nothing relevant changed, skip expensive rebuild.
+        
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         int viewportWidth = viewport.getViewportWidth();
         int visibleCount = visibleState.getVisibleNodeCount();
@@ -122,7 +119,7 @@ class ScrollableTreePanel extends JPanel {
         updatePreferredFromActualBlocks();
         refreshUI();
 
-        // Update cache after successful rebuild
+        
         lastFirstBlock = range.firstBlock;
         lastLastBlock = range.lastBlock;
         lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
@@ -131,7 +128,7 @@ class ScrollableTreePanel extends JPanel {
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
-            // Check if this node is in breadcrumb area - if so, don't move buttons here
+            
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
             if (!isInBreadcrumb) {
@@ -141,14 +138,14 @@ class ScrollableTreePanel extends JPanel {
         restoreFocusIfNeeded(prevFocus, prevInOutline);
     }
 
-    private void updateVisibleBlocks(int startFromNodeIndex) {
+    void updateVisibleBlocks(int startFromNodeIndex) {
         if (viewport == null) return;
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = isWithinOutline(prevFocus);
 
         clearBlocks();
 
-        // Position viewport so that startFromNodeIndex appears at the top of content area (below breadcrumb)
+        
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         viewport.setViewPosition(startFromNodeIndex, breadcrumbAreaHeight);
 
@@ -156,7 +153,7 @@ class ScrollableTreePanel extends JPanel {
         updatePreferredFromActualBlocks();
         refreshUI();
 
-        // Update cache after rebuild triggered by explicit repositioning
+        
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         lastFirstBlock = range.firstBlock;
         lastLastBlock = range.lastBlock;
@@ -166,7 +163,7 @@ class ScrollableTreePanel extends JPanel {
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
-            // Check if this node is in breadcrumb area - if so, don't move buttons here
+            
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
             if (!isInBreadcrumb) {
@@ -177,13 +174,11 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void clearBlocks() {
-        // Remove tracked block panels
         for (BlockPanel panel : visibleState.getBlockPanels().values()) {
             remove(panel);
         }
         visibleState.clearBlockPanels();
 
-        // Defensive cleanup: remove any BlockPanel still attached but not tracked
         Component[] components = getComponents();
         for (Component comp : components) {
             if (comp instanceof BlockPanel) {
@@ -191,7 +186,6 @@ class ScrollableTreePanel extends JPanel {
             }
         }
 
-        // Remove any stray buttons (not navigation buttons)
         components = getComponents();
         for (Component comp : components) {
             if (comp instanceof JButton && !isNavigationButton((JButton) comp)) {
@@ -229,7 +223,7 @@ class ScrollableTreePanel extends JPanel {
         int end = Math.min(start + blockSize, visibleNodes.size());
         int breadcrumbNodeCount = visibleState.getBreadcrumbAreaHeight() / geometry.rowHeight;
 
-        // Skip blocks that would be entirely composed of breadcrumb nodes
+        
         if (end <= breadcrumbNodeCount) {
             return;
         }
@@ -293,6 +287,18 @@ class ScrollableTreePanel extends JPanel {
         return selection;
     }
 
+    int getRowHeight() {
+        return geometry.rowHeight;
+    }
+
+    int calcTextButtonX(int depth) {
+        return geometry.calculateTextButtonX(depth);
+    }
+
+    int getViewportWidth() {
+        return viewport != null ? viewport.getViewportWidth() : getWidth();
+    }
+
     public VisibleOutlineState getVisibleState() {
         return visibleState;
     }
@@ -329,9 +335,7 @@ class ScrollableTreePanel extends JPanel {
         return selection.getSelectedNode();
     }
 
-    // Incremental update for title change without full rebuild
     void updateNodeTitle(TreeNode node) {
-        // Update in breadcrumb if present
         for (Component comp : breadcrumbPanel.getComponents()) {
             if (comp instanceof JButton) {
                 JButton btn = (JButton) comp;
@@ -350,7 +354,6 @@ class ScrollableTreePanel extends JPanel {
             }
         }
 
-        // Update in visible content blocks if present
         for (int blockIndex : visibleState.getBlockPanelIndices()) {
             BlockPanel panel = visibleState.getBlockPanel(blockIndex);
             if (panel == null) continue;
@@ -367,7 +370,7 @@ class ScrollableTreePanel extends JPanel {
                         }
                         panel.revalidate();
                         panel.repaint();
-                        // Node appears only once
+                        
                         break;
                     }
                 }
@@ -378,21 +381,21 @@ class ScrollableTreePanel extends JPanel {
         refreshUI();
     }
 
-    // Incremental rebuild starting from an anchor node (e.g., parent on insert/delete)
+    
     void rebuildFromNode(TreeNode anchorNode) {
         if (viewport == null) return;
 
-        // Avoid stale buttons attached to nodes being deleted/moved
+        
         navButtons.hideNavigationButtons();
 
         visibleState.updateVisibleNodes();
 
-        // If breadcrumb needs to change, apply the stable path that repositions content
+        
         BreadcrumbState state = calculateBreadcrumbState();
         if (state != null) {
             breadcrumbPanel.update(state);
             updateVisibleBlocks(state.firstVisibleNodeIndex);
-            // Validate hovered node after rebuild
+            
             TreeNode hovered = visibleState.getHoveredNode();
             if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
                 visibleState.setHoveredNode(null);
@@ -402,7 +405,7 @@ class ScrollableTreePanel extends JPanel {
 
         int anchorIndex = visibleState.findNodeIndexInVisibleList(anchorNode);
         if (anchorIndex < 0) {
-            // Not visible (collapsed). Let normal path decide.
+            
             updateVisibleBlocksAndBreadcrumb();
             return;
         }
@@ -415,14 +418,14 @@ class ScrollableTreePanel extends JPanel {
         updatePreferredFromActualBlocks();
         refreshUI();
 
-        // Update cache
+        
         lastFirstBlock = range.firstBlock;
         lastLastBlock = range.lastBlock;
         lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
         lastViewportWidth = viewport.getViewportWidth();
         lastVisibleNodeCount = visibleState.getVisibleNodeCount();
 
-        // Validate hovered node after partial rebuild
+        
         TreeNode hovered = visibleState.getHoveredNode();
         if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
             visibleState.setHoveredNode(null);
@@ -430,7 +433,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void removeBlocksFromBlockIndex(int startBlock) {
-        java.util.List<Integer> indices = new java.util.ArrayList<>(visibleState.getBlockPanelIndices());
+        List<Integer> indices = new ArrayList<>(visibleState.getBlockPanelIndices());
         for (int idx : indices) {
             if (idx >= startBlock) {
                 BlockPanel p = visibleState.getBlockPanel(idx);
@@ -443,9 +446,9 @@ class ScrollableTreePanel extends JPanel {
     void onContentButtonHovered(TreeNode node) {
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (node != null && !node.children.isEmpty() && node != hoveredNode) {
-            // Check if this node is in breadcrumb area - if so, don't handle hover here
+            
             if (visibleState.isNodeInBreadcrumbArea(node, geometry.rowHeight)) {
-                // Node is in breadcrumb, don't handle hover in main content
+                
                 return;
             }
 
@@ -458,13 +461,13 @@ class ScrollableTreePanel extends JPanel {
         void refreshWithBreadcrumbs() {
         TreeNode preservedHoveredNode = visibleState.getHoveredNode();
         SwingUtilities.invokeLater(() -> {
-            // Hide current nav buttons to avoid transient misplacement during rebuild
+            
             navButtons.hideNavigationButtons();
 
-            // Single-pass rebuild: updates breadcrumb and blocks with correct positioning
+            
             updateVisibleBlocksAndBreadcrumb();
 
-            // Recreate navigation buttons for the hovered node if it has children
+            
             if (preservedHoveredNode != null && !preservedHoveredNode.children.isEmpty()) {
                 visibleState.setHoveredNode(preservedHoveredNode);
                 boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(preservedHoveredNode, geometry.rowHeight);
@@ -608,7 +611,7 @@ class ScrollableTreePanel extends JPanel {
 	        updateVisibleBlocks(state.firstVisibleNodeIndex);
 	    }
 	    else {
-	        // Breadcrumb unchanged; still refresh visible blocks in place
+	        
 	        updateVisibleBlocks();
 	    }
 	    restoreFocusIfNeeded(prevFocus, prevInOutline);
@@ -630,13 +633,39 @@ protected void paintComponent(Graphics g) {
         super.paintComponent(g);
     }
 
-    public void attachNavigationNode(TreeNode node,
-            boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
-        visibleState.setHoveredNode(node);
-        navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
+	public void attachNavigationNode(TreeNode node,
+	        boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
+		visibleState.setHoveredNode(node);
+		navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
+	}
+
+    boolean isNodeInBreadcrumbArea(TreeNode node) {
+        return visibleState.isNodeInBreadcrumbArea(node, geometry.rowHeight);
+    }
+
+    boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+        return breadcrumbPath.isNodeInBreadcrumbPath(node, breadcrumbNodes);
+    }
+
+    int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+        return breadcrumbPath.findNodeIndexInBreadcrumbPath(node, breadcrumbNodes);
+    }
+
+    Component getSelectionIconComponent() {
+        
+        return this;
+    }
+
+    Icon getSelectionIcon() {
+        return selectionIcon;
+    }
+
+    boolean areNavButtonsVisible() {
+        return navButtons.expandBtn.isVisible() || navButtons.collapseBtn.isVisible()
+                || navButtons.expandMoreBtn.isVisible() || navButtons.reduceBtn.isVisible();
     }
     
-    // Focus helpers
+    
     private boolean isWithinOutline(Component c) {
         if (c == null) return false;
         return SwingUtilities.isDescendingFrom(c, this) || SwingUtilities.isDescendingFrom(c, breadcrumbPanel);

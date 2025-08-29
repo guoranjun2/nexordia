@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import java.awt.Point;
 
 class NavigationButtons {
     final JButton expandBtn;
@@ -50,10 +51,10 @@ class NavigationButtons {
             return;
         }
 
-        // Remove buttons from current parent
+        
         detachFromCurrentParent();
 
-        // Add buttons to target panel
+        
         targetPanel.add(expandBtn);
         targetPanel.add(collapseBtn);
         targetPanel.add(expandMoreBtn);
@@ -61,8 +62,8 @@ class NavigationButtons {
         
         currentParent = targetPanel;
 
-        // Calculate position and show appropriate buttons
-        java.awt.Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
+        
+        Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
         if (position == null) return;
         
         int baseX = position.x;

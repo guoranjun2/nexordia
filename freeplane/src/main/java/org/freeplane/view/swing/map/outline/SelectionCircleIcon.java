@@ -1,8 +1,4 @@
-/*
- * Created on 8 Jul 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;

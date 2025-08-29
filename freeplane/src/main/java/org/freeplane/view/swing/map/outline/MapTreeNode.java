@@ -1,8 +1,4 @@
-/*
- * Created on 23 Aug 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 import org.freeplane.features.map.INodeView;
@@ -10,6 +6,7 @@ import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.text.TextController;
+import javax.swing.SwingUtilities;
 
 /**
  * TreeNode that wraps a NodeModel and implements INodeView to receive
@@ -45,11 +42,11 @@ class MapTreeNode extends TreeNode implements INodeView {
     @Override
     public void nodeChanged(NodeChangeEvent event) {
         if (event.getNode() == nodeModel) {
-            // Update the title and repaint
+            
             String newText = getNodeText(nodeModel);
             setTitle(newText);
             if (outlinePane != null) {
-                javax.swing.SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> {
                     outlinePane.updateNodeTitle(this);
                 });
             }
@@ -59,10 +56,10 @@ class MapTreeNode extends TreeNode implements INodeView {
     @Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
         if (parent == nodeModel) {
-            // Create new MapTreeNode hierarchy recursively
+            
             MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
 
-            // Add to our children at the correct index
+            
             if (newIndex < children.size()) {
                 children.add(newIndex, childTreeNode);
             } else {
@@ -70,9 +67,9 @@ class MapTreeNode extends TreeNode implements INodeView {
             }
             childTreeNode.parent = this;
 
-            // Incremental rebuild from parent (this) if visible
+            
             if (outlinePane != null) {
-                javax.swing.SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> {
                     outlinePane.rebuildFromNode(this);
                 });
             }
@@ -95,7 +92,7 @@ class MapTreeNode extends TreeNode implements INodeView {
     public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
         NodeModel deletedNode = nodeDeletionEvent.node;
 
-        // Find and remove the corresponding TreeNode child
+        
         MapTreeNode toRemove = null;
         for (TreeNode child : children) {
             if (child instanceof MapTreeNode) {
@@ -108,19 +105,19 @@ class MapTreeNode extends TreeNode implements INodeView {
         }
 
         if (toRemove != null) {
-            // Cleanup: unregister the deleted node as a listener
+            
             deletedNode.removeViewer(toRemove);
 
-            // Remove from children
+            
             children.remove(toRemove);
             toRemove.parent = null;
 
-            // Recursively cleanup child listeners
+            
             toRemove.cleanupListeners();
 
-            // Incremental rebuild from parent (this)
+            
             if (outlinePane != null) {
-                javax.swing.SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> {
                     outlinePane.rebuildFromNode(this);
                 });
             }
@@ -129,12 +126,12 @@ class MapTreeNode extends TreeNode implements INodeView {
 
     @Override
     public boolean hasStandardLayoutWithRootNode(NodeModel root) {
-        return false; // We're not a standard layout
+        return false; 
     }
 
     @Override
     public boolean isTopOrLeft() {
-        return true; // Outline is typically on the left
+        return true; 
     }
 
     /**
@@ -142,12 +139,12 @@ class MapTreeNode extends TreeNode implements INodeView {
      * Called when the tree is being destroyed or replaced.
      */
     void cleanupListeners() {
-        // Unregister ourselves
+        
         if (nodeModel != null) {
             nodeModel.removeViewer(this);
         }
 
-        // Recursively cleanup children
+        
         for (TreeNode child : children) {
             if (child instanceof MapTreeNode) {
                 ((MapTreeNode) child).cleanupListeners();

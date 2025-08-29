@@ -1,15 +1,11 @@
-/*
- * Created on 23 Aug 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 class DemoTreeFactory {
     private static int nodeCounter = 1;
 
     static TreeNode createDemoRoot() {
-        nodeCounter = 1; // Reset counter for each new tree
+        nodeCounter = 1; 
         TreeNode root = new TreeNode("Root", "root");
         createRandomChildren(root, 1, 5);
         return root;
@@ -24,7 +20,7 @@ class DemoTreeFactory {
 
         for (int i = 1; i <= numChildren; i++) {
             String childId = "Child " + nodeCounter++;
-            // Make title unique using global counter
+            
             String childTitle = "Level " + currentLevel + " " + childId;
 
             TreeNode child = new TreeNode(childTitle, childId);

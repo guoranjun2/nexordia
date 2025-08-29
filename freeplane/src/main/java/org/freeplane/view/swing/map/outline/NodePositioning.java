@@ -21,7 +21,6 @@ class NodePositioning {
             current = current.parent;
             depth++;
         }
-        // Return -1 if the node is not part of this tree (no path to root)
         return current == root ? depth : -1;
     }
     

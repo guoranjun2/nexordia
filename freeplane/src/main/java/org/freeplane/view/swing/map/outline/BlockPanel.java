@@ -1,8 +1,4 @@
-/*
- * Created on 8 Jul 2025
- *
- * author dimitry
- */
+
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
@@ -55,7 +51,7 @@ class BlockPanel extends JPanel {
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
-        // Store the node reference with the button for selection checking
+        
         button.putClientProperty("treeNode", flat.node);
 
         button.addActionListener(e -> {
@@ -91,10 +87,10 @@ class BlockPanel extends JPanel {
                     JButton btn = (JButton) comp;
                     TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
                     if (buttonNode != null && selection.isSelected(buttonNode)) {
-                        // Check if the selected node is in the breadcrumb area
+                        
                         boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
 
-                        // Only paint selection circle if the node is NOT in breadcrumb area
+                        
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 

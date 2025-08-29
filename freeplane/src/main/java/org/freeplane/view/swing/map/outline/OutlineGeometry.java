@@ -3,6 +3,8 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.Dimension;
 
 import javax.swing.JButton;
+import java.awt.Insets;
+import javax.swing.BorderFactory;
 
 class OutlineGeometry {
     final int indent;
@@ -14,12 +16,12 @@ class OutlineGeometry {
     final int iconDiameter;
 
     public OutlineGeometry(JButton sampleButton) {
-        // Configure the sample button exactly like navigation buttons
-        sampleButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        
+        sampleButton.setMargin(new Insets(0, 0, 0, 0));
         sampleButton.setFont(sampleButton.getFont().deriveFont(10f));
-        sampleButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
 
-        // Use exact original calculations with multipliers
+        
         final Dimension preferredButtonSize = sampleButton.getPreferredSize();
         this.rowHeight = Math.round(preferredButtonSize.height);
         this.indent = rowHeight;
