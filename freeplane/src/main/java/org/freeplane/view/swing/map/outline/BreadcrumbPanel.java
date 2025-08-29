@@ -57,7 +57,6 @@ class BreadcrumbPanel extends JPanel {
             final int rowIndex = i;
             breadcrumbButton.addActionListener(e -> {
                 treePanel.selectNodeById(nodeToSelect.id);
-                treePanel.requestFocusInWindow();
             });
 
             breadcrumbButton.addMouseListener(new java.awt.event.MouseAdapter() {

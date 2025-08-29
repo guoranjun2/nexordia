@@ -11,6 +11,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
+import java.awt.KeyboardFocusManager;
+import java.awt.Window;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -95,6 +97,8 @@ class ScrollableTreePanel extends JPanel {
 
         void updateVisibleBlocks() {
         if (viewport == null) return;
+        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        boolean prevInOutline = isWithinOutline(prevFocus);
 
         // Fast-path: If nothing relevant changed, skip expensive rebuild.
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
@@ -134,10 +138,13 @@ class ScrollableTreePanel extends JPanel {
                 navButtons.attachToNode(hoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
             }
         }
+        restoreFocusIfNeeded(prevFocus, prevInOutline);
     }
 
     private void updateVisibleBlocks(int startFromNodeIndex) {
         if (viewport == null) return;
+        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        boolean prevInOutline = isWithinOutline(prevFocus);
 
         clearBlocks();
 
@@ -168,6 +175,7 @@ class ScrollableTreePanel extends JPanel {
                 navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, nodePositioning);
             }
         }
+        restoreFocusIfNeeded(prevFocus, prevInOutline);
     }
 
     private void clearBlocks() {
@@ -594,6 +602,8 @@ class ScrollableTreePanel extends JPanel {
     }
 
 	void updateVisibleBlocksAndBreadcrumb() {
+		Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+		boolean prevInOutline = isWithinOutline(prevFocus);
 		BreadcrumbState state = calculateBreadcrumbState();
 	    if (state != null) {
 	        breadcrumbPanel.update(state);
@@ -603,6 +613,7 @@ class ScrollableTreePanel extends JPanel {
 	        // Breadcrumb unchanged; still refresh visible blocks in place
 	        updateVisibleBlocks();
 	    }
+	    restoreFocusIfNeeded(prevFocus, prevInOutline);
 	}
 
     private BreadcrumbState calculateBreadcrumbState() {
@@ -617,13 +628,56 @@ class ScrollableTreePanel extends JPanel {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+protected void paintComponent(Graphics g) {
         super.paintComponent(g);
     }
 
-	public void attachNavigationNode(TreeNode node,
-	        boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
-		visibleState.setHoveredNode(node);
-		navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
-	}
+    public void attachNavigationNode(TreeNode node,
+            boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
+        visibleState.setHoveredNode(node);
+        navButtons.attachToNode(node, breadcrumbPanel, isBreadCrumb, rowIndex, currentBreadcrumbHeight, nodePositioning);
+    }
+    
+    // Focus helpers
+    private boolean isWithinOutline(Component c) {
+        if (c == null) return false;
+        return SwingUtilities.isDescendingFrom(c, this) || SwingUtilities.isDescendingFrom(c, breadcrumbPanel);
+    }
+
+    private void restoreFocusIfNeeded(Component previous, boolean previousWasInOutline) {
+        if (!previousWasInOutline) return;
+
+        Window w = SwingUtilities.getWindowAncestor(this);
+        if (w == null || !w.isDisplayable()) return;
+
+        Component current = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        if (isWithinOutline(current)) return;
+
+        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        if (selected != null) {
+            for (Component comp : breadcrumbPanel.getComponents()) {
+                if (comp instanceof JButton) {
+                    JButton btn = (JButton) comp;
+                    Object n = btn.getClientProperty("treeNode");
+                    if (n == selected && btn.isShowing()) {
+                        btn.requestFocusInWindow();
+                        return;
+                    }
+                }
+            }
+            for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+                for (Component comp : panel.getComponents()) {
+                    if (comp instanceof JButton) {
+                        JButton btn = (JButton) comp;
+                        Object n = btn.getClientProperty("treeNode");
+                        if (n == selected && btn.isShowing()) {
+                            btn.requestFocusInWindow();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        if (isShowing()) requestFocusInWindow();
+    }
 }

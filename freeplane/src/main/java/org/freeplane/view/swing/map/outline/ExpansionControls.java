@@ -33,6 +33,5 @@ class ExpansionControls {
 
     private void refreshAfterExpansionChange() {
         treePanel.updateVisibleNodes();
-        treePanel.requestFocusInWindow();
     }
 }

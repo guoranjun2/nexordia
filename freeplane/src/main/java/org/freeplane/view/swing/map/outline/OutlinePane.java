@@ -171,7 +171,6 @@ class OutlinePane extends JPanel {
     private void performInitialSetup() {
         SwingUtilities.invokeLater(() -> {
             treePanel.updateVisibleBlocks();
-            treePanel.requestFocusInWindow();
         });
     }
 
