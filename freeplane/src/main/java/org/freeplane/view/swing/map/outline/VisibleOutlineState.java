@@ -11,17 +11,17 @@ class VisibleOutlineState {
     private final Map<Integer, BlockPanel> blockPanels = new HashMap<>();
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
-    
-    public VisibleOutlineState(TreeNode root) {
+
+    VisibleOutlineState(TreeNode root) {
         this.root = root;
         this.hoveredNode = root;
     }
-    
-    public void updateVisibleNodes() {
+
+    void updateVisibleNodes() {
         visibleNodes.clear();
         buildVisibleList(root, 0);
     }
-    
+
     private void buildVisibleList(TreeNode node, int depth) {
         visibleNodes.add(new FlatNode(node, depth));
         if (node.isExpanded()) {
@@ -30,16 +30,16 @@ class VisibleOutlineState {
             }
         }
     }
-    
-    public List<FlatNode> getVisibleNodes() {
+
+    List<FlatNode> getVisibleNodes() {
         return new ArrayList<>(visibleNodes);
     }
-    
-    public int getVisibleNodeCount() {
+
+    int getVisibleNodeCount() {
         return visibleNodes.size();
     }
-    
-    public int findNodeIndexInVisibleList(TreeNode node) {
+
+    int findNodeIndexInVisibleList(TreeNode node) {
         for (int i = 0; i < visibleNodes.size(); i++) {
             if (visibleNodes.get(i).node == node) {
                 return i;
@@ -47,46 +47,46 @@ class VisibleOutlineState {
         }
         return -1;
     }
-    
-    public boolean isNodeInBreadcrumbArea(TreeNode node, int rowHeight) {
+
+    boolean isNodeInBreadcrumbArea(TreeNode node, int rowHeight) {
         int nodeIndex = findNodeIndexInVisibleList(node);
         int breadcrumbNodeCount = breadcrumbAreaHeight / rowHeight;
         return nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
     }
-    
-    public void addBlockPanel(int blockIndex, BlockPanel panel) {
+
+    void addBlockPanel(int blockIndex, BlockPanel panel) {
         blockPanels.put(blockIndex, panel);
     }
-    
-    public void clearBlockPanels() {
+
+    void clearBlockPanels() {
         blockPanels.clear();
     }
-    
-    public Map<Integer, BlockPanel> getBlockPanels() {
+
+    Map<Integer, BlockPanel> getBlockPanels() {
         return new HashMap<>(blockPanels);
     }
-    
-    public int getBreadcrumbAreaHeight() {
+
+    int getBreadcrumbAreaHeight() {
         return breadcrumbAreaHeight;
     }
-    
-    public void setBreadcrumbAreaHeight(int height) {
+
+    void setBreadcrumbAreaHeight(int height) {
         this.breadcrumbAreaHeight = height;
     }
-    
-    public TreeNode getHoveredNode() {
+
+    TreeNode getHoveredNode() {
         return hoveredNode;
     }
-    
-    public void setHoveredNode(TreeNode node) {
+
+    void setHoveredNode(TreeNode node) {
         this.hoveredNode = node;
     }
-    
-    public TreeNode getRoot() {
+
+    TreeNode getRoot() {
         return root;
     }
-    
-    public FlatNode getFlatNode(TreeNode node) {
+
+    FlatNode getFlatNode(TreeNode node) {
         for (FlatNode flat : visibleNodes) {
             if (flat.node == node) {
                 return flat;
@@ -94,12 +94,12 @@ class VisibleOutlineState {
         }
         return null;
     }
-    
-    public int getMaxDepth() {
+
+    int getMaxDepth() {
         int maxDepth = 0;
         for (FlatNode flat : visibleNodes) {
             maxDepth = Math.max(maxDepth, flat.depth);
         }
         return maxDepth;
     }
-} 
+}

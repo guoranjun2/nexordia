@@ -5,11 +5,11 @@ import java.util.List;
 class BreadcrumbState {
     final List<TreeNode> breadcrumbNodes;
     final int breadcrumbHeight;
-    final int levelReductionFirstVisibleNodeIndex;
+    final int firstVisibleNodeIndex;
 
     BreadcrumbState(List<TreeNode> breadcrumbNodes, int breadcrumbHeight, int levelReductionFirstVisibleNodeIndex) {
         this.breadcrumbNodes = breadcrumbNodes;
         this.breadcrumbHeight = breadcrumbHeight;
-        this.levelReductionFirstVisibleNodeIndex = levelReductionFirstVisibleNodeIndex;
+        this.firstVisibleNodeIndex = levelReductionFirstVisibleNodeIndex;
     }
 }

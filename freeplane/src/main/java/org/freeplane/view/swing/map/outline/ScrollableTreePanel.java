@@ -46,6 +46,13 @@ class ScrollableTreePanel extends JPanel {
     private final int blockSize;
     private VisibleOutlineState visibleState;
 
+    // Cached state to avoid unnecessary block rebuilds
+    private int lastFirstBlock = -1;
+    private int lastLastBlock = -1;
+    private int lastBreadcrumbAreaHeight = -1;
+    private int lastViewportWidth = -1;
+    private int lastVisibleNodeCount = -1;
+
     public ScrollableTreePanel(TreeNode root, BreadcrumbPanel breadcrumbPanel) {
 		this(root, BLOCK_SIZE, breadcrumbPanel);
 	}
@@ -82,6 +89,7 @@ class ScrollableTreePanel extends JPanel {
     void setScrollPane(JScrollPane scroll) {
         this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
         this.breadcrumbPath.setViewport(viewport);
+        resetBlockCache();
     }
 
     void setBreadcrumbAreaHeight(int height) {
@@ -93,10 +101,34 @@ class ScrollableTreePanel extends JPanel {
         void updateVisibleBlocks() {
         if (viewport == null) return;
 
+        // Fast-path: If nothing relevant changed, skip expensive rebuild.
+        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        int viewportWidth = viewport.getViewportWidth();
+        int visibleCount = visibleState.getVisibleNodeCount();
+        boolean haveBlocks = !visibleState.getBlockPanels().isEmpty();
+        boolean unchanged = haveBlocks
+                && range.firstBlock == lastFirstBlock
+                && range.lastBlock == lastLastBlock
+                && range.breadcrumbAreaHeight == lastBreadcrumbAreaHeight
+                && viewportWidth == lastViewportWidth
+                && visibleCount == lastVisibleNodeCount;
+
+        if (unchanged) {
+            viewport.refreshViewport();
+            return;
+        }
+
         clearBlocks();
         createVisibleBlocks();
         updatePreferredFromActualBlocks();
         refreshUI();
+
+        // Update cache after successful rebuild
+        lastFirstBlock = range.firstBlock;
+        lastLastBlock = range.lastBlock;
+        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastViewportWidth = viewportWidth;
+        lastVisibleNodeCount = visibleCount;
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
@@ -125,6 +157,14 @@ class ScrollableTreePanel extends JPanel {
         updatePreferredFromActualBlocks();
         refreshUI();
 
+        // Update cache after rebuild triggered by explicit repositioning
+        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        lastFirstBlock = range.firstBlock;
+        lastLastBlock = range.lastBlock;
+        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastViewportWidth = viewport.getViewportWidth();
+        lastVisibleNodeCount = visibleState.getVisibleNodeCount();
+
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
             // Check if this node is in breadcrumb area - if so, don't move buttons here
@@ -151,6 +191,14 @@ class ScrollableTreePanel extends JPanel {
         revalidate();
     }
 
+    private void resetBlockCache() {
+        lastFirstBlock = -1;
+        lastLastBlock = -1;
+        lastBreadcrumbAreaHeight = -1;
+        lastViewportWidth = -1;
+        lastVisibleNodeCount = -1;
+    }
+
     private boolean isNavigationButton(JButton button) {
         return button == navButtons.expandBtn || button == navButtons.collapseBtn ||
                button == navButtons.expandMoreBtn || button == navButtons.reduceBtn;
@@ -158,7 +206,7 @@ class ScrollableTreePanel extends JPanel {
 
     private void createVisibleBlocks() {
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        
+
         for (int b = range.firstBlock; b <= range.lastBlock; b++) {
             createBlock(b, range.breadcrumbAreaHeight);
         }
@@ -228,20 +276,20 @@ class ScrollableTreePanel extends JPanel {
             SwingUtilities.invokeLater(this::scrollToSelectedNode);
         }
     }
-    
-    
+
+
     public OutlineSelection getSelection() {
         return selection;
     }
-    
+
     public VisibleOutlineState getVisibleState() {
         return visibleState;
     }
-    
+
     public NodePositioning getNodePositioning() {
         return nodePositioning;
     }
-    
+
     public TreeNode getRoot() {
         return root;
     }
@@ -428,11 +476,11 @@ class ScrollableTreePanel extends JPanel {
 
     void updateVisibleBlocksAndBreadcrumb() {
         visibleState.updateVisibleNodes();                   // 1. Update list first
-        BreadcrumbState state = calculateBreadcrumbState();  // 2. Calculate using new list  
+        BreadcrumbState state = calculateBreadcrumbState();  // 2. Calculate using new list
         if (state != null) {
             breadcrumbPanel.update(state);                   // 3. Update height
+            updateVisibleBlocks(state.firstVisibleNodeIndex);                               // 4. Create blocks (no duplicate updateVisibleNodes)
         }
-        updateVisibleBlocks();                               // 4. Create blocks (no duplicate updateVisibleNodes)
     }
 
     private BreadcrumbState calculateBreadcrumbState() {
