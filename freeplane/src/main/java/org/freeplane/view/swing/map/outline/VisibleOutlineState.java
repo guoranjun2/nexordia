@@ -67,6 +67,22 @@ class VisibleOutlineState {
         return new HashMap<>(blockPanels);
     }
 
+    boolean hasBlockPanel(int blockIndex) {
+        return blockPanels.containsKey(blockIndex);
+    }
+
+    BlockPanel getBlockPanel(int blockIndex) {
+        return blockPanels.get(blockIndex);
+    }
+
+    void removeBlockPanel(int blockIndex) {
+        blockPanels.remove(blockIndex);
+    }
+
+    List<Integer> getBlockPanelIndices() {
+        return new ArrayList<>(blockPanels.keySet());
+    }
+
     int getBreadcrumbAreaHeight() {
         return breadcrumbAreaHeight;
     }

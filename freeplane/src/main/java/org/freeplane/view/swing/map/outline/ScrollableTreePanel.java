@@ -212,7 +212,8 @@ class ScrollableTreePanel extends JPanel {
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
 
         for (int b = range.firstBlock; b <= range.lastBlock; b++) {
-            createBlock(b, range.breadcrumbAreaHeight);
+            if (!visibleState.hasBlockPanel(b))
+                createBlock(b, range.breadcrumbAreaHeight);
         }
     }
 
@@ -322,6 +323,117 @@ class ScrollableTreePanel extends JPanel {
         return selection.getSelectedNode();
     }
 
+    // Incremental update for title change without full rebuild
+    void updateNodeTitle(TreeNode node) {
+        // Update in breadcrumb if present
+        for (Component comp : breadcrumbPanel.getComponents()) {
+            if (comp instanceof JButton) {
+                JButton btn = (JButton) comp;
+                Object n = btn.getClientProperty("treeNode");
+                if (n == node) {
+                    btn.setText(node.title);
+                    int depth = calculateNodeDepth(node);
+                    if (depth >= 0) {
+                        int x = geometry.calculateTextButtonX(depth);
+                        btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
+                    }
+                    breadcrumbPanel.revalidate();
+                    breadcrumbPanel.repaint();
+                    break;
+                }
+            }
+        }
+
+        // Update in visible content blocks if present
+        for (int blockIndex : visibleState.getBlockPanelIndices()) {
+            BlockPanel panel = visibleState.getBlockPanel(blockIndex);
+            if (panel == null) continue;
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    JButton btn = (JButton) comp;
+                    Object n = btn.getClientProperty("treeNode");
+                    if (n == node) {
+                        btn.setText(node.title);
+                        int depth = calculateNodeDepth(node);
+                        if (depth >= 0) {
+                            int x = geometry.calculateTextButtonX(depth);
+                            btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
+                        }
+                        panel.revalidate();
+                        panel.repaint();
+                        // Node appears only once
+                        break;
+                    }
+                }
+            }
+        }
+
+        updatePreferredFromActualBlocks();
+        refreshUI();
+    }
+
+    // Incremental rebuild starting from an anchor node (e.g., parent on insert/delete)
+    void rebuildFromNode(TreeNode anchorNode) {
+        if (viewport == null) return;
+
+        // Avoid stale buttons attached to nodes being deleted/moved
+        navButtons.hideNavigationButtons();
+
+        visibleState.updateVisibleNodes();
+
+        // If breadcrumb needs to change, apply the stable path that repositions content
+        BreadcrumbState state = calculateBreadcrumbState();
+        if (state != null) {
+            breadcrumbPanel.update(state);
+            updateVisibleBlocks(state.firstVisibleNodeIndex);
+            // Validate hovered node after rebuild
+            TreeNode hovered = visibleState.getHoveredNode();
+            if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
+                visibleState.setHoveredNode(null);
+            }
+            return;
+        }
+
+        int anchorIndex = visibleState.findNodeIndexInVisibleList(anchorNode);
+        if (anchorIndex < 0) {
+            // Not visible (collapsed). Let normal path decide.
+            updateVisibleBlocksAndBreadcrumb();
+            return;
+        }
+
+        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        int startBlock = Math.max(0, anchorIndex / blockSize);
+
+        removeBlocksFromBlockIndex(startBlock);
+        createVisibleBlocks();
+        updatePreferredFromActualBlocks();
+        refreshUI();
+
+        // Update cache
+        lastFirstBlock = range.firstBlock;
+        lastLastBlock = range.lastBlock;
+        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastViewportWidth = viewport.getViewportWidth();
+        lastVisibleNodeCount = visibleState.getVisibleNodeCount();
+
+        // Validate hovered node after partial rebuild
+        TreeNode hovered = visibleState.getHoveredNode();
+        if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
+            visibleState.setHoveredNode(null);
+        }
+    }
+
+    private void removeBlocksFromBlockIndex(int startBlock) {
+        java.util.List<Integer> indices = new java.util.ArrayList<>(visibleState.getBlockPanelIndices());
+        for (int idx : indices) {
+            if (idx >= startBlock) {
+                BlockPanel p = visibleState.getBlockPanel(idx);
+                if (p != null) remove(p);
+                visibleState.removeBlockPanel(idx);
+            }
+        }
+    }
+
     void onContentButtonHovered(TreeNode node) {
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (node != null && !node.children.isEmpty() && node != hoveredNode) {
@@ -366,8 +478,7 @@ class ScrollableTreePanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             TreeNode preservedHoveredNode = visibleState.getHoveredNode();
             navButtons.hideNavigationButtons();
-            removeAll();
-            visibleState.clearBlockPanels();
+            clearBlocks();
             navButtons.hideNavigationButtons();
             visibleState.setHoveredNode(preservedHoveredNode);
             updateVisibleBlocks();

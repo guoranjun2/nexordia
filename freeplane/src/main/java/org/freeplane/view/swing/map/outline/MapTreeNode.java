@@ -43,15 +43,14 @@ class MapTreeNode extends TreeNode implements INodeView {
     }
 
     @Override
-	public void nodeChanged(NodeChangeEvent event) {
+    public void nodeChanged(NodeChangeEvent event) {
         if (event.getNode() == nodeModel) {
             // Update the title and repaint
             String newText = getNodeText(nodeModel);
             setTitle(newText);
-
             if (outlinePane != null) {
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    outlinePane.refreshTree();
+                    outlinePane.updateNodeTitle(this);
                 });
             }
         }
@@ -71,10 +70,10 @@ class MapTreeNode extends TreeNode implements INodeView {
             }
             childTreeNode.parent = this;
 
-            // Trigger efficient repaint
+            // Incremental rebuild from parent (this) if visible
             if (outlinePane != null) {
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    outlinePane.refreshTree();
+                    outlinePane.rebuildFromNode(this);
                 });
             }
         }
@@ -119,10 +118,10 @@ class MapTreeNode extends TreeNode implements INodeView {
             // Recursively cleanup child listeners
             toRemove.cleanupListeners();
 
-            // Trigger efficient repaint
+            // Incremental rebuild from parent (this)
             if (outlinePane != null) {
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    outlinePane.refreshTree();
+                    outlinePane.rebuildFromNode(this);
                 });
             }
         }

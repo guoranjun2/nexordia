@@ -60,6 +60,18 @@ class OutlinePane extends JPanel {
         });
     }
 
+    void updateNodeTitle(TreeNode node) {
+        SwingUtilities.invokeLater(() -> {
+            treePanel.updateNodeTitle(node);
+        });
+    }
+
+    void rebuildFromNode(TreeNode node) {
+        SwingUtilities.invokeLater(() -> {
+            treePanel.rebuildFromNode(node);
+        });
+    }
+
     /**
      * Replace the root node and refresh the entire tree display.
      * Used to switch from placeholder/demo data to real map data.

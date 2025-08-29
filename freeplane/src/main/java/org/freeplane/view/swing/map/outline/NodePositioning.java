@@ -17,11 +17,12 @@ class NodePositioning {
     public int calculateNodeDepth(TreeNode node) {
         int depth = 0;
         TreeNode current = node;
-        while (current != root) {
+        while (current != null && current != root) {
             current = current.parent;
             depth++;
         }
-        return depth;
+        // Return -1 if the node is not part of this tree (no path to root)
+        return current == root ? depth : -1;
     }
     
     public Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
