@@ -1,6 +1,5 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
 

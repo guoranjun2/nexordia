@@ -5,7 +5,6 @@
  */
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Component;
 import javax.swing.JComponent;
 
 import org.freeplane.features.map.NodeModel;
