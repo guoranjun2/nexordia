@@ -2,9 +2,11 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
+import java.util.List;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.features.mode.Controller;
+import org.freeplane.features.filter.Filter;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.view.swing.map.MapView;
 
@@ -76,20 +78,47 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         });
     }
 
+    @Override
+    public void afterFilterChange(Component view, Filter newFilter) {
+        SwingUtilities.invokeLater(() -> {
+            if (view instanceof MapView) {
+                updateTreeFromMap((MapView) view);
+            }
+        });
+    }
+
     /**
      * Update the tree display from the given MapView.
      */
     private void updateTreeFromMap(MapView mapView) {
         try {
-            
+            String prevFirstId = null;
+            ScrollableTreePanel oldPanel = getTreePanel();
+            if (oldPanel != null) {
+                prevFirstId = oldPanel.getVisibleState().getFirstVisibleNodeId();
+            }
+
             cleanupCurrentTree();
 
-            
-            TreeNode newRoot = NodeTreeFactory.createTreeFromMap(mapView, this);
+            OutlineTreeUpdater.Result result = OutlineTreeUpdater.updateTreeFromMap(mapView, this, prevFirstId);
 
-            if (newRoot != null) {
-                currentRoot = newRoot;
-                setRootNode(newRoot);
+            if (result.root != null) {
+                currentRoot = result.root;
+                setRootNode(result.root);
+                // Scroll to computed firstVisible if present
+                if (result.firstVisibleNodeId != null) {
+                    ScrollableTreePanel panel = getTreePanel();
+                    if (panel != null) {
+                        List<FlatNode> nodes = panel.getVisibleState().getVisibleNodes();
+                        int index = -1;
+                        for (int i = 0; i < nodes.size(); i++) {
+                            if (result.firstVisibleNodeId.equals(nodes.get(i).node.id)) { index = i; break; }
+                        }
+                        if (index >= 0) {
+                            panel.updateVisibleBlocks(index);
+                        }
+                    }
+                }
             } else {
                 showNoMapState();
             }

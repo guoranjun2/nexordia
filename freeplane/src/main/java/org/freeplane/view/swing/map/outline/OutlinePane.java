@@ -49,6 +49,10 @@ class OutlinePane extends JPanel {
         });
     }
 
+    ScrollableTreePanel getTreePanel() {
+        return treePanel;
+    }
+
     void updateNodeTitle(TreeNode node) {
         SwingUtilities.invokeLater(() -> {
             treePanel.updateNodeTitle(node);

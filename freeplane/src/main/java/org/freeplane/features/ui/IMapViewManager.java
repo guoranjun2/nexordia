@@ -178,4 +178,6 @@ public interface IMapViewManager {
     }
 
     public void setMap(Component view, MapModel map);
+
+	public void fireFilterChanged();
 }

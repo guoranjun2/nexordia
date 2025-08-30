@@ -233,11 +233,14 @@ public class FilterController implements IExtension, IMapViewChangeListener {
     }
 
     public static void setFilter(MapModel map, Filter filter) {
-        IMapSelection selection = Controller.getCurrentController().getSelection();
-        if(selection != null && selection.getMap() == map)
-            selection.setFilter(filter);
-        else
-            map.putExtension(Filter.class, filter);
+        final Controller controller = Controller.getCurrentController();
+		IMapSelection selection = controller.getSelection();
+        if(selection != null && selection.getMap() == map) {
+			selection.setFilter(filter);
+			controller.getMapViewManager().fireFilterChanged();
+		} else {
+			map.putExtension(Filter.class, filter);
+		}
     }
 
 	public static void install() {
@@ -500,11 +503,12 @@ public class FilterController implements IExtension, IMapViewChangeListener {
     }
 
     public void applyFilter(final boolean force, final Filter filter) {
-        final IMapSelection selection = Controller.getCurrentController().getSelection();
+        final Controller controller = Controller.getCurrentController();
+		final IMapSelection selection = controller.getSelection();
         if (selection != null) {
             try {
             	filter.displayFilterStatus();
-            	Controller.getCurrentController().getViewController().setWaitingCursor(true);
+            	controller.getViewController().setWaitingCursor(true);
             	final Filter oldFilter = selection.getFilter();
             	selection.setFilter(filter);
             	MapModel map = selection.getSelected().getMap();
@@ -519,9 +523,10 @@ public class FilterController implements IExtension, IMapViewChangeListener {
                 }
             	refreshMap(this, map);
             	selectVisibleNodes(selection);
+            	controller.getMapViewManager().fireFilterChanged();
             }
             finally {
-            	Controller.getCurrentController().getViewController().setWaitingCursor(false);
+            	controller.getViewController().setWaitingCursor(false);
             }
         }
     }

@@ -3,6 +3,7 @@ package org.freeplane.view.swing.map.outline;
 
 import javax.swing.JComponent;
 
+import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.view.swing.map.MapView;
@@ -20,7 +21,7 @@ class NodeTreeFactory {
      */
     static TreeNode createTreeFromCurrentMap(OutlinePane outlinePane) {
         try {
-            
+
             JComponent mapViewComponent = Controller.getCurrentController()
                     .getMapViewManager().getMapViewComponent();
 
@@ -29,7 +30,7 @@ class NodeTreeFactory {
                 return createTreeFromMap(mapView, outlinePane);
             }
         } catch (Exception e) {
-            
+
             System.err.println("Failed to create tree from current map: " + e.getMessage());
             e.printStackTrace();
         }
@@ -54,8 +55,10 @@ class NodeTreeFactory {
             return null;
         }
 
-        
-        return createMapTreeNode(rootNode, outlinePane);
+        MapTreeNode treeNode = new MapTreeNode(rootNode, outlinePane);
+        rootNode.addViewer(treeNode);
+        createDescendantTree(treeNode, rootNode, mapView.getFilter(), outlinePane);
+        return treeNode;
     }
 
     /**
@@ -65,20 +68,17 @@ class NodeTreeFactory {
      * @param outlinePane the OutlinePane for refresh callbacks
      * @return MapTreeNode representing this node and its children
      */
-    private static MapTreeNode createMapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
-        
-        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane);
-
-        
-        nodeModel.addViewer(treeNode);
-
-        
-        for (NodeModel childNode : nodeModel.getChildren()) {
-            MapTreeNode childTreeNode = createMapTreeNode(childNode, outlinePane);
-            treeNode.addChild(childTreeNode);
-        }
-
-        return treeNode;
+    private static void createDescendantTree(MapTreeNode parentTreeNode, NodeModel nodeModel, Filter filter, OutlinePane outlinePane) {
+    	for (NodeModel childNode : nodeModel.getChildren()) {
+    		if (filter.isVisibleOrAncestor(childNode)) {
+    			MapTreeNode childTreeNode = new MapTreeNode(childNode, outlinePane);
+    			childNode.addViewer(childTreeNode);
+    			createDescendantTree(childTreeNode, childNode, filter, outlinePane);
+    			parentTreeNode.addChild(childTreeNode);
+    		}
+    		else
+    			createDescendantTree(parentTreeNode, childNode, filter, outlinePane);
+    	}
     }
 
     /**

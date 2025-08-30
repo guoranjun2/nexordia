@@ -19,12 +19,14 @@
  */
 package org.freeplane.view.swing.map;
 
+import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 
+import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.IMapSelectionListener;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.ui.IMapViewChangeListener;
@@ -141,5 +143,11 @@ class MapViewChangeObserverCompound {
 
 	void removeListener(final IMapViewChangeListener listener) {
 		viewListeners.remove(listener);
+	}
+
+	void fireFilterChanged(Component mapView, Filter filter) {
+	    for (final IMapViewChangeListener observer : viewListeners) {
+	    	observer.afterFilterChange(mapView, filter);
+		}
 	}
 }

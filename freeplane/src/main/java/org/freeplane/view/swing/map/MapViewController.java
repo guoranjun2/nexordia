@@ -1192,5 +1192,9 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
        mapViewChangeListeners.afterMapChange(oldMap, newMap);
     }
 
+	@Override
+	public void fireFilterChanged() {
+		mapViewChangeListeners.fireFilterChanged(selectedMapView, selectedMapView.getFilter());
+	}
 
 }

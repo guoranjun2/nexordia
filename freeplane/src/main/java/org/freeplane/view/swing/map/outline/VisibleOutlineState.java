@@ -11,6 +11,7 @@ class VisibleOutlineState {
     private final Map<Integer, BlockPanel> blockPanels = new HashMap<>();
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
+    private String firstVisibleNodeId;
 
     VisibleOutlineState(TreeNode root) {
         this.root = root;
@@ -38,6 +39,14 @@ class VisibleOutlineState {
 
     int getVisibleNodeCount() {
         return visibleNodes.size();
+    }
+
+    String getFirstVisibleNodeId() {
+        return firstVisibleNodeId;
+    }
+
+    void setFirstVisibleNodeId(String id) {
+        this.firstVisibleNodeId = id;
     }
 
     int findNodeIndexInVisibleList(TreeNode node) {

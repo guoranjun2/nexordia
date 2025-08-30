@@ -111,6 +111,8 @@ class ScrollableTreePanel extends JPanel {
 
         if (unchanged) {
             viewport.refreshViewport();
+            // keep first visible node id in sync
+            updateFirstVisibleNodeId();
             return;
         }
 
@@ -125,6 +127,7 @@ class ScrollableTreePanel extends JPanel {
         lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
         lastViewportWidth = viewportWidth;
         lastVisibleNodeCount = visibleCount;
+        updateFirstVisibleNodeId();
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
@@ -160,6 +163,7 @@ class ScrollableTreePanel extends JPanel {
         lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
         lastViewportWidth = viewport.getViewportWidth();
         lastVisibleNodeCount = visibleState.getVisibleNodeCount();
+        updateFirstVisibleNodeId();
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
@@ -267,6 +271,18 @@ class ScrollableTreePanel extends JPanel {
     private void refreshUI() {
         viewport.refreshViewport();
         repaint();
+    }
+
+    private void updateFirstVisibleNodeId() {
+        if (viewport == null) return;
+        int index = viewport.calculateFirstVisibleNodeIndex();
+        java.util.List<FlatNode> nodes = visibleState.getVisibleNodes();
+        if (nodes.isEmpty()) {
+            visibleState.setFirstVisibleNodeId(null);
+            return;
+        }
+        index = Math.max(0, Math.min(index, nodes.size() - 1));
+        visibleState.setFirstVisibleNodeId(nodes.get(index).node.id);
     }
 
     public void setSelectedNodeId(String nodeId) {
