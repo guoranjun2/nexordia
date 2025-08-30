@@ -71,31 +71,21 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
             @Override
             public void viewFocusChanged(View previouslyFocusedView, View focusedView) {
                 if (focusedView != null && SwingUtilities.isDescendingFrom(focusedView, rootWindow) ) {
-                    Component containedMapView = getContainedMapView(focusedView);
-                    if (containedMapView instanceof MapView) {
-                        updateToolbarForMapView((MapView) containedMapView);
-                    }
+                    refreshToolbarLater();
                 }
             }
 
             @Override
             public void windowAdded(DockingWindow addedToWindow, DockingWindow addedWindow) {
-            	if ((currentSelectedMapView == null
-            			|| ! currentSelectedMapView.isSelected()) && (addedWindow instanceof View)
-            			&& SwingUtilities.isDescendingFrom(addedWindow, rootWindow)) {
-					final MapView mapView = getContainedMapView((View) addedWindow);
-					if(mapView != null)
-						updateToolbarForMapView(mapView);
-				}
+                if (SwingUtilities.isDescendingFrom(addedWindow, rootWindow)) {
+                    refreshToolbarLater();
+                }
             }
 
             @Override
             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
-                if (currentSelectedMapView != null && removedWindow instanceof View) {
-                    Component containedMapView = getContainedMapView((View) removedWindow);
-                    if (containedMapView == currentSelectedMapView) {
-                    	refreshToolbarForContainedMapViews();
-                    }
+                if (removedWindow instanceof View && SwingUtilities.isDescendingFrom(removedWindow, rootWindow)) {
+                    refreshToolbarLater();
                 }
             }
         };
@@ -103,17 +93,17 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
 
     @Override
     public void afterViewChange(Component oldView, Component newView) {
-        refreshToolbarForContainedMapViews();
+        refreshToolbarLater();
     }
 
     @Override
     public void afterViewClose(Component oldView) {
-        refreshToolbarForContainedMapViews();
+        refreshToolbarLater();
     }
 
     @Override
     public void afterViewCreated(Component newView) {
-        refreshToolbarForContainedMapViews();
+        refreshToolbarLater();
     }
 
     @Override
@@ -127,7 +117,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
                 if (bookmarksToolbar != null) {
                     bookmarksToolbar.setVisible(isBookmarksToolbarVisible);
                 }
-                updateBookmarksToolbar();
+                refreshToolbarLater();
             }
         }
     }
@@ -151,7 +141,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
 
     private void refreshToolbarForContainedMapViews() {
         final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
-		MapView mapViewToUse = (MapView) mapViewManager.findMapViewContainedIn(rootWindow);
+        MapView mapViewToUse = (MapView) mapViewManager.getLastSelectedMapViewContainedIn(rootWindow);
         if (mapViewToUse != null) {
             updateToolbarForMapView(mapViewToUse);
         } else {
@@ -220,6 +210,22 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         bookmarksUpdateScheduled = false;
     }
 
+    private boolean refreshScheduled;
+
+    private void refreshToolbarLater() {
+        if (refreshScheduled) {
+            return;
+        }
+        refreshScheduled = true;
+        SwingUtilities.invokeLater(() -> {
+            try {
+                refreshToolbarForContainedMapViews();
+            } finally {
+                refreshScheduled = false;
+            }
+        });
+    }
+
     private void updateBookmarksToolbarLater() {
         if (currentSelectedMapView != null && !bookmarksUpdateScheduled) {
             bookmarksUpdateScheduled = true;
@@ -278,9 +284,9 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
     @Override
     public void onSelect(NodeModel node) {
         if(currentSelectedMapView == null) {
-        	final Component selectedMapView = Controller.getCurrentController().getMapViewManager().getMapViewComponent();
-        	if(selectedMapView instanceof MapView && SwingUtilities.isDescendingFrom(selectedMapView, rootWindow))
-        		updateToolbarForMapView((MapView) selectedMapView);
+            final Component selectedMapView = Controller.getCurrentController().getMapViewManager().getMapViewComponent();
+            if(selectedMapView instanceof MapView && SwingUtilities.isDescendingFrom(selectedMapView, rootWindow))
+                refreshToolbarLater();
         }
         if (currentSelectedMapView != null && currentSelectedMapView.isSelected()) {
             updateBookmarksToolbarLater();

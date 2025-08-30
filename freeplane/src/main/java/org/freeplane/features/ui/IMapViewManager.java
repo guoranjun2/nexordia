@@ -98,7 +98,16 @@ public interface IMapViewManager {
 
 	public JComponent getMapViewComponent();
 
-	public JComponent findMapViewContainedIn(Component ancestor);
+    /**
+     * Returns the last selected MapView contained in the Window of the given ancestor, or null.
+     * Implementations may return null if no last selected MapView is known for that Window.
+     */
+    public JComponent getLastSelectedMapViewContainedIn(Component ancestor);
+
+    /**
+     * Client property key stored on a Window's RootPane to cache the last selected MapView for that Window.
+     */
+    public static final String LAST_SELECTED_MAP_VIEW_PROPERTY = "org.freeplane.window.lastSelectedMapView";
 
 	public Configurable getMapViewConfiguration();
 

@@ -51,6 +51,7 @@ import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
@@ -567,30 +568,16 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return getMapView();
 	}
 
-	@Override
-	public JComponent findMapViewContainedIn(Component ancestor) {
-        MapView foundMapView = null;
-        MapView selectedMapView = null;
-
-        for (Component view : mapViewVector) {
-            if (view instanceof MapView) {
-                MapView mapView = (MapView) view;
-                if (mapView.isShowing() && SwingUtilities.isDescendingFrom(mapView, ancestor)) {
-                    if (foundMapView == null) {
-                        foundMapView = mapView;
-                    }
-                    if (mapView.isSelected()) {
-                        selectedMapView = mapView;
-                        break;
-                    }
-                }
-            }
-        }
-
-        MapView mapViewToUse = selectedMapView != null ? selectedMapView : foundMapView;
-		return mapViewToUse;
-
-	}
+    @Override
+    public JComponent getLastSelectedMapViewContainedIn(Component ancestor) {
+        if (ancestor == null)
+            return null;
+        final Window window = ancestor instanceof Window ? (Window) ancestor : SwingUtilities.getWindowAncestor(ancestor);
+        if (! (window instanceof RootPaneContainer))
+            return null;
+        final Object value = ((RootPaneContainer) window).getRootPane().getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+        return value instanceof JComponent ? (JComponent) value : null;
+    }
 
 	@Override
 	public Configurable getMapViewConfiguration() {

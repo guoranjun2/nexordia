@@ -72,7 +72,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		Window newFocusedWindow = (Window) evt.getNewValue();
 		final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
 		final JComponent selectedComponent = mapViewManager.getMapViewComponent();
-		final JComponent containedMapView = mapViewManager.findMapViewContainedIn(newFocusedWindow);
+        final JComponent containedMapView = mapViewManager.getLastSelectedMapViewContainedIn(newFocusedWindow);
 		if(selectedComponent == containedMapView) {
 			if(uiElementsFollowSelectedMap)
 				afterUIWindowChange(newFocusedWindow);

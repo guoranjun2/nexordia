@@ -184,10 +184,10 @@ public class HeadlessMapViewController implements IMapViewManager {
 		throw new RuntimeException("Method not implemented");
 	}
 
-	@Override
-	public JComponent findMapViewContainedIn(Component ancestor) {
-		throw new RuntimeException("Method not implemented");
-	}
+    @Override
+    public JComponent getLastSelectedMapViewContainedIn(Component ancestor) {
+        return null;
+    }
 
 	@Override
 	public Configurable getMapViewConfiguration() {
