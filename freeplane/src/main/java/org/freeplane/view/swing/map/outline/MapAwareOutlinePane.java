@@ -4,11 +4,15 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.Component;
 import java.util.List;
 import javax.swing.JComponent;
+import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
+import java.beans.PropertyChangeListener;
 
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.ui.IMapViewChangeListener;
+import org.freeplane.features.map.IMapChangeListener;
+import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 
@@ -16,10 +20,12 @@ import org.freeplane.view.swing.map.MapView;
  * OutlinePane that automatically updates its content based on map view changes.
  * Implements the same pattern as BookmarkToolbarPane to listen for map switching.
  */
-public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener {
+public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
 
     private TreeNode currentRoot;
     private MapView currentMapView;
+    private PropertyChangeListener lastSelectedListener;
+    private JRootPane listenedRootPane;
 
     public MapAwareOutlinePane() {
         super(new TreeNode("Loading...", "loading"));
@@ -31,11 +37,32 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	public void addNotify() {
 		 super.addNotify();
 		 Controller.getCurrentController().getMapViewManager().addMapViewChangeListener(this);
+        // listen for per-window lastSelected map view changes
+        try {
+            JRootPane rootPane = SwingUtilities.getRootPane(this);
+            if (rootPane != null) {
+                listenedRootPane = rootPane;
+                lastSelectedListener = evt -> refreshOutlineLater(true);
+                rootPane.addPropertyChangeListener(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, lastSelectedListener);
+            }
+        } catch (Exception ignore) { }
 	}
 
     @Override
 	public void removeNotify() {
         Controller.getCurrentController().getMapViewManager().removeMapViewChangeListener(this);
+        if (currentMapView != null) {
+            try {
+                currentMapView.getMap().removeMapChangeListener(this);
+            } catch (Exception ignore) { }
+        }
+        if (listenedRootPane != null && lastSelectedListener != null) {
+            try {
+                listenedRootPane.removePropertyChangeListener(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, lastSelectedListener);
+            } catch (Exception ignore) { }
+            listenedRootPane = null;
+            lastSelectedListener = null;
+        }
         cleanupCurrentTree();
     }
 
@@ -115,6 +142,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void updateTreeFromMap(MapView mapView) {
         try {
+            if (currentMapView != null && currentMapView.getMap() != null) {
+                try {
+                    currentMapView.getMap().removeMapChangeListener(this);
+                } catch (Exception ignore) { }
+            }
             currentMapView = mapView;
             String prevFirstId = null;
             ScrollableTreePanel oldPanel = getTreePanel();
@@ -129,6 +161,9 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if (result.root != null) {
                 currentRoot = result.root;
                 setRootNode(result.root);
+                try {
+                    currentMapView.getMap().addMapChangeListener(this);
+                } catch (Exception ignore) { }
                 // Scroll to computed firstVisible if present
                 if (result.firstVisibleNodeId != null) {
                     ScrollableTreePanel panel = getTreePanel();
@@ -158,9 +193,27 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void showNoMapState() {
         cleanupCurrentTree();
+        if (currentMapView != null && currentMapView.getMap() != null) {
+            try {
+                currentMapView.getMap().removeMapChangeListener(this);
+            } catch (Exception ignore) { }
+        }
         currentMapView = null;
         currentRoot = new TreeNode("No Map Available", "empty");
         setRootNode(currentRoot);
+    }
+
+    @Override
+    public void mapChanged(MapChangeEvent event) {
+        if (currentMapView == null)
+            return;
+        if (event.getMap() != currentMapView.getMap())
+            return;
+        final Object property = event.getProperty();
+        if (property == IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT
+                || IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT.equals(property)) {
+            refreshOutlineLater(true);
+        }
     }
 
     /**

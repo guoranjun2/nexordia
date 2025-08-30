@@ -177,8 +177,8 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                     // track last selected per top-level window
                     Window top = (Window) focusedView.getTopLevelAncestor();
                     if (top instanceof RootPaneContainer && containedMapView instanceof MapView) {
-                        ((RootPaneContainer) top).getRootPane().putClientProperty(
-                                IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
+                        JRootPane root = ((RootPaneContainer) top).getRootPane();
+                        root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
                     }
                 }
             }
@@ -227,8 +227,8 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                                     Component containedMapView = getContainedMapView(focusedView);
                                     Window top = (Window) focusedView.getTopLevelAncestor();
                                     if (top instanceof RootPaneContainer && containedMapView instanceof MapView) {
-                                        ((RootPaneContainer) top).getRootPane().putClientProperty(
-                                                IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
+                                        JRootPane root = ((RootPaneContainer) top).getRootPane();
+                                        root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
                                     }
                                 }
                             }
@@ -239,11 +239,10 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                                     Component contained = getContainedMapView((View) removedWindow);
                                     Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
                                     if (sourceTop instanceof RootPaneContainer) {
-                                        Object value = ((RootPaneContainer) sourceTop).getRootPane()
-                                                .getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                                        JRootPane root = ((RootPaneContainer) sourceTop).getRootPane();
+                                        Object value = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
                                         if (value == contained) {
-                                            ((RootPaneContainer) sourceTop).getRootPane().putClientProperty(
-                                                    IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                                            root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
                                         }
                                     }
                                 }
@@ -286,8 +285,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                         applicationViewController.removeAuxillaryPaneForFloatingWindow((Window) topLevelAncestor);
                         // clear last selected for this floating window
                         if (topLevelAncestor instanceof RootPaneContainer) {
-                            ((RootPaneContainer) topLevelAncestor).getRootPane().putClientProperty(
-                                    IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                            JRootPane root = ((RootPaneContainer) topLevelAncestor).getRootPane();
+                            Object old = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                            if (old != null) {
+                                root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                            }
                         }
                     }
                 }
@@ -296,11 +298,10 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                     Component contained = getContainedMapView((View) removedWindow);
                     Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
                     if (sourceTop instanceof RootPaneContainer) {
-                        Object value = ((RootPaneContainer) sourceTop).getRootPane()
-                                .getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                        JRootPane root = ((RootPaneContainer) sourceTop).getRootPane();
+                        Object value = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
                         if (value == contained) {
-                            ((RootPaneContainer) sourceTop).getRootPane().putClientProperty(
-                                    IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                            root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
                         }
                     }
                 }
