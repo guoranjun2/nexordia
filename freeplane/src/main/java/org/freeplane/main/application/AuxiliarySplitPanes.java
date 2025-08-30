@@ -174,6 +174,25 @@ class AuxiliarySplitPanes {
         validateLevel(level);
         return panes.get(level);
     }
+
+    /**
+     * Moves only the level-0 auxiliary component (note pane) from this manager to the target manager.
+     * Other auxiliary components (e.g., outline at level 1) are not moved and remain per-frame.
+     *
+     * @param target the destination AuxiliarySplitPanes
+     * @param mode the current mode name used by the note pane
+     */
+    public void moveAuxiliaryNoteTo(AuxiliarySplitPanes target, String mode) {
+        if (target == null) {
+            return;
+        }
+        if (this.getNumLevels() < 1 || target.getNumLevels() < 1) {
+            return;
+        }
+        AuxillaryEditorSplitPane fromPane = this.getPane(0);
+        AuxillaryEditorSplitPane toPane = target.getPane(0);
+        fromPane.moveAuxillaryComponentTo(toPane, mode);
+    }
     
     /**
      * Validates that the level is within valid range.

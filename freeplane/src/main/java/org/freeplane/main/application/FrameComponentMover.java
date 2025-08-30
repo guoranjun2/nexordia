@@ -192,17 +192,11 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		return null;
 	}
 
-	private void moveAuxiliaryComponentBetweenManagers(AuxiliarySplitPanes fromManager, AuxiliarySplitPanes toManager) {
-		String modeName = Controller.getCurrentModeController().getModeName();
-
-		for (int level = 0; level < fromManager.getNumLevels(); level++) {
-			AuxillaryEditorSplitPane fromPane = fromManager.getPane(level);
-			if (level < toManager.getNumLevels()) {
-				AuxillaryEditorSplitPane toPane = toManager.getPane(level);
-				fromPane.moveAuxillaryComponentTo(toPane, modeName);
-			}
-		}
-	}
+    private void moveAuxiliaryComponentBetweenManagers(AuxiliarySplitPanes fromManager, AuxiliarySplitPanes toManager) {
+        String modeName = Controller.getCurrentModeController().getModeName();
+        // Only move the level-0 auxiliary (note pane). Outline and other levels remain per-frame.
+        fromManager.moveAuxiliaryNoteTo(toManager, modeName);
+    }
 
 	public JFrame getUIFrame() {
 		return lastUIFrame;

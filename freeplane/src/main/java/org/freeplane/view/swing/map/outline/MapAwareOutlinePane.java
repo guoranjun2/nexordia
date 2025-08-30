@@ -3,11 +3,13 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
 import java.util.List;
+import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.ui.IMapViewChangeListener;
+import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 
 /**
@@ -17,6 +19,7 @@ import org.freeplane.view.swing.map.MapView;
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener {
 
     private TreeNode currentRoot;
+    private MapView currentMapView;
 
     public MapAwareOutlinePane() {
         super(new TreeNode("Loading...", "loading"));
@@ -39,52 +42,72 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 
-	@Override
+    @Override
     public void afterViewChange(Component oldView, Component newView) {
-        SwingUtilities.invokeLater(() -> {
-            if (newView instanceof MapView) {
-                updateTreeFromMap((MapView) newView);
-            } else {
-                showNoMapState();
-            }
-        });
+        refreshOutlineLater(false);
     }
 
     @Override
     public void afterViewClose(Component oldView) {
-        SwingUtilities.invokeLater(() -> {
-            
-            try {
-                Component mapViewComponent = Controller.getCurrentController()
-                        .getMapViewManager().getMapViewComponent();
-
-                if (mapViewComponent instanceof MapView) {
-                    updateTreeFromMap((MapView) mapViewComponent);
-                } else {
-                    showNoMapState();
-                }
-            } catch (Exception e) {
-                showNoMapState();
-            }
-        });
+        refreshOutlineLater(false);
     }
 
     @Override
     public void afterViewCreated(Component newView) {
-        SwingUtilities.invokeLater(() -> {
-            if (newView instanceof MapView) {
-                updateTreeFromMap((MapView) newView);
-            }
-        });
+        refreshOutlineLater(false);
     }
 
     @Override
     public void afterFilterChange(Component view, Filter newFilter) {
+        // update only if the filter change is about the map view in this window
+        if (view instanceof MapView) {
+            MapView windowMapView = resolveMapViewForThisWindow();
+            if (view == windowMapView || view == currentMapView) {
+                refreshOutlineLater(true);
+            }
+        }
+    }
+
+    private boolean refreshScheduled;
+    private boolean forceRefreshPending;
+
+    private void refreshOutlineLater(boolean force) {
+        if (force) {
+            forceRefreshPending = true;
+        }
+        if (refreshScheduled) {
+            return;
+        }
+        refreshScheduled = true;
         SwingUtilities.invokeLater(() -> {
-            if (view instanceof MapView) {
-                updateTreeFromMap((MapView) view);
+            try {
+                refreshOutline(forceRefreshPending);
+            }
+            finally {
+                refreshScheduled = false;
+                forceRefreshPending = false;
             }
         });
+    }
+
+    private void refreshOutline(boolean force) {
+        MapView mapView = resolveMapViewForThisWindow();
+        if (mapView == null) {
+            currentMapView = null;
+            showNoMapState();
+            return;
+        }
+        if (!force && mapView == currentMapView) {
+            return;
+        }
+        updateTreeFromMap(mapView);
+    }
+
+    private MapView resolveMapViewForThisWindow() {
+        final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
+        final Component root = SwingUtilities.getRoot(this);
+        final JComponent lastSelected = mapViewManager.getLastSelectedMapViewContainedIn(root);
+        return lastSelected instanceof MapView ? (MapView) lastSelected : null;
     }
 
     /**
@@ -92,6 +115,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void updateTreeFromMap(MapView mapView) {
         try {
+            currentMapView = mapView;
             String prevFirstId = null;
             ScrollableTreePanel oldPanel = getTreePanel();
             if (oldPanel != null) {
@@ -134,6 +158,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void showNoMapState() {
         cleanupCurrentTree();
+        currentMapView = null;
         currentRoot = new TreeNode("No Map Available", "empty");
         setRootNode(currentRoot);
     }
