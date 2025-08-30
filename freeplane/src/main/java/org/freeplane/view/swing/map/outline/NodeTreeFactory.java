@@ -50,7 +50,7 @@ class NodeTreeFactory {
             return null;
         }
 
-        NodeModel rootNode = mapView.getMap().getRootNode();
+        NodeModel rootNode = mapView.getRoot().getNode();
         if (rootNode == null) {
             return null;
         }

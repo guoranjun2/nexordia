@@ -24,7 +24,7 @@ class OutlineTreeUpdater {
         }
 
         MapModel map = mapView.getMap();
-        NodeModel rootNode = map.getRootNode();
+        NodeModel rootNode = mapView.getRoot().getNode();
         if (rootNode == null) {
             return new Result(null, null);
         }
@@ -75,4 +75,3 @@ class OutlineTreeUpdater {
         for (NodeModel c : node.getChildren()) preorder(c, out);
     }
 }
-
