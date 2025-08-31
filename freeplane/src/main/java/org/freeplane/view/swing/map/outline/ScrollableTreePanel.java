@@ -276,7 +276,7 @@ class ScrollableTreePanel extends JPanel {
     private void updateFirstVisibleNodeId() {
         if (viewport == null) return;
         int index = viewport.calculateFirstVisibleNodeIndex();
-        java.util.List<FlatNode> nodes = visibleState.getVisibleNodes();
+        List<FlatNode> nodes = visibleState.getVisibleNodes();
         if (nodes.isEmpty()) {
             visibleState.setFirstVisibleNodeId(null);
             return;

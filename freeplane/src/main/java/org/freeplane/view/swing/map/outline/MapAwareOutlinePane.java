@@ -47,12 +47,12 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     private static class SelectionBridge implements OutlineSelectionBridge {
-        private final java.lang.ref.WeakReference<MapView> mapViewRef;
-        private final java.lang.ref.WeakReference<Window> outlineWindowRef;
+        private final WeakReference<MapView> mapViewRef;
+        private final WeakReference<Window> outlineWindowRef;
 
         SelectionBridge(MapView mapView, Window outlineWindow) {
-            this.mapViewRef = new java.lang.ref.WeakReference<>(mapView);
-            this.outlineWindowRef = new java.lang.ref.WeakReference<>(outlineWindow);
+            this.mapViewRef = new WeakReference<>(mapView);
+            this.outlineWindowRef = new WeakReference<>(outlineWindow);
         }
 
         @Override
@@ -64,13 +64,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             Window mapViewWindow = SwingUtilities.getWindowAncestor(mv);
             if (mapViewWindow != outlineWindow) return;
 
-            org.freeplane.features.mode.Controller controller = org.freeplane.features.mode.Controller.getCurrentController();
-            org.freeplane.features.map.NodeModel current = null;
-            org.freeplane.features.map.IMapSelection selection = controller.getSelection();
+            Controller controller = Controller.getCurrentController();
+            NodeModel current = null;
+            IMapSelection selection = controller.getSelection();
             if (selection != null) current = selection.getSelected();
             if (current != null && nodeId != null && nodeId.equals(current.getID())) return;
 
-            org.freeplane.features.map.NodeModel target = mv.getMap().getNodeForID(nodeId);
+            NodeModel target = mv.getMap().getNodeForID(nodeId);
             if (target == null) return;
 
             mv.getModeController().getMapController().displayNode(target);
