@@ -41,6 +41,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     @Override
     public void removeNotify() {
+    	super.removeNotify();
         Controller.getCurrentController().getMapViewManager().removeMapViewChangeListener(this);
         if (currentMapView != null) {
             try {
