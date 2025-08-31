@@ -23,7 +23,6 @@ class OutlineTreeUpdater {
             return new Result(null, null);
         }
 
-        MapModel map = mapView.getMap();
         NodeModel rootNode = mapView.getRoot().getNode();
         if (rootNode == null) {
             return new Result(null, null);
