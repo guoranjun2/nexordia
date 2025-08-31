@@ -199,6 +199,7 @@ if [ $JAVA_MAJOR_VERSION -ge 11 ]; then
 	JAVA_OPTS="--add-opens java.desktop/sun.awt.X11=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-opens java.desktop/javax.swing.text.html=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-opens java.desktop/com.apple.eawt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-opens java.desktop/com.apple.eawt.event=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="-Dorg.osgi.framework.system.capabilities=osgi.ee;osgi.ee=\"JavaSE\";version:List=\"1.8,15\" $JAVA_OPTS"
 fi
 if [ $JAVA_MAJOR_VERSION -ge 18 ]; then
