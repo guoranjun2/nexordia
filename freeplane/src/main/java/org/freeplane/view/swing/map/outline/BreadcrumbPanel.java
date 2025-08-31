@@ -22,7 +22,6 @@ class BreadcrumbPanel extends JPanel {
 
     public BreadcrumbPanel() {
         setLayout(null);
-        setBackground(Color.WHITE);
         setOpaque(true);
     }
 
@@ -53,7 +52,7 @@ class BreadcrumbPanel extends JPanel {
             breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
             breadcrumbButton.setText(node.title);
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
-            
+
             breadcrumbButton.putClientProperty("treeNode", node);
 
             final TreeNode nodeToSelect = node;
@@ -153,10 +152,10 @@ class BreadcrumbPanel extends JPanel {
             setOpaque(false);
             setFocusable(false);
 
-            
+
             setBounds(0, 0, icon.getIconWidth(), controller.getRowHeight());
         }
-        
+
         private void updatePosition() {
             int iconX = targetButton.getX() - icon.getIconWidth();
             setBounds(iconX, targetButton.getY(), icon.getIconWidth(), controller.getRowHeight());
