@@ -5,13 +5,17 @@ import java.awt.Component;
 import java.util.List;
 import java.lang.ref.WeakReference;
 import javax.swing.SwingUtilities;
+import javax.swing.JButton;
 import java.awt.Window;
 
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.map.IMapChangeListener;
+import org.freeplane.features.map.IMapSelection;
+import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.MapChangeEvent;
+import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 import java.util.HashMap;
@@ -21,14 +25,82 @@ import java.util.Map;
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
     private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("No Map Available", "empty");
 
-	private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
+    private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
 
     private TreeNode currentRoot;
     private MapView currentMapView;
 
+	private final SelectedNodeUpdater selectedNodeUpdater;
+
+    private class SelectedNodeUpdater implements INodeSelectionListener{
+		@Override
+		public void onSelect(NodeModel node) {
+			if(currentMapView == null || ! currentMapView.isSelected() || node == null)
+				return;
+			final ScrollableTreePanel panel = getTreePanel();
+			if(panel == null)
+				return;
+			SwingUtilities.invokeLater(() -> handleNodeSelection(node, panel));
+		}
+    }
+
+    private void handleNodeSelection(NodeModel node, ScrollableTreePanel panel) {
+    	final IMapSelection selection = Controller.getCurrentController().getSelection();
+    	if(selection == null || selection.getSelected() != node)
+    		return;
+        TreeNode target = findOutlineNodeOrAncestor(node, panel);
+        VisibleOutlineState vs = panel.getVisibleState();
+        int index = findVisibleIndex(target, vs, panel.getRoot());
+        boolean visible = isNodeVisible(target, panel);
+        applySelection(panel, target, index, visible);
+    }
+
+    private TreeNode findOutlineNodeOrAncestor(NodeModel node, ScrollableTreePanel panel) {
+        if (node == null) return panel.getRoot();
+        TreeNode found = panel.getSelection().findNodeById(node.getID());
+        NodeModel p = node.getParentNode();
+        while (found == null && p != null) {
+            found = panel.getSelection().findNodeById(p.getID());
+            p = p.getParentNode();
+        }
+        return found != null ? found : panel.getRoot();
+    }
+
+    private int findVisibleIndex(TreeNode node, VisibleOutlineState vs, TreeNode root) {
+        TreeNode n = node;
+        while (n != null) {
+            int idx = vs.findNodeIndexInVisibleList(n);
+            if (idx >= 0) return idx;
+            n = n.parent;
+        }
+        int rootIdx = vs.findNodeIndexInVisibleList(root);
+        return rootIdx >= 0 ? rootIdx : 0;
+    }
+
+    private boolean isNodeVisible(TreeNode node, ScrollableTreePanel panel) {
+        if (panel.isNodeInBreadcrumbArea(node)) return true;
+        for (BlockPanel bp : panel.getVisibleState().getBlockPanels().values()) {
+            for (Component comp : bp.getComponents()) {
+                if (comp instanceof JButton) {
+                    Object n = ((JButton) comp).getClientProperty("treeNode");
+                    if (n == node && comp.isShowing()) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void applySelection(ScrollableTreePanel panel, TreeNode node, int index, boolean alreadyVisible) {
+        if (!alreadyVisible) {
+            if (index < 0) index = 0;
+            panel.updateVisibleBlocks(index);
+        }
+        panel.selectNodeById(node.id);
+    }
 
     public MapAwareOutlinePane() {
-        super(new TreeNode("Loading...", "loading"));
+    	super(new TreeNode("Loading...", "loading"));
+    	selectedNodeUpdater = new SelectedNodeUpdater();
     }
 
 
@@ -43,11 +115,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     public void removeNotify() {
     	super.removeNotify();
         Controller.getCurrentController().getMapViewManager().removeMapViewChangeListener(this);
-        if (currentMapView != null) {
-            try {
-                currentMapView.getMap().removeMapChangeListener(this);
-            } catch (Exception ignore) { }
-        }
+        removeMapListeners();
         cleanupCurrentTree();
     }
 
@@ -97,11 +165,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
      */
     private void updateTreeFromMap(MapView mapView) {
         try {
-            if (currentMapView != null && currentMapView.getMap() != null) {
-                try {
-                    currentMapView.getMap().removeMapChangeListener(this);
-                } catch (Exception ignore) { }
-            }
+            removeMapListeners();
             ScrollableTreePanel oldPanel = getTreePanel();
             if (oldPanel != null) {
                 OutlineViewState captured = captureCurrentState(oldPanel);
@@ -124,7 +188,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 currentRoot = builder.getRoot();
                 setRootNode(currentRoot);
                 try {
-                    currentMapView.getMap().addMapChangeListener(this);
+                    addMapChangeListeners();
                 } catch (Exception ignore) { }
                 if (builder.getApplicableState() != null) {
                     ScrollableTreePanel panel = getTreePanel();
@@ -156,20 +220,34 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         }
     }
 
+
+
+	private void addMapChangeListeners() {
+		currentMapView.getMap().addMapChangeListener(this);
+		currentMapView.getModeController().getMapController().addNodeSelectionListener(selectedNodeUpdater);
+	}
+
     /**
      * Show "No Map Available" state.
      */
     private void showNoMapState() {
         cleanupCurrentTree();
-        if (currentMapView != null && currentMapView.getMap() != null) {
-            try {
-                currentMapView.getMap().removeMapChangeListener(this);
-            } catch (Exception ignore) { }
-        }
+        removeMapListeners();
         currentMapView = null;
         currentRoot = NO_MAP_AVAILABLE;
         setRootNode(currentRoot);
     }
+
+
+
+	private void removeMapListeners() {
+		if (currentMapView != null) {
+            try {
+                currentMapView.getMap().removeMapChangeListener(this);
+                currentMapView.getModeController().getMapController().removeNodeSelectionListener(selectedNodeUpdater);
+            } catch (Exception ignore) { }
+        }
+	}
 
     @Override
     public void mapChanged(MapChangeEvent event) {
