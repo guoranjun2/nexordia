@@ -363,7 +363,36 @@ public class Filter implements IExtension {
         }
     }
 
-	public void reset(NodeModel node) {
-		getFilterInfo(node).reset();
-	}
+    public void reset(NodeModel node) {
+        getFilterInfo(node).reset();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Filter)) return false;
+        Filter other = (Filter) obj;
+        return this.hidesMatchingElements == other.hidesMatchingElements
+                && this.appliesToVisibleElementsOnly == other.appliesToVisibleElementsOnly
+                && this.filteredElement == other.filteredElement
+                && this.areAncestorsShown() == other.areAncestorsShown()
+                && this.areDescendantsShown() == other.areDescendantsShown()
+                && Objects.equals(this.condition, other.condition)
+                && Objects.equals(this.baseFilter, other.baseFilter);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(condition, hidesMatchingElements, appliesToVisibleElementsOnly,
+                filteredElement, Boolean.valueOf(areAncestorsShown()), Boolean.valueOf(areDescendantsShown()), baseFilter);
+    }
+
+    public boolean equalsIgnoringAncestors(Filter other) {
+        if (other == null) return false;
+        return this.hidesMatchingElements == other.hidesMatchingElements
+                && this.appliesToVisibleElementsOnly == other.appliesToVisibleElementsOnly
+                && this.filteredElement == other.filteredElement
+                && Objects.equals(this.condition, other.condition)
+                && Objects.equals(this.baseFilter, other.baseFilter);
+    }
 }

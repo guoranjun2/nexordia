@@ -62,6 +62,10 @@ public class TreeNode {
         return expansionLevel > 0;
     }
 
+    public int getExpansionLevel() {
+        return expansionLevel;
+    }
+
     @Override
     public String toString() {
         return "TreeNode [title=" + title + "]";

@@ -73,7 +73,7 @@ class OutlinePane extends JPanel {
         if (treePanel != null) {
             TreeNode oldRoot = treePanel.getRoot();
             if (oldRoot != null) {
-                NodeTreeFactory.cleanupTree(oldRoot);
+                cleanupTree(oldRoot);
             }
         }
 
@@ -150,5 +150,11 @@ class OutlinePane extends JPanel {
     @Override
     public boolean isOptimizedDrawingEnabled() {
         return false;
+    }
+
+    static void cleanupTree(TreeNode rootTreeNode) {
+        if (rootTreeNode instanceof MapTreeNode) {
+            ((MapTreeNode) rootTreeNode).cleanupListeners();
+        }
     }
 }
