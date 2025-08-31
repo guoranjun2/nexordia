@@ -39,6 +39,7 @@ class ScrollableTreePanel extends JPanel {
     private OutlineSelection selection;
     private final int blockSize;
     private VisibleOutlineState visibleState;
+    private OutlineSelectionBridge selectionBridge;
 
 
     private int lastFirstBlock = -1;
@@ -286,7 +287,7 @@ class ScrollableTreePanel extends JPanel {
 
     public void setSelectedNodeId(String nodeId) {
         if (nodeId != null && selection.findNodeById(nodeId) != null) {
-            selection.selectNode(nodeId);
+            selectNodeById(nodeId);
             TreeNode preservedHoveredNode = visibleState.getHoveredNode();
             removeAll();
             visibleState.clearBlockPanels();
@@ -294,6 +295,7 @@ class ScrollableTreePanel extends JPanel {
             visibleState.setHoveredNode(preservedHoveredNode);
             updateVisibleBlocks();
             SwingUtilities.invokeLater(this::scrollToSelectedNode);
+            if (selectionBridge != null) selectionBridge.onOutlineSelectionChanged(nodeId);
         }
     }
 
@@ -340,6 +342,7 @@ class ScrollableTreePanel extends JPanel {
     public void selectNodeById(String nodeId) {
         selection.selectNode(nodeId);
         repaint();
+        if (selectionBridge != null) selectionBridge.onOutlineSelectionChanged(nodeId);
     }
 
     public String getSelectedNodeId() {
@@ -348,6 +351,10 @@ class ScrollableTreePanel extends JPanel {
 
     public TreeNode getSelectedNode() {
         return selection.getSelectedNode();
+    }
+
+    public void setSelectionBridge(OutlineSelectionBridge bridge) {
+        this.selectionBridge = bridge;
     }
 
     void updateNodeTitle(TreeNode node) {

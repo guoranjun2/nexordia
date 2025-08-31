@@ -18,6 +18,8 @@ import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.NodeView;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +44,39 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 				return;
 			SwingUtilities.invokeLater(() -> handleNodeSelection(node, panel));
 		}
+    }
+
+    private static class SelectionBridge implements OutlineSelectionBridge {
+        private final java.lang.ref.WeakReference<MapView> mapViewRef;
+        private final java.lang.ref.WeakReference<Window> outlineWindowRef;
+
+        SelectionBridge(MapView mapView, Window outlineWindow) {
+            this.mapViewRef = new java.lang.ref.WeakReference<>(mapView);
+            this.outlineWindowRef = new java.lang.ref.WeakReference<>(outlineWindow);
+        }
+
+        @Override
+        public void onOutlineSelectionChanged(String nodeId) {
+            final MapView mv = mapViewRef.get();
+            final Window outlineWindow = outlineWindowRef.get();
+            if (mv == null || outlineWindow == null) return;
+            if (!mv.isSelected()) return;
+            Window mapViewWindow = SwingUtilities.getWindowAncestor(mv);
+            if (mapViewWindow != outlineWindow) return;
+
+            org.freeplane.features.mode.Controller controller = org.freeplane.features.mode.Controller.getCurrentController();
+            org.freeplane.features.map.NodeModel current = null;
+            org.freeplane.features.map.IMapSelection selection = controller.getSelection();
+            if (selection != null) current = selection.getSelected();
+            if (current != null && nodeId != null && nodeId.equals(current.getID())) return;
+
+            org.freeplane.features.map.NodeModel target = mv.getMap().getNodeForID(nodeId);
+            if (target == null) return;
+
+            mv.getModeController().getMapController().displayNode(target);
+            final NodeView nodeView = mv.getNodeView(target);
+            mv.selectAsTheOnlyOneSelected(nodeView, false);
+        }
     }
 
     private void handleNodeSelection(NodeModel node, ScrollableTreePanel panel) {
@@ -187,18 +222,23 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if (builder.getRoot() != null) {
                 currentRoot = builder.getRoot();
                 setRootNode(currentRoot);
+                ScrollableTreePanel panel = getTreePanel();
+                if (panel != null) {
+                    Window myWindow = SwingUtilities.getWindowAncestor(this);
+                    panel.setSelectionBridge(new SelectionBridge(currentMapView, myWindow));
+                }
                 try {
                     addMapChangeListeners();
                 } catch (Exception ignore) { }
                 if (builder.getApplicableState() != null) {
-                    ScrollableTreePanel panel = getTreePanel();
+                    panel = getTreePanel();
                     if (panel != null) {
                         builder.getApplicableState().applyTo(panel.getRoot());
                         panel.refreshWithBreadcrumbs();
                     }
                 }
                 if (builder.getFirstVisibleNodeId() != null) {
-                    ScrollableTreePanel panel = getTreePanel();
+                    panel = getTreePanel();
                     if (panel != null) {
                         List<FlatNode> nodes = panel.getVisibleState().getVisibleNodes();
                         int index = -1;
