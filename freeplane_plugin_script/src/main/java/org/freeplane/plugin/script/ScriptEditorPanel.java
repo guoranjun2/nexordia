@@ -34,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
@@ -59,6 +60,7 @@ import org.freeplane.core.ui.UIBuilder;
 import org.freeplane.core.ui.components.EmptyIcon;
 import org.freeplane.core.ui.components.JRestrictedSizeScrollPane;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.text.mindmapmode.SourceTextEditorUIConfigurator;
@@ -145,8 +147,7 @@ class ScriptEditorPanel extends JDialog {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private NewScriptAction(final String pArg0) {
-			super(pArg0);
+		private NewScriptAction() {
 		}
 
 		@Override
@@ -195,8 +196,8 @@ class ScriptEditorPanel extends JDialog {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private RunAction(final String pArg0) {
-			super(pArg0);
+		private RunAction() {
+			super();
 		}
 
 		@Override
@@ -398,11 +399,11 @@ class ScriptEditorPanel extends JDialog {
 		final JMenu menu = new JMenu();
 		LabelAndMnemonicSetter.setLabelAndMnemonic(menu, TextUtils.getRawText("plugins/ScriptEditor.menu_actions"));
 		if (pHasNewScriptFunctionality) {
-			addAction(menu, new NewScriptAction(TextUtils.getRawText("plugins/ScriptEditor.new_script")));
+			addButton(menuBar, new NewScriptAction(), "plugins/ScriptEditor.new_script");
 		}
-		mRunAction = new RunAction(TextUtils.getRawText("plugins/ScriptEditor.run"));
+		mRunAction = new RunAction();
 		mRunAction.setEnabled(false);
-		addAction(menu, mRunAction);
+		addButton(menuBar, mRunAction, "plugins/ScriptEditor.run");
 		mSignAction = new SignAction(TextUtils.getRawText("plugins/ScriptEditor.sign"));
 		mSignAction.setEnabled(false);
 		addAction(menu, mSignAction);
@@ -428,6 +429,11 @@ class ScriptEditorPanel extends JDialog {
 		final JMenuItem item = menu.add(action);
 		LabelAndMnemonicSetter.setLabelAndMnemonic(item, (String) action.getValue(Action.NAME));
 		item.setIcon(new EmptyIcon(UIBuilder.ICON_SIZE));
+	}
+
+	private void addButton(final JMenuBar menu, final AbstractAction action, String label) {
+		final JButton button = TranslatedElementFactory.createButton(action, label);
+		menu.add(button);
 	}
 
 	/**
