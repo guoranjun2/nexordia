@@ -378,6 +378,11 @@
 						<Entry name="SetStringPropertyAction.map_overview_attach_point.NORTH_WEST" />
 					</Entry>
 				</Entry>
+				<Entry builder="radio_button_group" name="nodeContentForView" textKey="OptionPanel.nodeContentForView">
+					<Entry name="SetStringMapViewPropertyAction.nodeContentForView.PER_NODE (default)" />
+					<Entry name="SetStringMapViewPropertyAction.nodeContentForView.FULL" />
+					<Entry name="SetStringMapViewPropertyAction.nodeContentForView.MINIMIZED" />
+				</Entry>
 			</Entry>
 			<Entry builder="separator" />
 			<Entry name="NodeEnumerationAction.NodeVisibility.HIDDEN" />

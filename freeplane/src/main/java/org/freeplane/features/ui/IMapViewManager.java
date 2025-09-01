@@ -40,7 +40,6 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.styles.MapViewLayout;
-import org.freeplane.view.swing.map.MapView;
 
 /**
  * @author Dimitry Polivaev
@@ -97,6 +96,8 @@ public interface IMapViewManager {
 	public IMapSelection getMapSelection();
 
 	public JComponent getMapViewComponent();
+
+	public JComponent getMapViewAncestor(Component component);
 
 	public JComponent findMapViewContainedIn(Component ancestor);
 

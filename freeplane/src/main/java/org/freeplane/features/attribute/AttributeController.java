@@ -180,7 +180,7 @@ public class AttributeController implements IExtension {
 				final AttributeRegistry registry = AttributeRegistry.getRegistry(node.getMap());
 				final TextController textController = TextController.getController(modeController);
 				if (tooltipTrigger == TooltipTrigger.NODE && registry.getAttributeViewType().equals(AttributeTableLayoutModel.SHOW_ALL)
-						&& ! textController.isMinimized(node)) {
+						&& ! textController.isMinimized(node, view)) {
 					return null;
 				}
 				final NodeStyleController style = modeController.getExtension(NodeStyleController.class);

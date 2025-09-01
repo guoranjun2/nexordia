@@ -13,6 +13,7 @@ import org.freeplane.features.mode.FreeplaneActions;
 import org.freeplane.features.styles.SetBooleanMapPropertyAction;
 import org.freeplane.features.styles.SetBooleanMapViewPropertyAction;
 import org.freeplane.features.styles.SetStringMapPropertyAction;
+import org.freeplane.features.styles.SetStringMapViewPropertyAction;
 
 public class ActionFinder implements EntryVisitor{
 
@@ -28,8 +29,9 @@ public class ActionFinder implements EntryVisitor{
 		if (!actionName.isEmpty() && new EntryAccessor().getAction(target) == null) {
 			AFreeplaneAction action = freeplaneActions.getAction(actionName);
 			if(action == null) {
-				for (final Class<? extends AFreeplaneAction> actionClass : Arrays.asList(SetBooleanPropertyAction.class, SetBooleanMapPropertyAction.class, SetBooleanMapViewPropertyAction.class,
-					SetStringPropertyAction.class, SetStringMapPropertyAction.class)){
+				for (final Class<? extends AFreeplaneAction> actionClass : Arrays.asList(
+						SetBooleanPropertyAction.class, SetBooleanMapPropertyAction.class,  SetBooleanMapViewPropertyAction.class,
+					    SetStringPropertyAction.class, SetStringMapPropertyAction.class, SetStringMapViewPropertyAction.class)){
 					final String actionPrefix = actionClass.getSimpleName() + ".";
 					if (actionName.startsWith(actionPrefix)) {
 						String propertyName = actionName.substring(actionPrefix.length());

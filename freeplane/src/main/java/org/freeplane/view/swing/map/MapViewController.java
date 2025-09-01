@@ -1192,5 +1192,10 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
        mapViewChangeListeners.afterMapChange(oldMap, newMap);
     }
 
+	@Override
+	public JComponent getMapViewAncestor(Component component) {
+		return (JComponent) SwingUtilities.getAncestorOfClass(MapView.class, component);
+	}
+
 
 }

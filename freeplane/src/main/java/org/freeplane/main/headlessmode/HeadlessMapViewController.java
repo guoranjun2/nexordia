@@ -405,4 +405,9 @@ public class HeadlessMapViewController implements IMapViewManager {
     public void setMap(Component view, MapModel map) {
         /* ignore */
     }
+
+	@Override
+	public JComponent getMapViewAncestor(Component component) {
+		return null;
+	}
 }

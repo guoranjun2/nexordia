@@ -964,7 +964,7 @@ public class EditNodeTextField extends EditNodeBase {
 			textfield.setCaretPosition(caretPosition);
 		}
 		document.addDocumentListener(documentListener);
-		if(textController.isMinimized(node)
+		if(textController.isMinimized(node, nodeView)
 				|| textfield.getPreferredSize().height > textfield.getHeight()){
 			layout();
 		}
