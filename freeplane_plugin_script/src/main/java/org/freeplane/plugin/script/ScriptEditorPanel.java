@@ -48,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.WindowConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.event.ListSelectionEvent;
@@ -150,15 +151,21 @@ class ScriptEditorPanel extends JDialog {
 		private NewScriptAction() {
 		}
 
-		@Override
-		public void actionPerformed(final ActionEvent arg0) {
-			storeCurrent();
-			mLastSelected = null;
-			final int scriptIndex = mScriptModel.addNewScript();
-			updateFields();
-			select(scriptIndex);
+			@Override
+			public void actionPerformed(final ActionEvent arg0) {
+				storeCurrent();
+				mLastSelected = null;
+				final int scriptIndex = mScriptModel.addNewScript();
+				updateFields();
+				select(scriptIndex);
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						mScriptTextField.requestFocusInWindow();
+					}
+				});
+			}
 		}
-	}
 
 	final private class ResultFieldStream extends OutputStream {
 		private final byte[] buf = new byte[2];
@@ -317,12 +324,22 @@ class ScriptEditorPanel extends JDialog {
 		this.setTitle(TextUtils.getText("plugins/ScriptEditor/window.title") +
 				(scriptTitle.isEmpty() ? "" : " [" + scriptTitle + "]"));
 		this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		this.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(final WindowEvent event) {
-				disposeDialog(true);
-			}
-		});
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(final WindowEvent event) {
+                disposeDialog(true);
+            }
+            @Override
+            public void windowOpened(final WindowEvent event) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                    	if(mScriptList.getModel().getSize() > 0)
+                    		mScriptList.setSelectedIndex(0);
+                    }
+                });
+            }
+        });
 		UITools.addEscapeActionToDialog(this, new AbstractAction() {
 			/**
 			 *
@@ -491,6 +508,7 @@ class ScriptEditorPanel extends JDialog {
 		if (pIndex >= 0 && mScriptList.getSelectedIndex() != pIndex) {
 			mScriptList.setSelectedIndex(pIndex);
 		}
+		mScriptTextField.requestFocusInWindow();
 	}
 
 	private void storeCurrent() {
