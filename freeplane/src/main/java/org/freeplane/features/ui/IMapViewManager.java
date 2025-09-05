@@ -40,7 +40,6 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.styles.MapViewLayout;
-import org.freeplane.view.swing.map.MapView;
 
 /**
  * @author Dimitry Polivaev
@@ -108,6 +107,7 @@ public interface IMapViewManager {
      * Client property key stored on a Window's RootPane to cache the last selected MapView for that Window.
      */
     public static final String LAST_SELECTED_MAP_VIEW_PROPERTY = "org.freeplane.window.lastSelectedMapView";
+	public JComponent getMapViewAncestor(Component component);
 
 	public Configurable getMapViewConfiguration();
 

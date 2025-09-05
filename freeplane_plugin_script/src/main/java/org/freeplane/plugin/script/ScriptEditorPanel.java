@@ -34,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
@@ -47,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.WindowConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.event.ListSelectionEvent;
@@ -59,6 +61,7 @@ import org.freeplane.core.ui.UIBuilder;
 import org.freeplane.core.ui.components.EmptyIcon;
 import org.freeplane.core.ui.components.JRestrictedSizeScrollPane;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.text.mindmapmode.SourceTextEditorUIConfigurator;
@@ -145,19 +148,24 @@ class ScriptEditorPanel extends JDialog {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private NewScriptAction(final String pArg0) {
-			super(pArg0);
+		private NewScriptAction() {
 		}
 
-		@Override
-		public void actionPerformed(final ActionEvent arg0) {
-			storeCurrent();
-			mLastSelected = null;
-			final int scriptIndex = mScriptModel.addNewScript();
-			updateFields();
-			select(scriptIndex);
+			@Override
+			public void actionPerformed(final ActionEvent arg0) {
+				storeCurrent();
+				mLastSelected = null;
+				final int scriptIndex = mScriptModel.addNewScript();
+				updateFields();
+				select(scriptIndex);
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						mScriptTextField.requestFocusInWindow();
+					}
+				});
+			}
 		}
-	}
 
 	final private class ResultFieldStream extends OutputStream {
 		private final byte[] buf = new byte[2];
@@ -195,8 +203,8 @@ class ScriptEditorPanel extends JDialog {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private RunAction(final String pArg0) {
-			super(pArg0);
+		private RunAction() {
+			super();
 		}
 
 		@Override
@@ -316,12 +324,22 @@ class ScriptEditorPanel extends JDialog {
 		this.setTitle(TextUtils.getText("plugins/ScriptEditor/window.title") +
 				(scriptTitle.isEmpty() ? "" : " [" + scriptTitle + "]"));
 		this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		this.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(final WindowEvent event) {
-				disposeDialog(true);
-			}
-		});
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(final WindowEvent event) {
+                disposeDialog(true);
+            }
+            @Override
+            public void windowOpened(final WindowEvent event) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                    	if(mScriptList.getModel().getSize() > 0)
+                    		mScriptList.setSelectedIndex(0);
+                    }
+                });
+            }
+        });
 		UITools.addEscapeActionToDialog(this, new AbstractAction() {
 			/**
 			 *
@@ -398,11 +416,11 @@ class ScriptEditorPanel extends JDialog {
 		final JMenu menu = new JMenu();
 		LabelAndMnemonicSetter.setLabelAndMnemonic(menu, TextUtils.getRawText("plugins/ScriptEditor.menu_actions"));
 		if (pHasNewScriptFunctionality) {
-			addAction(menu, new NewScriptAction(TextUtils.getRawText("plugins/ScriptEditor.new_script")));
+			addButton(menuBar, new NewScriptAction(), "plugins/ScriptEditor.new_script");
 		}
-		mRunAction = new RunAction(TextUtils.getRawText("plugins/ScriptEditor.run"));
+		mRunAction = new RunAction();
 		mRunAction.setEnabled(false);
-		addAction(menu, mRunAction);
+		addButton(menuBar, mRunAction, "plugins/ScriptEditor.run");
 		mSignAction = new SignAction(TextUtils.getRawText("plugins/ScriptEditor.sign"));
 		mSignAction.setEnabled(false);
 		addAction(menu, mSignAction);
@@ -428,6 +446,11 @@ class ScriptEditorPanel extends JDialog {
 		final JMenuItem item = menu.add(action);
 		LabelAndMnemonicSetter.setLabelAndMnemonic(item, (String) action.getValue(Action.NAME));
 		item.setIcon(new EmptyIcon(UIBuilder.ICON_SIZE));
+	}
+
+	private void addButton(final JMenuBar menu, final AbstractAction action, String label) {
+		final JButton button = TranslatedElementFactory.createButton(action, label);
+		menu.add(button);
 	}
 
 	/**
@@ -485,6 +508,7 @@ class ScriptEditorPanel extends JDialog {
 		if (pIndex >= 0 && mScriptList.getSelectedIndex() != pIndex) {
 			mScriptList.setSelectedIndex(pIndex);
 		}
+		mScriptTextField.requestFocusInWindow();
 	}
 
 	private void storeCurrent() {

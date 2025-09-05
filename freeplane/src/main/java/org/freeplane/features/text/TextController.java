@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import javax.swing.Icon;
+import javax.swing.JComponent;
 
 import org.freeplane.api.TextWritingDirection;
 import org.freeplane.core.extension.IExtension;
@@ -64,7 +65,8 @@ import org.freeplane.view.swing.map.MainView;
  * @author Dimitry Polivaev
  */
 public class TextController implements IExtension {
-    public static final String CONTENT_TYPE_HTML = "html";
+    public static final String NODE_CONTENT_FOR_VIEW = "nodeContentForView";
+	public static final String CONTENT_TYPE_HTML = "html";
     public static final String CONTENT_TYPE_AUTO = "auto";
 
     public static final String DETAILS_HIDDEN = "DETAILS_HIDDEN";
@@ -252,6 +254,16 @@ public class TextController implements IExtension {
     public String getTransformedTextForClipboard(final NodeModel node, Object nodeProperty, Object data) {
         return getTransformedObjectNoFormattingNoThrow(node, nodeProperty, data, Mode.TEXT).toString();
     }
+
+	public boolean isMinimized(NodeModel node, Component view) {
+		final JComponent mapViewAncestor = Controller.getCurrentController().getMapViewManager().getMapViewAncestor(view);
+		if(mapViewAncestor == null)
+			return isMinimized(node);
+		final Object settingForView = mapViewAncestor.getClientProperty(NODE_CONTENT_FOR_VIEW);
+		return "FULL".equals(settingForView) ? false :
+			   "MINIMIZED".equals(settingForView) ? true :
+				isMinimized(node);
+	}
 
 	public boolean isMinimized(NodeModel node) {
 		final ShortenedTextModel shortened = ShortenedTextModel.getShortenedTextModel(node);

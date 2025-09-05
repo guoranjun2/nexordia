@@ -78,6 +78,8 @@ def defineMacBuildTasks =  { architecture ->
      '--java-options', '--add-exports', 
      '--java-options', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
      '--java-options', '--add-exports', 
+     '--java-options', 'java.desktop/com.apple.eawt.event=ALL-UNNAMED',
+     '--java-options', '--add-exports', 
      '--java-options', 'java.desktop/sun.awt=ALL-UNNAMED',
      '--java-options', '--add-exports', 
      '--java-options', 'java.desktop/sun.swing=ALL-UNNAMED',

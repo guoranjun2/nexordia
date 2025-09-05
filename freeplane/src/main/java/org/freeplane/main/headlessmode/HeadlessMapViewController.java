@@ -410,4 +410,9 @@ public class HeadlessMapViewController implements IMapViewManager {
 	public void fireFilterChanged() {
 		throw new RuntimeException("Method not implemented");
 	}
+
+	@Override
+	public JComponent getMapViewAncestor(Component component) {
+		return null;
+	}
 }

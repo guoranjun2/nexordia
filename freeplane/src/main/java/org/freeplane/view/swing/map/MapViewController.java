@@ -101,7 +101,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 	private boolean setZoomComboBoxRun;
 	private final Controller controller;
 
-    
+
     private final Map<Window, JComponent> currentViewByWindow = new HashMap<>();
     private final Map<Window, JComponent> dispatchedViewByWindow = new HashMap<>();
 
@@ -177,10 +177,10 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 			selectedNode.requestFocusInWindow();
 	}
 
-    
+
     public void updateWindowLastSelectedMapView(Window window, JComponent viewOrNull) {
         currentViewByWindow.put(window, viewOrNull);
-        
+
         Window focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
         if (focused != window) return;
         JComponent dispatched = dispatchedViewByWindow.get(window);
@@ -192,13 +192,13 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
         dispatchedViewByWindow.put(window, viewOrNull);
     }
 
-	
+
 	@Override
 	public void addMapSelectionListener(final IMapSelectionListener pListener) {
 		mapViewChangeListeners.addListener(pListener);
 	}
 
-	
+
 	@Override
 	public void addMapViewChangeListener(final IMapViewChangeListener pListener) {
 		mapViewChangeListeners.addListener(pListener);
@@ -230,7 +230,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		}
 	}
 
-	
+
 	@Override
 	public boolean changeToMapView(final Component newMapViewComponent) {
 		final MapView newMapView = (MapView) newMapViewComponent;
@@ -257,7 +257,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return true;
 	}
 
-	
+
 	@Override
 	public boolean changeToMapView(final String mapViewDisplayName) {
 		MapView mapViewCandidate = null;
@@ -274,7 +274,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return changeToMapView(mapViewCandidate);
 	}
 
-	
+
 	@Override
 	public boolean changeToMode(final String modeName) {
 		if (modeName.equals(lastModeName)) {
@@ -292,14 +292,14 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		if (changed) {
 			lastModeName = modeName;
 			if (oldMapView == selectedMapView) {
-				
+
 				mapViewChangeListeners.afterMapViewChange(oldMapView, selectedMapView);
 			}
 		}
 		return changed;
 	}
 
-	
+
 	@Override
 	public String checkIfFileIsAlreadyOpened(final URL urlToCheck) throws MalformedURLException {
 		for (final MapView mapView : mapViewVector) {
@@ -313,7 +313,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return null;
 	}
 
-	
+
 	@Override
 	public boolean close() {
 		final MapView mapView = getMapView();
@@ -365,7 +365,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		ResourceController.getResourceController().removePropertyChangeListener(mapView);
 		mapViewVector.remove(mapView);
 		if (mapViewVector.isEmpty()) {
-			
+
 			changeToMapView((MapView) null);
 		}
 		else if(mapView == selectedMapView){
@@ -455,7 +455,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return myImage;
 	}
 
-	
+
 	@Override
 	public Color getBackgroundColor(final NodeModel node) {
 		final MapView mapView = getMapView();
@@ -469,7 +469,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return nodeView.getTextBackground();
 	}
 
-	
+
 	@Override
 	public Component getComponent(final NodeModel node) {
 		if(selectedMapView == null)
@@ -508,7 +508,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 
 	}
 
-	
+
 	@Override
 	public Font getFont(final NodeModel node) {
 		final MapView mapView = getMapView();
@@ -522,7 +522,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return nodeView.getMainView().getFont();
 	}
 
-	
+
 	@Override
 	public List<String> getMapKeys() {
 		final LinkedList<String> returnValue = new LinkedList<String>();
@@ -532,7 +532,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return Collections.unmodifiableList(returnValue);
 	}
 
-	
+
 	@Override
 	public Map<String, MapModel> getMaps() {
 		final HashMap<String, MapModel> returnValue = new HashMap<String, MapModel>(mapViewVector.size());
@@ -542,7 +542,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return Collections.unmodifiableMap(returnValue);
 	}
 
-	
+
 	@Override
 	public IMapSelection getMapSelection() {
 		final MapView mapView = getMapView();
@@ -553,7 +553,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return selectedMapView;
 	}
 
-	
+
 	@Override
 	public JComponent getMapViewComponent() {
 		return getMapView();
@@ -575,7 +575,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return getMapView();
 	}
 
-	
+
 	@Override
 	public List<MapView> getMapViews() {
 		return Collections.unmodifiableList(mapViewVector);
@@ -586,7 +586,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return ((MapView) mapView).getModeController();
 	}
 
-	
+
 	@Override
 	public MapModel getMap() {
 		final MapView mapView = getMapView();
@@ -602,25 +602,25 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return mapView == null ? null : mapView.getMap();
 	}
 
-	
+
 	@Override
 	public Component getSelectedComponent() {
 		final MapView mapView = getMapView();
 		return mapView == null ? null : mapView.getSelected().getMainView();
 	}
 
-	
+
 	public int getViewNumber() {
 		return mapViewVector.size();
 	}
 
-	
+
 	@Override
 	public float getZoom() {
 		return zoom;
 	}
 
-	
+
 	@Override
 	public void newMapView(final MapModel map, final ModeController modeController) {
 		final MapView mapView = new MapView(map, modeController);
@@ -630,7 +630,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		changeToMapView(mapView);
 	}
 
-	
+
 	public void nextMapView() {
 		int index;
 		final int size = mapViewVector.size();
@@ -648,7 +648,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		}
 	}
 
-	
+
 	public void previousMapView() {
 		int index;
 		final int size = mapViewVector.size();
@@ -668,13 +668,13 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		}
 	}
 
-	
+
 	@Override
 	public void removeMapSelectionListener(final IMapSelectionListener pListener) {
 		mapViewChangeListeners.removeListener(pListener);
 	}
 
-	
+
 	@Override
 	public void removeMapViewChangeListener(final IMapViewChangeListener pListener) {
 		mapViewChangeListeners.removeListener(pListener);
@@ -690,7 +690,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return urlToCheck.sameFile(mapViewUrl);
 	}
 
-	
+
 	@Override
 	public void scrollNodeToVisible(final NodeModel node) {
 		final NodeView nodeView = selectedMapView.getNodeView(node);
@@ -699,7 +699,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		}
 	}
 
-	
+
 	@Override
 	public void setZoom(final float zoom) {
 		this.zoom = zoom;
@@ -723,7 +723,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 	}
 
 
-	
+
 	@Override
 	public boolean tryToChangeToMapView(final String mapView) {
 		if (mapView != null && getMapKeys().contains(mapView)) {
@@ -748,7 +748,7 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		return false;
     }
 
-	
+
 	@Override
 	public void updateMapViewName() {
 		final MapView r = getMapView();
@@ -1147,12 +1147,15 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		mapViewChangeListeners.fireFilterChanged(selectedMapView, selectedMapView.getFilter());
 	}
 
-    
+
     public void fireWindowLastSelectedMapViewChanged(Window window, MapView newView) {
         mapViewChangeListeners.afterWindowLastSelectedMapViewChanged(window, newView);
     }
     public void fireWindowLastSelectedMapViewRemoved(Window window) {
         mapViewChangeListeners.afterWindowLastSelectedMapViewRemoved(window);
     }
+	public JComponent getMapViewAncestor(Component component) {
+		return (JComponent) SwingUtilities.getAncestorOfClass(MapView.class, component);
+	}
 
 }

@@ -730,6 +730,15 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 	};
 
+	static private final PropertyChangeListener updateAllOnClientPropertyChangeListener = new PropertyChangeListener() {
+		@Override
+		public void propertyChange(final PropertyChangeEvent evt) {
+			final MapView source = (MapView) evt.getSource();
+			source.updateAllNodeViews();
+			source.repaint();
+		}
+	};
+
 	private static final long serialVersionUID = 1L;
 	static private boolean drawsRectangleForSelection;
 	static private Color selectionRectangleColor;
@@ -852,6 +861,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			}
 		};
 		addPropertyChangeListener(SPOTLIGHT_ENABLED, repaintOnClientPropertyChangeListener);
+		addPropertyChangeListener(TextController.NODE_CONTENT_FOR_VIEW, updateAllOnClientPropertyChangeListener);
 		if(ResourceController.getResourceController().getBooleanProperty("activateSpotlightByDefault"))
 		    putClientProperty(SPOTLIGHT_ENABLED, Boolean.TRUE);
 		nodeViewFolder = new NodeViewFolder(true);
@@ -2996,7 +3006,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		if(isDisplayable() && ! selection.selectionChanged && isFrameLayoutCompleted()) {
 			if(scrollsViewAfterLayout ) {
 				scrollsViewAfterLayout  = false;
-				SwingUtilities.invokeLater(mapScroller::scrollView);
+				mapScroller.scrollView();
+				repaint();
 			}
 			else
 				setAnchorContentLocation();
