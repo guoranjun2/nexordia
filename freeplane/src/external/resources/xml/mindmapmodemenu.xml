@@ -335,6 +335,7 @@
 				<Entry name="ToggleBookmarksToolbarAction" />
 				<Entry name="ToggleOutlineAction" />
 				<Entry name="FocusBookmarkToolbarAction" accelerator="control shift B"/>
+				<Entry name="FocusOutlineAction" accelerator="control shift O"/>
 				<Entry name="ShowFormatPanel"/>
 			</Entry>
 			<Entry name="menu_viewmode" >

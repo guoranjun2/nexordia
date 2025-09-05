@@ -80,6 +80,90 @@ class ScrollableTreePanel extends JPanel {
         navButtons.hideNavigationButtons();
     }
 
+    boolean focusSelectedInBreadcrumb() {
+        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        if (selected == null) return false;
+        for (Component comp : breadcrumbPanel.getComponents()) {
+            if (comp instanceof JButton) {
+                JButton btn = (JButton) comp;
+                Object n = btn.getClientProperty("treeNode");
+                if (n == selected && btn.isShowing()) {
+                    btn.requestFocusInWindow();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    boolean focusSelectedInBlocks() {
+        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        if (selected == null) return false;
+        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    JButton btn = (JButton) comp;
+                    Object n = btn.getClientProperty("treeNode");
+                    if (n == selected && btn.isShowing()) {
+                        btn.requestFocusInWindow();
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean focusButtonInBreadcrumbForNode(TreeNode node) {
+        if (node == null) return false;
+        for (Component comp : breadcrumbPanel.getComponents()) {
+            if (comp instanceof JButton) {
+                JButton btn = (JButton) comp;
+                Object n = btn.getClientProperty("treeNode");
+                if (n == node && btn.isShowing()) {
+                    btn.requestFocusInWindow();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean focusButtonInBlocksForNode(TreeNode node) {
+        if (node == null) return false;
+        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    JButton btn = (JButton) comp;
+                    Object n = btn.getClientProperty("treeNode");
+                    if (n == node && btn.isShowing()) {
+                        btn.requestFocusInWindow();
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public void focusSelectionButton() {
+        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        if (selected == null) {
+            if (isShowing()) requestFocusInWindow();
+            return;
+        }
+        // Try selected node (breadcrumb preferred), then walk ancestors
+        TreeNode n = selected;
+        while (n != null) {
+            if (focusButtonInBreadcrumbForNode(n)) return;
+            if (focusButtonInBlocksForNode(n)) return;
+            n = n.parent;
+        }
+        if (isShowing()) requestFocusInWindow();
+    }
+
+    
+
     void setScrollPane(JScrollPane scroll) {
         this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
         this.breadcrumbPath.setViewport(viewport);
@@ -686,6 +770,7 @@ protected void paintComponent(Graphics g) {
         return navButtons.expandBtn.isVisible() || navButtons.collapseBtn.isVisible()
                 || navButtons.expandMoreBtn.isVisible() || navButtons.reduceBtn.isVisible();
     }
+    
 
 
     private boolean isWithinOutline(Component c) {

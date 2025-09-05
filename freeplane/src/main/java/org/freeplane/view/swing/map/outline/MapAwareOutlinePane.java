@@ -3,6 +3,7 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
 import java.util.List;
+import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import javax.swing.SwingUtilities;
 import javax.swing.JButton;
@@ -17,11 +18,13 @@ import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.ui.IMapViewManager;
+import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.freeplane.features.ui.FocusOutlineAction;
 
 /** OutlinePane that updates based on map view changes. */
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
@@ -33,6 +36,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private MapView currentMapView;
 
 	private final SelectedNodeUpdater selectedNodeUpdater;
+    private PropertyChangeListener focusListener;
 
     private class SelectedNodeUpdater implements INodeSelectionListener{
 		@Override
@@ -277,6 +281,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private void addMapChangeListeners() {
 		currentMapView.getMap().addMapChangeListener(this);
 		currentMapView.getModeController().getMapController().addNodeSelectionListener(selectedNodeUpdater);
+        installFocusListener();
 	}
 
     /**
@@ -297,9 +302,54 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             try {
                 currentMapView.getMap().removeMapChangeListener(this);
                 currentMapView.getModeController().getMapController().removeNodeSelectionListener(selectedNodeUpdater);
+                uninstallFocusListener();
             } catch (Exception ignore) { }
         }
 	}
+
+    private void installFocusListener() {
+        uninstallFocusListener();
+        focusListener = ev -> {
+            Object nv = ev.getNewValue();
+            if (nv == null) return;
+            String action = String.valueOf(nv);
+            currentMapView.putClientProperty(FocusOutlineAction.OUTLINE_FOCUS_PROPERTY, null);
+            if ("back".equals(action)) {
+            	currentMapView.getSelected().getMainView().requestFocusInWindow();
+                return;
+            }
+            // Default: switch to outline
+            ViewController vc = Controller.getCurrentController().getViewController();
+            if (!vc.isOutlineVisible()) {
+                vc.setOutlineVisible(true);
+            }
+            ScrollableTreePanel panel = getTreePanel();
+            if (panel != null) {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        IMapSelection sel = Controller.getCurrentController().getSelection();
+                        NodeModel selectedNode = sel != null ? sel.getSelected() : null;
+                        if (selectedNode != null) {
+                            handleNodeSelection(selectedNode, panel);
+                        }
+                        panel.focusSelectionButton();
+                    } catch (Exception ignore) { }
+                });
+            }
+        };
+        try {
+            currentMapView.addPropertyChangeListener(FocusOutlineAction.OUTLINE_FOCUS_PROPERTY, focusListener);
+        } catch (Exception ignore) { }
+    }
+
+    private void uninstallFocusListener() {
+        if (currentMapView != null && focusListener != null) {
+            try {
+                currentMapView.removePropertyChangeListener(FocusOutlineAction.OUTLINE_FOCUS_PROPERTY, focusListener);
+            } catch (Exception ignore) { }
+        }
+        focusListener = null;
+    }
 
     @Override
     public void mapChanged(MapChangeEvent event) {

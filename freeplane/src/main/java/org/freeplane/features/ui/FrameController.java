@@ -212,6 +212,7 @@ abstract public class FrameController implements ViewController {
 		controller.addAction(new ToggleMapOverviewAction(this));
 		controller.addAction(new ToggleBookmarksToolbarAction(this));
 		controller.addAction(new ToggleOutlineAction(this));
+		controller.addAction(new FocusOutlineAction());
 		controller.addAction(new ToggleToolbarAction("ToggleToolbarAction", "/main_toolbar"));
 		controller.addAction(new ToggleToolbarAction("ToggleStatusAction", "/status"));
 		addStatusInfo(ResourceController.OBJECT_TYPE, null, null);
