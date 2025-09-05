@@ -787,8 +787,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	final private ComponentAdapter viewportSizeChangeListener;
 	private final INodeChangeListener connectorChangeListener;
-	enum ScrollViewState{READY, REQUIRED, SCHEDULED}
-	private ScrollViewState scrollsViewAfterLayout = ScrollViewState.READY;
+	private boolean scrollsViewAfterLayout = true;
 	private boolean allowsCompactLayout;
 	private boolean isAutoCompactLayoutEnabled;
     private TagLocation tagLocation;
@@ -2295,9 +2294,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	@Override
 	protected void paintChildren(final Graphics g) {
-		if(! isPrinting() && scrollsViewAfterLayout != ScrollViewState.READY)
-			return;
-
 	    final PaintingMode paintModes[];
 	    if(paintConnectorsBehind)
 	    	paintModes = new PaintingMode[]{
@@ -2812,7 +2808,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     public void setZoom(final float zoom) {
         if(this.zoom != zoom) {
             this.zoom = zoom;
-            scrollsViewAfterLayout = ScrollViewState.REQUIRED;
+            scrollsViewAfterLayout = true;
             mapScroller.anchorToNode(getSelected(), CENTER_ALIGNMENT, CENTER_ALIGNMENT);
             updateAllNodeViews(UpdateCause.ZOOM);
             adjustBackgroundComponentScale();
@@ -2830,7 +2826,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             UITools.convertPointToAncestor(mainView, mainViewLocation, this);
             float x = referenceWidth > 0 ? (keptPoint.x - mainViewLocation.x) / referenceWidth : 0;
             float y = referenceHeight > 0 ? (keptPoint.y - mainViewLocation.y) / referenceHeight : 0;
-            scrollsViewAfterLayout = ScrollViewState.REQUIRED;
+            scrollsViewAfterLayout = true;
             mapScroller.anchorToNode(selected, x, y);
             updateAllNodeViews(UpdateCause.ZOOM);
             adjustBackgroundComponentScale();
@@ -3008,23 +3004,14 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	void scrollViewAfterLayout() {
 		if(isDisplayable() && ! selection.selectionChanged && isFrameLayoutCompleted()) {
-			if(scrollsViewAfterLayout == ScrollViewState.REQUIRED) {
-				scrollsViewAfterLayout = ScrollViewState.SCHEDULED;
-				SwingUtilities.invokeLater(this::scrollView);
+			if(scrollsViewAfterLayout ) {
+				scrollsViewAfterLayout  = false;
+				SwingUtilities.invokeLater(mapScroller::scrollView);
 			}
 			else
 				setAnchorContentLocation();
 		}
 	}
-
-	private void scrollView() {
-		if(scrollsViewAfterLayout  != ScrollViewState.READY) {
-			mapScroller.scrollView();
-			scrollsViewAfterLayout  = ScrollViewState.READY;
-			repaint();
-		}
-	}
-	
 	public void scrollBy(final int x, final int y) {
 		mapScroller.scrollBy(x, y);
 	}
@@ -3161,7 +3148,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	@Override
 	public void invalidate() {
 		if(! currentRootView.isValid() && ! isPreparedForPrinting)
-			scrollsViewAfterLayout = ScrollViewState.REQUIRED;
+			scrollsViewAfterLayout = true;
 		super.invalidate();
 	}
 
@@ -3413,7 +3400,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         }
     }
 
-    static public boolean showsTagsOnMinimizedNodes() {
+	static public boolean showsTagsOnMinimizedNodes() {
 		return showsTagsOnMinimizedNodes;
 	}
 }
