@@ -5,21 +5,23 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
 import java.awt.KeyboardFocusManager;
+import java.awt.event.ActionEvent;
 import java.awt.Window;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
+import javax.swing.JButton;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.KeyStroke;
 import javax.swing.Icon;
 
 class ScrollableTreePanel extends JPanel {
@@ -40,6 +42,7 @@ class ScrollableTreePanel extends JPanel {
     private final int blockSize;
     private VisibleOutlineState visibleState;
     private OutlineSelectionBridge selectionBridge;
+    private final Map<String, String> lastSelectedChildByParent = new HashMap<>();
 
 
     private int lastFirstBlock = -1;
@@ -78,6 +81,45 @@ class ScrollableTreePanel extends JPanel {
         add(navButtons.reduceBtn);
 
         navButtons.hideNavigationButtons();
+    }
+    
+    private void setupKeyBindings() {
+        InputMap inputMap = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap actionMap = getActionMap();
+
+        inputMap.put(KeyStroke.getKeyStroke("UP"), "navigateUp");
+        inputMap.put(KeyStroke.getKeyStroke("DOWN"), "navigateDown");
+        inputMap.put(KeyStroke.getKeyStroke("PAGE_UP"), "navigatePageUp");
+        inputMap.put(KeyStroke.getKeyStroke("PAGE_DOWN"), "navigatePageDown");
+        inputMap.put(KeyStroke.getKeyStroke("LEFT"), "goParent");
+        inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "goChild");
+        inputMap.put(KeyStroke.getKeyStroke("control LEFT"), "reduceExpansion");
+        inputMap.put(KeyStroke.getKeyStroke("control RIGHT"), "expandMore");
+
+        actionMap.put("navigateUp", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { navigateUp(); }
+        });
+        actionMap.put("navigateDown", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { navigateDown(); }
+        });
+        actionMap.put("navigatePageUp", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { navigatePageUp(); }
+        });
+        actionMap.put("navigatePageDown", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { navigatePageDown(); }
+        });
+        actionMap.put("goParent", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { goToParent(); }
+        });
+        actionMap.put("goChild", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { goToChild(); }
+        });
+        actionMap.put("reduceExpansion", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { reduceSelectedExpansion(); }
+        });
+        actionMap.put("expandMore", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) { expandSelectedMore(); }
+        });
     }
 
     boolean focusSelectedInBreadcrumb() {
@@ -371,6 +413,10 @@ class ScrollableTreePanel extends JPanel {
 
     public void setSelectedNodeId(String nodeId) {
         if (nodeId != null && selection.findNodeById(nodeId) != null) {
+            TreeNode newNode = selection.findNodeById(nodeId);
+            if (newNode != null && newNode.parent != null) {
+                lastSelectedChildByParent.put(newNode.parent.id, newNode.id);
+            }
             selectNodeById(nodeId);
             TreeNode preservedHoveredNode = visibleState.getHoveredNode();
             removeAll();
@@ -416,8 +462,37 @@ class ScrollableTreePanel extends JPanel {
 
     private void scrollToSelectedNode() {
         TreeNode selectedNode = selection.getSelectedNode();
-        if (selectedNode != null && viewport != null) {
-            viewport.scrollToNode(selectedNode);
+        if (selectedNode == null || viewport == null) return;
+
+        // Try to find the actual button for the selected node in visible block panels
+        Rectangle target = null;
+        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    Object n = ((JButton) comp).getClientProperty("treeNode");
+                    if (n == selectedNode) {
+                        Rectangle b = comp.getBounds();
+                        Rectangle p = panel.getBounds();
+                        target = new Rectangle(b.x + p.x, b.y + p.y,
+                                b.width + geometry.iconDiameter + 6,
+                                Math.max(b.height, geometry.iconDiameter + 4));
+                        break;
+                    }
+                }
+            }
+            if (target != null) break;
+        }
+        if (target == null) {
+            // Fallback to row-based rectangle if we did not find the button (e.g., breadcrumb)
+            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
+            int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
+            if (nodeIndex >= 0) {
+                int y = visibleState.getBreadcrumbAreaHeight() + nodeIndex * geometry.rowHeight;
+                target = new Rectangle(0, y, viewport.getViewportWidth(), geometry.rowHeight);
+            }
+        }
+        if (target != null) {
+            scrollRectToVisible(target);
         }
     }
 
@@ -600,45 +675,8 @@ class ScrollableTreePanel extends JPanel {
         });
     }
 
-    private void setupKeyBindings() {
-        InputMap inputMap = getInputMap(JComponent.WHEN_FOCUSED);
-        ActionMap actionMap = getActionMap();
 
-        inputMap.put(KeyStroke.getKeyStroke("UP"), "navigateUp");
-        inputMap.put(KeyStroke.getKeyStroke("DOWN"), "navigateDown");
-        inputMap.put(KeyStroke.getKeyStroke("PAGE_UP"), "navigatePageUp");
-        inputMap.put(KeyStroke.getKeyStroke("PAGE_DOWN"), "navigatePageDown");
-
-        actionMap.put("navigateUp", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                navigateUp();
-            }
-        });
-
-        actionMap.put("navigateDown", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                navigateDown();
-            }
-        });
-
-        actionMap.put("navigatePageUp", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                navigatePageUp();
-            }
-        });
-
-        actionMap.put("navigatePageDown", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                navigatePageDown();
-            }
-        });
-    }
-
-    private void navigateUp() {
+    public void navigateUp() {
         TreeNode currentSelected = selection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
@@ -646,11 +684,12 @@ class ScrollableTreePanel extends JPanel {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
                 setSelectedNodeId(newSelected.id);
+                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
 
-    private void navigateDown() {
+    public void navigateDown() {
         TreeNode currentSelected = selection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
@@ -658,11 +697,12 @@ class ScrollableTreePanel extends JPanel {
             if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
                 TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
                 setSelectedNodeId(newSelected.id);
+                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
 
-    private void navigatePageUp() {
+    public void navigatePageUp() {
         TreeNode currentSelected = selection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
@@ -672,11 +712,12 @@ class ScrollableTreePanel extends JPanel {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
                 setSelectedNodeId(newSelected.id);
+                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
 
-    private void navigatePageDown() {
+    public void navigatePageDown() {
         TreeNode currentSelected = selection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
@@ -686,8 +727,58 @@ class ScrollableTreePanel extends JPanel {
             if (newIndex != currentIndex) {
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
                 setSelectedNodeId(newSelected.id);
+                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
+    }
+
+    public void toggleExpandSelected() {
+        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        if (node == null) return;
+        if (node.isExpanded()) {
+            expansionControls.collapseNode(node);
+        } else {
+            expansionControls.expandNode(node);
+        }
+    }
+
+    public void expandSelectedMore() {
+        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        if (node == null) return;
+        expansionControls.expandNodeMore(node);
+    }
+
+    public void reduceSelectedExpansion() {
+        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        if (node == null) return;
+        expansionControls.reduceNodeExpansion(node);
+    }
+
+    public void goToParent() {
+        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        if (node == null) return;
+        if (node.parent != null) {
+            setSelectedNodeId(node.parent.id);
+            SwingUtilities.invokeLater(this::focusSelectionButton);
+        }
+    }
+
+    public void goToChild() {
+        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        if (node == null || node.children.isEmpty()) return;
+        if (!node.isExpanded()) {
+            expansionControls.expandNode(node);
+        }
+        String preferredChildId = lastSelectedChildByParent.get(node.id);
+        TreeNode targetChild = null;
+        if (preferredChildId != null) {
+            for (TreeNode c : node.children) {
+                if (preferredChildId.equals(c.id)) { targetChild = c; break; }
+            }
+        }
+        if (targetChild == null) targetChild = node.children.get(0);
+        setSelectedNodeId(targetChild.id);
+        SwingUtilities.invokeLater(this::focusSelectionButton);
     }
 
     private int getPageSize() {

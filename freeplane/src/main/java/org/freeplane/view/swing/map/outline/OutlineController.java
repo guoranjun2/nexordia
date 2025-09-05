@@ -66,6 +66,21 @@ class OutlineController {
         treePanel.selectNodeById(id);
     }
 
+    void toggleNodeExpansion(TreeNode node) {
+        if (node == null) return;
+        treePanel.setSelectedNodeId(node.id);
+        treePanel.toggleExpandSelected();
+    }
+
+    void navigateUp() { treePanel.navigateUp(); }
+    void navigateDown() { treePanel.navigateDown(); }
+    void navigatePageUp() { treePanel.navigatePageUp(); }
+    void navigatePageDown() { treePanel.navigatePageDown(); }
+    void goToParent() { treePanel.goToParent(); }
+    void goToChild() { treePanel.goToChild(); }
+    void expandSelectedMore() { treePanel.expandSelectedMore(); }
+    void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
+
     void attachNavigationNode(TreeNode node, boolean isBreadcrumb, int rowIndex) {
         int currentBreadcrumbHeight = treePanel.getVisibleState().getBreadcrumbAreaHeight();
         treePanel.attachNavigationNode(node, isBreadcrumb, rowIndex, currentBreadcrumbHeight);

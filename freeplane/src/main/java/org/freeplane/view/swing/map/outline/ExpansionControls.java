@@ -1,5 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
+import javax.swing.SwingUtilities;
+
 class ExpansionControls {
     private final ScrollableTreePanel treePanel;
 
@@ -33,5 +35,6 @@ class ExpansionControls {
 
     private void refreshAfterExpansionChange() {
         treePanel.updateVisibleNodes();
+        SwingUtilities.invokeLater(() -> treePanel.focusSelectionButton());
     }
 }

@@ -58,6 +58,17 @@ class BlockPanel extends JPanel {
             parentPanel.selectNodeById(flat.node.id);
         });
 
+        // Map SPACE on the button to toggle expansion of the selected node
+        javax.swing.InputMap im = button.getInputMap(JButton.WHEN_FOCUSED);
+        javax.swing.ActionMap am = button.getActionMap();
+        im.put(javax.swing.KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
+        am.put("toggleExpand", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                parentPanel.toggleExpandSelected();
+            }
+        });
+
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {

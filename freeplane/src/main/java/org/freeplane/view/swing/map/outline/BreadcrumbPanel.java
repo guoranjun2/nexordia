@@ -10,6 +10,11 @@ import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.InputMap;
+import javax.swing.ActionMap;
+import javax.swing.KeyStroke;
+import javax.swing.AbstractAction;
+import java.awt.event.ActionEvent;
 import javax.swing.Icon;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -28,6 +33,30 @@ class BreadcrumbPanel extends JPanel {
     public void initialize(OutlineController controller, OutlineSelection selection) {
         this.controller = controller;
         this.selection = selection;
+        setupKeyBindings();
+    }
+
+    private void setupKeyBindings() {
+        InputMap im = getInputMap(JPanel.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap am = getActionMap();
+
+        im.put(KeyStroke.getKeyStroke("UP"), "outline.up");
+        im.put(KeyStroke.getKeyStroke("DOWN"), "outline.down");
+        im.put(KeyStroke.getKeyStroke("PAGE_UP"), "outline.pageUp");
+        im.put(KeyStroke.getKeyStroke("PAGE_DOWN"), "outline.pageDown");
+        im.put(KeyStroke.getKeyStroke("LEFT"), "outline.parent");
+        im.put(KeyStroke.getKeyStroke("RIGHT"), "outline.child");
+        im.put(KeyStroke.getKeyStroke("control LEFT"), "outline.reduce");
+        im.put(KeyStroke.getKeyStroke("control RIGHT"), "outline.expandMore");
+
+        am.put("outline.up", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigateUp(); }});
+        am.put("outline.down", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigateDown(); }});
+        am.put("outline.pageUp", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigatePageUp(); }});
+        am.put("outline.pageDown", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigatePageDown(); }});
+        am.put("outline.parent", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.goToParent(); }});
+        am.put("outline.child", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.goToChild(); }});
+        am.put("outline.reduce", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.reduceSelectedExpansion(); }});
+        am.put("outline.expandMore", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.expandSelectedMore(); }});
     }
 
     public void update(BreadcrumbState state) {
@@ -58,6 +87,17 @@ class BreadcrumbPanel extends JPanel {
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
             breadcrumbButton.addActionListener(e -> controller.selectNodeById(nodeToSelect.id));
+
+            // Map SPACE to toggle expansion for breadcrumb button's node
+            javax.swing.InputMap im = breadcrumbButton.getInputMap(JButton.WHEN_FOCUSED);
+            javax.swing.ActionMap am = breadcrumbButton.getActionMap();
+            im.put(javax.swing.KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
+            am.put("toggleExpand", new javax.swing.AbstractAction() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    controller.toggleNodeExpansion(nodeToSelect);
+                }
+            });
 
             breadcrumbButton.addMouseListener(new MouseAdapter() {
                 @Override
