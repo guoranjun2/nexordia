@@ -126,6 +126,10 @@ public interface ViewController {
 
 	public void setBookmarksToolbarVisible(boolean b);
 
+	public boolean isOutlineVisible();
+
+	public void setOutlineVisible(boolean b);
+
 	public boolean areScrollbarsVisible();
 
 	public void setScrollbarsVisible(boolean b);

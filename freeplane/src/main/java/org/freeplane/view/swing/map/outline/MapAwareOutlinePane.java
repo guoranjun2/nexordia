@@ -144,6 +144,18 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     public void addNotify() {
         super.addNotify();
         Controller.getCurrentController().getMapViewManager().addMapViewChangeListener(this);
+        try {
+            Window w = SwingUtilities.getWindowAncestor(this);
+            if (w != null) {
+                IMapViewManager mvm = Controller.getCurrentController().getMapViewManager();
+                Component mv = mvm.getLastSelectedMapViewContainedIn(w);
+                if (mv instanceof MapView) {
+                    updateTreeFromMap((MapView) mv);
+                } else {
+                    showNoMapState();
+                }
+            }
+        } catch (Exception ignore) { }
     }
 
     @Override

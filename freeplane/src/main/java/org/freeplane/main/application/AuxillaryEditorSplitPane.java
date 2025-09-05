@@ -15,8 +15,12 @@ import javax.swing.JComponent;
 import javax.swing.JSplitPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import org.freeplane.core.resources.IFreeplanePropertyListener;
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.ui.ViewController;
 
-class AuxillaryEditorSplitPane extends JSplitPane {
+class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyListener {
 	private static final long serialVersionUID = 1L;
 	private JComponent auxillaryComponent;
 	private Component mainComponent;
@@ -26,6 +30,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	private AuxiliarySplitPanes manager;
 
 	private String mode;
+
+	// Optional binding to a visibility property (e.g., "outlineVisible")
+	private String auxVisibilityBaseKey; // e.g., "outlineVisible"
+	private boolean auxVisibilityBound;
 
 	public AuxillaryEditorSplitPane(Component mainComponent) {
 		this(mainComponent, new AuxiliarySplitPaneController("aux_split_pane_last_position", "note_location", "bottom"));
@@ -115,6 +123,7 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		}
 		revalidate();
 		repaint();
+		applyAuxVisibility();
 	}
 
 	private void repositionComponent(Component component, String constraints) {
@@ -246,6 +255,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			super.remove(auxillaryComponent);
 			auxillaryComponent = null;
 			dividerLocationIsRestored = false;
+			if (getLeftComponent() != mainComponent) {
+				repositionComponent(mainComponent, JSplitPane.LEFT);
+				setRightComponent(null);
+			}
 		}
 	}
 
@@ -256,6 +269,51 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 				toSplitPane.insertComponentIntoSplitPane(auxillaryComponent, mode);
 			else
 				removeAuxiliaryComponent();
+		}
+	}
+
+	// --- Property binding for auxiliary component visibility ---
+	public void bindAuxiliaryVisibilityToProperty(String baseKey) {
+		this.auxVisibilityBaseKey = baseKey; // expects keys baseKey and baseKey+".fullscreen"
+		if (!auxVisibilityBound) {
+			ResourceController.getResourceController().addPropertyChangeListener(this);
+			auxVisibilityBound = true;
+		}
+		applyAuxVisibility();
+	}
+
+	private void applyAuxVisibility() {
+		if (auxVisibilityBaseKey == null) return;
+		boolean fs = false;
+		try {
+			ViewController vc = Controller.getCurrentController().getViewController();
+			fs = vc != null && vc.isFullScreenEnabled();
+		} catch (Exception ignore) { }
+		String key = auxVisibilityBaseKey + (fs ? ".fullscreen" : "");
+		boolean visible = ResourceController.getResourceController().getBooleanProperty(key);
+		if (auxillaryComponent != null) {
+			auxillaryComponent.setVisible(visible);
+			revalidate();
+			repaint();
+		}
+	}
+
+	@Override
+	public void propertyChanged(String propertyName, String newValue, String oldValue) {
+		if (auxVisibilityBaseKey == null) return;
+		if (propertyName.equals(auxVisibilityBaseKey)
+				|| propertyName.equals(auxVisibilityBaseKey + ".fullscreen")
+				|| ViewController.FULLSCREEN_ENABLED_PROPERTY.equals(propertyName)) {
+			applyAuxVisibility();
+		}
+	}
+
+	@Override
+	public void removeNotify() {
+		super.removeNotify();
+		if (auxVisibilityBound) {
+			ResourceController.getResourceController().removePropertyChangeListener(this);
+			auxVisibilityBound = false;
 		}
 	}
 }

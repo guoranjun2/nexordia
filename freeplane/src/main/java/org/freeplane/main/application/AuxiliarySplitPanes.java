@@ -75,6 +75,8 @@ class AuxiliarySplitPanes {
             // Create MapAwareOutlinePane which will automatically handle map changes
             MapAwareOutlinePane outlinePane = new MapAwareOutlinePane();
             insertComponentIntoSplitPane(1, outlinePane, "outline");
+            // Bind visibility to outlineVisible property
+            getPane(1).bindAuxiliaryVisibilityToProperty("outlineVisible");
         }
     }
     

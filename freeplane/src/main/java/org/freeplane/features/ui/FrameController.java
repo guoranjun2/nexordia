@@ -211,6 +211,7 @@ abstract public class FrameController implements ViewController {
 		controller.addAction(new ToggleScrollbarsAction(this));
 		controller.addAction(new ToggleMapOverviewAction(this));
 		controller.addAction(new ToggleBookmarksToolbarAction(this));
+		controller.addAction(new ToggleOutlineAction(this));
 		controller.addAction(new ToggleToolbarAction("ToggleToolbarAction", "/main_toolbar"));
 		controller.addAction(new ToggleToolbarAction("ToggleStatusAction", "/status"));
 		addStatusInfo(ResourceController.OBJECT_TYPE, null, null);
@@ -462,6 +463,16 @@ abstract public class FrameController implements ViewController {
 	@Override
 	public void setBookmarksToolbarVisible(final boolean visible) {
 		setComponentVisibleProperty("bookmarksToolbar", visible);
+	}
+
+	@Override
+	public boolean isOutlineVisible() {
+		return isComponentVisible("outline");
+	}
+
+	@Override
+	public void setOutlineVisible(final boolean visible) {
+		setComponentVisibleProperty("outline", visible);
 	}
 
 	@Override
