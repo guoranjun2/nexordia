@@ -1,22 +1,19 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Component;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.List;
 
-import javax.swing.JScrollPane;
 import javax.swing.Icon;
+import javax.swing.JScrollPane;
 
 class OutlineController {
     private final ScrollableTreePanel treePanel;
-    private final BreadcrumbPanel breadcrumbPanel;
     @SuppressWarnings("unused")
     private final JScrollPane scrollPane;
 
-    OutlineController(ScrollableTreePanel treePanel, BreadcrumbPanel breadcrumbPanel, JScrollPane scrollPane) {
+    OutlineController(ScrollableTreePanel treePanel,  JScrollPane scrollPane) {
         this.treePanel = treePanel;
-        this.breadcrumbPanel = breadcrumbPanel;
         this.scrollPane = scrollPane;
     }
 
@@ -63,7 +60,7 @@ class OutlineController {
     }
 
     void selectNodeById(String id) {
-        treePanel.selectNodeById(id);
+        treePanel.selectOutlineNodeById(id);
     }
 
     void toggleNodeExpansion(TreeNode node) {
@@ -103,7 +100,7 @@ class OutlineController {
     }
 
     OutlineSelection getSelection() {
-        return treePanel.getSelection();
+        return treePanel.getOutlineSelection();
     }
 
     Icon getSelectionIcon() {

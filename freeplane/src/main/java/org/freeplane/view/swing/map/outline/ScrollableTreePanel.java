@@ -38,7 +38,7 @@ class ScrollableTreePanel extends JPanel {
     OutlineViewport viewport;
 
     private TreeNode root;
-    private OutlineSelection selection;
+    private OutlineSelection outlineSelection;
     private final int blockSize;
     private VisibleOutlineState visibleState;
     private OutlineSelectionBridge selectionBridge;
@@ -61,7 +61,7 @@ class ScrollableTreePanel extends JPanel {
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
         root.applyExpansionLevel(1);
-        this.selection = new OutlineSelection(root);
+        this.outlineSelection = new OutlineSelection(root);
         this.visibleState = new VisibleOutlineState(root);
 
         this.geometry = new OutlineGeometry(new JButton("▶"));
@@ -82,8 +82,9 @@ class ScrollableTreePanel extends JPanel {
 
         navButtons.hideNavigationButtons();
     }
-    
-    private void setupKeyBindings() {
+
+    @SuppressWarnings("serial")
+	private void setupKeyBindings() {
         InputMap inputMap = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
         ActionMap actionMap = getActionMap();
 
@@ -123,7 +124,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     boolean focusSelectedInBreadcrumb() {
-        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) return false;
         for (Component comp : breadcrumbPanel.getComponents()) {
             if (comp instanceof JButton) {
@@ -139,7 +140,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     boolean focusSelectedInBlocks() {
-        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) return false;
         for (BlockPanel panel : visibleState.getBlockPanels().values()) {
             for (Component comp : panel.getComponents()) {
@@ -189,7 +190,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void focusSelectionButton() {
-        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) {
             if (isShowing()) requestFocusInWindow();
             return;
@@ -204,7 +205,7 @@ class ScrollableTreePanel extends JPanel {
         if (isShowing()) requestFocusInWindow();
     }
 
-    
+
 
     void setScrollPane(JScrollPane scroll) {
         this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
@@ -264,7 +265,7 @@ class ScrollableTreePanel extends JPanel {
                 navButtons.attachToNode(hoveredNode, this, false, -1, visibleState.getBreadcrumbAreaHeight(), nodePositioning);
             }
         }
-        restoreFocusIfNeeded(prevFocus, prevInOutline);
+        restoreFocusIfNeeded(prevInOutline);
     }
 
     void updateVisibleBlocks(int startFromNodeIndex) {
@@ -300,7 +301,7 @@ class ScrollableTreePanel extends JPanel {
                 navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbAreaHeight, nodePositioning);
             }
         }
-        restoreFocusIfNeeded(prevFocus, prevInOutline);
+        restoreFocusIfNeeded(prevInOutline);
     }
 
     private void clearBlocks() {
@@ -358,7 +359,7 @@ class ScrollableTreePanel extends JPanel {
             return;
         }
 
-        BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, geometry.rowHeight, geometry.indent, this, breadcrumbNodeCount, selection);
+        BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, geometry.rowHeight, this, breadcrumbNodeCount, outlineSelection);
 
         Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, yOffset, getPreferredSize().width);
         bp.setBounds(bounds);
@@ -412,12 +413,12 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void setSelectedNodeId(String nodeId) {
-        if (nodeId != null && selection.findNodeById(nodeId) != null) {
-            TreeNode newNode = selection.findNodeById(nodeId);
+        if (nodeId != null && outlineSelection.findNodeById(nodeId) != null) {
+            TreeNode newNode = outlineSelection.findNodeById(nodeId);
             if (newNode != null && newNode.parent != null) {
                 lastSelectedChildByParent.put(newNode.parent.id, newNode.id);
             }
-            selectNodeById(nodeId);
+            selectOutlineNodeById(nodeId);
             TreeNode preservedHoveredNode = visibleState.getHoveredNode();
             removeAll();
             visibleState.clearBlockPanels();
@@ -425,13 +426,12 @@ class ScrollableTreePanel extends JPanel {
             visibleState.setHoveredNode(preservedHoveredNode);
             updateVisibleBlocks();
             SwingUtilities.invokeLater(this::scrollToSelectedNode);
-            if (selectionBridge != null) selectionBridge.onOutlineSelectionChanged(nodeId);
         }
     }
 
 
-    public OutlineSelection getSelection() {
-        return selection;
+    public OutlineSelection getOutlineSelection() {
+        return outlineSelection;
     }
 
     int getRowHeight() {
@@ -461,7 +461,7 @@ class ScrollableTreePanel extends JPanel {
 
 
     private void scrollToSelectedNode() {
-        TreeNode selectedNode = selection.getSelectedNode();
+        TreeNode selectedNode = outlineSelection.getSelectedNode();
         if (selectedNode == null || viewport == null) return;
 
         // Try to find the actual button for the selected node in visible block panels
@@ -483,8 +483,6 @@ class ScrollableTreePanel extends JPanel {
             if (target != null) break;
         }
         if (target == null) {
-            // Fallback to row-based rectangle if we did not find the button (e.g., breadcrumb)
-            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
             int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
             if (nodeIndex >= 0) {
                 int y = visibleState.getBreadcrumbAreaHeight() + nodeIndex * geometry.rowHeight;
@@ -498,22 +496,27 @@ class ScrollableTreePanel extends JPanel {
 
 
 
-    public void selectNodeById(String nodeId) {
-        selection.selectNode(nodeId);
+    public void selectOutlineNodeById(String nodeId) {
+        outlineSelection.selectNode(nodeId);
         repaint();
-        if (selectionBridge != null) selectionBridge.onOutlineSelectionChanged(nodeId);
+    }
+
+    public void selectMapNodeById(String nodeId) {
+    	if (selectionBridge != null)
+    		selectionBridge.selectMapNodeById(nodeId);
     }
 
     public String getSelectedNodeId() {
-        return selection.getSelectedNodeId();
+        return outlineSelection.getSelectedNodeId();
     }
 
     public TreeNode getSelectedNode() {
-        return selection.getSelectedNode();
+        return outlineSelection.getSelectedNode();
     }
 
     public void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
+        breadcrumbPanel.setSelectionBridge(bridge);
     }
 
     void updateNodeTitle(TreeNode node) {
@@ -662,22 +665,8 @@ class ScrollableTreePanel extends JPanel {
         });
     }
 
-
-
-    private void refreshPanel() {
-        SwingUtilities.invokeLater(() -> {
-            TreeNode preservedHoveredNode = visibleState.getHoveredNode();
-            navButtons.hideNavigationButtons();
-            clearBlocks();
-            navButtons.hideNavigationButtons();
-            visibleState.setHoveredNode(preservedHoveredNode);
-            updateVisibleBlocks();
-        });
-    }
-
-
     public void navigateUp() {
-        TreeNode currentSelected = selection.getSelectedNode();
+        TreeNode currentSelected = outlineSelection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             if (currentIndex > 0) {
@@ -690,7 +679,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void navigateDown() {
-        TreeNode currentSelected = selection.getSelectedNode();
+        TreeNode currentSelected = outlineSelection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
@@ -703,7 +692,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void navigatePageUp() {
-        TreeNode currentSelected = selection.getSelectedNode();
+        TreeNode currentSelected = outlineSelection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             int pageSize = getPageSize();
@@ -718,7 +707,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void navigatePageDown() {
-        TreeNode currentSelected = selection.getSelectedNode();
+        TreeNode currentSelected = outlineSelection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             int pageSize = getPageSize();
@@ -733,7 +722,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void toggleExpandSelected() {
-        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null) return;
         if (node.isExpanded()) {
             expansionControls.collapseNode(node);
@@ -743,19 +732,19 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void expandSelectedMore() {
-        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null) return;
         expansionControls.expandNodeMore(node);
     }
 
     public void reduceSelectedExpansion() {
-        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null) return;
         expansionControls.reduceNodeExpansion(node);
     }
 
     public void goToParent() {
-        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null) return;
         if (node.parent != null) {
             setSelectedNodeId(node.parent.id);
@@ -764,7 +753,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     public void goToChild() {
-        TreeNode node = selection != null ? selection.getSelectedNode() : null;
+        TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null || node.children.isEmpty()) return;
         if (!node.isExpanded()) {
             expansionControls.expandNode(node);
@@ -811,7 +800,7 @@ class ScrollableTreePanel extends JPanel {
 
 	        updateVisibleBlocks();
 	    }
-	    restoreFocusIfNeeded(prevFocus, prevInOutline);
+	    restoreFocusIfNeeded(prevInOutline);
 	}
 
     private BreadcrumbState calculateBreadcrumbState() {
@@ -861,7 +850,7 @@ protected void paintComponent(Graphics g) {
         return navButtons.expandBtn.isVisible() || navButtons.collapseBtn.isVisible()
                 || navButtons.expandMoreBtn.isVisible() || navButtons.reduceBtn.isVisible();
     }
-    
+
 
 
     private boolean isWithinOutline(Component c) {
@@ -869,7 +858,7 @@ protected void paintComponent(Graphics g) {
         return SwingUtilities.isDescendingFrom(c, this) || SwingUtilities.isDescendingFrom(c, breadcrumbPanel);
     }
 
-    private void restoreFocusIfNeeded(Component previous, boolean previousWasInOutline) {
+    private void restoreFocusIfNeeded(boolean previousWasInOutline) {
         if (!previousWasInOutline) return;
 
         Window w = SwingUtilities.getWindowAncestor(this);
@@ -878,7 +867,7 @@ protected void paintComponent(Graphics g) {
         Component current = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         if (isWithinOutline(current)) return;
 
-        TreeNode selected = selection != null ? selection.getSelectedNode() : null;
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected != null) {
             for (Component comp : breadcrumbPanel.getComponents()) {
                 if (comp instanceof JButton) {

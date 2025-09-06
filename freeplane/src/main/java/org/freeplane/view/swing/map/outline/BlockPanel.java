@@ -5,29 +5,34 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.InputMap;
+import javax.swing.ActionMap;
+import javax.swing.KeyStroke;
 
 class BlockPanel extends JPanel {
+	private static final long serialVersionUID = 1L;
 
-    private final int breadcrumbNodeCount;
     private final OutlineSelection selection;
 
-    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
+    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
-        this.breadcrumbNodeCount = breadcrumbNodeCount;
         this.selection = selection;
 
-        createNodeComponents(nodes, firstIdx, rowHeight, indent, parentPanel, breadcrumbNodeCount);
+        createNodeComponents(nodes, firstIdx, rowHeight, parentPanel, breadcrumbNodeCount);
     }
 
-    private void createNodeComponents(List<FlatNode> nodes, int firstIdx, int rowHeight, int indent, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+    private void createNodeComponents(List<FlatNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
         int visibleButtonIndex = 0;
         for (int i = 0; i < nodes.size(); i++) {
             FlatNode flat = nodes.get(i);
@@ -35,13 +40,14 @@ class BlockPanel extends JPanel {
 
             if (idx >= breadcrumbNodeCount) {
                 int y = visibleButtonIndex * rowHeight;
-                createActionButton(flat, y, rowHeight, indent, parentPanel, idx);
+                createActionButton(flat, y, rowHeight, parentPanel);
                 visibleButtonIndex++;
             }
         }
     }
 
-    private void createActionButton(FlatNode flat, int y, int rowHeight, int indent, ScrollableTreePanel parentPanel, int idx) {
+    @SuppressWarnings("serial")
+	private void createActionButton(FlatNode flat, int y, int rowHeight, ScrollableTreePanel parentPanel) {
         String buttonText = flat.node.title;
         JButton button = new JButton();
         button.setFont(button.getFont().deriveFont(8f));
@@ -51,20 +57,26 @@ class BlockPanel extends JPanel {
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
-        
+
         button.putClientProperty("treeNode", flat.node);
 
-        button.addActionListener(e -> {
-            parentPanel.selectNodeById(flat.node.id);
-        });
+        final AbstractAction selectAction = new AbstractAction() {
 
-        // Map SPACE on the button to toggle expansion of the selected node
-        javax.swing.InputMap im = button.getInputMap(JButton.WHEN_FOCUSED);
-        javax.swing.ActionMap am = button.getActionMap();
-        im.put(javax.swing.KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
-        am.put("toggleExpand", new javax.swing.AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				parentPanel.selectMapNodeById(flat.node.id);
+			}
+		};
+		button.addActionListener(selectAction);
+
+        InputMap im = button.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap am = button.getActionMap();
+        im.put(KeyStroke.getKeyStroke("ENTER"), "selectMapNode");
+        am.put("selectMapNode", selectAction);
+        im.put(KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
+        am.put("toggleExpand", new AbstractAction() {
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
+            public void actionPerformed(ActionEvent e) {
                 parentPanel.toggleExpandSelected();
             }
         });
@@ -98,10 +110,10 @@ class BlockPanel extends JPanel {
                     JButton btn = (JButton) comp;
                     TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
                     if (buttonNode != null && selection.isSelected(buttonNode)) {
-                        
+
                         boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
 
-                        
+
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 

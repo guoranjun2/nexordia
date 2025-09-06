@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.InputMap;
 import javax.swing.ActionMap;
@@ -19,11 +20,13 @@ import javax.swing.Icon;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
     private OutlineController controller;
     private OutlineSelection selection;
     private int currentBreadcrumbHeight = 0;
     private List<TreeNode> currentBreadcrumbNodes = new ArrayList<>();
+	private OutlineSelectionBridge selectionBridge;
 
     public BreadcrumbPanel() {
         setLayout(null);
@@ -36,8 +39,9 @@ class BreadcrumbPanel extends JPanel {
         setupKeyBindings();
     }
 
-    private void setupKeyBindings() {
-        InputMap im = getInputMap(JPanel.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    @SuppressWarnings("serial")
+	private void setupKeyBindings() {
+        InputMap im = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
         ActionMap am = getActionMap();
 
         im.put(KeyStroke.getKeyStroke("UP"), "outline.up");
@@ -49,14 +53,22 @@ class BreadcrumbPanel extends JPanel {
         im.put(KeyStroke.getKeyStroke("control LEFT"), "outline.reduce");
         im.put(KeyStroke.getKeyStroke("control RIGHT"), "outline.expandMore");
 
-        am.put("outline.up", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigateUp(); }});
-        am.put("outline.down", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigateDown(); }});
-        am.put("outline.pageUp", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigatePageUp(); }});
-        am.put("outline.pageDown", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.navigatePageDown(); }});
-        am.put("outline.parent", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.goToParent(); }});
-        am.put("outline.child", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.goToChild(); }});
-        am.put("outline.reduce", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.reduceSelectedExpansion(); }});
-        am.put("outline.expandMore", new AbstractAction() { public void actionPerformed(ActionEvent e) { controller.expandSelectedMore(); }});
+        am.put("outline.up", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.navigateUp(); }});
+        am.put("outline.down", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.navigateDown(); }});
+        am.put("outline.pageUp", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.navigatePageUp(); }});
+        am.put("outline.pageDown", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.navigatePageDown(); }});
+        am.put("outline.parent", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.goToParent(); }});
+        am.put("outline.child", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.goToChild(); }});
+        am.put("outline.reduce", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.reduceSelectedExpansion(); }});
+        am.put("outline.expandMore", new AbstractAction() { @Override
+		public void actionPerformed(ActionEvent e) { controller.expandSelectedMore(); }});
     }
 
     public void update(BreadcrumbState state) {
@@ -86,15 +98,23 @@ class BreadcrumbPanel extends JPanel {
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
-            breadcrumbButton.addActionListener(e -> controller.selectNodeById(nodeToSelect.id));
+            final AbstractAction selectAction = new AbstractAction() {
 
-            // Map SPACE to toggle expansion for breadcrumb button's node
-            javax.swing.InputMap im = breadcrumbButton.getInputMap(JButton.WHEN_FOCUSED);
-            javax.swing.ActionMap am = breadcrumbButton.getActionMap();
-            im.put(javax.swing.KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
-            am.put("toggleExpand", new javax.swing.AbstractAction() {
+    			@Override
+    			public void actionPerformed(ActionEvent e) {
+    				selectionBridge.selectMapNodeById(nodeToSelect.id);
+    			}
+    		};
+            breadcrumbButton.addActionListener(selectAction);
+
+            InputMap im = breadcrumbButton.getInputMap(JComponent.WHEN_FOCUSED);
+            ActionMap am = breadcrumbButton.getActionMap();
+            im.put(KeyStroke.getKeyStroke("ENTER"), "selectMapNode");
+            am.put("selectMapNode", selectAction);
+            im.put(KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
+            am.put("toggleExpand", new AbstractAction() {
                 @Override
-                public void actionPerformed(java.awt.event.ActionEvent e) {
+                public void actionPerformed(ActionEvent e) {
                     controller.toggleNodeExpansion(nodeToSelect);
                 }
             });
@@ -146,6 +166,11 @@ class BreadcrumbPanel extends JPanel {
         return new ArrayList<>(currentBreadcrumbNodes);
     }
 
+    public void setSelectionBridge(OutlineSelectionBridge bridge) {
+        this.selectionBridge = bridge;
+    }
+
+
     private int getNodeDepth(TreeNode node) {
         return controller.calculateNodeDepth(node);
     }
@@ -179,34 +204,6 @@ class BreadcrumbPanel extends JPanel {
         if (currentBreadcrumbHeight > 0) {
             g.setColor(Color.RED);
             g.drawLine(0, currentBreadcrumbHeight - 1, getWidth(), currentBreadcrumbHeight - 1);
-        }
-    }
-
-    private class SelectionIndicator extends JPanel {
-        private final SelectionCircleIcon icon;
-        private final JButton targetButton;
-
-        SelectionIndicator(SelectionCircleIcon icon, JButton targetButton) {
-            this.icon = icon;
-            this.targetButton = targetButton;
-            setOpaque(false);
-            setFocusable(false);
-
-
-            setBounds(0, 0, icon.getIconWidth(), controller.getRowHeight());
-        }
-
-        private void updatePosition() {
-            int iconX = targetButton.getX() - icon.getIconWidth();
-            setBounds(iconX, targetButton.getY(), icon.getIconWidth(), controller.getRowHeight());
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-
-            int iconY = (getHeight() - icon.getIconHeight()) / 2;
-            icon.paintIcon(this, g, 0, iconY);
         }
     }
 }

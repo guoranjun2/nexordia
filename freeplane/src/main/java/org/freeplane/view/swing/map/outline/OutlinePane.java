@@ -11,7 +11,8 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
 class OutlinePane extends JPanel {
-    private JScrollPane treeScrollPane;
+	private static final long serialVersionUID = 1L;
+	private JScrollPane treeScrollPane;
     private ScrollableTreePanel treePanel;
     private BreadcrumbPanel breadcrumbPanel;
 
@@ -23,8 +24,8 @@ class OutlinePane extends JPanel {
 
         treePanel.setScrollPane(this.treeScrollPane);
 
-        OutlineController controller = new OutlineController(treePanel, breadcrumbPanel, treeScrollPane);
-        breadcrumbPanel.initialize(controller, treePanel.getSelection());
+        OutlineController controller = new OutlineController(treePanel, treeScrollPane);
+        breadcrumbPanel.initialize(controller, treePanel.getOutlineSelection());
 
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 1L;
@@ -42,7 +43,7 @@ class OutlinePane extends JPanel {
 
         setupScrollListeners();
     }
-    
+
 
     void refreshTree() {
         SwingUtilities.invokeLater(() -> {
@@ -88,8 +89,8 @@ class OutlinePane extends JPanel {
 
         newTreePanel.setScrollPane(newScrollPane);
 
-        OutlineController newController = new OutlineController(newTreePanel, newBreadcrumbPanel, newScrollPane);
-        newBreadcrumbPanel.initialize(newController, newTreePanel.getSelection());
+        OutlineController newController = new OutlineController(newTreePanel, newScrollPane);
+        newBreadcrumbPanel.initialize(newController, newTreePanel.getOutlineSelection());
 
         this.treePanel = newTreePanel;
         this.treeScrollPane = newScrollPane;

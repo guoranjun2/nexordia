@@ -37,7 +37,7 @@ class NodeTreeBuilder {
         boolean canApply = false;
         if (saved != null) {
             String currentRootId = rootModel.getID();
-            org.freeplane.features.filter.Filter savedFilter = saved.savedFilter != null ? saved.savedFilter.get() : null;
+            Filter savedFilter = saved.savedFilter != null ? saved.savedFilter.get() : null;
             canApply = Objects.equals(saved.rootNodeId, currentRootId) && Objects.equals(savedFilter, filter);
         }
         this.applicableState = canApply ? saved : null;
