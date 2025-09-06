@@ -35,6 +35,6 @@ class ExpansionControls {
 
     private void refreshAfterExpansionChange() {
         treePanel.updateVisibleNodes();
-        SwingUtilities.invokeLater(() -> treePanel.focusSelectionButton());
+        SwingUtilities.invokeLater(() -> treePanel.synchronizeSelectionButton(false));
     }
 }

@@ -16,6 +16,7 @@ import java.util.HashMap;
 import javax.swing.JButton;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
+import javax.swing.FocusManager;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -51,8 +52,8 @@ class ScrollableTreePanel extends JPanel {
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
 
-    public ScrollableTreePanel(TreeNode root, BreadcrumbPanel breadcrumbPanel) {
-		this(root, BLOCK_SIZE, breadcrumbPanel);
+    public ScrollableTreePanel(TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
+		this(root, BLOCK_SIZE,breadcrumbPanel);
 	}
 
     private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
@@ -189,21 +190,26 @@ class ScrollableTreePanel extends JPanel {
         return false;
     }
 
-    public void focusSelectionButton() {
+    void synchronizeSelectionButton(boolean requestFocusInWindow) {
+    	selectionBridge.synchronizeOutlineSelection();
+    	focusSelectionButton(requestFocusInWindow);
+    }
+    void focusSelectionButton(boolean requestFocusInWindow) {
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) {
             return;
         }
-        // Try selected node (breadcrumb preferred), then walk ancestors
-        TreeNode n = selected.findVisibleAncestorOrSelf();
-        if(n != selected)
-        	outlineSelection.selectNode(n);
+        if(! requestFocusInWindow) {
+        	final Component focusOwner = FocusManager.getCurrentManager().getCurrentFocusCycleRoot();
+        	if (! SwingUtilities.isDescendingFrom(focusOwner, this))
+        		return;
+        }
+        TreeNode n = outlineSelection.getSelectedNode();
         while (n != null) {
             if (focusButtonInBreadcrumbForNode(n)) return;
             if (focusButtonInBlocksForNode(n)) return;
             n = n.getParent();
         }
-        if (isShowing()) requestFocusInWindow();
     }
 
 
@@ -372,7 +378,7 @@ class ScrollableTreePanel extends JPanel {
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
-        int height = breadcrumbAreaHeight + contentNodesCount * geometry.rowHeight;
+        int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight;
         int maxWidth = calculateActualRequiredWidth();
         setPreferredSize(new Dimension(maxWidth, height));
 
@@ -496,7 +502,7 @@ class ScrollableTreePanel extends JPanel {
 
 
 
-    public void selectOutlineNode(TreeNode node) {
+    private void selectOutlineNode(TreeNode node) {
         outlineSelection.selectNode(node);
         repaint();
     }
@@ -672,11 +678,15 @@ class ScrollableTreePanel extends JPanel {
             if (currentIndex > 0) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
+                focusSelectionButtonLater();
                 setSelectedNode(newSelected);
-                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
+
+	private void focusSelectionButtonLater() {
+		SwingUtilities.invokeLater(() -> focusSelectionButton(true));
+	}
 
     public void navigateDown() {
         TreeNode currentSelected = outlineSelection.getSelectedNode();
@@ -685,8 +695,8 @@ class ScrollableTreePanel extends JPanel {
             List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
             if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
                 TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
+                focusSelectionButtonLater();
                 setSelectedNode(newSelected);
-                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
@@ -700,8 +710,8 @@ class ScrollableTreePanel extends JPanel {
             if (newIndex != currentIndex) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
+                focusSelectionButtonLater();
                 setSelectedNode(newSelected);
-                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
@@ -715,8 +725,8 @@ class ScrollableTreePanel extends JPanel {
             int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
             if (newIndex != currentIndex) {
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
+                focusSelectionButtonLater();
                 setSelectedNode(newSelected);
-                SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
     }
@@ -748,8 +758,8 @@ class ScrollableTreePanel extends JPanel {
         if (node == null) return;
         final TreeNode newSelected = node.getParent();
 		if (newSelected != null) {
+			focusSelectionButtonLater();
         	setSelectedNode(newSelected);
-            SwingUtilities.invokeLater(this::focusSelectionButton);
         }
     }
 
@@ -767,8 +777,8 @@ class ScrollableTreePanel extends JPanel {
             }
         }
         if (targetChild == null) targetChild = node.getChildren().get(0);
+        focusSelectionButtonLater();
         setSelectedNode(targetChild);
-        SwingUtilities.invokeLater(this::focusSelectionButton);
     }
 
     private int getPageSize() {

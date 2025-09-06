@@ -36,6 +36,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private TreeNode currentRoot;
     private MapView currentMapView;
 
+	MapView getCurrentMapView() {
+		return currentMapView;
+	}
+
 	private final SelectedNodeUpdater selectedNodeUpdater;
     private PropertyChangeListener focusListener;
 
@@ -47,14 +51,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 			final ScrollableTreePanel panel = getTreePanel();
 			if(panel == null)
 				return;
-			SwingUtilities.invokeLater(() -> handleNodeSelection(node, panel));
+			SwingUtilities.invokeLater(MapAwareOutlinePane.this::synchronizeOutlineSelection);
 		}
     }
 
-    private void handleNodeSelection(NodeModel node, ScrollableTreePanel panel) {
-    	final IMapSelection selection = Controller.getCurrentController().getSelection();
-    	if(selection == null || selection.getSelected() != node)
-    		return;
+    void synchronizeOutlineSelection() {
+    	final NodeModel node = currentMapView.getSelected().getNode();
+    	final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findVisibleOutlineNodeOrAncestor(node);
         VisibleOutlineState vs = panel.getVisibleState();
         int index = findVisibleIndex(target, vs, panel.getRoot());
@@ -107,7 +110,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if (index < 0) index = 0;
             panel.updateVisibleBlocks(index);
         }
-        panel.selectOutlineNode(node);
+        panel.setSelectedNode(node);
     }
 
     public MapAwareOutlinePane() {
@@ -208,8 +211,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 setRootNode(currentRoot);
                 ScrollableTreePanel panel = getTreePanel();
                 if (panel != null) {
-                    Window myWindow = SwingUtilities.getWindowAncestor(this);
-                    panel.setSelectionBridge(new OutlineSelectionBridge(currentMapView, myWindow));
+                    panel.setSelectionBridge(new OutlineSelectionBridge(this));
                 }
                 try {
                     addMapChangeListeners();
@@ -298,9 +300,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                         IMapSelection sel = Controller.getCurrentController().getSelection();
                         NodeModel selectedNode = sel != null ? sel.getSelected() : null;
                         if (selectedNode != null) {
-                            handleNodeSelection(selectedNode, panel);
+                            synchronizeOutlineSelection();
                         }
-                        panel.focusSelectionButton();
+                        panel.synchronizeSelectionButton(true);
+
                     } catch (Exception ignore) { /**/}
                 });
             }

@@ -8,7 +8,7 @@ class OutlineSelection {
     }
 
     public void selectNode(TreeNode node) {
-        if (node != null && node != selectedNode) {
+        if (node != null) {
         	selectedNode = node;
         }
     }

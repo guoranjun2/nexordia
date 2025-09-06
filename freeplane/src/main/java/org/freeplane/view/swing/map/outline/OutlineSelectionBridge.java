@@ -17,22 +17,16 @@ import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
 
 class OutlineSelectionBridge {
-    private final WeakReference<MapView> mapViewRef;
-    private final WeakReference<Window> outlineWindowRef;
 
-    OutlineSelectionBridge(MapView mapView, Window outlineWindow) {
-        this.mapViewRef = new WeakReference<>(mapView);
-        this.outlineWindowRef = new WeakReference<>(outlineWindow);
+    private final MapAwareOutlinePane outlinePane;
+
+	OutlineSelectionBridge(MapAwareOutlinePane outlinePane) {
+		this.outlinePane = outlinePane;
     }
 
     public void selectMapNodeById(String nodeId) {
-        final MapView mv = mapViewRef.get();
-        final Window outlineWindow = outlineWindowRef.get();
-        if (mv == null || outlineWindow == null) return;
-        if (!mv.isSelected()) return;
-        Window mapViewWindow = SwingUtilities.getWindowAncestor(mv);
-        if (mapViewWindow != outlineWindow) return;
-
+        final MapView mv = outlinePane.getCurrentMapView();
+        if (mv == null) return;
         Controller controller = Controller.getCurrentController();
         NodeModel current = null;
         IMapSelection selection = controller.getSelection();
@@ -46,4 +40,8 @@ class OutlineSelectionBridge {
         final NodeView nodeView = mv.getNodeView(target);
         mv.selectAsTheOnlyOneSelected(nodeView, false);
     }
+
+	void synchronizeOutlineSelection() {
+		outlinePane.synchronizeOutlineSelection();
+	}
 }
