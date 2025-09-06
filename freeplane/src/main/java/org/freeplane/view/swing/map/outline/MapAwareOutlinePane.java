@@ -100,14 +100,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     private boolean isNodeVisible(TreeNode node, ScrollableTreePanel panel) {
         if (panel.isNodeInBreadcrumbArea(node)) return true;
-        for (BlockPanel bp : panel.getVisibleState().getBlockPanels().values()) {
-            for (Component comp : bp.getComponents()) {
-                if (comp instanceof JButton) {
-                    Object n = ((JButton) comp).getClientProperty("treeNode");
-                    if (n == node && comp.isShowing()) return true;
-                }
-            }
-        }
+        if (panel.isNodeVisibleInBlocks(node)) return true;
         return false;
     }
 
@@ -224,10 +217,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 if (builder.getFirstVisibleNodeId() != null) {
                     panel = getTreePanel();
                     if (panel != null) {
-                        List<FlatNode> nodes = panel.getVisibleState().getVisibleNodes();
                         int index = -1;
-                        for (int i = 0; i < nodes.size(); i++) {
-                            if (builder.getFirstVisibleNodeId().equals(nodes.get(i).node.getId())) { index = i; break; }
+                        int count = panel.getVisibleState().getVisibleNodeCount();
+                        for (int i = 0; i < count; i++) {
+                            FlatNode fn = panel.getVisibleState().getFlatNodeAtIndex(i);
+                            if (fn != null && builder.getFirstVisibleNodeId().equals(fn.node.getId())) { index = i; break; }
                         }
                         if (index >= 0) {
                             panel.updateVisibleBlocks(index);

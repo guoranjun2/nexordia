@@ -8,7 +8,6 @@ import java.util.Map;
 class VisibleOutlineState {
     private final TreeNode root;
     private List<FlatNode> visibleNodes = new ArrayList<>();
-    private final Map<Integer, BlockPanel> blockPanels = new HashMap<>();
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
@@ -31,10 +30,6 @@ class VisibleOutlineState {
                 buildVisibleList(child, depth + 1);
             }
         }
-    }
-
-    List<FlatNode> getVisibleNodes() {
-        return new ArrayList<>(visibleNodes);
     }
 
     int getVisibleNodeCount() {
@@ -64,34 +59,6 @@ class VisibleOutlineState {
         return nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
     }
 
-    void addBlockPanel(int blockIndex, BlockPanel panel) {
-        blockPanels.put(blockIndex, panel);
-    }
-
-    void clearBlockPanels() {
-        blockPanels.clear();
-    }
-
-    Map<Integer, BlockPanel> getBlockPanels() {
-        return new HashMap<>(blockPanels);
-    }
-
-    boolean hasBlockPanel(int blockIndex) {
-        return blockPanels.containsKey(blockIndex);
-    }
-
-    BlockPanel getBlockPanel(int blockIndex) {
-        return blockPanels.get(blockIndex);
-    }
-
-    void removeBlockPanel(int blockIndex) {
-        blockPanels.remove(blockIndex);
-    }
-
-    List<Integer> getBlockPanelIndices() {
-        return new ArrayList<>(blockPanels.keySet());
-    }
-
     int getBreadcrumbAreaHeight() {
         return breadcrumbAreaHeight;
     }
@@ -115,5 +82,15 @@ class VisibleOutlineState {
             }
         }
         return null;
+    }
+
+    FlatNode getFlatNodeAtIndex(int index) {
+        if (index < 0 || index >= visibleNodes.size()) return null;
+        return visibleNodes.get(index);
+    }
+
+    String getNodeIdAtVisibleIndex(int index) {
+        FlatNode f = getFlatNodeAtIndex(index);
+        return f != null ? f.node.getId() : null;
     }
 }

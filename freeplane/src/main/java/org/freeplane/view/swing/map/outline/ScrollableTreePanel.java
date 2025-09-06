@@ -52,6 +52,7 @@ class ScrollableTreePanel extends JPanel {
     private OutlineSelection outlineSelection;
     private final int blockSize;
     private VisibleOutlineState visibleState;
+    private final OutlineBlockViewCache blockCache = new OutlineBlockViewCache();
     private OutlineSelectionBridge selectionBridge;
     private final Map<String, String> lastSelectedChildByParent = new HashMap<>();
 
@@ -152,7 +153,7 @@ class ScrollableTreePanel extends JPanel {
 
     private boolean focusButtonInBlocksForNode(TreeNode node) {
         if (node == null) return false;
-        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+        for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
                 if (comp instanceof JButton) {
                     JButton btn = (JButton) comp;
@@ -216,11 +217,11 @@ class ScrollableTreePanel extends JPanel {
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         int viewportWidth = viewport.getViewportWidth();
         int visibleCount = visibleState.getVisibleNodeCount();
-        boolean haveBlocks = !visibleState.getBlockPanels().isEmpty();
+        boolean haveBlocks = !blockCache.isEmpty();
         boolean unchanged = haveBlocks
-                && range.firstBlock == lastFirstBlock
-                && range.lastBlock == lastLastBlock
-                && range.breadcrumbAreaHeight == lastBreadcrumbAreaHeight
+                && range.getFirstBlock() == lastFirstBlock
+                && range.getLastBlock() == lastLastBlock
+                && range.getBreadcrumbAreaHeight() == lastBreadcrumbAreaHeight
                 && viewportWidth == lastViewportWidth
                 && visibleCount == lastVisibleNodeCount;
 
@@ -237,9 +238,9 @@ class ScrollableTreePanel extends JPanel {
         refreshUI();
 
 
-        lastFirstBlock = range.firstBlock;
-        lastLastBlock = range.lastBlock;
-        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastFirstBlock = range.getFirstBlock();
+        lastLastBlock = range.getLastBlock();
+        lastBreadcrumbAreaHeight = range.getBreadcrumbAreaHeight();
         lastViewportWidth = viewportWidth;
         lastVisibleNodeCount = visibleCount;
         updateFirstVisibleNodeId();
@@ -273,9 +274,9 @@ class ScrollableTreePanel extends JPanel {
 
 
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        lastFirstBlock = range.firstBlock;
-        lastLastBlock = range.lastBlock;
-        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastFirstBlock = range.getFirstBlock();
+        lastLastBlock = range.getLastBlock();
+        lastBreadcrumbAreaHeight = range.getBreadcrumbAreaHeight();
         lastViewportWidth = viewport.getViewportWidth();
         lastVisibleNodeCount = visibleState.getVisibleNodeCount();
         updateFirstVisibleNodeId();
@@ -293,10 +294,10 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void clearBlocks() {
-        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+        for (BlockPanel panel : blockCache.values()) {
             remove(panel);
         }
-        visibleState.clearBlockPanels();
+        blockCache.clear();
 
         Component[] components = getComponents();
         for (Component comp : components) {
@@ -322,6 +323,18 @@ class ScrollableTreePanel extends JPanel {
         lastVisibleNodeCount = -1;
     }
 
+    boolean isNodeVisibleInBlocks(TreeNode node) {
+        for (BlockPanel panel : blockCache.values()) {
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    Object n = ((JButton) comp).getClientProperty("treeNode");
+                    if (n == node && comp.isShowing()) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private boolean isNavigationButton(JButton button) {
         return button == navButtons.expandBtn || button == navButtons.collapseBtn ||
                button == navButtons.expandMoreBtn || button == navButtons.reduceBtn;
@@ -330,16 +343,15 @@ class ScrollableTreePanel extends JPanel {
     private void createVisibleBlocks() {
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
 
-        for (int b = range.firstBlock; b <= range.lastBlock; b++) {
-            if (!visibleState.hasBlockPanel(b))
-                createBlock(b, range.breadcrumbAreaHeight);
+        for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
+            if (!blockCache.has(b))
+                createBlock(b, range.getBreadcrumbAreaHeight());
         }
     }
 
     private void createBlock(int blockIndex, int yOffset) {
         int start = blockIndex * blockSize;
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        int end = Math.min(start + blockSize, visibleNodes.size());
+        int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
         int breadcrumbNodeCount = visibleState.getBreadcrumbAreaHeight() / geometry.rowHeight;
 
 
@@ -347,12 +359,17 @@ class ScrollableTreePanel extends JPanel {
             return;
         }
 
-        BlockPanel bp = new BlockPanel(visibleNodes.subList(start, end), start, geometry.rowHeight, this, breadcrumbNodeCount, outlineSelection);
+        java.util.List<FlatNode> blockNodes = new java.util.ArrayList<>();
+        for (int i = start; i < end; i++) {
+            FlatNode fn = visibleState.getFlatNodeAtIndex(i);
+            if (fn != null) blockNodes.add(fn);
+        }
+        BlockPanel bp = new BlockPanel(blockNodes, start, geometry.rowHeight, this, breadcrumbNodeCount, outlineSelection);
 
         Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, yOffset, getPreferredSize().width);
         bp.setBounds(bounds);
         add(bp);
-        visibleState.addBlockPanel(blockIndex, bp);
+        blockCache.put(blockIndex, bp);
     }
 
     private void updatePreferredFromActualBlocks() {
@@ -363,7 +380,7 @@ class ScrollableTreePanel extends JPanel {
         int maxWidth = calculateActualRequiredWidth();
         setPreferredSize(new Dimension(maxWidth, height));
 
-        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+        for (BlockPanel panel : blockCache.values()) {
             Dimension currentSize = panel.getSize();
             panel.setSize(maxWidth, currentSize.height);
         }
@@ -371,7 +388,7 @@ class ScrollableTreePanel extends JPanel {
 
     private int calculateActualRequiredWidth() {
         int maxWidth = 400;
-        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+        for (BlockPanel panel : blockCache.values()) {
             Component[] components = panel.getComponents();
             for (Component comp : components) {
                 if (comp instanceof JButton) {
@@ -391,30 +408,30 @@ class ScrollableTreePanel extends JPanel {
     private void updateFirstVisibleNodeId() {
         if (viewport == null) return;
         int index = viewport.calculateFirstVisibleNodeIndex();
-        List<FlatNode> nodes = visibleState.getVisibleNodes();
-        if (nodes.isEmpty()) {
+        int count = visibleState.getVisibleNodeCount();
+        if (count == 0) {
             visibleState.setFirstVisibleNodeId(null);
             return;
         }
-        index = Math.max(0, Math.min(index, nodes.size() - 1));
-        visibleState.setFirstVisibleNodeId(nodes.get(index).node.getId());
+        index = Math.max(0, Math.min(index, count - 1));
+        visibleState.setFirstVisibleNodeId(visibleState.getNodeIdAtVisibleIndex(index));
     }
 
     void setSelectedNode(TreeNode node, boolean requestFocus) {
-    	focusSelectionButtonLater(requestFocus);
-    	if (node.getParent() != null) {
-    		lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
-    	}
-    	outlineSelection.selectNode(node);
-    	repaint();
-    	if(visibleState.findNodeIndexInVisibleList(node) < 0) {
-    		TreeNode preservedHoveredNode = visibleState.getHoveredNode();
-    		removeAll();
-    		visibleState.clearBlockPanels();
-    		navButtons.hideNavigationButtons();
-    		visibleState.setHoveredNode(preservedHoveredNode);
-    		updateVisibleBlocks();
-    	}
+		focusSelectionButtonLater(requestFocus);
+		if (node.getParent() != null) {
+			lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
+		}
+		outlineSelection.selectNode(node);
+		repaint();
+		if(visibleState.findNodeIndexInVisibleList(node) < 0) {
+			TreeNode preservedHoveredNode = visibleState.getHoveredNode();
+			removeAll();
+			blockCache.clear();
+			navButtons.hideNavigationButtons();
+			visibleState.setHoveredNode(preservedHoveredNode);
+			updateVisibleBlocks();
+		}
     }
 
 
@@ -454,7 +471,7 @@ class ScrollableTreePanel extends JPanel {
 
         // Try to find the actual button for the selected node in visible block panels
         Rectangle target = null;
-        for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+        for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
                 if (comp instanceof JButton) {
                     Object n = ((JButton) comp).getClientProperty("treeNode");
@@ -513,8 +530,8 @@ class ScrollableTreePanel extends JPanel {
             }
         }
 
-        for (int blockIndex : visibleState.getBlockPanelIndices()) {
-            BlockPanel panel = visibleState.getBlockPanel(blockIndex);
+        for (int blockIndex : blockCache.keySet()) {
+            BlockPanel panel = blockCache.get(blockIndex);
             if (panel == null) continue;
             for (Component comp : panel.getComponents()) {
                 if (comp instanceof JButton) {
@@ -553,7 +570,7 @@ class ScrollableTreePanel extends JPanel {
         BreadcrumbState state = calculateBreadcrumbState();
         if (state != null) {
             breadcrumbPanel.update(state);
-            updateVisibleBlocks(state.firstVisibleNodeIndex);
+            updateVisibleBlocks(state.getFirstVisibleNodeIndex());
 
             TreeNode hovered = visibleState.getHoveredNode();
             if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
@@ -578,9 +595,9 @@ class ScrollableTreePanel extends JPanel {
         refreshUI();
 
 
-        lastFirstBlock = range.firstBlock;
-        lastLastBlock = range.lastBlock;
-        lastBreadcrumbAreaHeight = range.breadcrumbAreaHeight;
+        lastFirstBlock = range.getFirstBlock();
+        lastLastBlock = range.getLastBlock();
+        lastBreadcrumbAreaHeight = range.getBreadcrumbAreaHeight();
         lastViewportWidth = viewport.getViewportWidth();
         lastVisibleNodeCount = visibleState.getVisibleNodeCount();
 
@@ -592,12 +609,12 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void removeBlocksFromBlockIndex(int startBlock) {
-        List<Integer> indices = new ArrayList<>(visibleState.getBlockPanelIndices());
+        List<Integer> indices = new ArrayList<>(blockCache.keySet());
         for (int idx : indices) {
             if (idx >= startBlock) {
-                BlockPanel p = visibleState.getBlockPanel(idx);
+                BlockPanel p = blockCache.get(idx);
                 if (p != null) remove(p);
-                visibleState.removeBlockPanel(idx);
+                blockCache.remove(idx);
             }
         }
     }
@@ -645,10 +662,8 @@ class ScrollableTreePanel extends JPanel {
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             if (currentIndex > 0) {
-                List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-                TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
-
-                setSelectedNode(newSelected, true);
+                FlatNode prev = visibleState.getFlatNodeAtIndex(currentIndex - 1);
+                if (prev != null) setSelectedNode(prev.node, true);
             }
         }
     }
@@ -661,11 +676,10 @@ class ScrollableTreePanel extends JPanel {
         TreeNode currentSelected = outlineSelection.getSelectedNode();
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
-            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-            if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
-                TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
-
-                setSelectedNode(newSelected, true);
+            int size = visibleState.getVisibleNodeCount();
+            if (currentIndex >= 0 && currentIndex < size - 1) {
+                FlatNode next = visibleState.getFlatNodeAtIndex(currentIndex + 1);
+                if (next != null) setSelectedNode(next.node, true);
             }
         }
     }
@@ -677,10 +691,8 @@ class ScrollableTreePanel extends JPanel {
             int pageSize = getPageSize();
             int newIndex = Math.max(0, currentIndex - pageSize);
             if (newIndex != currentIndex) {
-                List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-                TreeNode newSelected = visibleNodes.get(newIndex).node;
-
-                setSelectedNode(newSelected, true);
+                FlatNode fn = visibleState.getFlatNodeAtIndex(newIndex);
+                if (fn != null) setSelectedNode(fn.node, true);
             }
         }
     }
@@ -690,11 +702,11 @@ class ScrollableTreePanel extends JPanel {
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             int pageSize = getPageSize();
-            List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-            int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
+            int size = visibleState.getVisibleNodeCount();
+            int newIndex = Math.min(size - 1, currentIndex + pageSize);
             if (newIndex != currentIndex) {
-                TreeNode newSelected = visibleNodes.get(newIndex).node;
-                setSelectedNode(newSelected, true);
+                FlatNode fn = visibleState.getFlatNodeAtIndex(newIndex);
+                if (fn != null) setSelectedNode(fn.node, true);
             }
         }
     }
@@ -773,7 +785,7 @@ class ScrollableTreePanel extends JPanel {
 		BreadcrumbState state = calculateBreadcrumbState();
 	    if (state != null) {
 	        breadcrumbPanel.update(state);
-	        updateVisibleBlocks(state.firstVisibleNodeIndex);
+	        updateVisibleBlocks(state.getFirstVisibleNodeIndex());
 	    }
 	    else {
 
@@ -853,7 +865,7 @@ protected void paintComponent(Graphics g) {
                     }
                 }
             }
-            for (BlockPanel panel : visibleState.getBlockPanels().values()) {
+            for (BlockPanel panel : blockCache.values()) {
                 for (Component comp : panel.getComponents()) {
                     if (comp instanceof JButton) {
                         JButton btn = (JButton) comp;

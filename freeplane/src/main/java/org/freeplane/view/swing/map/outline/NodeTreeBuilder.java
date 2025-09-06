@@ -32,13 +32,13 @@ class NodeTreeBuilder {
         }
         this.rootModel = mapView.getRoot().getNode();
         this.filter = mapView.getFilter();
-        this.targetAnchorId = saved != null ? saved.firstVisibleNodeId : null;
+        this.targetAnchorId = saved != null ? saved.getFirstVisibleNodeId() : null;
 
         boolean canApply = false;
         if (saved != null) {
             String currentRootId = rootModel.getID();
-            Filter savedFilter = saved.savedFilter != null ? saved.savedFilter.get() : null;
-            canApply = Objects.equals(saved.rootNodeId, currentRootId) && Objects.equals(savedFilter, filter);
+            Filter savedFilter = saved.getSavedFilter() != null ? saved.getSavedFilter().get() : null;
+            canApply = Objects.equals(saved.getRootNodeId(), currentRootId) && Objects.equals(savedFilter, filter);
         }
         this.applicableState = canApply ? saved : null;
 

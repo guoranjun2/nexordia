@@ -11,10 +11,10 @@ import java.lang.ref.WeakReference;
 import org.freeplane.features.filter.Filter;
 
 class OutlineViewState {
-    final String firstVisibleNodeId;
+    private final String firstVisibleNodeId;
     private final Map<String, Integer> expansionLevels;
-    final String rootNodeId;
-    final WeakReference<Filter> savedFilter;
+    private final String rootNodeId;
+    private final WeakReference<Filter> savedFilter;
 
     OutlineViewState(String firstVisibleNodeId, Map<String, Integer> expansionLevels, String rootNodeId, WeakReference<Filter> savedFilter) {
         this.firstVisibleNodeId = firstVisibleNodeId;
@@ -22,6 +22,10 @@ class OutlineViewState {
         this.rootNodeId = rootNodeId;
         this.savedFilter = savedFilter;
     }
+
+    String getFirstVisibleNodeId() { return firstVisibleNodeId; }
+    String getRootNodeId() { return rootNodeId; }
+    WeakReference<Filter> getSavedFilter() { return savedFilter; }
 
     void applyTo(TreeNode root) {
         Map<String, TreeNode> byId = new HashMap<>();

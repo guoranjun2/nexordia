@@ -74,8 +74,8 @@ class BreadcrumbPanel extends JPanel {
     void update(BreadcrumbState state) {
         removeAll();
 
-        currentBreadcrumbHeight = state.breadcrumbHeight;
-        this.currentBreadcrumbNodes = new ArrayList<>(state.breadcrumbNodes);
+        currentBreadcrumbHeight = state.getBreadcrumbHeight();
+        this.currentBreadcrumbNodes = new ArrayList<>(state.getBreadcrumbNodes());
 
         controller.setBreadcrumbAreaHeight(currentBreadcrumbHeight);
         updateNavigationButtons();

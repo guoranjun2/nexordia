@@ -50,8 +50,7 @@ class OutlineViewport {
     VisibleBlockRange calculateVisibleBlockRange(int blockSize) {
         Rectangle viewRect = getViewRect();
         int blockHeight = blockSize * geometry.rowHeight;
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        int totalBlocks = (visibleNodes.size() + blockSize - 1) / blockSize;
+        int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
 
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         int adjustedViewY = Math.max(0, viewRect.y - breadcrumbAreaHeight);
@@ -79,14 +78,19 @@ class OutlineViewport {
     }
 
     static class VisibleBlockRange {
-        final int firstBlock;
-        final int lastBlock;
-        final int breadcrumbAreaHeight;
+        private final int firstBlock;
+        private final int lastBlock;
+        private final int breadcrumbAreaHeight;
 
         private VisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
             this.firstBlock = firstBlock;
             this.lastBlock = lastBlock;
             this.breadcrumbAreaHeight = breadcrumbAreaHeight;
         }
+
+        int getFirstBlock() { return firstBlock; }
+        int getLastBlock() { return lastBlock; }
+        int getBreadcrumbAreaHeight() { return breadcrumbAreaHeight; }
+        boolean contains(int blockIndex) { return blockIndex >= firstBlock && blockIndex <= lastBlock; }
     }
 }

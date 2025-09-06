@@ -22,19 +22,20 @@ class BreadcrumbPath {
     }
 
     BreadcrumbState calculateBreadcrumbState(List<TreeNode> currentBreadcrumbNodes) {
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        if (visibleNodes.isEmpty()) {
+        if (visibleState.getVisibleNodeCount() == 0) {
             return null;
         }
 
         int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
         int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
 
-        if (firstFullyVisibleNodeIndex >= visibleNodes.size()) {
+        if (firstFullyVisibleNodeIndex >= visibleState.getVisibleNodeCount()) {
             return null;
         }
 
-        TreeNode firstFullyVisibleNode = visibleNodes.get(firstFullyVisibleNodeIndex).node;
+        FlatNode firstFlat = visibleState.getFlatNodeAtIndex(firstFullyVisibleNodeIndex);
+        if (firstFlat == null) return null;
+        TreeNode firstFullyVisibleNode = firstFlat.node;
 
         if (firstFullyVisibleNode == root) {
             if (currentBreadcrumbHeight == 0) {
