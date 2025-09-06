@@ -44,13 +44,6 @@ class OutlinePane extends JPanel {
         setupScrollListeners();
     }
 
-
-    void refreshTree() {
-        SwingUtilities.invokeLater(() -> {
-            treePanel.updateVisibleNodes();
-        });
-    }
-
     ScrollableTreePanel getTreePanel() {
         return treePanel;
     }

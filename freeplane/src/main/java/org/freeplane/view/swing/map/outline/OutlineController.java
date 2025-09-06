@@ -17,22 +17,6 @@ class OutlineController {
         this.scrollPane = scrollPane;
     }
 
-    void refreshAll() {
-        treePanel.updateVisibleNodes();
-    }
-
-    void refreshFromStartIndex(int startFromNodeIndex) {
-        treePanel.updateVisibleBlocks(startFromNodeIndex);
-    }
-
-    void rebuildFromAnchor(TreeNode anchorNode) {
-        treePanel.rebuildFromNode(anchorNode);
-    }
-
-    void updateTitle(TreeNode node) {
-        treePanel.updateNodeTitle(node);
-    }
-
     int getRowHeight() {
         return treePanel.getRowHeight();
     }
@@ -73,20 +57,12 @@ class OutlineController {
         treePanel.setBreadcrumbAreaHeight(height);
     }
 
-    boolean isNodeInBreadcrumbArea(TreeNode node) {
-        return treePanel.isNodeInBreadcrumbArea(node);
-    }
-
     boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
         return treePanel.isNodeInBreadcrumbPath(node, breadcrumbNodes);
     }
 
     int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
         return treePanel.findNodeIndexInBreadcrumbPath(node, breadcrumbNodes);
-    }
-
-    OutlineSelection getSelection() {
-        return treePanel.getOutlineSelection();
     }
 
     Icon getSelectionIcon() {

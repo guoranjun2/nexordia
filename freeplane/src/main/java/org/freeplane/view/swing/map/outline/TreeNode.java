@@ -4,23 +4,23 @@ package org.freeplane.view.swing.map.outline;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TreeNode {
+class TreeNode {
     private String title;
     private final String id;
     private final List<TreeNode> children = new ArrayList<>();
     private int expansionLevel = 0;
     private TreeNode parent = null;
 
-    public TreeNode(String title, String id) {
+    TreeNode(String title, String id) {
         this.setTitle(title);
         this.id = id;
     }
 
-    public void setTitle(String newTitle) {
+    void setTitle(String newTitle) {
         this.title = newTitle;
     }
 
-    public void addChild(TreeNode child) {
+    void addChild(TreeNode child) {
         child.setParent(this);
         getChildren().add(child);
         if (getExpansionLevel() > 0) {
@@ -29,12 +29,7 @@ public class TreeNode {
         }
     }
 
-    public boolean removeChild(TreeNode child) {
-        child.setParent(null);
-        return getChildren().remove(child);
-    }
-
-    public void applyExpansionLevel(int level) {
+    void applyExpansionLevel(int level) {
         this.setExpansionLevel(level);
         if (level > 0) {
             for (TreeNode child : getChildren()) {
@@ -47,7 +42,7 @@ public class TreeNode {
         }
     }
 
-    public int getMaxExpansionDepth() {
+    int getMaxExpansionDepth() {
         if (getExpansionLevel() == 0 || getChildren().isEmpty()) {
             return 0;
         }
@@ -58,17 +53,17 @@ public class TreeNode {
         return maxDepth;
     }
 
-    public boolean isExpanded() {
+    boolean isExpanded() {
         return getExpansionLevel() > 0;
     }
 
-    public int getExpansionLevel() {
+    int getExpansionLevel() {
         return expansionLevel;
     }
 
 
     @Override
-    public String toString() {
+	public String toString() {
         return "TreeNode [title=" + getTitle() + "]";
     }
 
@@ -86,6 +81,18 @@ public class TreeNode {
 
 	List<TreeNode> getChildren() {
 		return children;
+	}
+
+	void add(MapTreeNode node, int index) {
+		if (index < children.size()) {
+		    children.add(index, node);
+		} else {
+		    children.add(node);
+		}
+	}
+
+	boolean remove(MapTreeNode toRemove) {
+		return children.remove(toRemove);
 	}
 
 	String getId() {

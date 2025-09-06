@@ -45,7 +45,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     private class SelectedNodeUpdater implements INodeSelectionListener{
 		@Override
-		public void onSelect(NodeModel node) {
+		public
+		void onSelect(NodeModel node) {
 			if(currentMapView == null || ! currentMapView.isSelected() || node == null)
 				return;
 			final ScrollableTreePanel panel = getTreePanel();

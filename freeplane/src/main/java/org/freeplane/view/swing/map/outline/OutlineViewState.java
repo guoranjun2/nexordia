@@ -12,7 +12,7 @@ import org.freeplane.features.filter.Filter;
 
 class OutlineViewState {
     final String firstVisibleNodeId;
-    final Map<String, Integer> expansionLevels;
+    private final Map<String, Integer> expansionLevels;
     final String rootNodeId;
     final WeakReference<Filter> savedFilter;
 

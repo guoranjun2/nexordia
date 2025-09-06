@@ -10,18 +10,18 @@ class BreadcrumbPath {
     private final VisibleOutlineState visibleState;
     private OutlineViewport viewport;
 
-    public BreadcrumbPath(TreeNode root, OutlineGeometry geometry, VisibleOutlineState visibleState, OutlineViewport viewport) {
+    BreadcrumbPath(TreeNode root, OutlineGeometry geometry, VisibleOutlineState visibleState, OutlineViewport viewport) {
         this.root = root;
         this.geometry = geometry;
         this.visibleState = visibleState;
         this.viewport = viewport;
     }
 
-    public void setViewport(OutlineViewport viewport) {
+    void setViewport(OutlineViewport viewport) {
         this.viewport = viewport;
     }
 
-    public BreadcrumbState calculateBreadcrumbState(List<TreeNode> currentBreadcrumbNodes) {
+    BreadcrumbState calculateBreadcrumbState(List<TreeNode> currentBreadcrumbNodes) {
         List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
         if (visibleNodes.isEmpty()) {
             return null;
@@ -66,11 +66,11 @@ class BreadcrumbPath {
         return breadcrumbNodes;
     }
 
-    public boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+    boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
         return breadcrumbNodes.contains(node);
     }
 
-    public int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+    int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
         for (int i = 0; i < breadcrumbNodes.size(); i++) {
             if (breadcrumbNodes.get(i) == node) {
                 return i;

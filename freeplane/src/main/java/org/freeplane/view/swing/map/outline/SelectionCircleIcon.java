@@ -13,7 +13,7 @@ class SelectionCircleIcon implements Icon {
     private final int diameter;
     private final Color color;
 
-    public SelectionCircleIcon(Color color, int diameter) {
+    SelectionCircleIcon(Color color, int diameter) {
         this.color = color;
         this.diameter = diameter;
     }

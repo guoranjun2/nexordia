@@ -8,13 +8,13 @@ class NodePositioning {
     private final OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
     
-    public NodePositioning(TreeNode root, OutlineGeometry geometry, VisibleOutlineState visibleState) {
+    NodePositioning(TreeNode root, OutlineGeometry geometry, VisibleOutlineState visibleState) {
         this.root = root;
         this.geometry = geometry;
         this.visibleState = visibleState;
     }
     
-    public int calculateNodeDepth(TreeNode node) {
+    int calculateNodeDepth(TreeNode node) {
         int depth = 0;
         TreeNode current = node;
         while (current != null && current != root) {
@@ -24,7 +24,7 @@ class NodePositioning {
         return current == root ? depth : -1;
     }
     
-    public Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
+    Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
         int y, depth, baseX;
         
         if (isBreadcrumb) {
@@ -48,7 +48,7 @@ class NodePositioning {
         return new Point(baseX, y);
     }
     
-    public Point calculateSelectionIconPosition(TreeNode node, Rectangle buttonBounds) {
+    Point calculateSelectionIconPosition(TreeNode node, Rectangle buttonBounds) {
         FlatNode flatNode = visibleState.getFlatNode(node);
         if (flatNode == null) return null;
         
@@ -58,13 +58,13 @@ class NodePositioning {
         return new Point(iconX, iconY);
     }
     
-    public Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
+    Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
         int targetY = (startFromNodeIndex * geometry.rowHeight) - breadcrumbAreaHeight;
         targetY = Math.max(0, targetY);
         return new Point(0, targetY);
     }
     
-    public Rectangle calculateBlockBounds(int blockIndex, int blockSize, int breadcrumbAreaHeight, int panelWidth) {
+    Rectangle calculateBlockBounds(int blockIndex, int blockSize, int breadcrumbAreaHeight, int panelWidth) {
         int start = blockIndex * blockSize;
         int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
         
@@ -78,7 +78,7 @@ class NodePositioning {
         return new Rectangle(0, blockY, panelWidth, blockHeight);
     }
     
-    public int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
+    int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
         int effectiveViewportY = viewRect.y + breadcrumbAreaHeight;
         return Math.max(0, (effectiveViewportY + geometry.rowHeight/2 - 1) / geometry.rowHeight);
     }

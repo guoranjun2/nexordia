@@ -5,11 +5,6 @@
  */
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Window;
-import java.lang.ref.WeakReference;
-
-import javax.swing.SwingUtilities;
-
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;

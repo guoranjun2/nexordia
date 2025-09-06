@@ -28,12 +28,12 @@ class BreadcrumbPanel extends JPanel {
     private List<TreeNode> currentBreadcrumbNodes = new ArrayList<>();
 	private OutlineSelectionBridge selectionBridge;
 
-    public BreadcrumbPanel() {
+    BreadcrumbPanel() {
         setLayout(null);
         setOpaque(true);
     }
 
-    public void initialize(OutlineController controller, OutlineSelection selection) {
+    void initialize(OutlineController controller, OutlineSelection selection) {
         this.controller = controller;
         this.selection = selection;
         setupKeyBindings();
@@ -71,7 +71,7 @@ class BreadcrumbPanel extends JPanel {
 		public void actionPerformed(ActionEvent e) { controller.expandSelectedMore(); }});
     }
 
-    public void update(BreadcrumbState state) {
+    void update(BreadcrumbState state) {
         removeAll();
 
         currentBreadcrumbHeight = state.breadcrumbHeight;
@@ -153,20 +153,16 @@ class BreadcrumbPanel extends JPanel {
 	}
 
 
-    public Rectangle calculateBounds() {
+    Rectangle calculateBounds() {
         int width = controller.getViewportWidth();
         return new Rectangle(0, 0, width, currentBreadcrumbHeight);
     }
 
-    public int getCurrentHeight() {
-        return currentBreadcrumbHeight;
-    }
-
-    public List<TreeNode> getCurrentBreadcrumbNodes() {
+    List<TreeNode> getCurrentBreadcrumbNodes() {
         return new ArrayList<>(currentBreadcrumbNodes);
     }
 
-    public void setSelectionBridge(OutlineSelectionBridge bridge) {
+    void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
     }
 

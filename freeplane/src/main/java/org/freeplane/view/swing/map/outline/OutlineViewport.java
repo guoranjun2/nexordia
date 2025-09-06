@@ -12,63 +12,42 @@ class OutlineViewport {
     private final OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
     private final NodePositioning nodePositioning;
-    
-    public OutlineViewport(JScrollPane scrollPane, OutlineGeometry geometry, VisibleOutlineState visibleState, NodePositioning nodePositioning) {
+
+    OutlineViewport(JScrollPane scrollPane, OutlineGeometry geometry, VisibleOutlineState visibleState, NodePositioning nodePositioning) {
         this.scrollPane = scrollPane;
         this.geometry = geometry;
         this.visibleState = visibleState;
         this.nodePositioning = nodePositioning;
     }
-    
-    public Rectangle getViewRect() {
+
+    private Rectangle getViewRect() {
         return scrollPane.getViewport().getViewRect();
     }
-    
-    public void setViewPosition(Point position) {
+
+    private void setViewPosition(Point position) {
         scrollPane.getViewport().setViewPosition(position);
     }
-    
-    public void setViewPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
+
+    void setViewPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
         Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbAreaHeight);
         setViewPosition(viewPosition);
     }
-    
-    public void scrollToNode(TreeNode node) {
-        List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
-        int nodeIndex = findNodeIndex(node, visibleNodes);
-        if (nodeIndex >= 0) {
-            int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-            int y = breadcrumbAreaHeight + nodeIndex * geometry.rowHeight;
-            Rectangle targetRect = new Rectangle(0, y, getViewRect().width, geometry.rowHeight);
-            scrollToRect(targetRect);
-        }
-    }
-    
-    private void scrollToRect(Rectangle targetRect) {
-        if (scrollPane.getParent() instanceof JComponent) {
-            ((JComponent) scrollPane.getParent()).scrollRectToVisible(targetRect);
-        }
-    }
-    
-    public int getPageSize() {
+
+    int getPageSize() {
         int viewportHeight = scrollPane.getViewport().getHeight();
         return Math.max(1, viewportHeight / geometry.rowHeight);
     }
-    
-    public int getViewportWidth() {
+
+    int getViewportWidth() {
         return scrollPane.getViewport().getWidth();
     }
-    
-    public int getViewportHeight() {
-        return scrollPane.getViewport().getHeight();
-    }
-    
-    public void refreshViewport() {
+
+    void refreshViewport() {
         scrollPane.getViewport().revalidate();
         scrollPane.repaint();
     }
-    
-    public VisibleBlockRange calculateVisibleBlockRange(int blockSize) {
+
+    VisibleBlockRange calculateVisibleBlockRange(int blockSize) {
         Rectangle viewRect = getViewRect();
         int blockHeight = blockSize * geometry.rowHeight;
         List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
@@ -80,16 +59,16 @@ class OutlineViewport {
 
         int firstBlock = Math.max(0, adjustedViewY / blockHeight);
         int lastBlock = Math.min(totalBlocks - 1, (adjustedViewY + adjustedViewHeight) / blockHeight);
-        
+
         return new VisibleBlockRange(firstBlock, lastBlock, breadcrumbAreaHeight);
     }
-    
-    public int calculateFirstVisibleNodeIndex() {
+
+    int calculateFirstVisibleNodeIndex() {
         Rectangle viewRect = getViewRect();
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
     }
-    
+
     private int findNodeIndex(TreeNode node, List<FlatNode> visibleNodes) {
         for (int i = 0; i < visibleNodes.size(); i++) {
             if (visibleNodes.get(i).node.getId().equals(node.getId())) {
@@ -98,16 +77,16 @@ class OutlineViewport {
         }
         return -1;
     }
-    
-    public static class VisibleBlockRange {
-        public final int firstBlock;
-        public final int lastBlock;
-        public final int breadcrumbAreaHeight;
-        
+
+    static class VisibleBlockRange {
+        final int firstBlock;
+        final int lastBlock;
+        final int breadcrumbAreaHeight;
+
         private VisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
             this.firstBlock = firstBlock;
             this.lastBlock = lastBlock;
             this.breadcrumbAreaHeight = breadcrumbAreaHeight;
         }
     }
-} 
+}

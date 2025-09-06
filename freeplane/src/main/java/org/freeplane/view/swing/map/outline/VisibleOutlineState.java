@@ -108,10 +108,6 @@ class VisibleOutlineState {
         this.hoveredNode = node;
     }
 
-    TreeNode getRoot() {
-        return root;
-    }
-
     FlatNode getFlatNode(TreeNode node) {
         for (FlatNode flat : visibleNodes) {
             if (flat.node == node) {
@@ -119,13 +115,5 @@ class VisibleOutlineState {
             }
         }
         return null;
-    }
-
-    int getMaxDepth() {
-        int maxDepth = 0;
-        for (FlatNode flat : visibleNodes) {
-            maxDepth = Math.max(maxDepth, flat.depth);
-        }
-        return maxDepth;
     }
 }

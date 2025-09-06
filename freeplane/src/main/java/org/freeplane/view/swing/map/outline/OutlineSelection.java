@@ -3,21 +3,17 @@ package org.freeplane.view.swing.map.outline;
 class OutlineSelection {
     private TreeNode selectedNode;
 
-    public OutlineSelection(TreeNode root) {
+    OutlineSelection(TreeNode root) {
         this.selectedNode = root;
     }
 
-    public void selectNode(TreeNode node) {
+    void selectNode(TreeNode node) {
         if (node != null) {
         	selectedNode = node;
         }
     }
 
-    public String getSelectedNodeId() {
-        return selectedNode.getId();
-    }
-
-    public TreeNode getSelectedNode() {
+    TreeNode getSelectedNode() {
         return selectedNode;
     }
 
@@ -25,7 +21,7 @@ class OutlineSelection {
         return selectedNode != null && selectedNode.getId().equals(nodeId);
     }
 
-    public boolean isSelected(TreeNode node) {
+    boolean isSelected(TreeNode node) {
         return node != null && isSelected(node.getId());
     }
 }

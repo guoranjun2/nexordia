@@ -7,21 +7,21 @@ import java.awt.Insets;
 import javax.swing.BorderFactory;
 
 class OutlineGeometry {
-    final int indent;
     final int rowHeight;
     final int navButtonWidth;
     final int navButtonsTotalWidth;
+    private final int indent;
     private final int standardGap;
     private final int buttonAreaWidth;
     final int iconDiameter;
 
-    public OutlineGeometry(JButton sampleButton) {
-        
+    OutlineGeometry(JButton sampleButton) {
+
         sampleButton.setMargin(new Insets(0, 0, 0, 0));
         sampleButton.setFont(sampleButton.getFont().deriveFont(10f));
         sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
 
-        
+
         final Dimension preferredButtonSize = sampleButton.getPreferredSize();
         this.rowHeight = Math.round(preferredButtonSize.height);
         this.indent = rowHeight;
@@ -46,7 +46,7 @@ class OutlineGeometry {
         return Math.max(0, textButtonX - navButtonsTotalWidth);
     }
 
-    public int calculateNavigationButtonBaseX(FlatNode flatNode) {
+    int calculateNavigationButtonBaseX(FlatNode flatNode) {
         return calculateNavigationButtonBaseX(flatNode.depth);
     }
 

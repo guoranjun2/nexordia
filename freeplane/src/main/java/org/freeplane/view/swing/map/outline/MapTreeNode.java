@@ -23,20 +23,8 @@ class MapTreeNode extends TreeNode implements INodeView {
         this.outlinePane = outlinePane;
     }
 
-    /**
-     * Get current title from the NodeModel (may have changed since creation).
-     * Override the final title field behavior for live updates.
-     */
-    String getCurrentTitle() {
-        return getNodeText(nodeModel);
-    }
-
     private static String getNodeText(NodeModel nodeModel) {
         return TextController.getController().getShortPlainText(nodeModel);
-    }
-
-    NodeModel getNodeModel() {
-        return nodeModel;
     }
 
     @Override
@@ -58,11 +46,7 @@ class MapTreeNode extends TreeNode implements INodeView {
             MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
 
 
-            if (newIndex < getChildren().size()) {
-                getChildren().add(newIndex, childTreeNode);
-            } else {
-                getChildren().add(childTreeNode);
-            }
+            add(childTreeNode, newIndex);
             childTreeNode.setParent(this);
 
 
@@ -106,7 +90,7 @@ class MapTreeNode extends TreeNode implements INodeView {
             deletedNode.removeViewer(toRemove);
 
 
-            getChildren().remove(toRemove);
+            remove(toRemove);
             toRemove.setParent(null);
 
 
@@ -120,12 +104,14 @@ class MapTreeNode extends TreeNode implements INodeView {
     }
 
     @Override
-    public boolean hasStandardLayoutWithRootNode(NodeModel root) {
+	public
+    boolean hasStandardLayoutWithRootNode(NodeModel root) {
         return false;
     }
 
     @Override
-    public boolean isTopOrLeft() {
+	public
+    boolean isTopOrLeft() {
         return true;
     }
 
@@ -145,13 +131,6 @@ class MapTreeNode extends TreeNode implements INodeView {
                 ((MapTreeNode) child).cleanupListeners();
             }
         }
-    }
-
-    /**
-     * Get the current text of the underlying node (may have changed since creation).
-     */
-    String getCurrentText() {
-        return getNodeText(nodeModel);
     }
 
     boolean isContainedIn(MapAwareOutlinePane pane) {
