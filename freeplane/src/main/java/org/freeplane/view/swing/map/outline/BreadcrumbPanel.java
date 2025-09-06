@@ -89,12 +89,10 @@ class BreadcrumbPanel extends JPanel {
 
             int actionX = controller.calcTextButtonX(depth);
 
-            JButton breadcrumbButton = new JButton();
+            NodeButton breadcrumbButton = new NodeButton(node);
             breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
             breadcrumbButton.setText(node.getTitle());
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
-
-            breadcrumbButton.putClientProperty("treeNode", node);
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
@@ -184,9 +182,9 @@ class BreadcrumbPanel extends JPanel {
         super.paintComponent(g);
 
         for (Component comp : getComponents()) {
-            if (comp instanceof JButton) {
-                JButton btn = (JButton) comp;
-                TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
+            if (comp instanceof NodeButton) {
+                NodeButton btn = (NodeButton) comp;
+                TreeNode buttonNode = btn.getNode();
                 if (buttonNode != null && selection.isSelected(buttonNode)) {
                     Icon icon = controller.getSelectionIcon();
                     Point iconPosition = controller.calculateSelectionIconPosition(buttonNode, comp.getBounds());

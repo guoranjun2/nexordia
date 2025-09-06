@@ -139,10 +139,9 @@ class ScrollableTreePanel extends JPanel {
     private boolean focusButtonInBreadcrumbForNode(TreeNode node) {
         if (node == null) return false;
         for (Component comp : breadcrumbPanel.getComponents()) {
-            if (comp instanceof JButton) {
-                JButton btn = (JButton) comp;
-                Object n = btn.getClientProperty("treeNode");
-                if (n == node && btn.isShowing()) {
+            if (comp instanceof NodeButton) {
+                NodeButton btn = (NodeButton) comp;
+                if (btn.getNode() == node && btn.isShowing()) {
                     btn.requestFocusInWindow();
                     return true;
                 }
@@ -155,10 +154,9 @@ class ScrollableTreePanel extends JPanel {
         if (node == null) return false;
         for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
-                if (comp instanceof JButton) {
-                    JButton btn = (JButton) comp;
-                    Object n = btn.getClientProperty("treeNode");
-                    if (n == node && btn.isShowing()) {
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    if (btn.getNode() == node && btn.isShowing()) {
                         btn.requestFocusInWindow();
                         return true;
                     }
@@ -326,9 +324,9 @@ class ScrollableTreePanel extends JPanel {
     boolean isNodeVisibleInBlocks(TreeNode node) {
         for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
-                if (comp instanceof JButton) {
-                    Object n = ((JButton) comp).getClientProperty("treeNode");
-                    if (n == node && comp.isShowing()) return true;
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    if (btn.getNode() == node && comp.isShowing()) return true;
                 }
             }
         }
@@ -473,9 +471,9 @@ class ScrollableTreePanel extends JPanel {
         Rectangle target = null;
         for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
-                if (comp instanceof JButton) {
-                    Object n = ((JButton) comp).getClientProperty("treeNode");
-                    if (n == selectedNode) {
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    if (btn.getNode() == selectedNode) {
                         Rectangle b = comp.getBounds();
                         Rectangle p = panel.getBounds();
                         target = new Rectangle(b.x + p.x, b.y + p.y,
@@ -513,10 +511,9 @@ class ScrollableTreePanel extends JPanel {
 
     void updateNodeTitle(TreeNode node) {
         for (Component comp : breadcrumbPanel.getComponents()) {
-            if (comp instanceof JButton) {
-                JButton btn = (JButton) comp;
-                Object n = btn.getClientProperty("treeNode");
-                if (n == node) {
+            if (comp instanceof NodeButton) {
+                NodeButton btn = (NodeButton) comp;
+                if (btn.getNode() == node) {
                     btn.setText(node.getTitle());
                     int depth = calculateNodeDepth(node);
                     if (depth >= 0) {
@@ -534,10 +531,9 @@ class ScrollableTreePanel extends JPanel {
             BlockPanel panel = blockCache.get(blockIndex);
             if (panel == null) continue;
             for (Component comp : panel.getComponents()) {
-                if (comp instanceof JButton) {
-                    JButton btn = (JButton) comp;
-                    Object n = btn.getClientProperty("treeNode");
-                    if (n == node) {
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    if (btn.getNode() == node) {
                         btn.setText(node.getTitle());
                         int depth = calculateNodeDepth(node);
                         if (depth >= 0) {
@@ -856,10 +852,9 @@ protected void paintComponent(Graphics g) {
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected != null) {
             for (Component comp : breadcrumbPanel.getComponents()) {
-                if (comp instanceof JButton) {
-                    JButton btn = (JButton) comp;
-                    Object n = btn.getClientProperty("treeNode");
-                    if (n == selected && btn.isShowing()) {
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    if (btn.getNode() == selected && btn.isShowing()) {
                         btn.requestFocusInWindow();
                         return;
                     }
@@ -867,10 +862,9 @@ protected void paintComponent(Graphics g) {
             }
             for (BlockPanel panel : blockCache.values()) {
                 for (Component comp : panel.getComponents()) {
-                    if (comp instanceof JButton) {
-                        JButton btn = (JButton) comp;
-                        Object n = btn.getClientProperty("treeNode");
-                        if (n == selected && btn.isShowing()) {
+                    if (comp instanceof NodeButton) {
+                        NodeButton btn = (NodeButton) comp;
+                        if (btn.getNode() == selected && btn.isShowing()) {
                             btn.requestFocusInWindow();
                             return;
                         }

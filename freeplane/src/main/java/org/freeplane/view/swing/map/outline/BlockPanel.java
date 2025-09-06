@@ -49,16 +49,13 @@ class BlockPanel extends JPanel {
     @SuppressWarnings("serial")
 	private void createActionButton(FlatNode flat, int y, int rowHeight, ScrollableTreePanel parentPanel) {
         String buttonText = flat.node.getTitle();
-        JButton button = new JButton();
+        NodeButton button = new NodeButton(flat.node);
         button.setFont(button.getFont().deriveFont(8f));
         button.setText(buttonText);
 
         int actionX = parentPanel.geometry.calculateTextButtonX(flat.depth);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
-
-
-        button.putClientProperty("treeNode", flat.node);
 
         final AbstractAction selectAction = new AbstractAction() {
 
@@ -106,9 +103,9 @@ class BlockPanel extends JPanel {
 
         if (parentPanel != null) {
             for (Component comp : getComponents()) {
-                if (comp instanceof JButton) {
-                    JButton btn = (JButton) comp;
-                    TreeNode buttonNode = (TreeNode) btn.getClientProperty("treeNode");
+                if (comp instanceof NodeButton) {
+                    NodeButton btn = (NodeButton) comp;
+                    TreeNode buttonNode = btn.getNode();
                     if (buttonNode != null && selection.isSelected(buttonNode)) {
 
                         boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
