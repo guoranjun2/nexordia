@@ -10,6 +10,7 @@ import javax.swing.JButton;
 import java.awt.Window;
 
 import org.freeplane.features.mode.Controller;
+import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.map.IMapChangeListener;
@@ -29,7 +30,7 @@ import org.freeplane.features.ui.FocusOutlineAction;
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
 	private static final long serialVersionUID = 1L;
 
-	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("No Map Available", "empty");
+	static final TreeNode NO_MAP_AVAILABLE = new TreeNode(TextUtils.getText("no_open_map"), "empty");
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
 
@@ -111,7 +112,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     public MapAwareOutlinePane() {
-    	super(new TreeNode("Loading...", "loading"));
+    	super(NO_MAP_AVAILABLE);
     	selectedNodeUpdater = new SelectedNodeUpdater();
     }
 

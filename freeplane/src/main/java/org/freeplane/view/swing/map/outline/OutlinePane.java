@@ -61,10 +61,6 @@ class OutlinePane extends JPanel {
     }
 
     void setRootNode(TreeNode newRootNode) {
-        if (newRootNode == null) {
-            newRootNode = new TreeNode("No Data", "empty");
-        }
-
         if (treePanel != null) {
             TreeNode oldRoot = treePanel.getRoot();
             if (oldRoot != null) {
