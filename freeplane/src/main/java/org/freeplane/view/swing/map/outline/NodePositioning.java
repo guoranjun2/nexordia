@@ -18,7 +18,7 @@ class NodePositioning {
         int depth = 0;
         TreeNode current = node;
         while (current != null && current != root) {
-            current = current.parent;
+            current = current.getParent();
             depth++;
         }
         return current == root ? depth : -1;

@@ -47,7 +47,7 @@ class BreadcrumbPath {
         TreeNode lastCurrentBreadcrumbNode = currentBreadcrumbNodes.isEmpty() ? null :
                                            currentBreadcrumbNodes.get(currentBreadcrumbNodes.size() - 1);
 
-        if (firstFullyVisibleNode.parent == lastCurrentBreadcrumbNode) {
+        if (firstFullyVisibleNode.getParent() == lastCurrentBreadcrumbNode) {
             return null;
         }
 
@@ -58,10 +58,10 @@ class BreadcrumbPath {
 
     private List<TreeNode> collectBreadcrumbNodes(TreeNode fromNode) {
         List<TreeNode> breadcrumbNodes = new ArrayList<>();
-        TreeNode current = fromNode.parent;
+        TreeNode current = fromNode.getParent();
         while (current != null) {
             breadcrumbNodes.add(0, current);
-            current = current.parent;
+            current = current.getParent();
         }
         return breadcrumbNodes;
     }

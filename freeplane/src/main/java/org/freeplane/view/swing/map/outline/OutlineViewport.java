@@ -92,7 +92,7 @@ class OutlineViewport {
     
     private int findNodeIndex(TreeNode node, List<FlatNode> visibleNodes) {
         for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node.id.equals(node.id)) {
+            if (visibleNodes.get(i).node.getId().equals(node.getId())) {
                 return i;
             }
         }

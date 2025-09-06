@@ -40,8 +40,8 @@ class OutlineViewState {
     }
 
     private void collect(TreeNode node, int depth, Map<String, TreeNode> byId, Map<String, Integer> depthById) {
-        byId.put(node.id, node);
-        depthById.put(node.id, depth);
-        for (TreeNode c : node.children) collect(c, depth + 1, byId, depthById);
+        byId.put(node.getId(), node);
+        depthById.put(node.getId(), depth);
+        for (TreeNode c : node.getChildren()) collect(c, depth + 1, byId, depthById);
     }
 }

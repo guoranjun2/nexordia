@@ -159,4 +159,13 @@ class OutlinePane extends JPanel {
             ((MapTreeNode) rootTreeNode).cleanupListeners();
         }
     }
+
+
+	boolean isSelected(TreeNode node) {
+		return treePanel.getOutlineSelection().isSelected(node);
+	}
+
+	public void setSelected(TreeNode node) {
+		treePanel.getOutlineSelection().selectNode(node);
+	}
 }

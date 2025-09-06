@@ -46,7 +46,7 @@ class NavigationButtons {
     }
 
     public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
-        if (node.children.isEmpty()) {
+        if (node.getChildren().isEmpty()) {
             hide();
             return;
         }

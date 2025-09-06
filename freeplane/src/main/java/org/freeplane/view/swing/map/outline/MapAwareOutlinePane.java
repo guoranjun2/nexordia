@@ -55,22 +55,27 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	final IMapSelection selection = Controller.getCurrentController().getSelection();
     	if(selection == null || selection.getSelected() != node)
     		return;
-        TreeNode target = findOutlineNodeOrAncestor(node, panel);
+        TreeNode target = findVisibleOutlineNodeOrAncestor(node);
         VisibleOutlineState vs = panel.getVisibleState();
         int index = findVisibleIndex(target, vs, panel.getRoot());
         boolean visible = isNodeVisible(target, panel);
         applySelection(panel, target, index, visible);
     }
 
-    private TreeNode findOutlineNodeOrAncestor(NodeModel node, ScrollableTreePanel panel) {
-        if (node == null) return panel.getRoot();
-        TreeNode found = panel.getOutlineSelection().findNodeById(node.getID());
-        NodeModel p = node.getParentNode();
-        while (found == null && p != null) {
-            found = panel.getOutlineSelection().findNodeById(p.getID());
-            p = p.getParentNode();
-        }
-        return found != null ? found : panel.getRoot();
+    private TreeNode findVisibleOutlineNodeOrAncestor(NodeModel node) {
+    	if(node == null)
+    		return null;
+
+    	TreeNode outlineNode = node.getViewers().stream()
+    	    	.filter(MapTreeNode.class::isInstance)
+    	    	.map(MapTreeNode.class::cast)
+    	    	.filter(mapNode -> mapNode.isContainedIn(this))
+    	    	.findAny()
+    	    	.orElse(null);
+
+    	if(outlineNode == null)
+    		return null;
+    	return outlineNode.findVisibleAncestorOrSelf();
     }
 
     private int findVisibleIndex(TreeNode node, VisibleOutlineState vs, TreeNode root) {
@@ -78,7 +83,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         while (n != null) {
             int idx = vs.findNodeIndexInVisibleList(n);
             if (idx >= 0) return idx;
-            n = n.parent;
+            n = n.getParent();
         }
         int rootIdx = vs.findNodeIndexInVisibleList(root);
         return rootIdx >= 0 ? rootIdx : 0;
@@ -102,7 +107,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if (index < 0) index = 0;
             panel.updateVisibleBlocks(index);
         }
-        panel.selectOutlineNodeById(node.id);
+        panel.selectOutlineNode(node);
     }
 
     public MapAwareOutlinePane() {
@@ -222,7 +227,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                         List<FlatNode> nodes = panel.getVisibleState().getVisibleNodes();
                         int index = -1;
                         for (int i = 0; i < nodes.size(); i++) {
-                            if (builder.getFirstVisibleNodeId().equals(nodes.get(i).node.id)) { index = i; break; }
+                            if (builder.getFirstVisibleNodeId().equals(nodes.get(i).node.getId())) { index = i; break; }
                         }
                         if (index >= 0) {
                             panel.updateVisibleBlocks(index);
@@ -371,8 +376,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     private void collectExpanded(TreeNode node, Map<String, Integer> out) {
         int lvl = node.getExpansionLevel();
-        if (lvl > 0) out.put(node.id, lvl);
-        for (TreeNode c : node.children) collectExpanded(c, out);
+        if (lvl > 0) out.put(node.getId(), lvl);
+        for (TreeNode c : node.getChildren()) collectExpanded(c, out);
     }
 
 

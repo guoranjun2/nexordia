@@ -27,7 +27,7 @@ class VisibleOutlineState {
     private void buildVisibleList(TreeNode node, int depth) {
         visibleNodes.add(new FlatNode(node, depth));
         if (node.isExpanded()) {
-            for (TreeNode child : node.children) {
+            for (TreeNode child : node.getChildren()) {
                 buildVisibleList(child, depth + 1);
             }
         }

@@ -192,15 +192,16 @@ class ScrollableTreePanel extends JPanel {
     public void focusSelectionButton() {
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) {
-            if (isShowing()) requestFocusInWindow();
             return;
         }
         // Try selected node (breadcrumb preferred), then walk ancestors
-        TreeNode n = selected;
+        TreeNode n = selected.findVisibleAncestorOrSelf();
+        if(n != selected)
+        	outlineSelection.selectNode(n);
         while (n != null) {
             if (focusButtonInBreadcrumbForNode(n)) return;
             if (focusButtonInBlocksForNode(n)) return;
-            n = n.parent;
+            n = n.getParent();
         }
         if (isShowing()) requestFocusInWindow();
     }
@@ -257,7 +258,7 @@ class ScrollableTreePanel extends JPanel {
         updateFirstVisibleNodeId();
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
+        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
 
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
@@ -293,7 +294,7 @@ class ScrollableTreePanel extends JPanel {
         updateFirstVisibleNodeId();
 
         TreeNode hoveredNode = visibleState.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
+        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
 
             boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(hoveredNode, geometry.rowHeight);
 
@@ -409,16 +410,15 @@ class ScrollableTreePanel extends JPanel {
             return;
         }
         index = Math.max(0, Math.min(index, nodes.size() - 1));
-        visibleState.setFirstVisibleNodeId(nodes.get(index).node.id);
+        visibleState.setFirstVisibleNodeId(nodes.get(index).node.getId());
     }
 
-    public void setSelectedNodeId(String nodeId) {
-        if (nodeId != null && outlineSelection.findNodeById(nodeId) != null) {
-            TreeNode newNode = outlineSelection.findNodeById(nodeId);
-            if (newNode != null && newNode.parent != null) {
-                lastSelectedChildByParent.put(newNode.parent.id, newNode.id);
+    public void setSelectedNode(TreeNode node) {
+        if (node != null) {
+            if (node.getParent() != null) {
+                lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
             }
-            selectOutlineNodeById(nodeId);
+            selectOutlineNode(node);
             TreeNode preservedHoveredNode = visibleState.getHoveredNode();
             removeAll();
             visibleState.clearBlockPanels();
@@ -496,8 +496,8 @@ class ScrollableTreePanel extends JPanel {
 
 
 
-    public void selectOutlineNodeById(String nodeId) {
-        outlineSelection.selectNode(nodeId);
+    public void selectOutlineNode(TreeNode node) {
+        outlineSelection.selectNode(node);
         repaint();
     }
 
@@ -525,7 +525,7 @@ class ScrollableTreePanel extends JPanel {
                 JButton btn = (JButton) comp;
                 Object n = btn.getClientProperty("treeNode");
                 if (n == node) {
-                    btn.setText(node.title);
+                    btn.setText(node.getTitle());
                     int depth = calculateNodeDepth(node);
                     if (depth >= 0) {
                         int x = geometry.calculateTextButtonX(depth);
@@ -546,7 +546,7 @@ class ScrollableTreePanel extends JPanel {
                     JButton btn = (JButton) comp;
                     Object n = btn.getClientProperty("treeNode");
                     if (n == node) {
-                        btn.setText(node.title);
+                        btn.setText(node.getTitle());
                         int depth = calculateNodeDepth(node);
                         if (depth >= 0) {
                             int x = geometry.calculateTextButtonX(depth);
@@ -629,7 +629,7 @@ class ScrollableTreePanel extends JPanel {
 
     void onContentButtonHovered(TreeNode node) {
         TreeNode hoveredNode = visibleState.getHoveredNode();
-        if (node != null && !node.children.isEmpty() && node != hoveredNode) {
+        if (node != null && !node.getChildren().isEmpty() && node != hoveredNode) {
 
             if (visibleState.isNodeInBreadcrumbArea(node, geometry.rowHeight)) {
 
@@ -652,7 +652,7 @@ class ScrollableTreePanel extends JPanel {
             updateVisibleBlocksAndBreadcrumb();
 
 
-            if (preservedHoveredNode != null && !preservedHoveredNode.children.isEmpty()) {
+            if (preservedHoveredNode != null && !preservedHoveredNode.getChildren().isEmpty()) {
                 visibleState.setHoveredNode(preservedHoveredNode);
                 boolean isInBreadcrumb = visibleState.isNodeInBreadcrumbArea(preservedHoveredNode, geometry.rowHeight);
 
@@ -672,7 +672,7 @@ class ScrollableTreePanel extends JPanel {
             if (currentIndex > 0) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
-                setSelectedNodeId(newSelected.id);
+                setSelectedNode(newSelected);
                 SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
@@ -685,7 +685,7 @@ class ScrollableTreePanel extends JPanel {
             List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
             if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
                 TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
-                setSelectedNodeId(newSelected.id);
+                setSelectedNode(newSelected);
                 SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
@@ -700,7 +700,7 @@ class ScrollableTreePanel extends JPanel {
             if (newIndex != currentIndex) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
-                setSelectedNodeId(newSelected.id);
+                setSelectedNode(newSelected);
                 SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
@@ -715,7 +715,7 @@ class ScrollableTreePanel extends JPanel {
             int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
             if (newIndex != currentIndex) {
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
-                setSelectedNodeId(newSelected.id);
+                setSelectedNode(newSelected);
                 SwingUtilities.invokeLater(this::focusSelectionButton);
             }
         }
@@ -746,27 +746,28 @@ class ScrollableTreePanel extends JPanel {
     public void goToParent() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null) return;
-        if (node.parent != null) {
-            setSelectedNodeId(node.parent.id);
+        final TreeNode newSelected = node.getParent();
+		if (newSelected != null) {
+        	setSelectedNode(newSelected);
             SwingUtilities.invokeLater(this::focusSelectionButton);
         }
     }
 
     public void goToChild() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
-        if (node == null || node.children.isEmpty()) return;
+        if (node == null || node.getChildren().isEmpty()) return;
         if (!node.isExpanded()) {
             expansionControls.expandNode(node);
         }
-        String preferredChildId = lastSelectedChildByParent.get(node.id);
+        String preferredChildId = lastSelectedChildByParent.get(node.getId());
         TreeNode targetChild = null;
         if (preferredChildId != null) {
-            for (TreeNode c : node.children) {
-                if (preferredChildId.equals(c.id)) { targetChild = c; break; }
+            for (TreeNode c : node.getChildren()) {
+                if (preferredChildId.equals(c.getId())) { targetChild = c; break; }
             }
         }
-        if (targetChild == null) targetChild = node.children.get(0);
-        setSelectedNodeId(targetChild.id);
+        if (targetChild == null) targetChild = node.getChildren().get(0);
+        setSelectedNode(targetChild);
         SwingUtilities.invokeLater(this::focusSelectionButton);
     }
 

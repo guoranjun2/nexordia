@@ -35,7 +35,7 @@ class OutlineController {
 
     void onSelect(TreeNode node) {
         if (node != null)
-            treePanel.setSelectedNodeId(node.id);
+            treePanel.setSelectedNode(node);
     }
 
     void onHover(TreeNode node) {
@@ -59,13 +59,9 @@ class OutlineController {
         return treePanel.calculateNodeDepth(node);
     }
 
-    void selectNodeById(String id) {
-        treePanel.selectOutlineNodeById(id);
-    }
-
     void toggleNodeExpansion(TreeNode node) {
         if (node == null) return;
-        treePanel.setSelectedNodeId(node.id);
+        treePanel.setSelectedNode(node);
         treePanel.toggleExpandSelected();
     }
 

@@ -48,7 +48,7 @@ class BlockPanel extends JPanel {
 
     @SuppressWarnings("serial")
 	private void createActionButton(FlatNode flat, int y, int rowHeight, ScrollableTreePanel parentPanel) {
-        String buttonText = flat.node.title;
+        String buttonText = flat.node.getTitle();
         JButton button = new JButton();
         button.setFont(button.getFont().deriveFont(8f));
         button.setText(buttonText);
@@ -64,7 +64,7 @@ class BlockPanel extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				parentPanel.selectMapNodeById(flat.node.id);
+				parentPanel.selectMapNodeById(flat.node.getId());
 			}
 		};
 		button.addActionListener(selectAction);

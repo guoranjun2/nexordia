@@ -41,38 +41,34 @@ class MapTreeNode extends TreeNode implements INodeView {
 
     @Override
     public void nodeChanged(NodeChangeEvent event) {
-        if (event.getNode() == nodeModel) {
-            
-            String newText = getNodeText(nodeModel);
-            setTitle(newText);
-            if (outlinePane != null) {
-                SwingUtilities.invokeLater(() -> {
-                    outlinePane.updateNodeTitle(this);
-                });
-            }
-        }
+    	if (event.getNode() == nodeModel) {
+
+    		String newText = getNodeText(nodeModel);
+    		setTitle(newText);
+    		SwingUtilities.invokeLater(() -> {
+    			outlinePane.updateNodeTitle(this);
+    		});
+    	}
     }
 
     @Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
         if (parent == nodeModel) {
-            
+
             MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
 
-            
-            if (newIndex < children.size()) {
-                children.add(newIndex, childTreeNode);
-            } else {
-                children.add(childTreeNode);
-            }
-            childTreeNode.parent = this;
 
-            
-            if (outlinePane != null) {
-                SwingUtilities.invokeLater(() -> {
-                    outlinePane.rebuildFromNode(this);
-                });
+            if (newIndex < getChildren().size()) {
+                getChildren().add(newIndex, childTreeNode);
+            } else {
+                getChildren().add(childTreeNode);
             }
+            childTreeNode.setParent(this);
+
+
+            SwingUtilities.invokeLater(() -> {
+            	outlinePane.rebuildFromNode(this);
+            });
         }
     }
 
@@ -92,9 +88,9 @@ class MapTreeNode extends TreeNode implements INodeView {
     public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
         NodeModel deletedNode = nodeDeletionEvent.node;
 
-        
+
         MapTreeNode toRemove = null;
-        for (TreeNode child : children) {
+        for (TreeNode child : getChildren()) {
             if (child instanceof MapTreeNode) {
                 MapTreeNode mapChild = (MapTreeNode) child;
                 if (mapChild.nodeModel == deletedNode) {
@@ -105,33 +101,32 @@ class MapTreeNode extends TreeNode implements INodeView {
         }
 
         if (toRemove != null) {
-            
+        	if(outlinePane.isSelected(toRemove))
+        		outlinePane.setSelected(toRemove.getParent());
             deletedNode.removeViewer(toRemove);
 
-            
-            children.remove(toRemove);
-            toRemove.parent = null;
 
-            
+            getChildren().remove(toRemove);
+            toRemove.setParent(null);
+
+
             toRemove.cleanupListeners();
 
-            
-            if (outlinePane != null) {
-                SwingUtilities.invokeLater(() -> {
-                    outlinePane.rebuildFromNode(this);
-                });
-            }
+
+            SwingUtilities.invokeLater(() -> {
+            	outlinePane.rebuildFromNode(this);
+            });
         }
     }
 
     @Override
     public boolean hasStandardLayoutWithRootNode(NodeModel root) {
-        return false; 
+        return false;
     }
 
     @Override
     public boolean isTopOrLeft() {
-        return true; 
+        return true;
     }
 
     /**
@@ -139,13 +134,13 @@ class MapTreeNode extends TreeNode implements INodeView {
      * Called when the tree is being destroyed or replaced.
      */
     void cleanupListeners() {
-        
+
         if (nodeModel != null) {
             nodeModel.removeViewer(this);
         }
 
-        
-        for (TreeNode child : children) {
+
+        for (TreeNode child : getChildren()) {
             if (child instanceof MapTreeNode) {
                 ((MapTreeNode) child).cleanupListeners();
             }
@@ -157,5 +152,9 @@ class MapTreeNode extends TreeNode implements INodeView {
      */
     String getCurrentText() {
         return getNodeText(nodeModel);
+    }
+
+    boolean isContainedIn(MapAwareOutlinePane pane) {
+    	return pane== outlinePane;
     }
 }

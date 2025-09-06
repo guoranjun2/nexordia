@@ -91,7 +91,7 @@ class BreadcrumbPanel extends JPanel {
 
             JButton breadcrumbButton = new JButton();
             breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
-            breadcrumbButton.setText(node.title);
+            breadcrumbButton.setText(node.getTitle());
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
 
             breadcrumbButton.putClientProperty("treeNode", node);
@@ -102,7 +102,7 @@ class BreadcrumbPanel extends JPanel {
 
     			@Override
     			public void actionPerformed(ActionEvent e) {
-    				selectionBridge.selectMapNodeById(nodeToSelect.id);
+    				selectionBridge.selectMapNodeById(nodeToSelect.getId());
     			}
     		};
             breadcrumbButton.addActionListener(selectAction);
@@ -131,7 +131,7 @@ class BreadcrumbPanel extends JPanel {
         }
 
         TreeNode hoveredNode = controller.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.children.isEmpty()) {
+        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
             boolean isInBreadcrumb = controller.isNodeInBreadcrumbPath(hoveredNode, currentBreadcrumbNodes);
 
             if (isInBreadcrumb) {
@@ -176,7 +176,7 @@ class BreadcrumbPanel extends JPanel {
     }
 
     private void showNavigationButtonsForBreadcrumb(TreeNode node, int rowIndex) {
-        if (node.children.isEmpty()) {
+        if (node.getChildren().isEmpty()) {
             return;
         }
 
