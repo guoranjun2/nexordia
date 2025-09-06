@@ -51,18 +51,22 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 			final ScrollableTreePanel panel = getTreePanel();
 			if(panel == null)
 				return;
-			SwingUtilities.invokeLater(MapAwareOutlinePane.this::synchronizeOutlineSelection);
+			SwingUtilities.invokeLater(() -> synchronizeOutlineSelection(false));
 		}
     }
 
-    void synchronizeOutlineSelection() {
+    void synchronizeOutlineSelection(boolean requestFocus) {
     	final NodeModel node = currentMapView.getSelected().getNode();
     	final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findVisibleOutlineNodeOrAncestor(node);
         VisibleOutlineState vs = panel.getVisibleState();
         int index = findVisibleIndex(target, vs, panel.getRoot());
         boolean visible = isNodeVisible(target, panel);
-        applySelection(panel, target, index, visible);
+        if (!visible) {
+		    if (index < 0) index = 0;
+		    panel.updateVisibleBlocks(index);
+		}
+		panel.setSelectedNode(target, requestFocus);
     }
 
     private TreeNode findVisibleOutlineNodeOrAncestor(NodeModel node) {
@@ -103,14 +107,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             }
         }
         return false;
-    }
-
-    private void applySelection(ScrollableTreePanel panel, TreeNode node, int index, boolean alreadyVisible) {
-        if (!alreadyVisible) {
-            if (index < 0) index = 0;
-            panel.updateVisibleBlocks(index);
-        }
-        panel.setSelectedNode(node);
     }
 
     public MapAwareOutlinePane() {
@@ -300,7 +296,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                         IMapSelection sel = Controller.getCurrentController().getSelection();
                         NodeModel selectedNode = sel != null ? sel.getSelected() : null;
                         if (selectedNode != null) {
-                            synchronizeOutlineSelection();
+                            synchronizeOutlineSelection(true);
                         }
                         panel.synchronizeSelectionButton(true);
 

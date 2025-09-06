@@ -7,6 +7,9 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.Window;
 import java.util.List;
 import java.util.ArrayList;
@@ -26,8 +29,15 @@ import javax.swing.KeyStroke;
 import javax.swing.Icon;
 
 class ScrollableTreePanel extends JPanel {
+	private static final long serialVersionUID = 1;
     private static final int BLOCK_SIZE = 50;
-	private static final long serialVersionUID = -5362893875920096494L;
+
+    private static final MouseListener focusSelectedButtonOnClick = new MouseAdapter() {
+		@Override
+		public void mouseClicked(MouseEvent e) {
+			((ScrollableTreePanel)e.getComponent()).focusSelectionButtonLater(true);
+		}
+	};
 
     final NavigationButtons navButtons;
     final SelectionCircleIcon selectionIcon;
@@ -54,6 +64,7 @@ class ScrollableTreePanel extends JPanel {
 
     public ScrollableTreePanel(TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
 		this(root, BLOCK_SIZE,breadcrumbPanel);
+		addMouseListener(focusSelectedButtonOnClick);
 	}
 
     private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
@@ -191,7 +202,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     void synchronizeSelectionButton(boolean requestFocusInWindow) {
-    	selectionBridge.synchronizeOutlineSelection();
+    	selectionBridge.synchronizeOutlineSelection(requestFocusInWindow);
     	focusSelectionButton(requestFocusInWindow);
     }
     void focusSelectionButton(boolean requestFocusInWindow) {
@@ -199,10 +210,13 @@ class ScrollableTreePanel extends JPanel {
         if (selected == null) {
             return;
         }
+        scrollToSelectedNode();
         if(! requestFocusInWindow) {
         	final Component focusOwner = FocusManager.getCurrentManager().getCurrentFocusCycleRoot();
-        	if (! SwingUtilities.isDescendingFrom(focusOwner, this))
-        		return;
+        	if (! SwingUtilities.isDescendingFrom(focusOwner, this)) {
+        		selectionBridge.focusMapNode();
+				return;
+			}
         }
         TreeNode n = outlineSelection.getSelectedNode();
         while (n != null) {
@@ -419,20 +433,21 @@ class ScrollableTreePanel extends JPanel {
         visibleState.setFirstVisibleNodeId(nodes.get(index).node.getId());
     }
 
-    public void setSelectedNode(TreeNode node) {
-        if (node != null) {
-            if (node.getParent() != null) {
-                lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
-            }
-            selectOutlineNode(node);
-            TreeNode preservedHoveredNode = visibleState.getHoveredNode();
-            removeAll();
-            visibleState.clearBlockPanels();
-            navButtons.hideNavigationButtons();
-            visibleState.setHoveredNode(preservedHoveredNode);
-            updateVisibleBlocks();
-            SwingUtilities.invokeLater(this::scrollToSelectedNode);
-        }
+    public void setSelectedNode(TreeNode node, boolean requestFocus) {
+    	focusSelectionButtonLater(requestFocus);
+    	if (node.getParent() != null) {
+    		lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
+    	}
+    	outlineSelection.selectNode(node);
+    	repaint();
+    	if(visibleState.findNodeIndexInVisibleList(node) < 0) {
+    		TreeNode preservedHoveredNode = visibleState.getHoveredNode();
+    		removeAll();
+    		visibleState.clearBlockPanels();
+    		navButtons.hideNavigationButtons();
+    		visibleState.setHoveredNode(preservedHoveredNode);
+    		updateVisibleBlocks();
+    	}
     }
 
 
@@ -481,7 +496,7 @@ class ScrollableTreePanel extends JPanel {
                         Rectangle p = panel.getBounds();
                         target = new Rectangle(b.x + p.x, b.y + p.y,
                                 b.width + geometry.iconDiameter + 6,
-                                Math.max(b.height, geometry.iconDiameter + 4));
+                                Math.max(geometry.rowHeight * 2, geometry.iconDiameter + 4));
                         break;
                     }
                 }
@@ -492,7 +507,7 @@ class ScrollableTreePanel extends JPanel {
             int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
             if (nodeIndex >= 0) {
                 int y = visibleState.getBreadcrumbAreaHeight() + nodeIndex * geometry.rowHeight;
-                target = new Rectangle(0, y, viewport.getViewportWidth(), geometry.rowHeight);
+                target = new Rectangle(0, y, viewport.getViewportWidth(), geometry.rowHeight * 2);
             }
         }
         if (target != null) {
@@ -501,11 +516,6 @@ class ScrollableTreePanel extends JPanel {
     }
 
 
-
-    private void selectOutlineNode(TreeNode node) {
-        outlineSelection.selectNode(node);
-        repaint();
-    }
 
     public void selectMapNodeById(String nodeId) {
     	if (selectionBridge != null)
@@ -678,14 +688,14 @@ class ScrollableTreePanel extends JPanel {
             if (currentIndex > 0) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(currentIndex - 1).node;
-                focusSelectionButtonLater();
-                setSelectedNode(newSelected);
+
+                setSelectedNode(newSelected, true);
             }
         }
     }
 
-	private void focusSelectionButtonLater() {
-		SwingUtilities.invokeLater(() -> focusSelectionButton(true));
+	private void focusSelectionButtonLater(boolean requestFocus) {
+		SwingUtilities.invokeLater(() -> focusSelectionButton(requestFocus));
 	}
 
     public void navigateDown() {
@@ -695,8 +705,8 @@ class ScrollableTreePanel extends JPanel {
             List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
             if (currentIndex >= 0 && currentIndex < visibleNodes.size() - 1) {
                 TreeNode newSelected = visibleNodes.get(currentIndex + 1).node;
-                focusSelectionButtonLater();
-                setSelectedNode(newSelected);
+
+                setSelectedNode(newSelected, true);
             }
         }
     }
@@ -710,8 +720,8 @@ class ScrollableTreePanel extends JPanel {
             if (newIndex != currentIndex) {
                 List<FlatNode> visibleNodes = visibleState.getVisibleNodes();
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
-                focusSelectionButtonLater();
-                setSelectedNode(newSelected);
+
+                setSelectedNode(newSelected, true);
             }
         }
     }
@@ -725,8 +735,7 @@ class ScrollableTreePanel extends JPanel {
             int newIndex = Math.min(visibleNodes.size() - 1, currentIndex + pageSize);
             if (newIndex != currentIndex) {
                 TreeNode newSelected = visibleNodes.get(newIndex).node;
-                focusSelectionButtonLater();
-                setSelectedNode(newSelected);
+                setSelectedNode(newSelected, true);
             }
         }
     }
@@ -758,8 +767,8 @@ class ScrollableTreePanel extends JPanel {
         if (node == null) return;
         final TreeNode newSelected = node.getParent();
 		if (newSelected != null) {
-			focusSelectionButtonLater();
-        	setSelectedNode(newSelected);
+
+        	setSelectedNode(newSelected, true);
         }
     }
 
@@ -777,8 +786,8 @@ class ScrollableTreePanel extends JPanel {
             }
         }
         if (targetChild == null) targetChild = node.getChildren().get(0);
-        focusSelectionButtonLater();
-        setSelectedNode(targetChild);
+
+        setSelectedNode(targetChild, true);
     }
 
     private int getPageSize() {

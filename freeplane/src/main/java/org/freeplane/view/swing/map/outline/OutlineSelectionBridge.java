@@ -38,10 +38,16 @@ class OutlineSelectionBridge {
 
         mv.getModeController().getMapController().displayNode(target);
         final NodeView nodeView = mv.getNodeView(target);
-        mv.selectAsTheOnlyOneSelected(nodeView, false);
+        mv.selectAsTheOnlyOneSelected(nodeView, true);
     }
 
-	void synchronizeOutlineSelection() {
-		outlinePane.synchronizeOutlineSelection();
+	void synchronizeOutlineSelection(boolean requestFocusInWindow) {
+		outlinePane.synchronizeOutlineSelection(requestFocusInWindow);
+	}
+
+	void focusMapNode() {
+        final MapView mv = outlinePane.getCurrentMapView();
+        if (mv == null) return;
+        mv.getSelected().getMainView().requestFocusInWindow();
 	}
 }

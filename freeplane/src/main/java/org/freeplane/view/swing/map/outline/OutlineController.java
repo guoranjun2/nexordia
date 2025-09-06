@@ -33,16 +33,6 @@ class OutlineController {
         treePanel.updateNodeTitle(node);
     }
 
-    void onSelect(TreeNode node) {
-        if (node != null)
-            treePanel.setSelectedNode(node);
-    }
-
-    void onHover(TreeNode node) {
-        if (node != null)
-            treePanel.onContentButtonHovered(node);
-    }
-
     int getRowHeight() {
         return treePanel.getRowHeight();
     }
@@ -61,7 +51,7 @@ class OutlineController {
 
     void toggleNodeExpansion(TreeNode node) {
         if (node == null) return;
-        treePanel.setSelectedNode(node);
+        treePanel.setSelectedNode(node, true);
         treePanel.toggleExpandSelected();
     }
 
