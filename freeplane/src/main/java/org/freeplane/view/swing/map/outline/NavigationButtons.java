@@ -17,6 +17,7 @@ class NavigationButtons {
     private final OutlineGeometry geometry;
     private final ExpansionControls expansionControls;
     private JPanel currentParent;
+	private TreeNode node;
 
     NavigationButtons(OutlineGeometry geometry, ExpansionControls expansionControls) {
         this.geometry = geometry;
@@ -31,29 +32,35 @@ class NavigationButtons {
     }
 
     private void configureNavigationButtons() {
-        configureNavButton(expandBtn);
-        configureNavButton(collapseBtn);
-        configureNavButton(expandMoreBtn);
-        configureNavButton(reduceBtn);
+        configureNavButton(expandBtn, e -> {
+            expansionControls.expandNode(node);
+        });
+        configureNavButton(collapseBtn, e -> {
+            expansionControls.collapseNode(node);
+        });
+        configureNavButton(expandMoreBtn, e -> {
+            expansionControls.expandNodeMore(node);
+        });
+        configureNavButton(reduceBtn, e -> {
+            expansionControls.reduceNodeExpansion(node);
+        });
     }
 
-    private void configureNavButton(JButton button) {
+    private void configureNavButton(JButton button, ActionListener actionListener) {
         button.setMargin(new Insets(0, 0, 0, 0));
         button.setFont(button.getFont().deriveFont(10f));
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setVisible(false);
+        button.addActionListener(actionListener);
     }
 
     public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
-        if (node.getChildren().isEmpty()) {
-            hide();
+        this.node = node;
+        detachFromCurrentParent();
+		if (node.getChildren().isEmpty()) {
             return;
         }
-
-
-        detachFromCurrentParent();
-
 
         targetPanel.add(expandBtn);
         targetPanel.add(collapseBtn);
@@ -70,19 +77,11 @@ class NavigationButtons {
         int y = position.y;
         int depth = nodePositioning.calculateNodeDepth(node);
 
-        removeAllActionListeners();
-
-        if (!node.isExpanded()) {
-            showSingleButton(expandBtn, baseX, y, () -> {
-                expansionControls.expandNode(node);
-            });
-        } else {
-            showExpandedButtons(node, baseX, y, depth);
-        }
+        showButtons(baseX, y, depth);
     }
 
     private void detachFromCurrentParent() {
-        hide();
+        hideNavigationButtons();
         if (currentParent != null) {
             if (expandBtn.getParent() == currentParent) {
                 currentParent.remove(expandBtn);
@@ -99,60 +98,28 @@ class NavigationButtons {
         }
     }
 
-    private void showExpandedButtons(TreeNode node, int baseX, int y, int depth) {
-        hide();
-
+    private void showButtons(int baseX, int y, int depth) {
         if (depth > 0) {
-            collapseBtn.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
-            collapseBtn.addActionListener(e -> {
-                expansionControls.collapseNode(node);
-            });
-            collapseBtn.setVisible(true);
+        	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
+        	toggleButton.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
+        	toggleButton.setVisible(true);
         }
 
-        int expandX = depth == 0 ? baseX : baseX + geometry.navButtonWidth;
+        int expandX = baseX + geometry.navButtonWidth;
         expandMoreBtn.setBounds(expandX, y, geometry.navButtonWidth, geometry.rowHeight);
-        expandMoreBtn.addActionListener(e -> {
-            expansionControls.expandNodeMore(node);
-        });
         expandMoreBtn.setVisible(true);
 
-        int reduceX = depth == 0 ? baseX + geometry.navButtonWidth : baseX + (2 * geometry.navButtonWidth);
-        reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
-        reduceBtn.addActionListener(e -> {
-            expansionControls.reduceNodeExpansion(node);
-        });
-        reduceBtn.setVisible(true);
+        if(node.isExpanded() && (depth > 0  || node.getMaxExpansionDepth() > 1) ) {
+        	int reduceX = expandX + geometry.navButtonWidth;
+        	reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
+        	reduceBtn.setVisible(true);
+        }
     }
 
-    private void showSingleButton(JButton button, int baseX, int y, Runnable action) {
-        hide();
-        button.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
-        button.addActionListener(e -> action.run());
-        button.setVisible(true);
-    }
-
-    private void hide() {
+    void hideNavigationButtons() {
         expandBtn.setVisible(false);
         collapseBtn.setVisible(false);
         expandMoreBtn.setVisible(false);
         reduceBtn.setVisible(false);
-    }
-
-    void hideNavigationButtons() {
-        hide();
-    }
-
-    private void removeAllActionListeners() {
-        removeActionListeners(expandBtn);
-        removeActionListeners(collapseBtn);
-        removeActionListeners(expandMoreBtn);
-        removeActionListeners(reduceBtn);
-    }
-
-    private void removeActionListeners(JButton button) {
-        for (ActionListener listener : button.getActionListeners()) {
-            button.removeActionListener(listener);
-        }
     }
 }
