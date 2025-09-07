@@ -31,7 +31,7 @@ class ExpansionControls {
 
     void reduceNodeExpansion(TreeNode node) {
         int currentLevel = node.getMaxExpansionLevel();
-        if (currentLevel > 0) {
+        if (currentLevel > 0 && (currentLevel != 1 || node.getLevel() != 0)) {
             node.applyExpansionLevel(currentLevel - 1);
             refreshAfterExpansionChange();
         }

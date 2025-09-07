@@ -640,7 +640,7 @@ class ScrollableTreePanel extends JPanel {
 
     void toggleExpandSelected() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
-        if (node == null || node.childCount() == 0) return;
+        if (node == null || node.childCount() == 0 || node.getLevel() == 0) return;
         if (node.isExpanded()) {
             expansionControls.collapseNode(node);
         } else {
