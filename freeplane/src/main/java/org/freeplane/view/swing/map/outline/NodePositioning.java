@@ -35,14 +35,15 @@ class NodePositioning {
         } else {
             FlatNode flatNode = visibleState.getFlatNode(node);
             if (flatNode == null) return null;
-            
+
             int nodeIndex = visibleState.findNodeIndexInVisibleList(node);
             int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
             int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
             
             y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;
-            depth = flatNode.depth;
-            baseX = geometry.calculateNavigationButtonBaseX(flatNode);
+            depth = calculateNodeDepth(node);
+            int textButtonX = geometry.calculateTextButtonX(depth);
+            baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         }
         
         return new Point(baseX, y);

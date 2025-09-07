@@ -12,7 +12,6 @@ import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.InputMap;
@@ -53,7 +52,8 @@ class BlockPanel extends JPanel {
         button.setFont(button.getFont().deriveFont(8f));
         button.setText(buttonText);
 
-        int actionX = parentPanel.geometry.calculateTextButtonX(flat.depth);
+        int computedDepth = parentPanel.calculateNodeDepth(flat.node);
+        int actionX = parentPanel.geometry.calculateTextButtonX(computedDepth);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
@@ -124,4 +124,5 @@ class BlockPanel extends JPanel {
             }
         }
     }
+
 }
