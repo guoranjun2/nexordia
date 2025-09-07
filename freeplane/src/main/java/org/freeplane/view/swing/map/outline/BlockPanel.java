@@ -61,6 +61,7 @@ class BlockPanel extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				selection.selectNode(node);
 				parentPanel.selectMapNodeById(node.getId());
 			}
 		};
@@ -108,7 +109,7 @@ class BlockPanel extends JPanel {
                     TreeNode buttonNode = btn.getNode();
                     if (buttonNode != null && selection.isSelected(buttonNode)) {
 
-                        boolean isInBreadcrumb = parentPanel.getVisibleState().isNodeInBreadcrumbArea(buttonNode, parentPanel.geometry.rowHeight);
+                        boolean isInBreadcrumb = parentPanel.isNodeInBreadcrumbArea(buttonNode);
 
 
                         if (!isInBreadcrumb) {

@@ -41,11 +41,4 @@ class OutlineGeometry {
         }
     }
 
-    private int calculateNavigationButtonBaseX(int level) {
-        int textButtonX = calculateTextButtonX(level);
-        return Math.max(0, textButtonX - navButtonsTotalWidth);
-    }
-
-    // kept for compatibility; prefer passing explicit level
-
 }

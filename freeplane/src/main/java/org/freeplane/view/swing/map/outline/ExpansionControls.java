@@ -1,16 +1,14 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Component;
-import java.awt.Container;
-
-import javax.swing.FocusManager;
 import javax.swing.SwingUtilities;
 
 class ExpansionControls {
     private final ScrollableTreePanel treePanel;
+	private final OutlineSelection outlineSelection;
 
-    ExpansionControls(ScrollableTreePanel treePanel) {
+    ExpansionControls(ScrollableTreePanel treePanel, OutlineSelection outlineSelection) {
         this.treePanel = treePanel;
+		this.outlineSelection = outlineSelection;
     }
 
     void expandNode(TreeNode node) {
@@ -20,6 +18,7 @@ class ExpansionControls {
 
     void collapseNode(TreeNode node) {
         node.applyExpansionLevel(0);
+        selectParentIfNeeded();
         refreshAfterExpansionChange();
     }
 
@@ -33,14 +32,19 @@ class ExpansionControls {
         int currentLevel = node.getMaxExpansionLevel();
         if (currentLevel > 0 && (currentLevel != 1 || node.getLevel() != 0)) {
             node.applyExpansionLevel(currentLevel - 1);
+            selectParentIfNeeded();
             refreshAfterExpansionChange();
         }
     }
 
+	private void selectParentIfNeeded() {
+		final TreeNode selectedNode = outlineSelection.getSelectedNode();
+		if(selectedNode != null && ! selectedNode.isVisible())
+			outlineSelection.selectNode(selectedNode.getParent());
+	}
+
     private void refreshAfterExpansionChange() {
-    	final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
-    	final Container outlinePane = outlinePane();
-    	final boolean wasFocused = (focusOwner instanceof NodeButton) && outlinePane != null && SwingUtilities.isDescendingFrom(focusOwner, outlinePane);
+    	final boolean wasFocused = treePanel.isNodeButtonFocused();
     	treePanel.updateVisibleNodes();
     	SwingUtilities.invokeLater(() -> {
     		if(wasFocused)
@@ -51,7 +55,4 @@ class ExpansionControls {
 
     }
 
-	private Container outlinePane() {
-		return SwingUtilities.getAncestorOfClass(OutlinePane.class, treePanel);
-	}
 }

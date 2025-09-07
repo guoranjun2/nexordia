@@ -99,6 +99,7 @@ class BreadcrumbPanel extends JPanel {
 
     			@Override
     			public void actionPerformed(ActionEvent e) {
+    				selection.selectNode(nodeToSelect);
     				selectionBridge.selectMapNodeById(nodeToSelect.getId());
     			}
     		};

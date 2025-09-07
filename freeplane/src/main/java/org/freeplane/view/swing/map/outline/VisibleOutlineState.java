@@ -51,12 +51,6 @@ class VisibleOutlineState {
         return -1;
     }
 
-    boolean isNodeInBreadcrumbArea(TreeNode node, int rowHeight) {
-        int nodeIndex = findNodeIndexInVisibleList(node);
-        int breadcrumbNodeCount = breadcrumbAreaHeight / rowHeight;
-        return nodeIndex >= 0 && nodeIndex < breadcrumbNodeCount;
-    }
-
     int getBreadcrumbAreaHeight() {
         return breadcrumbAreaHeight;
     }
