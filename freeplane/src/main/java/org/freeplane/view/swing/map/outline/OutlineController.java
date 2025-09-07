@@ -69,8 +69,8 @@ class OutlineController {
         return treePanel.getSelectionIcon();
     }
 
-    Point calculateSelectionIconPosition(TreeNode node, Rectangle bounds) {
-        return treePanel.getNodePositioning().calculateSelectionIconPosition(node, bounds);
+    Point calculateSelectionIconPosition(Rectangle bounds) {
+        return treePanel.getNodePositioning().calculateSelectionIconPosition(bounds);
     }
 
     TreeNode getHoveredNode() {

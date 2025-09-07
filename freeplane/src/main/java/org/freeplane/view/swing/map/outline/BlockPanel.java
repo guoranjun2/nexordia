@@ -114,7 +114,7 @@ class BlockPanel extends JPanel {
                         if (!isInBreadcrumb) {
                             Icon icon = parentPanel.selectionIcon;
 
-                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(buttonNode, comp.getBounds());
+                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(comp.getBounds());
                             if (iconPosition != null) {
                                 icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
                             }

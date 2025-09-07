@@ -2,30 +2,28 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
-import java.util.List;
+import java.awt.Window;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
-import javax.swing.SwingUtilities;
-import javax.swing.FocusManager;
-import javax.swing.JButton;
-import java.awt.Window;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.freeplane.features.mode.Controller;
+import javax.swing.FocusManager;
+import javax.swing.SwingUtilities;
+
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.filter.Filter;
-import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.ui.FocusOutlineAction;
+import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
-
-import java.util.HashMap;
-import java.util.Map;
-import org.freeplane.features.ui.FocusOutlineAction;
 
 /** OutlinePane that updates based on map view changes. */
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {

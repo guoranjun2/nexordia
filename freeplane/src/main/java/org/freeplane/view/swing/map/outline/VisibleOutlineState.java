@@ -1,9 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 class VisibleOutlineState {
     private final TreeNode root;

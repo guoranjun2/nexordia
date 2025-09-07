@@ -49,7 +49,7 @@ class NavigationButtons {
     private void configureNavButton(JButton button, ActionListener actionListener) {
         button.setMargin(new Insets(0, 0, 0, 0));
         button.setFont(button.getFont().deriveFont(10f));
-        button.setFocusPainted(false);
+        button.setFocusable(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setVisible(false);
         button.addActionListener(actionListener);

@@ -2,31 +2,29 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.KeyboardFocusManager;
+import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.Window;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import javax.swing.JButton;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.FocusManager;
+import javax.swing.Icon;
 import javax.swing.InputMap;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
-import javax.swing.Icon;
+import javax.swing.SwingUtilities;
 
 class ScrollableTreePanel extends JPanel {
 	private static final long serialVersionUID = 1;
@@ -80,7 +78,7 @@ class ScrollableTreePanel extends JPanel {
 
         this.geometry = new OutlineGeometry(new JButton("▶"));
         this.expansionControls = new ExpansionControls(this);
-        this.nodePositioning = new NodePositioning(root, geometry, visibleState);
+        this.nodePositioning = new NodePositioning(geometry, visibleState);
         this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
@@ -173,7 +171,7 @@ class ScrollableTreePanel extends JPanel {
     	focusSelectionButton(requestFocusInWindow);
     }
 
-    private void focusSelectionButton(boolean requestFocusInWindow) {
+    void focusSelectionButton(boolean requestFocusInWindow) {
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (selected == null) {
             return;
@@ -411,33 +409,31 @@ class ScrollableTreePanel extends JPanel {
         TreeNode selectedNode = outlineSelection.getSelectedNode();
         if (selectedNode == null || viewport == null) return;
 
-        // Try to find the actual button for the selected node in visible block panels
-        Rectangle target = null;
+        if (visibleState.isNodeInBreadcrumbArea(selectedNode, geometry.rowHeight)) {
+            return;
+        }
+
+        final int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         for (BlockPanel panel : blockCache.values()) {
             for (Component comp : panel.getComponents()) {
                 if (comp instanceof NodeButton) {
                     NodeButton btn = (NodeButton) comp;
                     if (btn.getNode() == selectedNode) {
-                        Rectangle b = comp.getBounds();
-                        Rectangle p = panel.getBounds();
-                        target = new Rectangle(b.x + p.x, b.y + p.y,
-                                b.width + geometry.iconDiameter + 6,
-                                Math.max(geometry.rowHeight * 2, geometry.iconDiameter + 4));
-                        break;
+                    	btn.scrollRectToVisible(new Rectangle(0, 0,
+                    			btn.getWidth() + geometry.iconDiameter + 6,
+                                Math.max(geometry.rowHeight * 2, geometry.iconDiameter + 4)));
+                        if(visibleState.getBreadcrumbAreaHeight() > breadcrumbAreaHeight)
+                        	scrollToSelectedNode();
+                    	return;
                     }
                 }
             }
-            if (target != null) break;
         }
-        if (target == null) {
-            int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
-            if (nodeIndex >= 0) {
-                int y = visibleState.getBreadcrumbAreaHeight() + nodeIndex * geometry.rowHeight;
-                target = new Rectangle(0, y, viewport.getViewportWidth(), geometry.rowHeight * 2);
-            }
-        }
-        if (target != null) {
-            scrollRectToVisible(target);
+        int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
+        if (nodeIndex >= 0) {
+            int y = breadcrumbAreaHeight + nodeIndex * geometry.rowHeight;
+            scrollRectToVisible(new Rectangle(0, y, viewport.getViewportWidth(), geometry.rowHeight * 2));
+            scrollToSelectedNode();
         }
     }
 
@@ -644,7 +640,7 @@ class ScrollableTreePanel extends JPanel {
 
     void toggleExpandSelected() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
-        if (node == null) return;
+        if (node == null || node.childCount() == 0) return;
         if (node.isExpanded()) {
             expansionControls.collapseNode(node);
         } else {

@@ -10,7 +10,7 @@ class TreeNode {
     private String title;
     private final String id;
     private final List<TreeNode> children = new ArrayList<>();
-    private int expansionLevel = 0;
+    private int expansionLevel = -1;
     private TreeNode parent = null;
     private int level = 0;
 
@@ -26,28 +26,28 @@ class TreeNode {
     void addChild(TreeNode child) {
         child.setParent(this);
         children.add(child);
-        if (getExpansionLevel() > 0) {
-            child.setExpansionLevel(getExpansionLevel() - 1);
-            child.applyExpansionLevel(child.getExpansionLevel());
+        if (expansionLevel >= 0) {
+            child.setExpansionLevel(expansionLevel - 1);
+            child.applyExpansionLevel(child.expansionLevel);
         }
     }
 
     void applyExpansionLevel(int level) {
         this.setExpansionLevel(level);
-        if (level > 0) {
+        if (level >= 0) {
             for (TreeNode child : getChildren()) {
                 child.applyExpansionLevel(level - 1);
             }
         } else {
             for (TreeNode child : getChildren()) {
-                child.applyExpansionLevel(0);
+                child.applyExpansionLevel(-1);
             }
         }
     }
 
     int getMaxExpansionLevel() {
-        if (getExpansionLevel() == 0 || getChildren().isEmpty()) {
-            return 0;
+        if (expansionLevel <= 0 || getChildren().isEmpty()) {
+            return expansionLevel;
         }
         int maxLevel = 0;
         for (TreeNode child : getChildren()) {
@@ -57,7 +57,11 @@ class TreeNode {
     }
 
     boolean isExpanded() {
-        return getExpansionLevel() > 0;
+        return expansionLevel > 0;
+    }
+
+    boolean isVisible() {
+        return expansionLevel >= 0;
     }
 
     int getExpansionLevel() {
@@ -111,13 +115,14 @@ class TreeNode {
 	}
 
     TreeNode findVisibleAncestorOrSelf() {
-        TreeNode node = this;
-        for(;;) {
-            TreeNode parent = node.getParent();
-            if(parent == null || parent.isExpanded())
+
+        for(TreeNode node = this;
+        		node != null;
+        		node = node.getParent()) {
+            if(node.isVisible())
                 return node;
-            node = parent;
         }
+        return null;
     }
 
     int getLevel() {

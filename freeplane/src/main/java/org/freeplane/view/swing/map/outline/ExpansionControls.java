@@ -1,5 +1,9 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Component;
+import java.awt.Container;
+
+import javax.swing.FocusManager;
 import javax.swing.SwingUtilities;
 
 class ExpansionControls {
@@ -34,7 +38,20 @@ class ExpansionControls {
     }
 
     private void refreshAfterExpansionChange() {
-        treePanel.updateVisibleNodes();
-        SwingUtilities.invokeLater(() -> treePanel.synchronizeSelectionButton(false));
+    	final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
+    	final Container outlinePane = outlinePane();
+    	final boolean wasFocused = (focusOwner instanceof NodeButton) && outlinePane != null && SwingUtilities.isDescendingFrom(focusOwner, outlinePane);
+    	treePanel.updateVisibleNodes();
+    	SwingUtilities.invokeLater(() -> {
+    		if(wasFocused)
+    			treePanel.focusSelectionButton(true);
+    		else
+    			treePanel.synchronizeSelectionButton(false);
+    	});
+
     }
+
+	private Container outlinePane() {
+		return SwingUtilities.getAncestorOfClass(OutlinePane.class, treePanel);
+	}
 }

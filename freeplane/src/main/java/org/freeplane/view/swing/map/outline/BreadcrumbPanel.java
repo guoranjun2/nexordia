@@ -8,7 +8,6 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.InputMap;
@@ -187,7 +186,7 @@ class BreadcrumbPanel extends JPanel {
                 TreeNode buttonNode = btn.getNode();
                 if (buttonNode != null && selection.isSelected(buttonNode)) {
                     Icon icon = controller.getSelectionIcon();
-                    Point iconPosition = controller.calculateSelectionIconPosition(buttonNode, comp.getBounds());
+                    Point iconPosition = controller.calculateSelectionIconPosition(comp.getBounds());
                     if (iconPosition != null) {
                         icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
                     }

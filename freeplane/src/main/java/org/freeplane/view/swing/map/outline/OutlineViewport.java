@@ -4,7 +4,6 @@ import java.awt.Rectangle;
 import java.awt.Point;
 import java.util.List;
 
-import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 
 class OutlineViewport {
