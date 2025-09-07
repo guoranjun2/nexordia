@@ -3,6 +3,8 @@ package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+import java.util.function.Consumer;
 
 class TreeNode {
     private String title;
@@ -23,7 +25,7 @@ class TreeNode {
 
     void addChild(TreeNode child) {
         child.setParent(this);
-        getChildren().add(child);
+        children.add(child);
         if (getExpansionLevel() > 0) {
             child.setExpansionLevel(getExpansionLevel() - 1);
             child.applyExpansionLevel(child.getExpansionLevel());
@@ -82,9 +84,11 @@ class TreeNode {
 		this.expansionLevel = expansionLevel;
 	}
 
-	List<TreeNode> getChildren() {
-		return children;
-	}
+    List<TreeNode> getChildren() { return Collections.unmodifiableList(children); }
+
+    int childCount() { return children.size(); }
+    TreeNode childAt(int index) { return children.get(index); }
+    void forEachChild(Consumer<TreeNode> action) { children.forEach(action); }
 
 	void add(MapTreeNode node, int index) {
 		if (index < children.size()) {

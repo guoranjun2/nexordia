@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.List;
+import java.util.Collections;
 
 class BreadcrumbState {
     private final List<TreeNode> breadcrumbNodes;
@@ -8,7 +9,7 @@ class BreadcrumbState {
     private final int firstVisibleNodeIndex;
 
     BreadcrumbState(List<TreeNode> breadcrumbNodes, int breadcrumbHeight, int levelReductionFirstVisibleNodeIndex) {
-        this.breadcrumbNodes = java.util.Collections.unmodifiableList(breadcrumbNodes);
+        this.breadcrumbNodes = Collections.unmodifiableList(breadcrumbNodes);
         this.breadcrumbHeight = breadcrumbHeight;
         this.firstVisibleNodeIndex = levelReductionFirstVisibleNodeIndex;
     }

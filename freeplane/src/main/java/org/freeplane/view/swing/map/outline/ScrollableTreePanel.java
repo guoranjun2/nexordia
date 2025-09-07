@@ -53,6 +53,7 @@ class ScrollableTreePanel extends JPanel {
     private final int blockSize;
     private VisibleOutlineState visibleState;
     private final OutlineBlockViewCache blockCache = new OutlineBlockViewCache();
+    private OutlineBlockLayout blockLayout;
     private OutlineSelectionBridge selectionBridge;
     private final Map<String, String> lastSelectedChildByParent = new HashMap<>();
 
@@ -83,6 +84,7 @@ class ScrollableTreePanel extends JPanel {
         this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
+        this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, geometry, nodePositioning, blockSize);
 
 
         setFocusable(true);
@@ -292,23 +294,14 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void clearBlocks() {
-        for (BlockPanel panel : blockCache.values()) {
-            remove(panel);
-        }
-        blockCache.clear();
-
+        blockLayout.clearBlocks(this);
         Component[] components = getComponents();
         for (Component comp : components) {
-            if (comp instanceof BlockPanel) {
-                remove(comp);
-            }
+            if (comp instanceof BlockPanel) remove(comp);
         }
-
         components = getComponents();
         for (Component comp : components) {
-            if (comp instanceof JButton && !isNavigationButton((JButton) comp)) {
-                remove(comp);
-            }
+            if (comp instanceof JButton && !isNavigationButton((JButton) comp)) remove(comp);
         }
         revalidate();
     }
@@ -340,63 +333,14 @@ class ScrollableTreePanel extends JPanel {
 
     private void createVisibleBlocks() {
         OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-
-        for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
-            if (!blockCache.has(b))
-                createBlock(b, range.getBreadcrumbAreaHeight());
-        }
+        blockLayout.createVisibleBlocks(this, range, getPreferredSize().width);
     }
 
-    private void createBlock(int blockIndex, int yOffset) {
-        int start = blockIndex * blockSize;
-        int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
-        int breadcrumbNodeCount = visibleState.getBreadcrumbAreaHeight() / geometry.rowHeight;
+    // block creation delegated to OutlineBlockLayout
 
+    private void updatePreferredFromActualBlocks() { blockLayout.updatePreferredFromActualBlocks(this); }
 
-        if (end <= breadcrumbNodeCount) {
-            return;
-        }
-
-        java.util.List<TreeNode> blockNodes = new java.util.ArrayList<>();
-        for (int i = start; i < end; i++) {
-            TreeNode n = visibleState.getNodeAtVisibleIndex(i);
-            if (n != null) blockNodes.add(n);
-        }
-        BlockPanel bp = new BlockPanel(blockNodes, start, geometry.rowHeight, this, breadcrumbNodeCount, outlineSelection);
-
-        Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, yOffset, getPreferredSize().width);
-        bp.setBounds(bounds);
-        add(bp);
-        blockCache.put(blockIndex, bp);
-    }
-
-    private void updatePreferredFromActualBlocks() {
-        int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
-        int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
-        int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight;
-        int maxWidth = calculateActualRequiredWidth();
-        setPreferredSize(new Dimension(maxWidth, height));
-
-        for (BlockPanel panel : blockCache.values()) {
-            Dimension currentSize = panel.getSize();
-            panel.setSize(maxWidth, currentSize.height);
-        }
-    }
-
-    private int calculateActualRequiredWidth() {
-        int maxWidth = 400;
-        for (BlockPanel panel : blockCache.values()) {
-            Component[] components = panel.getComponents();
-            for (Component comp : components) {
-                if (comp instanceof JButton) {
-                    int rightEdge = comp.getX() + comp.getWidth();
-                    maxWidth = Math.max(maxWidth, rightEdge);
-                }
-            }
-        }
-        return maxWidth + 20;
-    }
+    // width calculation delegated to OutlineBlockLayout
 
     private void refreshUI() {
         viewport.refreshViewport();
@@ -604,16 +548,7 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-    private void removeBlocksFromBlockIndex(int startBlock) {
-        List<Integer> indices = new ArrayList<>(blockCache.keySet());
-        for (int idx : indices) {
-            if (idx >= startBlock) {
-                BlockPanel p = blockCache.get(idx);
-                if (p != null) remove(p);
-                blockCache.remove(idx);
-            }
-        }
-    }
+    private void removeBlocksFromBlockIndex(int startBlock) { blockLayout.removeBlocksFromBlockIndex(this, startBlock); }
 
     void onContentButtonHovered(TreeNode node) {
         TreeNode hoveredNode = visibleState.getHoveredNode();
