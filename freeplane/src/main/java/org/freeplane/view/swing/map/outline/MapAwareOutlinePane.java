@@ -6,6 +6,7 @@ import java.util.List;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import javax.swing.SwingUtilities;
+import javax.swing.FocusManager;
 import javax.swing.JButton;
 import java.awt.Window;
 
@@ -122,6 +123,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 Component mv = mvm.getLastSelectedMapViewContainedIn(w);
                 if (mv instanceof MapView) {
                     updateTreeFromMap((MapView) mv);
+                    synchronizeOutlineSelection(false);
                 } else {
                     showNoMapState();
                 }
@@ -143,7 +145,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         if (view instanceof MapView) {
             Window myWindow = SwingUtilities.getWindowAncestor(this);
             if (SwingUtilities.getWindowAncestor(view) == myWindow) {
+            	final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
+				final boolean requestFocus = focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, this);
                 updateTreeFromMap((MapView) view);
+				synchronizeOutlineSelection(requestFocus);
             }
         }
     }
@@ -333,6 +338,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         Window myWindow = SwingUtilities.getWindowAncestor(this);
         if (myWindow == window && newView != currentMapView && newView instanceof MapView) {
 		    updateTreeFromMap((MapView) newView);
+		    synchronizeOutlineSelection(false);
 		}
     }
 
