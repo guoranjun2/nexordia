@@ -430,13 +430,9 @@ class ScrollableTreePanel extends JPanel {
                 }
             }
         }
-        int nodeIndex = visibleState.findNodeIndexInVisibleList(selectedNode);
-        if (nodeIndex >= 0) {
-            int y = nodeIndex * geometry.rowHeight;
-            scrollRectToVisible(new Rectangle(0, y, viewport.getViewportWidth(), breadcrumbAreaHeight + geometry.rowHeight * 2));
-            scrollToSelectedNode();
-        }
+        ensureSelectionAtEdge();
     }
+
 	boolean isNodeButtonFocused() {
 		final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
     	final Container outlinePane = outlinePane();
@@ -448,7 +444,7 @@ class ScrollableTreePanel extends JPanel {
 		return SwingUtilities.getAncestorOfClass(OutlinePane.class, this);
 	}
 
-	private void moveSelectionToTop() {
+    private void moveSelectionToTop() {
         TreeNode sel = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (sel == null || viewport == null) return;
         final boolean requestFocus = isNodeButtonFocused();
@@ -458,6 +454,43 @@ class ScrollableTreePanel extends JPanel {
         viewport.setViewPosition(idx, 0);
         updateVisibleBlocksAndBreadcrumb();
 		focusSelectionButton(requestFocus);
+    }
+
+    private void ensureSelectionAtEdge() {
+        TreeNode sel = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
+        if (sel == null || viewport == null) return;
+        if (isNodeInBreadcrumbArea(sel)) return;
+
+        int i = visibleState.findNodeIndexInVisibleList(sel);
+        if (i < 0) return;
+
+        int h0 = visibleState.getBreadcrumbAreaHeight();
+        int first = viewport.calculateFirstVisibleNodeIndex();
+        int totalRows = viewport.getPageSize();
+        int breadcrumbRows = h0 / geometry.rowHeight;
+        int contentRows = Math.max(1, totalRows - breadcrumbRows);
+        int last = Math.max(first, first + contentRows - 1);
+
+        if (i < first) {
+            viewport.setViewPosition(i, h0);
+            updateVisibleBlocksAndBreadcrumb();
+        }
+        else if (i > last) {
+            int start = Math.max(0, i - contentRows + 1);
+            viewport.setViewPosition(start, h0);
+            updateVisibleBlocksAndBreadcrumb();
+        }
+        else {
+            return; // already fully visible
+        }
+
+        int h1 = visibleState.getBreadcrumbAreaHeight();
+        if (h1 < h0) {
+            moveSelectionToTop();
+        }
+        else if (h1 > h0) {
+            scrollToSelectedNode();
+        }
     }
 
     void selectMapNodeById(String nodeId) {
