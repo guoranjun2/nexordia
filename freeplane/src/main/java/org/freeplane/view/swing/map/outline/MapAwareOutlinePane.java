@@ -220,8 +220,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                         int index = -1;
                         int count = panel.getVisibleState().getVisibleNodeCount();
                         for (int i = 0; i < count; i++) {
-                            FlatNode fn = panel.getVisibleState().getFlatNodeAtIndex(i);
-                            if (fn != null && builder.getFirstVisibleNodeId().equals(fn.node.getId())) { index = i; break; }
+                            TreeNode n = panel.getVisibleState().getNodeAtVisibleIndex(i);
+                            if (n != null && builder.getFirstVisibleNodeId().equals(n.getId())) { index = i; break; }
                         }
                         if (index >= 0) {
                             panel.updateVisibleBlocks(index);

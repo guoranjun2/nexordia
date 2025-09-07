@@ -13,7 +13,7 @@ Current Architecture Snapshot
 - OutlinePane: container wiring BreadcrumbPanel and ScrollableTreePanel with a scroll pane.
 - ScrollableTreePanel: renders the content outline (blocks), handles keyboard and mouse interaction, scrolling, selection, and focus.
 - BreadcrumbPanel: renders the ancestor path and provides navigation hooks.
-- VisibleOutlineState: keeps logical visible state (flattened nodes, hovered node, breadcrumb height, first visible identifier).
+- VisibleOutlineState: keeps logical visible state (visible node list, hovered node, breadcrumb height, first visible identifier).
 - NodePositioning and OutlineGeometry: compute positions and metrics.
 - NavigationButtons and ExpansionControls: show per-node expansion controls and perform expansion changes.
 - MapAwareOutlinePane, MapTreeNode, NodeTreeBuilder, OutlineViewState: connect outline to the map view and persist outline view state.
@@ -25,10 +25,14 @@ No code until plan approved: approved and implemented for the following subphase
 - VisibleOutlineState no longer stores or exposes BlockPanel instances or raw lists for external iteration.
 - New behavior methods were added:
   - getVisibleNodeCount()
-  - getFlatNode(TreeNode)
-  - getFlatNodeAtIndex(int)
-  - getNodeIdAtVisibleIndex(int)
+  - getNodeAtVisibleIndex(int)
+ - getNodeIdAtVisibleIndex(int)
 - BreadcrumbPath, MapAwareOutlinePane, and ScrollableTreePanel were adapted to use behavior methods instead of pulling lists.
+
+2a) Replace FlatNode with TreeNode level
+- Removed FlatNode entirely. VisibleOutlineState now stores `List<TreeNode>`.
+- Added `level` to TreeNode and maintain it via `setParent(...)`, which recomputes levels for the whole subtree (refresh on attach).
+- NodePositioning and layout use `node.getLevel()` as the single source of truth for X positioning.
 
 2) Introduce a BlockPanel cache owned by the view
 - Added OutlineBlockViewCache: a small cache mapping block index to BlockPanel, owned by ScrollableTreePanel.
@@ -92,15 +96,16 @@ Risks and Mitigations
 - Performance regressions: keep block layout logic semantically identical; measure large maps after Phases 2 and 6.
 - Focus management pitfalls: audit OutlineFocusManager thoroughly; rely on manual focus regression checks across windows.
 - External consumers: confine breaking changes to package‑private or internal classes; document migration steps below.
+- Structural level consistency: TreeNode.setParent(parent) recomputes `level` for the subtree when parent != null; all builders and live insert paths must attach via setParent to keep levels correct.
 
-Migration Notes (post‑Phase 2)
+Migration Notes (post‑Phase 2 + 2a)
 - VisibleOutlineState
   - Removed methods: getBlockPanels(), addBlockPanel(...), clearBlockPanels(), hasBlockPanel(...), getBlockPanel(...), removeBlockPanel(...), getBlockPanelIndices().
   - Removed method: getVisibleNodes(). Use behavior methods instead:
     - getVisibleNodeCount()
-    - getFlatNodeAtIndex(int)
-    - getFlatNode(TreeNode)
+    - getNodeAtVisibleIndex(int)
     - getNodeIdAtVisibleIndex(int)
+- FlatNode removed. Do not depend on snapshot depths for layout; use TreeNode.getLevel().
 - OutlineViewport.VisibleBlockRange: use getters getFirstBlock(), getLastBlock(), getBreadcrumbAreaHeight().
 - BreadcrumbState: use getters getBreadcrumbNodes(), getBreadcrumbHeight(), getFirstVisibleNodeIndex(). Returned breadcrumb list is unmodifiable.
 - OutlineViewState: access properties via getters and call applyTo(TreeNode) to restore expansion state.
@@ -129,13 +134,13 @@ Rollback Plan
 
 Appendix A: Files touched in completed baseline
 - Added: OutlineBlockViewCache.java
-- Updated: VisibleOutlineState.java, ScrollableTreePanel.java, MapAwareOutlinePane.java, BreadcrumbPath.java, BreadcrumbPanel.java, BreadcrumbState.java, OutlineViewport.java, OutlineViewState.java, NodeTreeBuilder.java
+- Updated: VisibleOutlineState.java (TreeNode list), ScrollableTreePanel.java, MapAwareOutlinePane.java, BreadcrumbPath.java, BreadcrumbPanel.java, BreadcrumbState.java, OutlineViewport.java, OutlineViewState.java, NodeTreeBuilder.java, NodePositioning.java, TreeNode.java, MapTreeNode.java
+- Removed: FlatNode.java
 
 Appendix B: Examples (tell, do not ask)
 - Before: callers fetch a list and iterate to find a node.
   - visibleState.getVisibleNodes().get(index)
 - After: callers request the outcome directly.
-  - visibleState.getFlatNodeAtIndex(index)
+  - visibleState.getNodeAtVisibleIndex(index)
   - visibleState.getVisibleNodeCount()
   - visibleState.getNodeIdAtVisibleIndex(index)
-

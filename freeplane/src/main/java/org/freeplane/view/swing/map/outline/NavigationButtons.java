@@ -75,9 +75,9 @@ class NavigationButtons {
 
         int baseX = position.x;
         int y = position.y;
-        int depth = nodePositioning.calculateNodeDepth(node);
+        int level = nodePositioning.calculateNodeLevel(node);
 
-        showButtons(baseX, y, depth);
+        showButtons(baseX, y, level);
     }
 
     private void detachFromCurrentParent() {
@@ -98,8 +98,8 @@ class NavigationButtons {
         }
     }
 
-    private void showButtons(int baseX, int y, int depth) {
-        if (depth > 0) {
+    private void showButtons(int baseX, int y, int level) {
+        if (level > 0) {
         	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
         	toggleButton.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
         	toggleButton.setVisible(true);
@@ -109,7 +109,7 @@ class NavigationButtons {
         expandMoreBtn.setBounds(expandX, y, geometry.navButtonWidth, geometry.rowHeight);
         expandMoreBtn.setVisible(true);
 
-        if(node.isExpanded() && (depth > 0  || node.getMaxExpansionDepth() > 1) ) {
+        if(node.isExpanded() && (level > 0  || node.getMaxExpansionLevel() > 1) ) {
         	int reduceX = expandX + geometry.navButtonWidth;
         	reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
         	reduceBtn.setVisible(true);

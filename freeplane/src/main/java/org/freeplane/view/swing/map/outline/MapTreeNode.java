@@ -45,10 +45,8 @@ class MapTreeNode extends TreeNode implements INodeView {
 
             MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
 
-
             add(childTreeNode, newIndex);
             childTreeNode.setParent(this);
-
 
             SwingUtilities.invokeLater(() -> {
             	outlinePane.rebuildFromNode(this);

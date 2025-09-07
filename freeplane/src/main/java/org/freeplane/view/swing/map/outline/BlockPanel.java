@@ -23,7 +23,7 @@ class BlockPanel extends JPanel {
 
     private final OutlineSelection selection;
 
-    BlockPanel(List<FlatNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
+    BlockPanel(List<TreeNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.selection = selection;
@@ -31,29 +31,29 @@ class BlockPanel extends JPanel {
         createNodeComponents(nodes, firstIdx, rowHeight, parentPanel, breadcrumbNodeCount);
     }
 
-    private void createNodeComponents(List<FlatNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+    private void createNodeComponents(List<TreeNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
         int visibleButtonIndex = 0;
         for (int i = 0; i < nodes.size(); i++) {
-            FlatNode flat = nodes.get(i);
+            TreeNode node = nodes.get(i);
             int idx = firstIdx + i;
 
             if (idx >= breadcrumbNodeCount) {
                 int y = visibleButtonIndex * rowHeight;
-                createActionButton(flat, y, rowHeight, parentPanel);
+                createActionButton(node, y, rowHeight, parentPanel);
                 visibleButtonIndex++;
             }
         }
     }
 
     @SuppressWarnings("serial")
-	private void createActionButton(FlatNode flat, int y, int rowHeight, ScrollableTreePanel parentPanel) {
-        String buttonText = flat.node.getTitle();
-        NodeButton button = new NodeButton(flat.node);
+    private void createActionButton(TreeNode node, int y, int rowHeight, ScrollableTreePanel parentPanel) {
+        String buttonText = node.getTitle();
+        NodeButton button = new NodeButton(node);
         button.setFont(button.getFont().deriveFont(8f));
         button.setText(buttonText);
 
-        int computedDepth = parentPanel.calculateNodeDepth(flat.node);
-        int actionX = parentPanel.geometry.calculateTextButtonX(computedDepth);
+        int computedLevel = node.getLevel();
+        int actionX = parentPanel.geometry.calculateTextButtonX(computedLevel);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
@@ -61,7 +61,7 @@ class BlockPanel extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				parentPanel.selectMapNodeById(flat.node.getId());
+				parentPanel.selectMapNodeById(node.getId());
 			}
 		};
 		button.addActionListener(selectAction);
@@ -81,7 +81,7 @@ class BlockPanel extends JPanel {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                parentPanel.onContentButtonHovered(flat.node);
+                parentPanel.onContentButtonHovered(node);
             }
         });
 

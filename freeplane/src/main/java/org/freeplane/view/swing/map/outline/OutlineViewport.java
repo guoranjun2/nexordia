@@ -68,9 +68,10 @@ class OutlineViewport {
         return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
     }
 
-    private int findNodeIndex(TreeNode node, List<FlatNode> visibleNodes) {
+    // Unused helper retained for potential future use (adapted to TreeNode list)
+    private int findNodeIndex(TreeNode node, List<TreeNode> visibleNodes) {
         for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node.getId().equals(node.getId())) {
+            if (visibleNodes.get(i).getId().equals(node.getId())) {
                 return i;
             }
         }

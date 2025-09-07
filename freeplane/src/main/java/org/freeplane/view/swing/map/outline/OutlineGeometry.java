@@ -33,21 +33,19 @@ class OutlineGeometry {
         this.iconDiameter = Math.round(preferredButtonSize.width * 10 / 13);
     }
 
-    int calculateTextButtonX(int depth) {
-        if (depth == 0) {
+    int calculateTextButtonX(int level) {
+        if (level == 0) {
             return buttonAreaWidth - indent;
         } else {
-            return (depth * indent) + buttonAreaWidth - indent;
+            return (level * indent) + buttonAreaWidth - indent;
         }
     }
 
-    private int calculateNavigationButtonBaseX(int depth) {
-        int textButtonX = calculateTextButtonX(depth);
+    private int calculateNavigationButtonBaseX(int level) {
+        int textButtonX = calculateTextButtonX(level);
         return Math.max(0, textButtonX - navButtonsTotalWidth);
     }
 
-    int calculateNavigationButtonBaseX(FlatNode flatNode) {
-        return calculateNavigationButtonBaseX(flatNode.depth);
-    }
+    // kept for compatibility; prefer passing explicit level
 
 }

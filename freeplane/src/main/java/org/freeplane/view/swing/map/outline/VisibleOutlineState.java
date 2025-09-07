@@ -7,7 +7,7 @@ import java.util.Map;
 
 class VisibleOutlineState {
     private final TreeNode root;
-    private List<FlatNode> visibleNodes = new ArrayList<>();
+    private List<TreeNode> visibleNodes = new ArrayList<>();
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
@@ -23,11 +23,11 @@ class VisibleOutlineState {
         buildVisibleList(root, 0);
     }
 
-    private void buildVisibleList(TreeNode node, int depth) {
-        visibleNodes.add(new FlatNode(node, depth));
+    private void buildVisibleList(TreeNode node, int level) {
+        visibleNodes.add(node);
         if (node.isExpanded()) {
             for (TreeNode child : node.getChildren()) {
-                buildVisibleList(child, depth + 1);
+                buildVisibleList(child, level + 1);
             }
         }
     }
@@ -46,7 +46,7 @@ class VisibleOutlineState {
 
     int findNodeIndexInVisibleList(TreeNode node) {
         for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).node == node) {
+            if (visibleNodes.get(i) == node) {
                 return i;
             }
         }
@@ -75,22 +75,13 @@ class VisibleOutlineState {
         this.hoveredNode = node;
     }
 
-    FlatNode getFlatNode(TreeNode node) {
-        for (FlatNode flat : visibleNodes) {
-            if (flat.node == node) {
-                return flat;
-            }
-        }
-        return null;
-    }
-
-    FlatNode getFlatNodeAtIndex(int index) {
+    TreeNode getNodeAtVisibleIndex(int index) {
         if (index < 0 || index >= visibleNodes.size()) return null;
         return visibleNodes.get(index);
     }
 
     String getNodeIdAtVisibleIndex(int index) {
-        FlatNode f = getFlatNodeAtIndex(index);
-        return f != null ? f.node.getId() : null;
+        TreeNode f = getNodeAtVisibleIndex(index);
+        return f != null ? f.getId() : null;
     }
 }

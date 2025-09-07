@@ -29,23 +29,23 @@ class OutlineViewState {
 
     void applyTo(TreeNode root) {
         Map<String, TreeNode> byId = new HashMap<>();
-        Map<String, Integer> depthById = new HashMap<>();
-        collect(root, 0, byId, depthById);
+        Map<String, Integer> levelById = new HashMap<>();
+        collect(root, 0, byId, levelById);
 
         List<Map.Entry<String, Integer>> ordered = new ArrayList<>();
         for (Map.Entry<String, Integer> e : expansionLevels.entrySet()) {
             if (byId.containsKey(e.getKey())) ordered.add(e);
         }
-        Collections.sort(ordered, Comparator.comparingInt(e -> depthById.get(e.getKey())));
+        Collections.sort(ordered, Comparator.comparingInt(e -> levelById.get(e.getKey())));
         for (Map.Entry<String, Integer> e : ordered) {
             TreeNode n = byId.get(e.getKey());
             if (n != null) n.applyExpansionLevel(e.getValue());
         }
     }
 
-    private void collect(TreeNode node, int depth, Map<String, TreeNode> byId, Map<String, Integer> depthById) {
+    private void collect(TreeNode node, int level, Map<String, TreeNode> byId, Map<String, Integer> levelById) {
         byId.put(node.getId(), node);
-        depthById.put(node.getId(), depth);
-        for (TreeNode c : node.getChildren()) collect(c, depth + 1, byId, depthById);
+        levelById.put(node.getId(), level);
+        for (TreeNode c : node.getChildren()) collect(c, level + 1, byId, levelById);
     }
 }

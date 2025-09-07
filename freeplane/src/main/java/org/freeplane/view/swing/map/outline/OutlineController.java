@@ -25,12 +25,12 @@ class OutlineController {
         return treePanel.getViewportWidth();
     }
 
-    int calcTextButtonX(int depth) {
-        return treePanel.calcTextButtonX(depth);
+    int calcTextButtonX(int level) {
+        return treePanel.calcTextButtonX(level);
     }
 
-    int calculateNodeDepth(TreeNode node) {
-        return treePanel.calculateNodeDepth(node);
+    int calculateNodeLevel(TreeNode node) {
+        return treePanel.calculateNodeLevel(node);
     }
 
     void toggleNodeExpansion(TreeNode node) {

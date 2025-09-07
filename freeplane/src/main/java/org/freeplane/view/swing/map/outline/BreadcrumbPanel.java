@@ -84,10 +84,10 @@ class BreadcrumbPanel extends JPanel {
 	void updateNavigationButtons() {
 		for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
-            int depth = getNodeDepth(node);
+            int level = getNodeLevel(node);
             int y = i * controller.getRowHeight();
 
-            int actionX = controller.calcTextButtonX(depth);
+            int actionX = controller.calcTextButtonX(level);
 
             NodeButton breadcrumbButton = new NodeButton(node);
             breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
@@ -165,8 +165,8 @@ class BreadcrumbPanel extends JPanel {
     }
 
 
-    private int getNodeDepth(TreeNode node) {
-        return controller.calculateNodeDepth(node);
+    private int getNodeLevel(TreeNode node) {
+        return controller.calculateNodeLevel(node);
     }
 
     private void showNavigationButtonsForBreadcrumb(TreeNode node, int rowIndex) {

@@ -20,13 +20,13 @@ class ExpansionControls {
     }
 
     void expandNodeMore(TreeNode node) {
-        int currentLevel = node.getMaxExpansionDepth();
+        int currentLevel = node.getMaxExpansionLevel();
         node.applyExpansionLevel(currentLevel + 1);
         refreshAfterExpansionChange();
     }
 
     void reduceNodeExpansion(TreeNode node) {
-        int currentLevel = node.getMaxExpansionDepth();
+        int currentLevel = node.getMaxExpansionLevel();
         if (currentLevel > 0) {
             node.applyExpansionLevel(currentLevel - 1);
             refreshAfterExpansionChange();

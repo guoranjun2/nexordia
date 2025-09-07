@@ -14,35 +14,26 @@ class NodePositioning {
         this.visibleState = visibleState;
     }
     
-    int calculateNodeDepth(TreeNode node) {
-        int depth = 0;
-        TreeNode current = node;
-        while (current != null && current != root) {
-            current = current.getParent();
-            depth++;
-        }
-        return current == root ? depth : -1;
+    int calculateNodeLevel(TreeNode node) {
+        return node != null ? node.getLevel() : -1;
     }
     
     Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
-        int y, depth, baseX;
+        int y, level, baseX;
         
         if (isBreadcrumb) {
             y = rowIndex * geometry.rowHeight;
-            depth = calculateNodeDepth(node);
-            int textButtonX = geometry.calculateTextButtonX(depth);
+            level = calculateNodeLevel(node);
+            int textButtonX = geometry.calculateTextButtonX(level);
             baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         } else {
-            FlatNode flatNode = visibleState.getFlatNode(node);
-            if (flatNode == null) return null;
-
             int nodeIndex = visibleState.findNodeIndexInVisibleList(node);
             int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
             int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
             
             y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;
-            depth = calculateNodeDepth(node);
-            int textButtonX = geometry.calculateTextButtonX(depth);
+            level = calculateNodeLevel(node);
+            int textButtonX = geometry.calculateTextButtonX(level);
             baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         }
         
@@ -50,9 +41,6 @@ class NodePositioning {
     }
     
     Point calculateSelectionIconPosition(TreeNode node, Rectangle buttonBounds) {
-        FlatNode flatNode = visibleState.getFlatNode(node);
-        if (flatNode == null) return null;
-        
         int iconX = buttonBounds.x + buttonBounds.width;
         
         int iconY = buttonBounds.y + (buttonBounds.height - geometry.iconDiameter) / 2;

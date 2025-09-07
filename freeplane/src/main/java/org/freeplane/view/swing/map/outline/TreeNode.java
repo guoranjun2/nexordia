@@ -10,6 +10,7 @@ class TreeNode {
     private final List<TreeNode> children = new ArrayList<>();
     private int expansionLevel = 0;
     private TreeNode parent = null;
+    private int level = 0;
 
     TreeNode(String title, String id) {
         this.setTitle(title);
@@ -42,15 +43,15 @@ class TreeNode {
         }
     }
 
-    int getMaxExpansionDepth() {
+    int getMaxExpansionLevel() {
         if (getExpansionLevel() == 0 || getChildren().isEmpty()) {
             return 0;
         }
-        int maxDepth = 0;
+        int maxLevel = 0;
         for (TreeNode child : getChildren()) {
-            maxDepth = Math.max(maxDepth, 1 + child.getMaxExpansionDepth());
+            maxLevel = Math.max(maxLevel, 1 + child.getMaxExpansionLevel());
         }
-        return maxDepth;
+        return maxLevel;
     }
 
     boolean isExpanded() {
@@ -67,13 +68,15 @@ class TreeNode {
         return "TreeNode [title=" + getTitle() + "]";
     }
 
-	TreeNode getParent() {
-		return parent;
-	}
+    TreeNode getParent() {
+        return parent;
+    }
 
-	void setParent(TreeNode parent) {
-		this.parent = parent;
-	}
+    void setParent(TreeNode parent) {
+        this.parent = parent;
+        if(parent != null)
+        	refreshLevelsRecursively();
+    }
 
 	private void setExpansionLevel(int expansionLevel) {
 		this.expansionLevel = expansionLevel;
@@ -95,21 +98,32 @@ class TreeNode {
 		return children.remove(toRemove);
 	}
 
-	String getId() {
-		return id;
-	}
+    String getId() {
+        return id;
+    }
 
 	String getTitle() {
 		return title;
 	}
 
-	TreeNode findVisibleAncestorOrSelf() {
-		TreeNode node = this;
-		for(;;) {
-			TreeNode parent = node.getParent();
-			if(parent == null || parent.isExpanded())
-				return node;
-			node = parent;
-		}
-	}
+    TreeNode findVisibleAncestorOrSelf() {
+        TreeNode node = this;
+        for(;;) {
+            TreeNode parent = node.getParent();
+            if(parent == null || parent.isExpanded())
+                return node;
+            node = parent;
+        }
+    }
+
+    int getLevel() {
+        return level;
+    }
+
+    private void refreshLevelsRecursively() {
+    	level = parent.level + 1;
+        for (TreeNode child : children) {
+            child.refreshLevelsRecursively();
+        }
+    }
 }

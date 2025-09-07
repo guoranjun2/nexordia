@@ -33,9 +33,8 @@ class BreadcrumbPath {
             return null;
         }
 
-        FlatNode firstFlat = visibleState.getFlatNodeAtIndex(firstFullyVisibleNodeIndex);
-        if (firstFlat == null) return null;
-        TreeNode firstFullyVisibleNode = firstFlat.node;
+        TreeNode firstFullyVisibleNode = visibleState.getNodeAtVisibleIndex(firstFullyVisibleNodeIndex);
+        if (firstFullyVisibleNode == null) return null;
 
         if (firstFullyVisibleNode == root) {
             if (currentBreadcrumbHeight == 0) {

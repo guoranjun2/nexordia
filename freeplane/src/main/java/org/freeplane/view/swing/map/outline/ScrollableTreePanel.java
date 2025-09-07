@@ -357,10 +357,10 @@ class ScrollableTreePanel extends JPanel {
             return;
         }
 
-        java.util.List<FlatNode> blockNodes = new java.util.ArrayList<>();
+        java.util.List<TreeNode> blockNodes = new java.util.ArrayList<>();
         for (int i = start; i < end; i++) {
-            FlatNode fn = visibleState.getFlatNodeAtIndex(i);
-            if (fn != null) blockNodes.add(fn);
+            TreeNode n = visibleState.getNodeAtVisibleIndex(i);
+            if (n != null) blockNodes.add(n);
         }
         BlockPanel bp = new BlockPanel(blockNodes, start, geometry.rowHeight, this, breadcrumbNodeCount, outlineSelection);
 
@@ -441,8 +441,8 @@ class ScrollableTreePanel extends JPanel {
         return geometry.rowHeight;
     }
 
-    int calcTextButtonX(int depth) {
-        return geometry.calculateTextButtonX(depth);
+    int calcTextButtonX(int level) {
+        return geometry.calculateTextButtonX(level);
     }
 
     int getViewportWidth() {
@@ -515,9 +515,9 @@ class ScrollableTreePanel extends JPanel {
                 NodeButton btn = (NodeButton) comp;
                 if (btn.getNode() == node) {
                     btn.setText(node.getTitle());
-                    int depth = calculateNodeDepth(node);
-                    if (depth >= 0) {
-                        int x = geometry.calculateTextButtonX(depth);
+                    int level = calculateNodeLevel(node);
+                    if (level >= 0) {
+                        int x = geometry.calculateTextButtonX(level);
                         btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
                     }
                     breadcrumbPanel.revalidate();
@@ -535,9 +535,9 @@ class ScrollableTreePanel extends JPanel {
                     NodeButton btn = (NodeButton) comp;
                     if (btn.getNode() == node) {
                         btn.setText(node.getTitle());
-                        int depth = calculateNodeDepth(node);
-                        if (depth >= 0) {
-                            int x = geometry.calculateTextButtonX(depth);
+                        int level = calculateNodeLevel(node);
+                        if (level >= 0) {
+                            int x = geometry.calculateTextButtonX(level);
                             btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
                         }
                         panel.revalidate();
@@ -658,8 +658,8 @@ class ScrollableTreePanel extends JPanel {
         if (currentSelected != null) {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             if (currentIndex > 0) {
-                FlatNode prev = visibleState.getFlatNodeAtIndex(currentIndex - 1);
-                if (prev != null) setSelectedNode(prev.node, true);
+                TreeNode prev = visibleState.getNodeAtVisibleIndex(currentIndex - 1);
+                if (prev != null) setSelectedNode(prev, true);
             }
         }
     }
@@ -674,8 +674,8 @@ class ScrollableTreePanel extends JPanel {
             int currentIndex = visibleState.findNodeIndexInVisibleList(currentSelected);
             int size = visibleState.getVisibleNodeCount();
             if (currentIndex >= 0 && currentIndex < size - 1) {
-                FlatNode next = visibleState.getFlatNodeAtIndex(currentIndex + 1);
-                if (next != null) setSelectedNode(next.node, true);
+                TreeNode next = visibleState.getNodeAtVisibleIndex(currentIndex + 1);
+                if (next != null) setSelectedNode(next, true);
             }
         }
     }
@@ -687,8 +687,8 @@ class ScrollableTreePanel extends JPanel {
             int pageSize = getPageSize();
             int newIndex = Math.max(0, currentIndex - pageSize);
             if (newIndex != currentIndex) {
-                FlatNode fn = visibleState.getFlatNodeAtIndex(newIndex);
-                if (fn != null) setSelectedNode(fn.node, true);
+                TreeNode n = visibleState.getNodeAtVisibleIndex(newIndex);
+                if (n != null) setSelectedNode(n, true);
             }
         }
     }
@@ -701,8 +701,8 @@ class ScrollableTreePanel extends JPanel {
             int size = visibleState.getVisibleNodeCount();
             int newIndex = Math.min(size - 1, currentIndex + pageSize);
             if (newIndex != currentIndex) {
-                FlatNode fn = visibleState.getFlatNodeAtIndex(newIndex);
-                if (fn != null) setSelectedNode(fn.node, true);
+                TreeNode n = visibleState.getNodeAtVisibleIndex(newIndex);
+                if (n != null) setSelectedNode(n, true);
             }
         }
     }
@@ -797,8 +797,8 @@ class ScrollableTreePanel extends JPanel {
 
 
 
-    int calculateNodeDepth(TreeNode node) {
-        return nodePositioning.calculateNodeDepth(node);
+    int calculateNodeLevel(TreeNode node) {
+        return nodePositioning.calculateNodeLevel(node);
     }
 
     @Override
