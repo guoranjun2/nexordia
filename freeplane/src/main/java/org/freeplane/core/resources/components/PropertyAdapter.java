@@ -36,14 +36,14 @@ abstract public class PropertyAdapter {
 	private String label;
 
 	private final String name;
-	private JLabel labelComponent;
+	protected JLabel labelComponent;
 
 	public JLabel getLabelComponent() {
 		return labelComponent;
 	}
-	
+
 	public abstract JComponent getValueComponent();
-	
+
 	protected void setLabelComponent(JLabel labelComponent) {
 		this.labelComponent = labelComponent;
 	}
@@ -67,7 +67,7 @@ abstract public class PropertyAdapter {
 	public String getLabel() {
 		return label;
 	}
-	
+
 	void setLabel(String label) {
     	this.label = label;
     }
@@ -75,12 +75,12 @@ abstract public class PropertyAdapter {
 	public String getName() {
 		return name;
 	}
-	
+
 	public void setNameAsLabelAndToolTip() {
 	    this.label = name;
 	    this.tooltip = name + ".tooltip";
 	}
-	
+
 	public void setEnabled(final boolean pEnabled) {
 	    if(labelComponent != null)
 	        labelComponent.setEnabled(pEnabled);

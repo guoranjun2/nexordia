@@ -148,6 +148,65 @@ public class OptionPanelBuilder {
 			}
 		}
 	}
+
+	private class RadioButtonsOptionCreator extends PropertyCreator {
+		@Override
+		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
+			String enumClassName = data.getAttribute("enum", null);
+			if(enumClassName != null) {
+				try {
+					Class<?> enumClass = OptionPanelBuilder.class.getClassLoader().loadClass(enumClassName);
+					return new IPropertyControlCreator() {
+						@Override
+						public IPropertyControl createControl() {
+							return RadioButtonProperty.of(name, (Class) enumClass);
+						}
+
+						@Override
+						public String getPropertyName() {
+							return name;
+						}
+					};
+				}
+				catch (Exception e) {
+					LogUtils.severe(e);
+					return null;
+				}
+			}
+			else {
+				final int childrenCount = data.getChildrenCount();
+				final Vector<String> choices = new Vector<String>(childrenCount);
+				final Vector<Object> displayedItems = new Vector<Object>(childrenCount);
+				for (int i = 0; i < data.getChildrenCount(); i++) {
+					final XMLElement element = data.getChildAtIndex(i);
+					final String choice = element.getAttribute("value", null);
+					choices.add(choice);
+					final String iconName = element.getAttribute("icon", null);
+					final Object displayedItem;
+					if(iconName != null) {
+						displayedItem = ResourceController.getResourceController().getIcon("/images/" + iconName);
+					}
+					else {
+						final String translationKey = element.getAttribute("text", "OptionPanel." + choice);
+						displayedItem = TextUtils.getOptionalText(translationKey);
+					}
+					displayedItems.add(displayedItem);
+				}
+				final Vector<?> items = displayedItems;
+				return new IPropertyControlCreator() {
+					@Override
+					public IPropertyControl createControl() {
+						return new RadioButtonProperty(name, choices, items);
+					}
+
+					@Override
+					public String getPropertyName() {
+						return name;
+					}
+				};
+			}
+		}
+	}
 	private class LanguagesComboCreator extends PropertyCreator {
 		@Override
 		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
@@ -831,6 +890,7 @@ public class OptionPanelBuilder {
 		readManager.addElementHandler("path", new PathOptionCreator());
 		readManager.addElementHandler("color", new ColorOptionCreator());
 		readManager.addElementHandler("combo", new ComboOptionCreator());
+		readManager.addElementHandler("radiobuttons", new RadioButtonsOptionCreator());
 		readManager.addElementHandler("languages", new LanguagesComboCreator());
 		readManager.addElementHandler("key", new KeyOptionCreator());
 		readManager.addElementHandler("maybe_boolean", new MaybeBooleanCreator());
