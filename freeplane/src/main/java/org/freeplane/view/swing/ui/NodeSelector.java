@@ -61,7 +61,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		ResourceController rc = ResourceController.getResourceController();
 
 		final boolean shouldMigrateSelectionMethod = rc.isPropertySetByUser("selection_method") &&
-		   !rc.isPropertySetByUser(MOUSE_OVER_SELECTION_TIMING);
+		   !rc.isPropertySetByUser(MOUSE_OVER_SELECTION);
 		if (shouldMigrateSelectionMethod) {
 			String selectionMethod = rc.getProperty("selection_method");
 			migrateSelectionSettingsFromSelectionMethod(rc, selectionMethod);
@@ -71,13 +71,13 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	private static void migrateSelectionSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
 		switch (selectionMethod) {
 			case "selection_method_direct":
-				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
+				rc.setProperty(MOUSE_OVER_SELECTION, SELECTION_IMMEDIATE);
 				break;
 			case "selection_method_delayed":
-				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_DELAYED);
+				rc.setProperty(MOUSE_OVER_SELECTION, SELECTION_DELAYED);
 				break;
 			case "selection_method_by_click":
-				rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_DISABLED);
+				rc.setProperty(MOUSE_OVER_SELECTION, SELECTION_DISABLED);
 				break;
 		}
 	}
@@ -102,7 +102,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
         );
     }
 
-	private static final String MOUSE_OVER_SELECTION_TIMING = "mouse_over_selection_timing";
+	private static final String MOUSE_OVER_SELECTION = "mouse_over_selection";
 	private static final String SELECTION_DISABLED = "disabled";
 	private static final String SELECTION_DELAYED = "delayed";
 	private static final String SELECTION_IMMEDIATE = "immediate";
@@ -248,12 +248,12 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 
 	private String getSelectionBehavior(Component c) {
 		ResourceController rc = ResourceController.getResourceController();
-		String behavior = rc.getProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
+		String behavior = rc.getProperty(MOUSE_OVER_SELECTION, SELECTION_IMMEDIATE);
 		if (SELECTION_DISABLED.equals(behavior)) {
 			return SELECTION_DISABLED;
 		} else if ("enabled".equals(behavior)) {
 			behavior = SELECTION_IMMEDIATE;
-			rc.setProperty(MOUSE_OVER_SELECTION_TIMING, SELECTION_IMMEDIATE);
+			rc.setProperty(MOUSE_OVER_SELECTION, SELECTION_IMMEDIATE);
 		}
 		String selectionInside = rc.getProperty(MOUSE_OVER_SELECTION_INSIDE, SELECTION_INSIDE_SELECTED_MAP_VIEW);
 		switch (selectionInside) {

@@ -39,23 +39,9 @@ import org.freeplane.view.swing.map.NodeView;
  * 19.06.2013
  */
 class NodeFolder implements MouseTimerDelegate.ActionProvider {
-    static {
-        migratePropertyFromSelectionMethodIfUserCustomized();
-    }
-    private static void migratePropertyFromSelectionMethodIfUserCustomized() {
-        ResourceController rc = ResourceController.getResourceController();
-
-        if (shouldMigrateFoldingMethodFromSelectionMethod(rc)) {
-            String selectionMethod = rc.getProperty("selection_method");
-            migrateFoldingSettingsFromSelectionMethod(rc, selectionMethod);
-        }
-    }
-
-
-    private static final String MOUSE_OVER_FOLDING_TIMING = "mouse_over_folding_timing";
+    private static final String MOUSE_OVER_FOLDING = "mouse_over_folding";
     private static final String MOUSE_OVER_FOLDING_ACTION = "mouse_over_folding_action";
     private static final String FOLDING_DISABLED = "disabled";
-    private static final String FOLDING_DELAYED = "delayed";
     private static final String FOLDING_IMMEDIATE = "immediate";
     private static final String FOLDING_TOGGLE = "toggle";
     private static final String FOLDING_UNFOLD_ONLY = "unfold_only";
@@ -138,11 +124,11 @@ class NodeFolder implements MouseTimerDelegate.ActionProvider {
             return;
         }
 
-        final String foldingTiming = ResourceController.getResourceController().getProperty(MOUSE_OVER_FOLDING_TIMING);
-        if (foldingTiming.equals(FOLDING_DISABLED)) {
+        final String folding = ResourceController.getResourceController().getProperty(MOUSE_OVER_FOLDING);
+        if (folding.equals(FOLDING_DISABLED)) {
             return;
         }
-        if (foldingTiming.equals(FOLDING_IMMEDIATE)) {
+        if (folding.equals(FOLDING_IMMEDIATE)) {
             ActionListener action = createDelayedAction(e);
             action.actionPerformed(new ActionEvent(this, 0, ""));
             // Mark as fired to prevent timer from triggering again
@@ -193,8 +179,8 @@ class NodeFolder implements MouseTimerDelegate.ActionProvider {
 
     @Override
     public boolean isActionEnabled(MouseEvent e) {
-        final String foldingTiming = ResourceController.getResourceController().getProperty(MOUSE_OVER_FOLDING_TIMING);
-        return !foldingTiming.equals(FOLDING_DISABLED);
+        final String folding = ResourceController.getResourceController().getProperty(MOUSE_OVER_FOLDING);
+        return !folding.equals(FOLDING_DISABLED);
     }
 
     NodeView getRelatedNodeView(MouseEvent e) {
@@ -210,24 +196,7 @@ class NodeFolder implements MouseTimerDelegate.ActionProvider {
     }
 
     private static boolean userHasNotCustomizedFoldingMethod(ResourceController rc) {
-        return !rc.isPropertySetByUser(MOUSE_OVER_FOLDING_TIMING) && !rc.isPropertySetByUser(MOUSE_OVER_FOLDING_ACTION);
-    }
-
-    private static void migrateFoldingSettingsFromSelectionMethod(ResourceController rc, String selectionMethod) {
-        switch (selectionMethod) {
-            case "selection_method_direct":
-                rc.setProperty(MOUSE_OVER_FOLDING_TIMING, FOLDING_IMMEDIATE);
-                rc.setProperty(MOUSE_OVER_FOLDING_ACTION, FOLDING_TOGGLE);
-                break;
-            case "selection_method_delayed":
-                rc.setProperty(MOUSE_OVER_FOLDING_TIMING, FOLDING_DELAYED);
-                rc.setProperty(MOUSE_OVER_FOLDING_ACTION, FOLDING_TOGGLE);
-                break;
-            case "selection_method_by_click":
-                rc.setProperty(MOUSE_OVER_FOLDING_TIMING, FOLDING_DISABLED);
-                rc.setProperty(MOUSE_OVER_FOLDING_ACTION, FOLDING_TOGGLE);
-                break;
-        }
+        return !rc.isPropertySetByUser(MOUSE_OVER_FOLDING) && !rc.isPropertySetByUser(MOUSE_OVER_FOLDING_ACTION);
     }
 
     void trackWindowForComponent(Component c) {

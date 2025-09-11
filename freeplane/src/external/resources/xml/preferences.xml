@@ -292,7 +292,7 @@
 				<boolean name="remove_notes_without_question" />
 			</separator>
 			<separator name="mouse_over_behavior">
-				<combo name="mouse_over_selection_timing">
+				<combo name="mouse_over_selection">
 					<choice value="disabled" />
 					<choice value="delayed" />
 					<choice value="immediate" />
@@ -303,7 +303,7 @@
 					<choice value="selection_inside.selected_window" />
 					<choice value="selection_inside.any_map" />
 				</combo>
-				<combo name="mouse_over_folding_timing">
+				<combo name="mouse_over_folding">
 					<choice value="disabled" />
 					<choice value="delayed" />
 					<choice value="immediate" />
