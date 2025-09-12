@@ -131,7 +131,7 @@ Phase 6: Optional consolidation of selection orchestration
 
 Phase 7: Documentation and invariants
 - Document invariants for geometry and positioning (for example, how breadcrumb height is computed and how it affects block ranges) and assert them where low‑risk.
-- Add targeted unit tests for helper classes that are already logic‑centric (NodePositioning, OutlineViewport.VisibleBlockRange calculations, OutlineViewState.applyTo).
+- Add targeted unit tests for helper classes that are already logic‑centric (NodePositioning, OutlineVisibleBlockRange/OutlineViewport calculations, OutlineViewState.applyTo).
 - Success criteria: clearer invariants, safer future edits; helper logic covered by tests.
 
 Progress
@@ -141,13 +141,18 @@ Progress
 - Phase 4: done — unified selection painting via SelectionPainter; removed duplication in BlockPanel and BreadcrumbPanel.
 - Phase 5: done — removed unused parameter in VisibleOutlineState and empty paint override in ScrollableTreePanel.
 - Phase 6: in progress — introduced OutlineSelectionManager for preferred‑child tracking; further orchestration extraction remains optional.
-- Phase 7: in progress — added initial invariants and a NodePositioning test; consider adding viewport/block range tests next.
+- Phase 7: done — documented invariants and added AssertJ tests for NodePositioning and OutlineViewport/OutlineVisibleBlockRange.
 
 Invariants (initial)
 - OutlineGeometry: rowHeight > 0; indent == rowHeight; navButtonsTotalWidth == 3 * navButtonWidth; iconDiameter > 0.
 - VisibleOutlineState: visibleNodes is a pre‑order list of expanded nodes starting at root; breadcrumbAreaHeight is a non‑negative multiple of rowHeight.
 - OutlineViewport: when calculating block ranges, adjusted view y is max(0, viewRect.y − breadcrumbAreaHeight); firstBlock ≤ lastBlock when nodes exist.
 - NodePositioning: calculateTextButtonX(level) is monotonic non‑decreasing over level; selection icon position lies to the right of the button bounds.
+
+Verification Notes
+- Tests use AssertJ assertions. Current helper tests live under freeplane/src/test/java/org/freeplane/view/swing/map/outline/.
+- Add further tests where logic is pure and decoupled (e.g., BreadcrumbPath and OutlineSelectionManager preferredChild behavior).
+- Manual checks still recommended for: focus transitions (OutlineFocusManager), selection sync with MapView (OutlineSelectionBridge), and navigation buttons behavior.
 
 Risks and Rollback
 - Phases 1–4 are low risk and mechanical; each step is independently revertible.
