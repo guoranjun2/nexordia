@@ -29,13 +29,6 @@ class OutlineBlockLayout {
         this.blockSize = blockSize;
     }
 
-    void clearBlocks(JPanel owner) {
-        for (BlockPanel panel : blockCache.values()) {
-            owner.remove(panel);
-        }
-        blockCache.clear();
-    }
-
     void createVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
         for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
             if (!blockCache.has(b))

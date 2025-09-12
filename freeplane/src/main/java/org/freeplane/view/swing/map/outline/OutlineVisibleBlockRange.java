@@ -14,7 +14,6 @@ class OutlineVisibleBlockRange {
     int getFirstBlock() { return firstBlock; }
     int getLastBlock() { return lastBlock; }
     int getBreadcrumbAreaHeight() { return breadcrumbAreaHeight; }
-    boolean contains(int blockIndex) { return blockIndex >= firstBlock && blockIndex <= lastBlock; }
 
     @Override
     public String toString() {

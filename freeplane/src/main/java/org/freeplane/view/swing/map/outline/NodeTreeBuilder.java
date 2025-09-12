@@ -88,6 +88,5 @@ class NodeTreeBuilder {
     }
 
     TreeNode getRoot() { return root; }
-    String getFirstVisibleNodeId() { return firstVisibleNodeId; }
     OutlineViewState getApplicableState() { return applicableState; }
 }

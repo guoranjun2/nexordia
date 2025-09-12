@@ -91,8 +91,6 @@ class TreeNode {
     List<TreeNode> getChildren() { return Collections.unmodifiableList(children); }
 
     int childCount() { return children.size(); }
-    TreeNode childAt(int index) { return children.get(index); }
-    void forEachChild(Consumer<TreeNode> action) { children.forEach(action); }
 
 	void add(MapTreeNode node, int index) {
 		if (index < children.size()) {

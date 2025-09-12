@@ -23,7 +23,6 @@ class VisibleOutlineState {
         visibleNodes.clear();
         indexById.clear();
         buildVisibleList(root);
-        // build index map by id for O(1) lookups
         for (int i = 0; i < visibleNodes.size(); i++) {
             TreeNode n = visibleNodes.get(i);
             if (n != null) indexById.put(n.getId(), i);

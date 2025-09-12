@@ -1,17 +1,14 @@
 
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
 import javax.swing.AbstractAction;
-import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.InputMap;

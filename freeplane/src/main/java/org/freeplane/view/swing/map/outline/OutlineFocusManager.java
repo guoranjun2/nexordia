@@ -45,7 +45,6 @@ class OutlineFocusManager {
         if (selected == null) {
             return;
         }
-        // Do not scroll here. Scrolling/visibility is handled by selection/viewport logic.
         if(! requestFocusInWindow) {
             final Component focusOwner = FocusManager.getCurrentManager().getCurrentFocusCycleRoot();
             if (! SwingUtilities.isDescendingFrom(focusOwner, panel)) {

@@ -24,11 +24,10 @@ import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 
-/** OutlinePane that updates based on map view changes. */
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
 	private static final long serialVersionUID = 1L;
 
-	static final TreeNode NO_MAP_AVAILABLE = new TreeNode(TextUtils.getText("no_open_map"), "empty");
+	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode(TextUtils.getText("no_open_map"), "empty");
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
 
@@ -172,9 +171,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 
-    /**
-     * Update the tree display from the given MapView.
-     */
     private void updateTreeFromMap(MapView mapView) {
         try {
             removeMapListeners();
@@ -213,10 +209,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                         panel.updateVisibleNodes();
                     }
                 }
-                // Align outline selection and viewport with the MapView's current selection
+
                 try {
                     synchronizeOutlineSelection(false);
-                } catch (Exception ignore) { /**/ }
+                } catch (Exception ignore) { /**/}
             } else {
                 showNoMapState();
             }
@@ -235,9 +231,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         installFocusListener();
 	}
 
-    /**
-     * Show "No Map Available" state.
-     */
     private void showNoMapState() {
         cleanupCurrentTree();
         removeMapListeners();
@@ -269,7 +262,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             	currentMapView.getSelected().getMainView().requestFocusInWindow();
                 return;
             }
-            // Default: switch to outline
             ViewController vc = Controller.getCurrentController().getViewController();
             if (!vc.isOutlineVisible()) {
                 vc.setOutlineVisible(true);
@@ -335,9 +327,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         }
     }
 
-    /**
-     * Clean up listeners from the current tree to prevent memory leaks.
-     */
     private void cleanupCurrentTree() {
         if (currentRoot != null && currentRoot instanceof MapTreeNode) {
             OutlinePane.cleanupTree(currentRoot);
