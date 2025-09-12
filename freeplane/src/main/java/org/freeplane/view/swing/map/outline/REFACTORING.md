@@ -134,6 +134,21 @@ Phase 7: Documentation and invariants
 - Add targeted unit tests for helper classes that are already logic‑centric (NodePositioning, OutlineViewport.VisibleBlockRange calculations, OutlineViewState.applyTo).
 - Success criteria: clearer invariants, safer future edits; helper logic covered by tests.
 
+Progress
+- Phase 1: done — extracted inner/anonymous classes (VisibleBlockRange → OutlineVisibleBlockRange; SelectedNodeUpdater → OutlineSelectedNodeUpdater; focus click adapter top‑level).
+- Phase 2: done — centralized key bindings via OutlineActions and OutlineActionTarget; panels bind to shared actions.
+- Phase 3: done — focus logic extracted to OutlineFocusManager; ScrollableTreePanel now delegates.
+- Phase 4: done — unified selection painting via SelectionPainter; removed duplication in BlockPanel and BreadcrumbPanel.
+- Phase 5: done — removed unused parameter in VisibleOutlineState and empty paint override in ScrollableTreePanel.
+- Phase 6: in progress — introduced OutlineSelectionManager for preferred‑child tracking; further orchestration extraction remains optional.
+- Phase 7: pending — add invariants documentation and small helper tests.
+
+Invariants (initial)
+- OutlineGeometry: rowHeight > 0; indent == rowHeight; navButtonsTotalWidth == 3 * navButtonWidth; iconDiameter > 0.
+- VisibleOutlineState: visibleNodes is a pre‑order list of expanded nodes starting at root; breadcrumbAreaHeight is a non‑negative multiple of rowHeight.
+- OutlineViewport: when calculating block ranges, adjusted view y is max(0, viewRect.y − breadcrumbAreaHeight); firstBlock ≤ lastBlock when nodes exist.
+- NodePositioning: calculateTextButtonX(level) is monotonic non‑decreasing over level; selection icon position lies to the right of the button bounds.
+
 Risks and Rollback
 - Phases 1–4 are low risk and mechanical; each step is independently revertible.
 - Phases 5–6 alter orchestration and carry higher coordination risk; gate with focused tests and manual checks; rollback by reverting the new manager classes and delegations.

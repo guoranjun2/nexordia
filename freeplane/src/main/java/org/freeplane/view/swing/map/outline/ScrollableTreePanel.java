@@ -270,19 +270,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     void setSelectedNode(TreeNode node, boolean requestFocus) {
-		focusSelectionButtonLater(requestFocus);
-        selectionManager.onSelected(node);
-		outlineSelection.selectNode(node);
-		repaint();
-		if(visibleState.findNodeIndexInVisibleList(node) < 0) {
-			TreeNode preservedHoveredNode = visibleState.getHoveredNode();
-			removeAll();
-			blockCache.clear();
-			navButtons.hideNavigationButtons();
-			visibleState.setHoveredNode(preservedHoveredNode);
-			updateVisibleBlocks();
-		}
-		scrollToSelectedNode();
+        selectionManager.select(this, outlineSelection, node, requestFocus);
     }
 
 
@@ -345,6 +333,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             }
         }
         ensureSelectionAtEdge();
+    }
+
+    void hardResetBlocksPreservingHovered(TreeNode preservedHoveredNode) {
+        removeAll();
+        blockCache.clear();
+        navButtons.hideNavigationButtons();
+        visibleState.setHoveredNode(preservedHoveredNode);
+        updateVisibleBlocks();
     }
 
     boolean isNodeButtonFocused() { return focusManager.isNodeButtonFocused(); }

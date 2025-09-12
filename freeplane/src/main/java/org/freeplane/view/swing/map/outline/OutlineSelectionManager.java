@@ -25,5 +25,18 @@ class OutlineSelectionManager {
         }
         return children.get(0);
     }
-}
 
+    void select(ScrollableTreePanel panel, OutlineSelection selection, TreeNode node, boolean requestFocus) {
+        if (node == null) return;
+        panel.focusSelectionButtonLater(requestFocus);
+        onSelected(node);
+        selection.selectNode(node);
+        panel.repaint();
+        VisibleOutlineState vs = panel.getVisibleState();
+        if (vs.findNodeIndexInVisibleList(node) < 0) {
+            TreeNode preservedHoveredNode = vs.getHoveredNode();
+            panel.hardResetBlocksPreservingHovered(preservedHoveredNode);
+        }
+        panel.scrollToSelectedNode();
+    }
+}
