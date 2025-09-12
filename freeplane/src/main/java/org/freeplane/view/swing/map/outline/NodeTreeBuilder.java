@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.SummaryNode;
 import org.freeplane.view.swing.map.MapView;
 
 class NodeTreeBuilder {
@@ -68,7 +69,7 @@ class NodeTreeBuilder {
 
     private void visitChildren(NodeModel model, MapTreeNode parentOut) {
         for (NodeModel child : model.getChildren()) {
-            boolean visible = filter == null || filter.isVisibleOrAncestor(child);
+            boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisibleOrAncestor(child));
             if (visible) {
                 lastVisibleId = child.getID();
             }
