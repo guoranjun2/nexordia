@@ -50,7 +50,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private OutlineBlockLayout blockLayout;
     private OutlineSelectionBridge selectionBridge;
     private OutlineFocusManager focusManager;
-    private final Map<String, String> lastSelectedChildByParent = new HashMap<>();
+    private final OutlineSelectionManager selectionManager = new OutlineSelectionManager();
 
 
     private int lastFirstBlock = -1;
@@ -271,9 +271,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     void setSelectedNode(TreeNode node, boolean requestFocus) {
 		focusSelectionButtonLater(requestFocus);
-		if (node.getParent() != null) {
-			lastSelectedChildByParent.put(node.getParent().getId(), node.getId());
-		}
+        selectionManager.onSelected(node);
 		outlineSelection.selectNode(node);
 		repaint();
 		if(visibleState.findNodeIndexInVisibleList(node) < 0) {
@@ -644,14 +642,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (!node.isExpanded()) {
             expansionControls.expandNode(node);
         }
-        String preferredChildId = lastSelectedChildByParent.get(node.getId());
-        TreeNode targetChild = null;
-        if (preferredChildId != null) {
-            for (TreeNode c : node.getChildren()) {
-                if (preferredChildId.equals(c.getId())) { targetChild = c; break; }
-            }
-        }
-        if (targetChild == null) targetChild = node.getChildren().get(0);
+        TreeNode targetChild = selectionManager.preferredChild(node);
 
         setSelectedNode(targetChild, true);
     }
