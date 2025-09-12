@@ -392,7 +392,7 @@ public class TextController implements IExtension {
 			@Override
 			public String getTooltip(final ModeController modeController, NodeModel node, Component view, TooltipTrigger tooltipTrigger) {
 				final DetailModel details = DetailModel.getDetail(node);
-				if (!providesTooltip(node, details, tooltipTrigger)) {
+				if (!providesTooltip(node, details, tooltipTrigger, view)) {
 					return null;
 				}
 				final String htmlBodyStyle = (view instanceof MainView)
@@ -416,12 +416,12 @@ public class TextController implements IExtension {
 			}
 
 			private boolean providesTooltip(NodeModel node, final DetailModel details,
-			        TooltipTrigger tooltipTrigger) {
+			        TooltipTrigger tooltipTrigger, Component view) {
 				return details != null
 						&& ! details.getTextOr("").isEmpty()
 						&& (tooltipTrigger == TooltipTrigger.LINK
 							|| details.isHidden() ||
-							ShortenedTextModel.isShortened(node));
+							isMinimized(node, view));
 			}
 
 			private String getTooltipHtmlStyle(final ModeController modeController, NodeModel node, MainView view) {
@@ -450,7 +450,7 @@ public class TextController implements IExtension {
 		modeController.addToolTipProvider(NODE_TOOLTIP, new ITooltipProvider() {
 			@Override
 			public String getTooltip(final ModeController modeController, NodeModel node, Component view, TooltipTrigger tooltipTrigger) {
-				if (tooltipTrigger != TooltipTrigger.LINK && !ShortenedTextModel.isShortened(node)) {
+				if (tooltipTrigger != TooltipTrigger.LINK && ! isMinimized(node, view)) {
 					return null;
 				}
 				final String htmlBodyStyle = (view instanceof MainView)

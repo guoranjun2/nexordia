@@ -29,13 +29,14 @@ import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.EnabledAction;
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.mode.Controller;
-import org.freeplane.features.text.ShortenedTextModel;
+import org.freeplane.features.text.TextController;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.NodeView;
 
 @EnabledAction(checkOnNodeChange=true)
 public class EditAttributesAction extends AFreeplaneAction {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
@@ -43,10 +44,11 @@ public class EditAttributesAction extends AFreeplaneAction {
 		super("EditAttributesAction");
 	};
 
+	@Override
 	public void actionPerformed(final ActionEvent e) {
 		final Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		final Controller controller = Controller.getCurrentController();
-		final AttributeView attributeView = (((MapView) controller.getMapViewManager().getMapViewComponent()).getSelected())
+		final NodeView nodeView = getSelectedNode();
+		final AttributeView attributeView = nodeView
 		    .getAttributeView();
 		final boolean attributesClosed = null == SwingUtilities.getAncestorOfClass(AttributeTable.class, focusOwner);
 		if (attributesClosed) {
@@ -57,10 +59,16 @@ public class EditAttributesAction extends AFreeplaneAction {
 		}
 	}
 
+	private NodeView getSelectedNode() {
+		final Controller controller = Controller.getCurrentController();
+		final NodeView nodeView = ((MapView) controller.getMapViewManager().getMapViewComponent()).getSelected();
+		return nodeView;
+	}
+
 	@Override
 	public void setEnabled() {
 		final IMapSelection selection = Controller.getCurrentController().getSelection();
-		setEnabled(selection != null && ! ShortenedTextModel.isShortened(selection.getSelected()));
+		setEnabled(selection != null && ! TextController.getController().isMinimized(selection.getSelected(), getSelectedNode()));
 	}
 
 }
