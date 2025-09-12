@@ -1,11 +1,14 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class VisibleOutlineState {
     private final TreeNode root;
     private List<TreeNode> visibleNodes = new ArrayList<>();
+    private final Map<String, Integer> indexById = new HashMap<>();
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
@@ -18,7 +21,13 @@ class VisibleOutlineState {
 
     void updateVisibleNodes() {
         visibleNodes.clear();
+        indexById.clear();
         buildVisibleList(root);
+        // build index map by id for O(1) lookups
+        for (int i = 0; i < visibleNodes.size(); i++) {
+            TreeNode n = visibleNodes.get(i);
+            if (n != null) indexById.put(n.getId(), i);
+        }
     }
 
     private void buildVisibleList(TreeNode node) {
@@ -43,12 +52,9 @@ class VisibleOutlineState {
     }
 
     int findNodeIndexInVisibleList(TreeNode node) {
-        for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i) == node) {
-                return i;
-            }
-        }
-        return -1;
+        if (node == null) return -1;
+        Integer idx = indexById.get(node.getId());
+        return idx != null ? idx : -1;
     }
 
     int getBreadcrumbAreaHeight() {
