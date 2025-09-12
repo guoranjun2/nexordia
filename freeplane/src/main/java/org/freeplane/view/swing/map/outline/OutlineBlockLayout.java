@@ -35,7 +35,7 @@ class OutlineBlockLayout {
         blockCache.clear();
     }
 
-    void createVisibleBlocks(JPanel owner, OutlineViewport.VisibleBlockRange range, int panelWidth) {
+    void createVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
         for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
             if (!blockCache.has(b))
                 createBlock(owner, b, range.getBreadcrumbAreaHeight(), panelWidth);
@@ -99,4 +99,3 @@ class OutlineBlockLayout {
         return maxWidth + 20;
     }
 }
-

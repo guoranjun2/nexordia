@@ -31,12 +31,7 @@ class ScrollableTreePanel extends JPanel {
 	private static final long serialVersionUID = 1;
     private static final int BLOCK_SIZE = 50;
 
-    private static final MouseListener focusSelectedButtonOnClick = new MouseAdapter() {
-		@Override
-		public void mouseClicked(MouseEvent e) {
-			((ScrollableTreePanel)e.getComponent()).focusSelectionButtonLater(true);
-		}
-	};
+    
 
 	private  final NavigationButtons navButtons;
     final SelectionCircleIcon selectionIcon;
@@ -64,8 +59,8 @@ class ScrollableTreePanel extends JPanel {
     private int lastVisibleNodeCount = -1;
 
     ScrollableTreePanel(TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
-		this(root, BLOCK_SIZE,breadcrumbPanel);
-		addMouseListener(focusSelectedButtonOnClick);
+        this(root, BLOCK_SIZE,breadcrumbPanel);
+        addMouseListener(new FocusSelectedButtonClickAdapter(this));
 	}
 
     private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
@@ -213,7 +208,7 @@ class ScrollableTreePanel extends JPanel {
         boolean prevInOutline = isWithinOutline(prevFocus);
 
 
-        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         int viewportWidth = viewport.getViewportWidth();
         int visibleCount = visibleState.getVisibleNodeCount();
         boolean haveBlocks = !blockCache.isEmpty();
@@ -270,7 +265,7 @@ class ScrollableTreePanel extends JPanel {
         refreshUI();
 
 
-        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         lastFirstBlock = range.getFirstBlock();
         lastLastBlock = range.getLastBlock();
         lastBreadcrumbAreaHeight = range.getBreadcrumbAreaHeight();
@@ -327,7 +322,7 @@ class ScrollableTreePanel extends JPanel {
     }
 
     private void createVisibleBlocks() {
-        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         blockLayout.createVisibleBlocks(this, range, getPreferredSize().width);
     }
 
@@ -577,7 +572,7 @@ class ScrollableTreePanel extends JPanel {
             return;
         }
 
-        OutlineViewport.VisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         int startBlock = Math.max(0, anchorIndex / blockSize);
 
         removeBlocksFromBlockIndex(startBlock);
@@ -650,7 +645,7 @@ class ScrollableTreePanel extends JPanel {
         }
     }
 
-	private void focusSelectionButtonLater(boolean requestFocus) {
+	void focusSelectionButtonLater(boolean requestFocus) {
 		SwingUtilities.invokeLater(() -> focusSelectionButton(requestFocus));
 	}
 

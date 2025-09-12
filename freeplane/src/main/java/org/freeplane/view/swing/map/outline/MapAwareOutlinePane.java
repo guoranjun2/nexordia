@@ -40,20 +40,17 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 		return currentMapView;
 	}
 
-	private final SelectedNodeUpdater selectedNodeUpdater;
+	private final OutlineSelectedNodeUpdater selectedNodeUpdater;
     private PropertyChangeListener focusListener;
 
-    private class SelectedNodeUpdater implements INodeSelectionListener{
-		@Override
-		public
-		void onSelect(NodeModel node) {
-			if(currentMapView == null || ! currentMapView.isSelected() || node == null)
-				return;
-			final ScrollableTreePanel panel = getTreePanel();
-			if(panel == null)
-				return;
-			SwingUtilities.invokeLater(() -> synchronizeOutlineSelection(false));
-		}
+    
+    void handleMapSelectionChanged(NodeModel node) {
+        if(currentMapView == null || ! currentMapView.isSelected() || node == null)
+            return;
+        final ScrollableTreePanel panel = getTreePanel();
+        if(panel == null)
+            return;
+        SwingUtilities.invokeLater(() -> synchronizeOutlineSelection(false));
     }
 
     void synchronizeOutlineSelection(boolean requestFocus) {
@@ -105,7 +102,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     public MapAwareOutlinePane() {
     	super(NO_MAP_AVAILABLE);
-    	selectedNodeUpdater = new SelectedNodeUpdater();
+    	selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
     }
 
 

@@ -45,7 +45,7 @@ class OutlineViewport {
         scrollPane.repaint();
     }
 
-    VisibleBlockRange calculateVisibleBlockRange(int blockSize) {
+    OutlineVisibleBlockRange calculateVisibleBlockRange(int blockSize) {
         Rectangle viewRect = getViewRect();
         int blockHeight = blockSize * geometry.rowHeight;
         int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
@@ -57,7 +57,7 @@ class OutlineViewport {
         int firstBlock = Math.max(0, adjustedViewY / blockHeight);
         int lastBlock = Math.min(totalBlocks - 1, (adjustedViewY + adjustedViewHeight) / blockHeight);
 
-        return new VisibleBlockRange(firstBlock, lastBlock, breadcrumbAreaHeight);
+        return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbAreaHeight);
     }
 
     int calculateFirstVisibleNodeIndex() {
@@ -66,26 +66,5 @@ class OutlineViewport {
         return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
     }
 
-    static class VisibleBlockRange {
-        private final int firstBlock;
-        private final int lastBlock;
-        private final int breadcrumbAreaHeight;
-
-        private VisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
-            this.firstBlock = firstBlock;
-            this.lastBlock = lastBlock;
-            this.breadcrumbAreaHeight = breadcrumbAreaHeight;
-        }
-
-        int getFirstBlock() { return firstBlock; }
-        int getLastBlock() { return lastBlock; }
-        int getBreadcrumbAreaHeight() { return breadcrumbAreaHeight; }
-        boolean contains(int blockIndex) { return blockIndex >= firstBlock && blockIndex <= lastBlock; }
-
-		@Override
-		public String toString() {
-			return "VisibleBlockRange [firstBlock=" + firstBlock + ", lastBlock=" + lastBlock
-			        + ", breadcrumbAreaHeight=" + breadcrumbAreaHeight + "]";
-		}
-    }
+    
 }
