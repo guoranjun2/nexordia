@@ -615,6 +615,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int F0 = state.getFirstVisibleNodeIndex();
         int startIndex = Math.max(0, selIndex >= 0 ? selIndex : F0);
         updateVisibleBlocks(startIndex);
+        updateVisibleBlocksAndBreadcrumb();
     }
 
 
