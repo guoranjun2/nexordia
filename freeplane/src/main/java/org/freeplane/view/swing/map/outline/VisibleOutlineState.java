@@ -18,14 +18,14 @@ class VisibleOutlineState {
 
     void updateVisibleNodes() {
         visibleNodes.clear();
-        buildVisibleList(root, 0);
+        buildVisibleList(root);
     }
 
-    private void buildVisibleList(TreeNode node, int level) {
+    private void buildVisibleList(TreeNode node) {
         visibleNodes.add(node);
         if (node.isExpanded()) {
             for (TreeNode child : node.getChildren()) {
-                buildVisibleList(child, level + 1);
+                buildVisibleList(child);
             }
         }
     }

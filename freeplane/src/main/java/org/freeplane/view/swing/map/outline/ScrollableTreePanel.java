@@ -693,10 +693,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return nodePositioning.calculateNodeLevel(node);
     }
 
-    @Override
-protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-    }
+    
 
 	void attachNavigationNode(TreeNode node,
 	        boolean isBreadCrumb, int rowIndex, int currentBreadcrumbHeight) {
