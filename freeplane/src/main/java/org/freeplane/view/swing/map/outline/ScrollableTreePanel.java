@@ -69,7 +69,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.root = root;
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
-        root.applyExpansionLevel(1);
         this.outlineSelection = new OutlineSelection(root);
         this.visibleState = new VisibleOutlineState(root);
 

@@ -15,7 +15,6 @@ import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
-import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -43,7 +42,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private final OutlineSelectedNodeUpdater selectedNodeUpdater;
     private PropertyChangeListener focusListener;
 
-    
+
     void handleMapSelectionChanged(NodeModel node) {
         if(currentMapView == null || ! currentMapView.isSelected() || node == null)
             return;
@@ -211,23 +210,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                     panel = getTreePanel();
                     if (panel != null) {
                         builder.getApplicableState().applyTo(panel.getRoot());
-                        panel.refreshWithBreadcrumbs();
+                        panel.updateVisibleNodes();
                     }
                 }
-                if (builder.getFirstVisibleNodeId() != null) {
-                    panel = getTreePanel();
-                    if (panel != null) {
-                        int index = -1;
-                        int count = panel.getVisibleState().getVisibleNodeCount();
-                        for (int i = 0; i < count; i++) {
-                            TreeNode n = panel.getVisibleState().getNodeAtVisibleIndex(i);
-                            if (n != null && builder.getFirstVisibleNodeId().equals(n.getId())) { index = i; break; }
-                        }
-                        if (index >= 0) {
-                            panel.updateVisibleBlocks(index);
-                        }
-                    }
-                }
+                // Align outline selection and viewport with the MapView's current selection
+                try {
+                    synchronizeOutlineSelection(false);
+                } catch (Exception ignore) { /**/ }
             } else {
                 showNoMapState();
             }
