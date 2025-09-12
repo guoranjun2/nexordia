@@ -28,7 +28,6 @@ class OutlineSelectionManager {
 
     void select(ScrollableTreePanel panel, OutlineSelection selection, TreeNode node, boolean requestFocus) {
         if (node == null) return;
-        panel.focusSelectionButtonLater(requestFocus);
         onSelected(node);
         selection.selectNode(node);
         panel.repaint();
@@ -37,6 +36,11 @@ class OutlineSelectionManager {
             TreeNode preservedHoveredNode = vs.getHoveredNode();
             panel.hardResetBlocksPreservingHovered(preservedHoveredNode);
         }
-        panel.scrollToSelectedNode();
+
+        boolean visible = node != null && (panel.isNodeInBreadcrumbArea(node) || panel.isNodeActuallyVisible(node));
+        if (!visible) {
+            panel.ensureSelectionVisibleTop();
+        }
+        panel.focusSelectionButtonLater(requestFocus);
     }
 }
