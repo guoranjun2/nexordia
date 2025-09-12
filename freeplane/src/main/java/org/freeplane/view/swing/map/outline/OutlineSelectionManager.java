@@ -37,7 +37,7 @@ class OutlineSelectionManager {
             panel.hardResetBlocksPreservingHovered(preservedHoveredNode);
         }
 
-        boolean visible = node != null && (panel.isNodeInBreadcrumbArea(node) || panel.isNodeActuallyVisible(node));
+        boolean visible = node != null && (panel.isNodeInBreadcrumbArea(node) || panel.isNodeFullyVisibleInViewport(node));
         if (!visible) {
             panel.ensureSelectionVisibleTop();
         }

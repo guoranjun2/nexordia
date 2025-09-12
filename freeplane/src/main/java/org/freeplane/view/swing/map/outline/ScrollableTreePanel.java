@@ -211,7 +211,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return false;
     }
 
-    boolean isNodeActuallyVisible(TreeNode node) {
+    boolean isNodeFullyVisibleInViewport(TreeNode node) {
         if (viewport == null || node == null) return false;
         int index = visibleState.findNodeIndexInVisibleList(node);
         if (index < 0) return false;
@@ -220,7 +220,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int totalRows = viewport.getPageSize();
         int breadcrumbRows = h / geometry.rowHeight;
         int contentRows = Math.max(1, totalRows - breadcrumbRows);
-        int last = Math.max(first, first + contentRows - 1);
+        int last = Math.max(first, first + contentRows - 2);
         return index >= first && index <= last;
     }
 
