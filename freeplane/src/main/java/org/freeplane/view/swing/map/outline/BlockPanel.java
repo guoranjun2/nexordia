@@ -103,26 +103,7 @@ class BlockPanel extends JPanel {
         }
 
         if (parentPanel != null) {
-            for (Component comp : getComponents()) {
-                if (comp instanceof NodeButton) {
-                    NodeButton btn = (NodeButton) comp;
-                    TreeNode buttonNode = btn.getNode();
-                    if (buttonNode != null && selection.isSelected(buttonNode)) {
-
-                        boolean isInBreadcrumb = parentPanel.isNodeInBreadcrumbArea(buttonNode);
-
-
-                        if (!isInBreadcrumb) {
-                            Icon icon = parentPanel.selectionIcon;
-
-                            Point iconPosition = parentPanel.getNodePositioning().calculateSelectionIconPosition(comp.getBounds());
-                            if (iconPosition != null) {
-                                icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
-                            }
-                        }
-                    }
-                }
-            }
+            SelectionPainter.paintForBlockPanel(this, parentPanel, selection, g);
         }
     }
 

@@ -154,19 +154,7 @@ class BreadcrumbPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        for (Component comp : getComponents()) {
-            if (comp instanceof NodeButton) {
-                NodeButton btn = (NodeButton) comp;
-                TreeNode buttonNode = btn.getNode();
-                if (buttonNode != null && selection.isSelected(buttonNode)) {
-                    Icon icon = controller.getSelectionIcon();
-                    Point iconPosition = controller.calculateSelectionIconPosition(comp.getBounds());
-                    if (iconPosition != null) {
-                        icon.paintIcon(this, g, iconPosition.x, iconPosition.y);
-                    }
-                }
-            }
-        }
+        SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
 
         if (currentBreadcrumbHeight > 0) {
             g.setColor(Color.RED);
