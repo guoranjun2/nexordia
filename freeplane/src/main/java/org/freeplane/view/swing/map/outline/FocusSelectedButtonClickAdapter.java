@@ -4,15 +4,14 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 class FocusSelectedButtonClickAdapter extends MouseAdapter {
-    private final ScrollableTreePanel panel;
+    private final OutlineFocusManager focusManager;
 
-    FocusSelectedButtonClickAdapter(ScrollableTreePanel panel) {
-        this.panel = panel;
+    FocusSelectedButtonClickAdapter(OutlineFocusManager focusManager) {
+        this.focusManager = focusManager;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        panel.focusSelectionButtonLater(true);
+        focusManager.focusSelectionButtonLater(true);
     }
 }
-

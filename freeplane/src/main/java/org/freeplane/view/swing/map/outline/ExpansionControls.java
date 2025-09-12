@@ -48,7 +48,7 @@ class ExpansionControls {
     	treePanel.updateVisibleNodes();
     	SwingUtilities.invokeLater(() -> {
     		if(wasFocused)
-    			treePanel.focusSelectionButton(true);
+    			treePanel.focusSelectionButtonLater(true);
     		else
     			treePanel.synchronizeSelectionButton(false);
     	});
