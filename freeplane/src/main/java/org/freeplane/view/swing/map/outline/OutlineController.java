@@ -7,7 +7,7 @@ import java.util.List;
 import javax.swing.Icon;
 import javax.swing.JScrollPane;
 
-class OutlineController {
+class OutlineController implements OutlineActionTarget {
     private final ScrollableTreePanel treePanel;
     @SuppressWarnings("unused")
     private final JScrollPane scrollPane;
@@ -39,14 +39,14 @@ class OutlineController {
         treePanel.toggleExpandSelected();
     }
 
-    void navigateUp() { treePanel.navigateUp(); }
-    void navigateDown() { treePanel.navigateDown(); }
-    void navigatePageUp() { treePanel.navigatePageUp(); }
-    void navigatePageDown() { treePanel.navigatePageDown(); }
-    void goToParent() { treePanel.goToParent(); }
-    void goToChild() { treePanel.goToChild(); }
-    void expandSelectedMore() { treePanel.expandSelectedMore(); }
-    void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
+    @Override public void navigateUp() { treePanel.navigateUp(); }
+    @Override public void navigateDown() { treePanel.navigateDown(); }
+    @Override public void navigatePageUp() { treePanel.navigatePageUp(); }
+    @Override public void navigatePageDown() { treePanel.navigatePageDown(); }
+    @Override public void goToParent() { treePanel.goToParent(); }
+    @Override public void goToChild() { treePanel.goToChild(); }
+    @Override public void expandSelectedMore() { treePanel.expandSelectedMore(); }
+    @Override public void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
 
     void attachNavigationNode(TreeNode node, boolean isBreadcrumb, int rowIndex) {
         int currentBreadcrumbHeight = treePanel.getVisibleState().getBreadcrumbAreaHeight();

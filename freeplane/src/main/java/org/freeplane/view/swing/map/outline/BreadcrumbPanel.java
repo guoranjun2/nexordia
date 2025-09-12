@@ -39,35 +39,8 @@ class BreadcrumbPanel extends JPanel {
     }
 
     @SuppressWarnings("serial")
-	private void setupKeyBindings() {
-        InputMap im = getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-        ActionMap am = getActionMap();
-
-        im.put(KeyStroke.getKeyStroke("UP"), "outline.up");
-        im.put(KeyStroke.getKeyStroke("DOWN"), "outline.down");
-        im.put(KeyStroke.getKeyStroke("PAGE_UP"), "outline.pageUp");
-        im.put(KeyStroke.getKeyStroke("PAGE_DOWN"), "outline.pageDown");
-        im.put(KeyStroke.getKeyStroke("LEFT"), "outline.parent");
-        im.put(KeyStroke.getKeyStroke("RIGHT"), "outline.child");
-        im.put(KeyStroke.getKeyStroke("control LEFT"), "outline.reduce");
-        im.put(KeyStroke.getKeyStroke("control RIGHT"), "outline.expandMore");
-
-        am.put("outline.up", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.navigateUp(); }});
-        am.put("outline.down", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.navigateDown(); }});
-        am.put("outline.pageUp", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.navigatePageUp(); }});
-        am.put("outline.pageDown", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.navigatePageDown(); }});
-        am.put("outline.parent", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.goToParent(); }});
-        am.put("outline.child", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.goToChild(); }});
-        am.put("outline.reduce", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.reduceSelectedExpansion(); }});
-        am.put("outline.expandMore", new AbstractAction() { @Override
-		public void actionPerformed(ActionEvent e) { controller.expandSelectedMore(); }});
+    private void setupKeyBindings() {
+        new OutlineActions(controller).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
     void update(BreadcrumbState state) {
