@@ -18,7 +18,7 @@ class MapTreeNode extends TreeNode implements INodeView {
     private final OutlinePane outlinePane;
 
     MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
-        super(getNodeText(nodeModel), nodeModel.getID());
+        super(getNodeText(nodeModel), nodeModel.createID());
         this.nodeModel = nodeModel;
         this.outlinePane = outlinePane;
     }
