@@ -67,6 +67,6 @@ class NodePositioning {
 
     int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
         int effectiveViewportY = viewRect.y + breadcrumbAreaHeight;
-        return Math.max(0, (effectiveViewportY + geometry.rowHeight/2 - 1) / geometry.rowHeight);
+        return Math.max(0, (effectiveViewportY + (geometry.rowHeight/2 - 1)) / geometry.rowHeight);
     }
 }

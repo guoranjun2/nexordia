@@ -420,6 +420,7 @@ class ScrollableTreePanel extends JPanel {
                     	btn.scrollRectToVisible(new Rectangle(0, -breadcrumbAreaHeight,
                     			btn.getWidth() + geometry.iconDiameter + 6,
                     			breadcrumbAreaHeight + Math.max(geometry.rowHeight * 2, geometry.iconDiameter + 4)));
+                    	updateVisibleBlocksAndBreadcrumb();
                         if(visibleState.getBreadcrumbAreaHeight() < breadcrumbAreaHeight) {
                         	moveSelectionToTop();
                         }
@@ -749,12 +750,6 @@ class ScrollableTreePanel extends JPanel {
         return 10;
     }
 
-
-
-    private List<TreeNode> getCurrentBreadcrumbNodes() {
-    	return breadcrumbPanel.getCurrentBreadcrumbNodes();
-    }
-
     void updateVisibleNodes() {
         visibleState.updateVisibleNodes();
         updateVisibleBlocksAndBreadcrumb();
@@ -776,8 +771,7 @@ class ScrollableTreePanel extends JPanel {
 	}
 
     private BreadcrumbState calculateBreadcrumbState() {
-        List<TreeNode> currentBreadcrumbNodes = getCurrentBreadcrumbNodes();
-        return breadcrumbPath.calculateBreadcrumbState(currentBreadcrumbNodes);
+        return breadcrumbPath.calculateBreadcrumbState();
     }
 
 

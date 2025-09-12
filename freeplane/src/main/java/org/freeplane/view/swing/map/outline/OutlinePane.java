@@ -9,9 +9,13 @@ import java.awt.event.ComponentEvent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import org.freeplane.core.ui.components.UITools;
 
 class OutlinePane extends JPanel {
 	private static final long serialVersionUID = 1L;
+	private static final int SCROLL_INACTIVITY_DELAY_MS = 200;
 	private JScrollPane treeScrollPane;
     private ScrollableTreePanel treePanel;
     private BreadcrumbPanel breadcrumbPanel;
@@ -21,7 +25,7 @@ class OutlinePane extends JPanel {
 
         this.treePanel = new ScrollableTreePanel(rootNode, breadcrumbPanel);
         this.treeScrollPane = new JScrollPane(treePanel);
-
+        UITools.setScrollbarIncrement(treeScrollPane);
         treePanel.setScrollPane(this.treeScrollPane);
 
         OutlineController controller = new OutlineController(treePanel, treeScrollPane);
@@ -75,6 +79,7 @@ class OutlinePane extends JPanel {
 
         ScrollableTreePanel newTreePanel = new ScrollableTreePanel(newRootNode, newBreadcrumbPanel);
         JScrollPane newScrollPane = new JScrollPane(newTreePanel);
+        UITools.setScrollbarIncrement(newScrollPane);
 
         newTreePanel.setScrollPane(newScrollPane);
 
@@ -88,7 +93,7 @@ class OutlinePane extends JPanel {
         add(breadcrumbPanel);
         add(treeScrollPane, BorderLayout.CENTER);
 
-        setupScrollListenersForScrollPane(newScrollPane);
+        setupScrollListeners();
 
         performInitialSetup();
 
@@ -96,38 +101,18 @@ class OutlinePane extends JPanel {
         repaint();
     }
 
-    private void setupScrollListenersForScrollPane(JScrollPane scrollPane) {
-        scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
-                panel.updateVisibleBlocksAndBreadcrumb();
-            } else {
-                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
-                panel.updateVisibleBlocks();
-            }
-        });
-
-        scrollPane.getViewport().addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                ScrollableTreePanel panel = (ScrollableTreePanel) scrollPane.getViewport().getView();
-                panel.updateVisibleBlocks();
-            }
-        });
-    }
-
     private void setupScrollListeners() {
-    	treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
-    		if(! e.getValueIsAdjusting()) {
-    			treePanel.updateVisibleBlocksAndBreadcrumb();
-    		}
-    		else
-    			treePanel.updateVisibleBlocks();
+        final Timer scrollDebounceTimer = new Timer(SCROLL_INACTIVITY_DELAY_MS, e2 -> treePanel.updateVisibleBlocksAndBreadcrumb());
+        scrollDebounceTimer.setRepeats(false);
+
+		 treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+			 treePanel.updateVisibleBlocks();
+			 scrollDebounceTimer.restart();
         });
         treeScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-            	treePanel.updateVisibleBlocks();
+		            treePanel.updateVisibleBlocks();
             }
         });
     }

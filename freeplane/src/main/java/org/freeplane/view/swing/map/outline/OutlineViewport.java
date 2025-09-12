@@ -1,8 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Rectangle;
 import java.awt.Point;
-import java.util.List;
+import java.awt.Rectangle;
 
 import javax.swing.JScrollPane;
 
@@ -67,16 +66,6 @@ class OutlineViewport {
         return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
     }
 
-    // Unused helper retained for potential future use (adapted to TreeNode list)
-    private int findNodeIndex(TreeNode node, List<TreeNode> visibleNodes) {
-        for (int i = 0; i < visibleNodes.size(); i++) {
-            if (visibleNodes.get(i).getId().equals(node.getId())) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     static class VisibleBlockRange {
         private final int firstBlock;
         private final int lastBlock;
@@ -92,5 +81,11 @@ class OutlineViewport {
         int getLastBlock() { return lastBlock; }
         int getBreadcrumbAreaHeight() { return breadcrumbAreaHeight; }
         boolean contains(int blockIndex) { return blockIndex >= firstBlock && blockIndex <= lastBlock; }
+
+		@Override
+		public String toString() {
+			return "VisibleBlockRange [firstBlock=" + firstBlock + ", lastBlock=" + lastBlock
+			        + ", breadcrumbAreaHeight=" + breadcrumbAreaHeight + "]";
+		}
     }
 }

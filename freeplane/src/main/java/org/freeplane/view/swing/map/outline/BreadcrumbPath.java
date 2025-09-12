@@ -21,17 +21,13 @@ class BreadcrumbPath {
         this.viewport = viewport;
     }
 
-    BreadcrumbState calculateBreadcrumbState(List<TreeNode> currentBreadcrumbNodes) {
+    BreadcrumbState calculateBreadcrumbState() {
         if (visibleState.getVisibleNodeCount() == 0) {
             return null;
         }
 
         int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
         int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
-
-        if (firstFullyVisibleNodeIndex >= visibleState.getVisibleNodeCount()) {
-            return null;
-        }
 
         TreeNode firstFullyVisibleNode = visibleState.getNodeAtVisibleIndex(firstFullyVisibleNodeIndex);
         if (firstFullyVisibleNode == null) return null;
@@ -42,13 +38,6 @@ class BreadcrumbPath {
             } else {
                 return new BreadcrumbState(Collections.emptyList(), 0, 0);
             }
-        }
-
-        TreeNode lastCurrentBreadcrumbNode = currentBreadcrumbNodes.isEmpty() ? null :
-                                           currentBreadcrumbNodes.get(currentBreadcrumbNodes.size() - 1);
-
-        if (firstFullyVisibleNode.getParent() == lastCurrentBreadcrumbNode) {
-            return null;
         }
 
         List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(firstFullyVisibleNode);
