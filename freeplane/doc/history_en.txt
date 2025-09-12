@@ -1,6 +1,7 @@
 ==============================
 1.12.14
 ==============================
+Disable or force node minimization per map view (View->View settings->Displayed node content->...)
 Bug fixes
 Map outline panel
 
