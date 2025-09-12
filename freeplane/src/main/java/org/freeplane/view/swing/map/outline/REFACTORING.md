@@ -1,146 +1,152 @@
 Refactoring Plan for org.freeplane.view.swing.map.outline
 
-Purpose: capture the refactoring roadmap, decisions, progress, and guidance so work can continue safely and coherently.
+Purpose: maintain a living refactoring roadmap that reflects the actual code, clarifies responsibilities, and sequences safe improvements.
 
 Guiding Principles
-- Tell, do not ask: expose behavior, not internal data structures.
-- SOLID alignment: reduce god objects, separate responsibilities, and depend on abstractions where helpful.
-- Backward compatibility by default: avoid breaking public surface unnecessarily; when changes are required, keep them local and well documented.
-- Minimal, focused changes: keep diffs scoped; avoid opportunistic refactors.
+- Tell, do not ask: prefer behavior‑oriented methods over exposing internal data.
+- Single responsibility: isolate rendering, layout, state, selection, focus, and integration concerns.
+- No inner classes: extract inner/anonymous classes to top‑level types; avoid hiding complexity.
+- No duplication: deduplicate key bindings, selection painting, and focus logic.
+- Remove unused code: delete dead parameters, fields, and empty overrides.
+- Backward compatibility by default: prefer local, non‑breaking changes; document any necessary interface updates.
+- Minimal, focused diffs: avoid opportunistic refactors; keep scope tight and auditable.
 - Phase gates: no code until plan approved for each change phase.
 
-Current Architecture Snapshot
-- OutlinePane: container wiring BreadcrumbPanel and ScrollableTreePanel with a scroll pane.
-- ScrollableTreePanel: renders the content outline (blocks), handles keyboard and mouse interaction, scrolling, selection, and focus.
-- BreadcrumbPanel: renders the ancestor path and provides navigation hooks.
-- VisibleOutlineState: keeps logical visible state (visible node list, hovered node, breadcrumb height, first visible identifier).
-- NodePositioning and OutlineGeometry: compute positions and metrics.
-- NavigationButtons and ExpansionControls: show per-node expansion controls and perform expansion changes.
-- MapAwareOutlinePane, MapTreeNode, NodeTreeBuilder, OutlineViewState: connect outline to the map view and persist outline view state.
+Design
 
-Completed Work (baseline for continuation)
-No code until plan approved: approved and implemented for the following subphases.
+Core containers and views
+- OutlinePane — top‑level container; lays out breadcrumb + content and wires scroll listeners.
+- MapAwareOutlinePane — integrates outline with MapView; listens to map/filter/selection changes and swaps roots.
+- ScrollableTreePanel — content view hosting BlockPanel instances; renders visible nodes; delegates actions and focus.
+- BreadcrumbPanel — renders ancestor buttons; forwards interactions to the controller.
+- BlockPanel — hosts a contiguous slice of node buttons (one block) without extra logic.
 
-1) Decouple view state from user interface components (tell, do not ask)
-- VisibleOutlineState no longer stores or exposes BlockPanel instances or raw lists for external iteration.
-- New behavior methods were added:
-  - getVisibleNodeCount()
-  - getNodeAtVisibleIndex(int)
- - getNodeIdAtVisibleIndex(int)
-- BreadcrumbPath, MapAwareOutlinePane, and ScrollableTreePanel were adapted to use behavior methods instead of pulling lists.
+Models and state
+- TreeNode — logical outline node (id, title, children, parent, level, expansion); behavior methods over data exposure.
+- MapTreeNode — TreeNode backed by NodeModel; listens to insert/delete/change and updates the outline view.
+- VisibleOutlineState — computes/stores visible node list, hovered node, breadcrumb height, first visible node id.
+- OutlineSelection — selected‑node model with helpers (get, set, isSelected).
+- BreadcrumbState — immutable snapshot of breadcrumb nodes, height, and anchor index.
+- OutlineViewState — persistent expansion + first visible + root + filter; applies to a tree.
 
-2a) Replace FlatNode with TreeNode level
-- Removed FlatNode entirely. VisibleOutlineState now stores `List<TreeNode>`.
-- Added `level` to TreeNode and maintain it via `setParent(...)`, which recomputes levels for the whole subtree (refresh on attach).
-- NodePositioning and layout use `node.getLevel()` as the single source of truth for X positioning.
+Layout, geometry, viewport
+- OutlineGeometry — derived dimensions: row height, indents, button widths, gaps, icon size.
+- NodePositioning — positioning math for buttons, icons, blocks, and viewport positions.
+- OutlineViewport — JScrollPane adapter computing visible ranges and page size; updates view position.
+- OutlineVisibleBlockRange (new) — extracted from OutlineViewport.VisibleBlockRange; immutable and query‑oriented.
 
-2) Introduce a BlockPanel cache owned by the view
-- Added OutlineBlockViewCache: a small cache mapping block index to BlockPanel, owned by ScrollableTreePanel.
-- ScrollableTreePanel now manages creation, sizing, and removal of BlockPanel instances through this cache.
-- Added helper method isNodeVisibleInBlocks(TreeNode) to encapsulate visibility checks without leaking component internals outward.
+Block orchestration
+- OutlineBlockLayout — creates/removes/positions BlockPanel instances; updates preferred sizes from content.
+- OutlineBlockViewCache — caches block panels by index; read‑only views for keys/values.
 
-3) Tighten data transfer object encapsulation (limited)
-- BreadcrumbState: fields are private and final; added getters and return an unmodifiable breadcrumb node list.
-- OutlineViewport.VisibleBlockRange: fields are private and final; added getters and contains(int) method.
-- OutlineViewState: fields are private with getters for first visible node identifier, root node identifier, and saved filter; applyTo(TreeNode) remains the canonical behavior.
+Controllers, actions, focus
+- OutlineController — thin delegator for navigation/expansion; keeps panel logic out of widgets.
+- ExpansionControls — expand/collapse/more/less; refreshes visible state; keeps selection visible.
+- OutlineSelectionBridge — syncs outline selection with MapView and focuses map node on demand.
+- OutlineActions (new) — shared Swing actions and key bindings (up/down/page, left/right, expand more/reduce) used by panels.
+- OutlineFocusManager (new) — focuses selected NodeButton, restores focus after updates, determines outline vs map focus.
+- OutlineSelectionManager (new) — orchestrates selection changes, last‑selected‑child tracking, scrolling into view, and breadcrumb/block updates.
 
-Motivation and Effects
-- Reduces coupling between logical state and user interface components, enabling safer future refactors.
-- Improves intent expression at call sites and prevents misuse of internal lists and component maps.
-- Maintains behavior while clarifying responsibility boundaries (state versus view).
+Rendering helpers
+- NodeButton — typed JButton bound to a TreeNode.
+- SelectionCircleIcon — paints the selection indicator.
+- SelectionPainter (new) — paints selection indicator next to a NodeButton using NodePositioning; removes duplication.
 
-Follow‑up Phases (proposed)
-For each phase: no code until plan approved.
+Integration and building
+- NodeTreeBuilder — builds TreeNode graph from MapView honoring filter and saved state.
+- BreadcrumbPath — computes breadcrumb path, height, and anchor index from the first fully visible node.
+- ExpansionHandler — interface for expansion operations (kept as an abstraction).
 
-Phase 3: Replace client properties with typed node buttons
-- Problem: frequent use of JButton clientProperty("treeNode") is weakly typed and spreads across multiple classes.
-- Change: introduce a NodeButton extends JButton with a TreeNode field and getter, and use it in BlockPanel and BreadcrumbPanel. Update readers to rely on typed access.
-- Success criteria: compile-time safety for button-to-node association; no behavior change.
+Supporting data structures
+- lastSelectedChildByParent (Map) — move into OutlineSelectionManager to centralize selection‑related state.
+- Unmodifiable children — TreeNode.getChildren returns an unmodifiable list to prevent external mutation.
+- Caches — OutlineBlockViewCache provides controlled access to BlockPanel instances.
 
-Phase 4: Strengthen TreeNode encapsulation
-- Problem: getChildren() returns a mutable list and encourages external mutation.
-- Change: return an unmodifiable view from getChildren(); offer childCount(), childAt(int), and forEachChild(Consumer<TreeNode>) helpers. Keep existing mutation methods (addChild, add(MapTreeNode,int), remove) as the only mutators.
-- Success criteria: no external direct list mutation; outline behavior unchanged.
+Current Architecture Snapshot (as implemented now)
+- OutlinePane: composes BreadcrumbPanel and ScrollableTreePanel inside a scroll pane; wires layout and scroll listeners.
+- ScrollableTreePanel: orchestrates visible state, block creation, navigation buttons, selection and focus, scrolling, and repaint triggers.
+- BreadcrumbPanel: renders breadcrumb buttons, handles its own key bindings, and triggers navigation and selection through OutlineController.
+- VisibleOutlineState: computes and stores the visible node sequence, hovered node, breadcrumb area height, and the first visible node identifier.
+- NodePositioning and OutlineGeometry: provide geometry metrics and positioning calculations for buttons, icons, blocks, and viewport.
+- OutlineBlockLayout and OutlineBlockViewCache: create, size, and cache BlockPanel instances for visible content.
+- NavigationButtons and ExpansionControls: display per‑node navigation controls and perform expansion operations with selection synchronization.
+- MapAwareOutlinePane, MapTreeNode, NodeTreeBuilder, OutlineViewState: integrate with MapView, build and update the TreeNode graph, and persist and restore outline view state.
+- NodeButton and SelectionCircleIcon: typed node button and selection indicator used by both BreadcrumbPanel and BlockPanel.
 
-Phase 5: Extract focus and selection responsibilities
-- Problem: ScrollableTreePanel mixes rendering, focus, and selection orchestration.
-- Change: extract OutlineFocusManager (restore focus, isWithinOutline, focus helpers) and OutlineSelectionManager (setSelectedNode, scroll selection into view, synchronization helpers). ScrollableTreePanel delegates to them.
-- Success criteria: ScrollableTreePanel shrinks substantially; focus and selection logic isolated and testable.
+What Is Already Done (baseline)
+- Typed node buttons: NodeButton replaces ad‑hoc client properties.
+- VisibleOutlineState encapsulation: callers use getVisibleNodeCount, getNodeAtVisibleIndex, and getNodeIdAtVisibleIndex rather than iterating raw lists.
+- TreeNode levels: TreeNode carries level and maintains it on parent assignment; layout uses TreeNode.getLevel.
+- Block view caching: OutlineBlockViewCache owned by ScrollableTreePanel; OutlineBlockLayout handles block creation and preferred sizing.
+- Data object encapsulation: OutlineViewport.VisibleBlockRange and OutlineViewState expose immutable fields through getters; BreadcrumbState encapsulates breadcrumb data (see package peer).
+- FlatNode removal: the previous FlatNode concept is gone; the visible list uses TreeNode directly.
 
-Phase 6: Extract block layout operations
-- Problem: block creation, removal, preferred size calculation, and width computation are embedded in ScrollableTreePanel.
-- Change: extract OutlineBlockLayout to manage createBlock, clearBlocks, updatePreferredFromActualBlocks, calculateActualRequiredWidth, and removeBlocksFromBlockIndex. Wire it with NodePositioning, OutlineViewport, OutlineGeometry, block size, and the block cache.
-- Success criteria: rendering logic is coherent and contained; no performance regressions.
+Key Observations and Opportunities
+- ScrollableTreePanel remains large and mixes focus management, selection scrolling, navigation button placement, block orchestration, and repaint concerns.
+- Key bindings are duplicated between BreadcrumbPanel and ScrollableTreePanel, increasing maintenance cost.
+- Selection indicator painting logic is duplicated in BreadcrumbPanel and BlockPanel.
+- Minor cleanup candidates exist (for example, an unused parameter in VisibleOutlineState.buildVisibleList, an unused field in OutlineController, and an empty paintComponent override in ScrollableTreePanel).
+- Responsibilities are otherwise reasonably separated: geometry, positioning, viewport math, and block layout are already extracted.
 
-Phase 7: Consolidate keyboard input handling
-- Problem: BreadcrumbPanel currently hosts global outline key bindings.
-- Change: move global navigation keymap setup into OutlinePane or a dedicated OutlineKeymap, keeping BreadcrumbPanel focused on breadcrumb rendering and hover logic.
-- Success criteria: keyboard behavior preserved regardless of focus location; reduced cross‑panel coupling.
+Phased Refactoring Plan
+For every phase below: no code until plan approved.
 
-Phase 8: Navigation button abstraction
-- Problem: NavigationButtons directly depends on ExpansionControls implementation and exposes button fields package‑wide.
-- Change: introduce an ExpansionHandler interface with expand, collapse, expandMore, reduce methods. Make ExpansionControls implement it. Keep NavigationButtons internals private and expose only attachToNode(...) and hideNavigationButtons().
-- Success criteria: easier to test and replace expansion logic; internal button details encapsulated.
+Phase 1: Remove inner/anonymous classes (no behavior change)
+- Extract MapAwareOutlinePane.SelectedNodeUpdater to a top‑level OutlineSelectedNodeUpdater implementing INodeSelectionListener.
+- Extract OutlineViewport.VisibleBlockRange to a top‑level OutlineVisibleBlockRange and update OutlineViewport to use it.
+- Replace anonymous adapters in ScrollableTreePanel/BlockPanel/BreadcrumbPanel with named top‑level adapters where needed, or rewire through shared actions.
+- Success criteria: identical behavior; all significant logic in top‑level types; improved readability.
 
-Phase 9: Strategy injection and construction
-- Problem: ScrollableTreePanel constructs many concrete collaborators, limiting testability and extension.
-- Change: accept collaborators via constructor or setters (geometry, positioning, viewport factory, selection indicator, block layout, managers, expansion handler, breadcrumb path). Provide factory helpers for default wiring to minimize call site changes.
-- Success criteria: improved dependency inversion and substitutability without major public surface changes.
+Phase 2: Centralize key bindings and actions (no behavior change)
+- Problem: BreadcrumbPanel and ScrollableTreePanel each define identical key bindings and action wiring.
+- Change: introduce OutlineActions (a small holder of javax.swing.Action instances) or OutlineKeyBindings that exposes shared actions. Panels bind to those shared actions instead of duplicating mappings.
+- Success criteria: single source of truth for navigation actions; both panels respond exactly as before.
+- Touch points: BreadcrumbPanel, ScrollableTreePanel, new OutlineActions (package‑private), OutlineController (delegations unchanged).
 
-Phase 10: Optional visual strategies
-- Change: introduce SelectionIndicator strategy (default circle) and a BlockSizingStrategy (default fixed size). Make ScrollableTreePanel consume strategies rather than hardcoded choices.
-- Success criteria: visual behavior becomes pluggable without touching core logic.
+Phase 3: Extract focus management from ScrollableTreePanel
+- Problem: focusSelectionButton, restoreFocusIfNeeded, isWithinOutline, and the logic to locate the NodeButton for a node are embedded and partially duplicated.
+- Change: create OutlineFocusManager responsible for focus queries and moves within outline components and back to the map view via OutlineSelectionBridge.
+- Success criteria: ScrollableTreePanel shrinks; focus logic covered in one place; no focus regressions when scrolling, changing selection, or switching between outline and map.
+- Touch points: ScrollableTreePanel (delegate), BreadcrumbPanel (optional minimal delegate), OutlineSelectionBridge (reuse), new OutlineFocusManager.
 
-Risks and Mitigations
-- Behavior drift: work in small phases; verify selection, navigation, scrolling, breadcrumb updates, and hover buttons after each phase.
-- Performance regressions: keep block layout logic semantically identical; measure large maps after Phases 2 and 6.
-- Focus management pitfalls: audit OutlineFocusManager thoroughly; rely on manual focus regression checks across windows.
-- External consumers: confine breaking changes to package‑private or internal classes; document migration steps below.
-- Structural level consistency: TreeNode.setParent(parent) recomputes `level` for the subtree when parent != null; all builders and live insert paths must attach via setParent to keep levels correct.
+Phase 4: Unify selection indicator painting
+- Problem: duplicated painting of the selection icon in BreadcrumbPanel and BlockPanel.
+- Change: introduce SelectionPainter (utility) that computes icon placement via NodePositioning and paints SelectionCircleIcon for a given NodeButton and selection.
+- Success criteria: identical visuals with one implementation; future changes to selection appearance are localized.
+- Touch points: BreadcrumbPanel, BlockPanel, NodePositioning (reused), new SelectionPainter.
 
-Migration Notes (post‑Phase 2 + 2a)
-- VisibleOutlineState
-  - Removed methods: getBlockPanels(), addBlockPanel(...), clearBlockPanels(), hasBlockPanel(...), getBlockPanel(...), removeBlockPanel(...), getBlockPanelIndices().
-  - Removed method: getVisibleNodes(). Use behavior methods instead:
-    - getVisibleNodeCount()
-    - getNodeAtVisibleIndex(int)
-    - getNodeIdAtVisibleIndex(int)
-- FlatNode removed. Do not depend on snapshot depths for layout; use TreeNode.getLevel().
-- OutlineViewport.VisibleBlockRange: use getters getFirstBlock(), getLastBlock(), getBreadcrumbAreaHeight().
-- BreadcrumbState: use getters getBreadcrumbNodes(), getBreadcrumbHeight(), getFirstVisibleNodeIndex(). Returned breadcrumb list is unmodifiable.
-- OutlineViewState: access properties via getters and call applyTo(TreeNode) to restore expansion state.
+Phase 5: Small internal cleanups (safe, mechanical)
+- Remove unused code and noise:
+  - Remove the unused level parameter from VisibleOutlineState.buildVisibleList and update callers.
+  - Remove the unused scrollPane field from OutlineController or use it where appropriate.
+  - Remove the empty paintComponent override in ScrollableTreePanel if there is no side effect.
+- Success criteria: no behavior change; smaller surface and fewer warnings.
+- Touch points: VisibleOutlineState, OutlineController, ScrollableTreePanel.
 
-Verification
-- Build compilation for the module:
-  - `pwd` should be the repository root.
-  - `gradle :freeplane:compileJava`
-- Run tests (if applicable for the module):
-  - `gradle :freeplane:test -PTestLoggingFull`
-- Manual smoke checks in a running application:
-  - Breadcrumb shows and updates while scrolling.
-  - Selection via keyboard and mouse in both breadcrumb and content areas.
-  - Expand, collapse, expand more, and reduce actions via buttons and keys.
-  - Selection indicator appears in both areas; scrolling to selection works.
-  - Switching maps with filters preserves and restores outline state.
+Phase 6: Optional consolidation of selection orchestration
+- Problem: setSelectedNode currently triggers multiple responsibilities (state update, cache invalidation, block rebuild, scrolling, and focusing) inside ScrollableTreePanel.
+- Change: introduce OutlineSelectionManager that encapsulates selection changes and the associated view updates (scrolling to reveal, breadcrumb synchronization, and last selected child tracking).
+- Success criteria: cleaner ScrollableTreePanel with selection orchestration isolated; unchanged observable behavior.
+- Touch points: ScrollableTreePanel, new OutlineSelectionManager.
 
-Review Checklist per Phase
-- Scope agreed and “no code until plan approved” observed.
-- Public surface changes documented and migration paths provided.
-- Unit and manual verification performed for navigation, selection, scrolling, and expansion.
-- Performance characteristics remain acceptable on large maps.
+Phase 7: Documentation and invariants
+- Document invariants for geometry and positioning (for example, how breadcrumb height is computed and how it affects block ranges) and assert them where low‑risk.
+- Add targeted unit tests for helper classes that are already logic‑centric (NodePositioning, OutlineViewport.VisibleBlockRange calculations, OutlineViewState.applyTo).
+- Success criteria: clearer invariants, safer future edits; helper logic covered by tests.
 
-Rollback Plan
-- If a phase causes regressions, revert only the phase changes and keep prior phases intact. The decoupling performed in earlier phases should make rollback scoped and safe.
+Risks and Rollback
+- Phases 1–4 are low risk and mechanical; each step is independently revertible.
+- Phases 5–6 alter orchestration and carry higher coordination risk; gate with focused tests and manual checks; rollback by reverting the new manager classes and delegations.
 
-Appendix A: Files touched in completed baseline
-- Added: OutlineBlockViewCache.java
-- Updated: VisibleOutlineState.java (TreeNode list), ScrollableTreePanel.java, MapAwareOutlinePane.java, BreadcrumbPath.java, BreadcrumbPanel.java, BreadcrumbState.java, OutlineViewport.java, OutlineViewState.java, NodeTreeBuilder.java, NodePositioning.java, TreeNode.java, MapTreeNode.java
-- Removed: FlatNode.java
+Verification Checklist (per phase)
+- Manual flows: navigation keys, mouse hover navigation buttons, expand and collapse, page navigation, selection sync with MapView, focus transitions between outline and map.
+- Performance sanity on large maps (block creation and scrolling remain responsive).
 
-Appendix B: Examples (tell, do not ask)
-- Before: callers fetch a list and iterate to find a node.
-  - visibleState.getVisibleNodes().get(index)
-- After: callers request the outcome directly.
-  - visibleState.getNodeAtVisibleIndex(index)
-  - visibleState.getVisibleNodeCount()
-  - visibleState.getNodeIdAtVisibleIndex(index)
+Notes on Completed Baseline (for historical context)
+- FlatNode removed. Do not depend on snapshot depths for layout; use TreeNode.getLevel.
+- VisibleOutlineState is the single source for visible nodes; prefer behavior methods over list exposure.
+- Block creation and sizing delegated to OutlineBlockLayout with OutlineBlockViewCache.
+
+Appendix: Candidate follow‑ups not yet planned
+- Consider a lighter geometry bootstrap that does not require an actual JButton instance.
+- Evaluate whether OutlineController adds value beyond indirection; keep if it meaningfully decouples panels.
