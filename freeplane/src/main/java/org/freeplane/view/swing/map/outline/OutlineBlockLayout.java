@@ -15,6 +15,7 @@ class OutlineBlockLayout {
     private final OutlineGeometry geometry;
     private final NodePositioning nodePositioning;
     private final int blockSize;
+    private int cachedMaxWidth = 400;
 
     OutlineBlockLayout(OutlineBlockViewCache blockCache,
                        VisibleOutlineState visibleState,
@@ -58,7 +59,7 @@ class OutlineBlockLayout {
         int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
         int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight;
-        int maxWidth = calculateActualRequiredWidth();
+        int maxWidth = cachedMaxWidth + 20;
         owner.setPreferredSize(new Dimension(maxWidth, height));
 
         for (BlockPanel panel : blockCache.values()) {
@@ -83,19 +84,31 @@ class OutlineBlockLayout {
         bp.setBounds(bounds);
         owner.add(bp);
         blockCache.put(blockIndex, bp);
-    }
 
-    private int calculateActualRequiredWidth() {
-        int maxWidth = 400;
-        for (BlockPanel panel : blockCache.values()) {
-            Component[] components = panel.getComponents();
-            for (Component comp : components) {
-                if (comp instanceof JButton) {
-                    int rightEdge = comp.getX() + comp.getWidth();
-                    maxWidth = Math.max(maxWidth, rightEdge);
-                }
+        // update cached max width using this block's buttons only
+        for (Component comp : bp.getComponents()) {
+            if (comp instanceof JButton) {
+                int rightEdge = comp.getX() + comp.getWidth();
+                if (rightEdge > cachedMaxWidth) cachedMaxWidth = rightEdge;
             }
         }
-        return maxWidth + 20;
+    }
+
+    void recordButtonRightEdge(int rightEdge) {
+        if (rightEdge > cachedMaxWidth) cachedMaxWidth = rightEdge;
+    }
+
+    void removeBlocksOutsideRange(JPanel owner, OutlineVisibleBlockRange range) {
+        java.util.List<Integer> toRemove = new java.util.ArrayList<>();
+        for (int idx : blockCache.keySet()) {
+            if (idx < range.getFirstBlock() || idx > range.getLastBlock()) {
+                BlockPanel p = blockCache.get(idx);
+                if (p != null) owner.remove(p);
+                toRemove.add(idx);
+            }
+        }
+        for (int idx : toRemove) blockCache.remove(idx);
+        // Recompute cached width conservatively if many blocks were removed
+        // (optional). We keep width non-decreasing for simplicity.
     }
 }

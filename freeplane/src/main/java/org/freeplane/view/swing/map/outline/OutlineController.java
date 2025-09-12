@@ -39,6 +39,11 @@ class OutlineController implements OutlineActionTarget {
         treePanel.toggleExpandSelected();
     }
 
+    void selectNode(TreeNode node, boolean requestFocus) {
+        if (node == null) return;
+        treePanel.setSelectedNode(node, requestFocus);
+    }
+
     @Override public void navigateUp() { treePanel.navigateUp(); }
     @Override public void navigateDown() { treePanel.navigateDown(); }
     @Override public void navigatePageUp() { treePanel.navigatePageUp(); }

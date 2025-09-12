@@ -44,8 +44,6 @@ class BreadcrumbPanel extends JPanel {
     }
 
     void update(BreadcrumbState state) {
-        removeAll();
-
         currentBreadcrumbHeight = state.getBreadcrumbHeight();
         this.currentBreadcrumbNodes = new ArrayList<>(state.getBreadcrumbNodes());
 
@@ -53,8 +51,9 @@ class BreadcrumbPanel extends JPanel {
         updateNavigationButtons();
     }
 
-	void updateNavigationButtons() {
-		for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
+    void updateNavigationButtons() {
+        removeAll();
+        for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
             int level = getNodeLevel(node);
             int y = i * controller.getRowHeight();
@@ -69,13 +68,12 @@ class BreadcrumbPanel extends JPanel {
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
             final AbstractAction selectAction = new AbstractAction() {
-
-    			@Override
-    			public void actionPerformed(ActionEvent e) {
-    				selection.selectNode(nodeToSelect);
-    				selectionBridge.selectMapNodeById(nodeToSelect.getId());
-    			}
-    		};
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    controller.selectNode(nodeToSelect, true);
+                    selectionBridge.selectMapNodeById(nodeToSelect.getId());
+                }
+            };
             breadcrumbButton.addActionListener(selectAction);
 
             InputMap im = breadcrumbButton.getInputMap(JComponent.WHEN_FOCUSED);

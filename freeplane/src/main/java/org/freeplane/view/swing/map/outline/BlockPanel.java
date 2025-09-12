@@ -58,14 +58,13 @@ class BlockPanel extends JPanel {
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
         final AbstractAction selectAction = new AbstractAction() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				selection.selectNode(node);
-				parentPanel.selectMapNodeById(node.getId());
-			}
-		};
-		button.addActionListener(selectAction);
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentPanel.setSelectedNode(node, true);
+                parentPanel.selectMapNodeById(node.getId());
+            }
+        };
+        button.addActionListener(selectAction);
 
         InputMap im = button.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap am = button.getActionMap();

@@ -106,12 +106,14 @@ class OutlinePane extends JPanel {
         scrollDebounceTimer.setRepeats(false);
 
 		 treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+			 // Immediate incremental blocks update; defer breadcrumb via debounce to avoid anchor chase
 			 treePanel.updateVisibleBlocks();
 			 scrollDebounceTimer.restart();
         });
         treeScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
+		            // Lightweight update on resize; breadcrumb follows on debounce if needed
 		            treePanel.updateVisibleBlocks();
             }
         });
