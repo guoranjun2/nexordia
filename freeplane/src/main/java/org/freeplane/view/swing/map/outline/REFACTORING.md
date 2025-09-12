@@ -141,7 +141,7 @@ Progress
 - Phase 4: done — unified selection painting via SelectionPainter; removed duplication in BlockPanel and BreadcrumbPanel.
 - Phase 5: done — removed unused parameter in VisibleOutlineState and empty paint override in ScrollableTreePanel.
 - Phase 6: in progress — introduced OutlineSelectionManager for preferred‑child tracking; further orchestration extraction remains optional.
-- Phase 7: pending — add invariants documentation and small helper tests.
+- Phase 7: in progress — added initial invariants and a NodePositioning test; consider adding viewport/block range tests next.
 
 Invariants (initial)
 - OutlineGeometry: rowHeight > 0; indent == rowHeight; navButtonsTotalWidth == 3 * navButtonWidth; iconDiameter > 0.
