@@ -8,17 +8,28 @@ import java.awt.event.ComponentEvent;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JButton;
+import javax.swing.JPopupMenu;
+import javax.swing.Box;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.ui.components.FreeplaneToolBar;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import java.awt.Rectangle;
 
-class OutlinePane extends JPanel {
+class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 	private static final long serialVersionUID = 1L;
 	private static final int SCROLL_INACTIVITY_DELAY_MS = 200;
 	private JScrollPane treeScrollPane;
     private ScrollableTreePanel treePanel;
     private BreadcrumbPanel breadcrumbPanel;
+    private JPopupMenu actionMenu;
+    private OutlineActions actions;
+    private OutlineController controller;
+    private JPanel topBarContainer;
 
     OutlinePane(TreeNode rootNode) {
         this.breadcrumbPanel = new BreadcrumbPanel();
@@ -28,8 +39,28 @@ class OutlinePane extends JPanel {
         UITools.setScrollbarIncrement(treeScrollPane);
         treePanel.setScrollPane(this.treeScrollPane);
 
-        OutlineController controller = new OutlineController(treePanel, treeScrollPane);
+        controller = new OutlineController(treePanel, treeScrollPane);
         breadcrumbPanel.initialize(controller, treePanel.getOutlineSelection());
+        actions = new OutlineActions(this);
+        actionMenu = actions.buildMenuLocalized();
+        // Top toolbar with right-aligned burger button
+        final FreeplaneToolBar toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
+        final JButton menuButton = new JButton("\u2261");
+        TranslatedElementFactory.createTooltip(menuButton, "outline.menu.tooltip");
+        menuButton.addActionListener(e -> {
+            TreeNode selected = treePanel.getOutlineSelection().getSelectedNode();
+            boolean hasParent = selected != null && selected.getParent() != null;
+            boolean hasChild = selected != null && !selected.getChildren().isEmpty();
+            boolean canToggle = selected != null && hasChild && selected.getLevel() > 0;
+            actions.goParent.setEnabled(hasParent);
+            actions.goChild.setEnabled(hasChild);
+            actions.toggleExpand.setEnabled(canToggle);
+            actionMenu.show(menuButton, 0, menuButton.getHeight());
+        });
+        toolbar.add(menuButton);
+        topBarContainer = new JPanel(new BorderLayout());
+        topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
+        topBarContainer.add(toolbar, BorderLayout.EAST);
 
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 1L;
@@ -38,10 +69,19 @@ class OutlinePane extends JPanel {
             public void layoutContainer(Container parent) {
                 super.layoutContainer(parent);
                 treeScrollPane.validate();
-                breadcrumbPanel.setBounds(breadcrumbPanel.calculateBounds());
+                Rectangle r = breadcrumbPanel.calculateBounds();
+                Rectangle vp = SwingUtilities.convertRectangle(
+                        treeScrollPane.getViewport(),
+                        treeScrollPane.getViewport().getBounds(),
+                        OutlinePane.this);
+                r.x = vp.x;
+                r.y = vp.y;
+                r.width = vp.width;
+                breadcrumbPanel.setBounds(r);
             }
         });
 
+        add(topBarContainer, BorderLayout.NORTH);
         add(breadcrumbPanel);
         add(treeScrollPane, BorderLayout.CENTER);
 
@@ -83,8 +123,8 @@ class OutlinePane extends JPanel {
 
         newTreePanel.setScrollPane(newScrollPane);
 
-        OutlineController newController = new OutlineController(newTreePanel, newScrollPane);
-        newBreadcrumbPanel.initialize(newController, newTreePanel.getOutlineSelection());
+        controller = new OutlineController(newTreePanel, newScrollPane);
+        newBreadcrumbPanel.initialize(controller, newTreePanel.getOutlineSelection());
 
         this.treePanel = newTreePanel;
         this.treeScrollPane = newScrollPane;
@@ -100,6 +140,9 @@ class OutlinePane extends JPanel {
         revalidate();
         repaint();
     }
+
+    @Override
+    public OutlineActionTarget getTarget() { return controller; }
 
     private void setupScrollListeners() {
         final Timer scrollDebounceTimer = new Timer(SCROLL_INACTIVITY_DELAY_MS, e2 -> treePanel.updateVisibleBlocksAndBreadcrumb());

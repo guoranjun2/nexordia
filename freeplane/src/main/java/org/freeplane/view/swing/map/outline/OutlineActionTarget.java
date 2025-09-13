@@ -9,5 +9,5 @@ interface OutlineActionTarget {
     void goToChild();
     void expandSelectedMore();
     void reduceSelectedExpansion();
+    void toggleExpandSelected();
 }
-

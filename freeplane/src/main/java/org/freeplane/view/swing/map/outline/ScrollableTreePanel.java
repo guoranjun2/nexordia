@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.util.List;
+import java.util.Collection;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -79,7 +80,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     @SuppressWarnings("serial")
     private void setupKeyBindings() {
-        new OutlineActions(this).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        new OutlineActions(() -> this).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
 
@@ -469,7 +470,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         }
     }
 
-    void toggleExpandSelected() {
+    @Override
+    public void toggleExpandSelected() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null || node.childCount() == 0 || node.getLevel() == 0) return;
         if (node.isExpanded()) {
@@ -630,5 +632,5 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
 
-    java.util.Collection<BlockPanel> getBlockPanels() { return blockCache.values(); }
+    Collection<BlockPanel> getBlockPanels() { return blockCache.values(); }
 }

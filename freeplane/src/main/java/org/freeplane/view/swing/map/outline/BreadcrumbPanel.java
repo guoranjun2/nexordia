@@ -37,7 +37,7 @@ class BreadcrumbPanel extends JPanel {
 
     @SuppressWarnings("serial")
     private void setupKeyBindings() {
-        new OutlineActions(controller).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        new OutlineActions(() -> controller).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
     void update(BreadcrumbState state) {
