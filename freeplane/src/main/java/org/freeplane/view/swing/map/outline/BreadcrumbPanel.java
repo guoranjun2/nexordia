@@ -20,7 +20,7 @@ import java.awt.event.MouseEvent;
 class BreadcrumbPanel extends JPanel {
     private OutlineController controller;
     private OutlineSelection selection;
-    private int currentBreadcrumbHeight = 0;
+    private int preferredBreadcrumbHeight = 0;
     private List<TreeNode> currentBreadcrumbNodes = new ArrayList<>();
 	private OutlineSelectionBridge selectionBridge;
 
@@ -41,10 +41,10 @@ class BreadcrumbPanel extends JPanel {
     }
 
     void update(BreadcrumbState state) {
-        currentBreadcrumbHeight = state.getBreadcrumbHeight();
+        preferredBreadcrumbHeight = state.getBreadcrumbHeight();
         this.currentBreadcrumbNodes = new ArrayList<>(state.getBreadcrumbNodes());
 
-        controller.setBreadcrumbAreaHeight(currentBreadcrumbHeight);
+        controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
         updateNavigationButtons();
     }
 
@@ -119,9 +119,8 @@ class BreadcrumbPanel extends JPanel {
 	}
 
 
-    Rectangle calculateBounds() {
-        int width = controller.getViewportWidth();
-        return new Rectangle(0, 0, width, currentBreadcrumbHeight);
+    int getPreferredBreadcrumbHeight() {
+        return preferredBreadcrumbHeight;
     }
 
     List<TreeNode> getCurrentBreadcrumbNodes() {
@@ -151,9 +150,9 @@ class BreadcrumbPanel extends JPanel {
 
         SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
 
-        if (currentBreadcrumbHeight > 0) {
+        if (preferredBreadcrumbHeight > 0) {
             g.setColor(getForeground());
-            g.drawLine(0, currentBreadcrumbHeight - 1, getWidth(), currentBreadcrumbHeight - 1);
+            g.drawLine(0, preferredBreadcrumbHeight - 1, getWidth(), preferredBreadcrumbHeight - 1);
         }
     }
 }

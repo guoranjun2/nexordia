@@ -19,6 +19,7 @@ import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import java.awt.Rectangle;
+import java.awt.Insets;
 
 class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 	private static final long serialVersionUID = 1L;
@@ -68,14 +69,23 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
             public void layoutContainer(Container parent) {
                 super.layoutContainer(parent);
                 treeScrollPane.validate();
-                Rectangle r = breadcrumbPanel.calculateBounds();
-                Rectangle vp = SwingUtilities.convertRectangle(
-                        treeScrollPane.getViewport(),
-                        treeScrollPane.getViewport().getBounds(),
+                Rectangle r = new Rectangle();
+                // Anchor breadcrumb to the viewport's inner content area
+                Rectangle vpBorder = SwingUtilities.convertRectangle(
+                        treeScrollPane,
+                        treeScrollPane.getViewportBorderBounds(),
                         OutlinePane.this);
-                r.x = vp.x;
-                r.y = vp.y;
-                r.width = vp.width;
+                Insets viewportInsets = treeScrollPane.getViewport().getInsets();
+
+                int x = vpBorder.x + viewportInsets.left;
+                int y = vpBorder.y + viewportInsets.top;
+                int w = Math.max(0, vpBorder.width - viewportInsets.left - viewportInsets.right);
+                int h = breadcrumbPanel.getPreferredBreadcrumbHeight();
+
+                r.x = x;
+                r.y = y;
+                r.width = w;
+                r.height = h;
                 breadcrumbPanel.setBounds(r);
             }
         });
