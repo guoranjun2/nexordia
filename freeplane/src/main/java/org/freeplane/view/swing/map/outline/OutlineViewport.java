@@ -33,7 +33,7 @@ class OutlineViewport {
 
     int getPageSize() {
         int viewportHeight = scrollPane.getViewport().getHeight();
-        return Math.max(1, viewportHeight / geometry.rowHeight);
+        return Math.max(1, viewportHeight / geometry.rowHeight - 1);
     }
 
     int getViewportWidth() {
@@ -66,5 +66,5 @@ class OutlineViewport {
         return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
     }
 
-    
+
 }
