@@ -29,7 +29,6 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     private JPopupMenu actionMenu;
     private OutlineActions actions;
     private OutlineController controller;
-    private JPanel topBarContainer;
 
     OutlinePane(TreeNode rootNode) {
         this.breadcrumbPanel = new BreadcrumbPanel();
@@ -43,7 +42,6 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
         breadcrumbPanel.initialize(controller, treePanel.getOutlineSelection());
         actions = new OutlineActions(this);
         actionMenu = actions.buildMenuLocalized();
-        // Top toolbar with right-aligned burger button
         final FreeplaneToolBar toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
         final JButton menuButton = new JButton("\u2261");
         TranslatedElementFactory.createTooltip(menuButton, "outline.menu.tooltip");
@@ -59,9 +57,9 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
             actionMenu.show(menuButton, 0, menuButton.getHeight());
         });
         toolbar.add(menuButton);
-        topBarContainer = new JPanel(new BorderLayout());
+        JPanel topBarContainer = new JPanel(new BorderLayout());
         topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
-        topBarContainer.add(toolbar, BorderLayout.EAST);
+        topBarContainer.add(toolbar, BorderLayout.WEST);
 
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 1L;
