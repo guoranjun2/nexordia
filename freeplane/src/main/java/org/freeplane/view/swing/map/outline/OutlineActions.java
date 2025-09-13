@@ -41,6 +41,9 @@ class OutlineActions {
     final Action toggleExpand = new AbstractAction("Toggle Expand/Collapse") {
         @Override public void actionPerformed(ActionEvent e) { provider.getTarget().toggleExpandSelected(); }
     };
+    final Action selectInMap = new AbstractAction("Select in Map") {
+        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().selectSelectedInMap(); }
+    };
 
     OutlineActions(OutlineActionTargetProvider provider) {
         this.provider = provider;
@@ -53,6 +56,7 @@ class OutlineActions {
         reduceExpansion.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control LEFT"));
         expandMore.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control RIGHT"));
         toggleExpand.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("SPACE"));
+        selectInMap.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("ENTER"));
     }
 
     void installOn(JComponent component, int condition) {
@@ -86,6 +90,8 @@ class OutlineActions {
 
     JPopupMenu buildMenuLocalized() {
         JPopupMenu menu = new JPopupMenu();
+        menu.add(TranslatedElementFactory.createMenuItem(selectInMap, "outline.select.in.map"));
+        menu.addSeparator();
         menu.add(TranslatedElementFactory.createMenuItem(navigateUp, "outline.navigate.up"));
         menu.add(TranslatedElementFactory.createMenuItem(navigateDown, "outline.navigate.down"));
         menu.add(TranslatedElementFactory.createMenuItem(navigatePageUp, "outline.page.up"));

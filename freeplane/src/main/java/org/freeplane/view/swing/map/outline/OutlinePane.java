@@ -52,6 +52,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
             boolean hasParent = selected != null && selected.getParent() != null;
             boolean hasChild = selected != null && !selected.getChildren().isEmpty();
             boolean canToggle = selected != null && hasChild && selected.getLevel() > 0;
+            actions.selectInMap.setEnabled(selected != null);
             actions.goParent.setEnabled(hasParent);
             actions.goChild.setEnabled(hasChild);
             actions.toggleExpand.setEnabled(canToggle);

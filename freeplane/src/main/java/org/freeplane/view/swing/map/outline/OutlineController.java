@@ -42,6 +42,9 @@ class OutlineController implements OutlineActionTarget {
     @Override
     public void toggleExpandSelected() { treePanel.toggleExpandSelected(); }
 
+    @Override
+    public void selectSelectedInMap() { treePanel.selectSelectedInMap(); }
+
     void selectNode(TreeNode node, boolean requestFocus) {
         if (node == null) return;
         treePanel.setSelectedNode(node, requestFocus);

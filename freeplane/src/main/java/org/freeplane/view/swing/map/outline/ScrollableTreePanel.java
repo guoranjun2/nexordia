@@ -292,6 +292,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     		selectionBridge.selectMapNodeById(nodeId);
     }
 
+    @Override
+	public void selectSelectedInMap() {
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
+        if (selected != null) {
+            selectMapNodeById(selected.getId());
+        }
+    }
+
     void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
         breadcrumbPanel.setSelectionBridge(bridge);

@@ -10,4 +10,5 @@ interface OutlineActionTarget {
     void expandSelectedMore();
     void reduceSelectedExpansion();
     void toggleExpandSelected();
+    void selectSelectedInMap();
 }
