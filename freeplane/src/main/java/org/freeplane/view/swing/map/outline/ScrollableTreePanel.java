@@ -258,7 +258,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     int calcTextButtonX(int level) {
-        return geometry.calculateTextButtonX(level);
+        return geometry.calculateNodeButtonX(level);
     }
 
     int getViewportWidth() {
@@ -314,7 +314,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                     btn.setText(node.getTitle());
                     int level = calculateNodeLevel(node);
                     if (level >= 0) {
-                        int x = geometry.calculateTextButtonX(level);
+                        int x = geometry.calculateNodeButtonX(level);
                         btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
                         int rightEdge = btn.getX() + btn.getWidth();
                         blockLayout.recordButtonRightEdge(rightEdge);
@@ -336,7 +336,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                         btn.setText(node.getTitle());
                         int level = calculateNodeLevel(node);
                         if (level >= 0) {
-                            int x = geometry.calculateTextButtonX(level);
+                            int x = geometry.calculateNodeButtonX(level);
                             btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
                             int rightEdge = btn.getX() + btn.getWidth();
                             blockLayout.recordButtonRightEdge(rightEdge);

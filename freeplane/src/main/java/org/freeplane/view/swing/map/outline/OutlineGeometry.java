@@ -9,10 +9,7 @@ import javax.swing.BorderFactory;
 class OutlineGeometry {
     final int rowHeight;
     final int navButtonWidth;
-    final int navButtonsTotalWidth;
     private final int indent;
-    private final int standardGap;
-    private final int buttonAreaWidth;
     final int iconDiameter;
 
     OutlineGeometry(JButton sampleButton) {
@@ -27,18 +24,16 @@ class OutlineGeometry {
         this.indent = rowHeight;
 
         this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
-        this.navButtonsTotalWidth = 3 * navButtonWidth;
-        this.standardGap = Math.round(preferredButtonSize.width * 12 / 13);
-        this.buttonAreaWidth = navButtonsTotalWidth + (2 * standardGap);
         this.iconDiameter = Math.round(preferredButtonSize.width * 10 / 13);
     }
 
-    int calculateTextButtonX(int level) {
-        if (level == 0) {
-            return buttonAreaWidth - indent;
-        } else {
-            return (level * indent) + buttonAreaWidth - indent;
-        }
+    int calculateNodeButtonX(int level) {
+        return level == 0 ? 2 * navButtonWidth : (level - 1) * indent + 3 * navButtonWidth;
     }
+
+	int calculateNavigationButtonX(final int level) {
+		final int baseX = level == 0 ? -navButtonWidth : (level - 1) * indent;
+		return baseX;
+	}
 
 }

@@ -14,9 +14,9 @@ public class NodePositioningTest {
         VisibleOutlineState vs = new VisibleOutlineState(new TreeNode("root","r"));
         NodePositioning pos = new NodePositioning(geometry, vs);
 
-        int x0 = geometry.calculateTextButtonX(0);
-        int x1 = geometry.calculateTextButtonX(1);
-        int x2 = geometry.calculateTextButtonX(2);
+        int x0 = geometry.calculateNodeButtonX(0);
+        int x1 = geometry.calculateNodeButtonX(1);
+        int x2 = geometry.calculateNodeButtonX(2);
 
         assertThat(x0).isLessThanOrEqualTo(x1);
         assertThat(x1).isLessThanOrEqualTo(x2);

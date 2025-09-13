@@ -50,7 +50,7 @@ class BlockPanel extends JPanel {
         button.setText(buttonText);
 
         int computedLevel = node.getLevel();
-        int actionX = parentPanel.geometry.calculateTextButtonX(computedLevel);
+        int actionX = parentPanel.geometry.calculateNodeButtonX(computedLevel);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 

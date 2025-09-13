@@ -15,7 +15,7 @@ class OutlineBlockLayout {
     private final OutlineGeometry geometry;
     private final NodePositioning nodePositioning;
     private final int blockSize;
-    private int cachedMaxWidth = 400;
+    private int cachedMaxWidth = 0;
 
     OutlineBlockLayout(OutlineBlockViewCache blockCache,
                        VisibleOutlineState visibleState,
@@ -52,7 +52,7 @@ class OutlineBlockLayout {
         int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
         int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight;
-        int maxWidth = cachedMaxWidth + 20;
+        int maxWidth = cachedMaxWidth + geometry.iconDiameter;
         owner.setPreferredSize(new Dimension(maxWidth, height));
 
         for (BlockPanel panel : blockCache.values()) {

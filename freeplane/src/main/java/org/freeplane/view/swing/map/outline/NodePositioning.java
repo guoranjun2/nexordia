@@ -17,28 +17,24 @@ class NodePositioning {
     }
 
     Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
-        int y, level, baseX;
 
+        final int level = calculateNodeLevel(node);
+        final int baseX = geometry.calculateNavigationButtonX(level);
+        int y;
         if (isBreadcrumb) {
             y = rowIndex * geometry.rowHeight;
-            level = calculateNodeLevel(node);
-            int textButtonX = geometry.calculateTextButtonX(level);
-            baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         } else {
             int nodeIndex = visibleState.findNodeIndexInVisibleList(node);
             int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
             int contentAreaIndex = nodeIndex - breadcrumbNodeCount;
 
             y = breadcrumbAreaHeight + contentAreaIndex * geometry.rowHeight;
-            level = calculateNodeLevel(node);
-            int textButtonX = geometry.calculateTextButtonX(level);
-            baseX = Math.max(0, textButtonX - geometry.navButtonsTotalWidth);
         }
 
-        return new Point(baseX, y);
+		return new Point(baseX, y);
     }
 
-    Point calculateSelectionIconPosition(Rectangle buttonBounds) {
+	Point calculateSelectionIconPosition(Rectangle buttonBounds) {
         int iconX = buttonBounds.x + buttonBounds.width;
 
         int iconY = buttonBounds.y + (buttonBounds.height - geometry.iconDiameter) / 2;
