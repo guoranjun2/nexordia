@@ -152,7 +152,7 @@ class BreadcrumbPanel extends JPanel {
         SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
 
         if (currentBreadcrumbHeight > 0) {
-            g.setColor(Color.RED);
+            g.setColor(getForeground());
             g.drawLine(0, currentBreadcrumbHeight - 1, getWidth(), currentBreadcrumbHeight - 1);
         }
     }
