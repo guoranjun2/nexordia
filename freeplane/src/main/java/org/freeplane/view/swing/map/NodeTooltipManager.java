@@ -167,9 +167,11 @@ public class NodeTooltipManager implements IExtension{
 
 
 	private void showTipWindow() {
-		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+		final KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+		Component focusOwner = focusManager.getFocusOwner();
 		if (insideComponent == null || !insideComponent.isShowing()
 				|| ((insideComponent instanceof JComboBox && ((JComboBox)insideComponent).isPopupVisible()))
+				|| focusManager.getFocusedWindow() != SwingUtilities.windowForComponent(insideComponent)
 				|| focusOwner == null)
 			return;
 		tip = insideComponent.createToolTip();
