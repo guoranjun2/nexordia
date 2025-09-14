@@ -62,7 +62,8 @@ public abstract class ResourceController {
 	public static final String USE_ACCENT_COLOR_QUERY = "?" + USE_ACCENT_COLOR;
 	public static final String FREEPLANE_PROPERTIES = "/freeplane.properties";
 	public static final String LOCAL_PROPERTIES = "LocalProperties.";
-	public static final String RESOURCE_DRAW_RECTANGLE_FOR_SELECTION = "standarddrawrectangleforselection";
+    public static final String RESOURCE_DRAW_RECTANGLE_FOR_SELECTION = "standarddrawrectangleforselection";
+    public static final String RESOURCE_HIGHLIGHT_ASCENDANT_EDGES = "highlightascendantedges";
 	// some plugins have their own file for registration of defaults
 
 	static public ResourceController getResourceController() {
