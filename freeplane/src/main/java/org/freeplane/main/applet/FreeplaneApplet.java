@@ -45,7 +45,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.text.html.parser.ParserDelegator;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.ShowSelectionAsRectangleAction;
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.attribute.ModelessAttributeController;
 import org.freeplane.features.explorer.MapExplorerConditionController;
@@ -166,7 +165,6 @@ public class FreeplaneApplet extends JApplet {
 					final BModeController browseController = BModeControllerFactory.createModeController();
 					final Set<String> emptySet = Collections.emptySet();
 					FilterController.getController(controller).loadDefaultConditions();
-					controller.addAction(new ShowSelectionAsRectangleAction());
 					controller.addAction(new NextNodeAction(Direction.FORWARD));
 					controller.addAction(new NextNodeAction(Direction.BACK));
 					controller.addAction(new NextNodeAction(Direction.FORWARD_N_FOLD));
