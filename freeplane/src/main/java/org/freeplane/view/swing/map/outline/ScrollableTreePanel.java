@@ -356,13 +356,22 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     void rebuildFromNode(TreeNode anchorNode) {
         if (viewport == null) return;
 
+        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
 
         navButtons.hideNavigationButtons();
 
         visibleState.updateVisibleNodes();
 
-
         BreadcrumbState state = calculateBreadcrumbState();
+
+        TreeNode preservedHovered = visibleState.getHoveredNode();
+        removeAll();
+        blockCache.clear();
+        blockLayout.resetCachedMaxWidth();
+        navButtons.hideNavigationButtons();
+        visibleState.setHoveredNode(preservedHovered);
+
         if (state != null) {
             breadcrumbPanel.update(state);
             updateVisibleBlocks(state.getFirstVisibleNodeIndex());
@@ -371,36 +380,51 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
                 visibleState.setHoveredNode(null);
             }
+
+            ensureValidSelectionOrSyncFromMap();
+            focusManager.restoreFocusIfNeeded(prevInOutline);
             return;
         }
 
         int anchorIndex = visibleState.findNodeIndexInVisibleList(anchorNode);
         if (anchorIndex < 0) {
-
             updateVisibleBlocksAndBreadcrumb();
+            ensureValidSelectionOrSyncFromMap();
+            focusManager.restoreFocusIfNeeded(prevInOutline);
             return;
         }
 
-        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        int startBlock = Math.max(0, anchorIndex / blockSize);
-
-        removeBlocksFromBlockIndex(startBlock);
-        createVisibleBlocks();
-        updatePreferredFromActualBlocks();
-        refreshUI();
-
-
-        lastFirstBlock = range.getFirstBlock();
-        lastLastBlock = range.getLastBlock();
-        lastBreadcrumbAreaHeight = range.getBreadcrumbAreaHeight();
-        lastViewportWidth = viewport.getViewportWidth();
-        lastVisibleNodeCount = visibleState.getVisibleNodeCount();
-
+        removeAll();
+        blockCache.clear();
+        blockLayout.resetCachedMaxWidth();
+        navButtons.hideNavigationButtons();
+        visibleState.setHoveredNode(preservedHovered);
+        updateVisibleBlocks();
 
         TreeNode hovered = visibleState.getHoveredNode();
         if (hovered != null && visibleState.findNodeIndexInVisibleList(hovered) < 0) {
             visibleState.setHoveredNode(null);
         }
+
+        ensureValidSelectionOrSyncFromMap();
+        focusManager.restoreFocusIfNeeded(prevInOutline);
+    }
+
+    private void ensureValidSelectionOrSyncFromMap() {
+        TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
+        if (selected == null) return;
+        if (!isNodeAttachedToRoot(selected)) {
+            if (selectionBridge != null) {
+                selectionBridge.synchronizeOutlineSelection(false);
+            }
+        }
+    }
+
+    private boolean isNodeAttachedToRoot(TreeNode node) {
+        for (TreeNode n = node; n != null; n = n.getParent()) {
+            if (n == root) return true;
+        }
+        return false;
     }
 
     private void removeBlocksFromBlockIndex(int startBlock) { blockLayout.removeBlocksFromBlockIndex(this, startBlock); }

@@ -87,6 +87,10 @@ class OutlineBlockLayout {
         if (rightEdge > cachedMaxWidth) cachedMaxWidth = rightEdge;
     }
 
+    void resetCachedMaxWidth() {
+        cachedMaxWidth = 0;
+    }
+
     void removeBlocksOutsideRange(JPanel owner, OutlineVisibleBlockRange range) {
         java.util.List<Integer> toRemove = new java.util.ArrayList<>();
         for (int idx : blockCache.keySet()) {

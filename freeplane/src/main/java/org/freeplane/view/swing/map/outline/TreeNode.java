@@ -4,7 +4,6 @@ package org.freeplane.view.swing.map.outline;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
-import java.util.function.Consumer;
 
 class TreeNode {
     private String title;
@@ -27,8 +26,7 @@ class TreeNode {
         child.setParent(this);
         children.add(child);
         if (expansionLevel >= 0) {
-            child.setExpansionLevel(expansionLevel - 1);
-            child.applyExpansionLevel(child.expansionLevel);
+            child.applyExpansionLevel(expansionLevel - 1);
         }
     }
 
@@ -80,8 +78,10 @@ class TreeNode {
 
     void setParent(TreeNode parent) {
         this.parent = parent;
-        if(parent != null)
-        	refreshLevelsRecursively();
+        if(parent != null) {
+			refreshLevelsRecursively();
+			applyExpansionLevel(Math.max(0, parent.expansionLevel) - 1);
+		}
     }
 
 	private void setExpansionLevel(int expansionLevel) {

@@ -14,11 +14,8 @@ class NodeTreeBuilder {
 
     private NodeModel rootModel;
     private Filter filter;
-    private String targetAnchorId;
-    private String lastVisibleId;
 
     private TreeNode root;
-    private String firstVisibleNodeId;
     private OutlineViewState applicableState;
 
     NodeTreeBuilder(MapView mapView, OutlinePane pane, OutlineViewState saved) {
@@ -33,7 +30,6 @@ class NodeTreeBuilder {
         }
         this.rootModel = mapView.getRoot().getNode();
         this.filter = mapView.getFilter();
-        this.targetAnchorId = saved != null ? saved.getFirstVisibleNodeId() : null;
 
         boolean canApply = false;
         if (saved != null) {
@@ -43,20 +39,9 @@ class NodeTreeBuilder {
         }
         this.applicableState = canApply ? saved : null;
 
-        this.lastVisibleId = null;
-        this.firstVisibleNodeId = null;
-
         MapTreeNode outRoot = new MapTreeNode(rootModel, pane);
         rootModel.addViewer(outRoot);
         this.root = outRoot;
-
-        boolean rootVisible = (filter == null) || filter.isVisibleOrAncestor(rootModel);
-        if (rootVisible) {
-            lastVisibleId = rootModel.getID();
-        }
-        if (targetAnchorId != null && Objects.equals(rootModel.getID(), targetAnchorId)) {
-            firstVisibleNodeId = rootVisible ? targetAnchorId : lastVisibleId;
-        }
 
         visitChildren(rootModel, outRoot);
 
@@ -70,12 +55,6 @@ class NodeTreeBuilder {
     private void visitChildren(NodeModel model, MapTreeNode parentOut) {
         for (NodeModel child : model.getChildren()) {
             boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisibleOrAncestor(child));
-            if (visible) {
-                lastVisibleId = child.getID();
-            }
-            if (targetAnchorId != null && Objects.equals(child.getID(), targetAnchorId)) {
-                firstVisibleNodeId = visible ? targetAnchorId : lastVisibleId;
-            }
             MapTreeNode nextParent = parentOut;
             if (visible) {
                 MapTreeNode out = new MapTreeNode(child, pane);

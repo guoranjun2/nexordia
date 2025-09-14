@@ -3,24 +3,23 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JButton;
-import javax.swing.JPopupMenu;
 import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
-import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
-import java.awt.Rectangle;
-import java.awt.Insets;
-import org.freeplane.core.util.LogUtils;
 
 class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 	private static final long serialVersionUID = 1L;
@@ -112,9 +111,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     }
 
     void rebuildFromNode(TreeNode node) {
-        SwingUtilities.invokeLater(() -> {
-            treePanel.rebuildFromNode(node);
-        });
+    	treePanel.rebuildFromNode(node);
     }
 
     void setRootNode(TreeNode newRootNode) {
