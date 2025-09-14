@@ -64,7 +64,7 @@
 			</Entry>
 			<Entry name="menu_viewmode">
 				<Entry name="ViewLayoutTypeAction.OUTLINE" />
-				<Entry name="ShowSelectionAsRectangleAction" />
+				<Entry name="SetBooleanPropertyAction.standarddrawrectangleforselection" />
 				<Entry name="show_icons" textKey="MapProperty.show_icons">
 					<Entry builder="radio_button_group">
 						<Entry name="SetStringMapPropertyAction.show_icons.ABOVE_NODES" />

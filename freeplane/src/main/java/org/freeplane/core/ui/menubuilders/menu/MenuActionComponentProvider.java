@@ -15,6 +15,8 @@ import org.freeplane.core.ui.menubuilders.action.IAcceleratorMap;
 import org.freeplane.core.ui.menubuilders.generic.Entry;
 import org.freeplane.core.ui.menubuilders.generic.EntryAccessor;
 import org.freeplane.core.ui.menubuilders.generic.ResourceAccessor;
+import org.freeplane.core.util.Compat;
+import org.freeplane.core.util.HtmlUtils;
 
 public class MenuActionComponentProvider implements ComponentProvider {
 
@@ -50,6 +52,12 @@ public class MenuActionComponentProvider implements ComponentProvider {
                 actionComponent.setIcon(null);
             else
                 IconReplacer.replaceByScaledImageIcon(actionComponent);
+            if(Compat.isMacOsX()) {
+            	final String toolTipText = actionComponent.getToolTipText();
+            	if(HtmlUtils.isHtml(toolTipText)) {
+            		actionComponent.setToolTipText(HtmlUtils.htmlToPlain(toolTipText, true, true));
+            	}
+            }
             return actionComponent;
         }
         else if(entry.builders().contains("separator")){

@@ -27,11 +27,16 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 
+import javax.swing.SwingUtilities;
+
 import org.freeplane.api.ChildNodesAlignment;
 import org.freeplane.api.ChildrenSides;
 import org.freeplane.api.Dash;
 import org.freeplane.api.LayoutOrientation;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.ConstantObject;
+import org.freeplane.features.edge.EdgeController.Rules;
+import org.freeplane.features.map.NodeModel;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MainView.ConnectorLocation;
 import org.freeplane.view.swing.map.MapView;
@@ -217,9 +222,24 @@ public abstract class EdgeView {
 
 	public Color getColor() {
 		if (color == null) {
-            color = target.getEdgeColor();
+	        if(highlightsAscendantEdge())
+	    		color = MapView.getHighlightAscendantEdgeColorRule().getValue();
+	        else
+	        	color = target.getEdgeColor();
         }
         return color;
+	}
+
+	private boolean highlightsAscendantEdge() {
+		ConstantObject<Color, Rules> ascendantRule = MapView.getHighlightAscendantEdgeColorRule();
+		if (ascendantRule != null) {
+		    for (final NodeView selected : target.getMap().getSelection()) {
+		        if (selected == target || SwingUtilities.isDescendingFrom(selected, target)) {
+		            return true;
+		        }
+		    }
+		}
+		return false;
 	}
 
     public void setColor(final Color color) {
@@ -262,7 +282,9 @@ public abstract class EdgeView {
         if (width != null) {
             return width;
         }
-        final int width = target.getEdgeWidth();
+        width = target.getEdgeWidth();
+        if(highlightsAscendantEdge())
+        	width = width.intValue() + 2;
         return width;
     }
 

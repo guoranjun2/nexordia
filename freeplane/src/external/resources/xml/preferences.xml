@@ -193,7 +193,8 @@
 				<boolean name="showTagsOnMinimizedNodes"/>
 			</separator>
 			<separator name="selection_colors">
-				<boolean name="standarddrawrectangleforselection" />
+                <boolean name="standarddrawrectangleforselection" />
+                <boolean name="highlightascendantedges" />
 				<color name="standardselectednoderectanglecolor" supports_transparent_color="false"/>
 				<color name="standardselectednodecolor" supports_transparent_color="false"/>
 			</separator>

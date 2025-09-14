@@ -38,7 +38,6 @@ import javax.swing.Timer;
 import javax.swing.ToolTipManager;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.ShowSelectionAsRectangleAction;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.menubuilders.generic.ChildActionEntryRemover;
 import org.freeplane.core.ui.menubuilders.generic.PhaseProcessor.Phase;
@@ -244,7 +243,6 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 						 .forEach(d -> controller.addAction(new FreeSelectNodeAction(d)));
 				controller.addAction(NextPresentationItemAction.createFoldingAction());
 				controller.addAction(NextPresentationItemAction.createNotFoldingAction());
-				controller.addAction(new ShowSelectionAsRectangleAction());
 				controller.addAction(new ViewLayoutTypeAction(MapViewLayout.OUTLINE));
 				FilterController.getCurrentFilterController().getConditionFactory().addConditionController(70,
 				    new LogicalStyleFilterController());

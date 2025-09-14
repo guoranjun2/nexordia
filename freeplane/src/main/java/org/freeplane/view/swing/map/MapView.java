@@ -81,11 +81,13 @@ import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
+import org.freeplane.core.util.ConstantObject;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.ModelessAttributeController;
 import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
 import org.freeplane.features.edge.EdgeColorsConfigurationFactory;
+import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.highlight.NodeHighlighter;
 import org.freeplane.features.icon.Tag;
@@ -741,7 +743,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	private static final long serialVersionUID = 1L;
 	static private boolean drawsRectangleForSelection;
-	static private Color selectionRectangleColor;
+    static private Color selectionRectangleColor;
+    static private boolean highlightAscendantEdgesEnabled;
+    static private org.freeplane.core.util.ConstantObject<Color, org.freeplane.features.edge.EdgeController.Rules> highlightAscendantEdgeColorRule;
 	/** Used to identify a right click onto a link curve. */
 	private Vector<ILinkView> arrowLinkViews;
 	private ScalableComponent backgroundComponent;
@@ -798,14 +802,15 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private final NodeViewFolder nodeViewFolder;
 	private final AntiAliasingConfigurator antiAliasingConfigurator;
 
-	static {
-	    final ResourceController resourceController = ResourceController.getResourceController();
-	    final String drawCircle = resourceController.getProperty(
-	            ResourceController.RESOURCE_DRAW_RECTANGLE_FOR_SELECTION);
-	    MapView.drawsRectangleForSelection = TreeXmlReader.xmlToBoolean(drawCircle);
-	    final String printOnWhite = resourceController
-	            .getProperty("printonwhitebackground");
-	    MapView.printOnWhiteBackground = TreeXmlReader.xmlToBoolean(printOnWhite);
+    static {
+        final ResourceController resourceController = ResourceController.getResourceController();
+        final String drawCircle = resourceController.getProperty(
+                ResourceController.RESOURCE_DRAW_RECTANGLE_FOR_SELECTION);
+        MapView.drawsRectangleForSelection = TreeXmlReader.xmlToBoolean(drawCircle);
+        highlightAscendantEdgesEnabled = resourceController.getBooleanProperty(ResourceController.RESOURCE_HIGHLIGHT_ASCENDANT_EDGES);
+        final String printOnWhite = resourceController
+                .getProperty("printonwhitebackground");
+        MapView.printOnWhiteBackground = TreeXmlReader.xmlToBoolean(printOnWhite);
 	    final int alpha = 255 - resourceController.getIntProperty(PRESENTATION_DIMMER_TRANSPARENCY, 0x70);
 	    resourceController.setDefaultProperty(SPOTLIGHT_BACKGROUND_COLOR, ColorUtils.colorToRGBAString(new Color(0, 0, 0, alpha)));
 	    spotlightBackgroundColor = resourceController.getColorProperty(SPOTLIGHT_BACKGROUND_COLOR);
@@ -816,18 +821,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    outlineViewFitsWindowWidth = resourceController.getBooleanProperty(OUTLINE_VIEW_FITS_WINDOW_WIDTH);
 	    showsTagsOnMinimizedNodes = resourceController.getBooleanProperty(SHOW_TAGS_ON_MINIMIZED_NODES_PROPERTY);
 
-	    createPropertyChangeListener();
-	}
+        createPropertyChangeListener();
+    }
 
-	public MapView(final MapModel viewedMap, final ModeController modeController) {
-		super();
-		setOpaque(false);
-		antiAliasingConfigurator = new AntiAliasingConfigurator(this);
-		this.viewedMap = viewedMap;
-		this.modeController = modeController;
+    public MapView(final MapModel viewedMap, final ModeController modeController) {
+        super();
+        setOpaque(false);
+        antiAliasingConfigurator = new AntiAliasingConfigurator(this);
+        this.viewedMap = viewedMap;
+        this.modeController = modeController;
         setLayout(new MindMapLayout());
-		rootsHistory = new ArrayList<>();
-		setAutoscrolls(true);
+        rootsHistory = new ArrayList<>();
+        setAutoscrolls(true);
+        this.repaintsViewOnSelectionChange = highlightAscendantEdgesEnabled;
         final IUserInputListenerFactory userInputListenerFactory = getModeController().getUserInputListenerFactory();
         addMouseListener(userInputListenerFactory.getMapMouseListener());
         addMouseMotionListener(userInputListenerFactory.getMapMouseListener());
@@ -1039,20 +1045,28 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 						mapView.repaintSelecteds(true);
 						return;
 					}
-					if (propertyName.equals(RESOURCES_SELECTED_NODE_RECTANGLE_COLOR)) {
-						mapView.repaintSelecteds(true);
-						return;
-					}
-					if (propertyName.equals(ResourceController.RESOURCE_DRAW_RECTANGLE_FOR_SELECTION)) {
-						MapView.drawsRectangleForSelection = TreeXmlReader.xmlToBoolean(newValue);
-						mapView.repaintSelecteds(true);
-						return;
-					}
-					if (propertyName.equals(SPOTLIGHT_BACKGROUND_COLOR)) {
-						MapView.spotlightBackgroundColor = ColorUtils.stringToColor(newValue);
-						mapView.repaint();
-						return;
-					}
+                if (propertyName.equals(RESOURCES_SELECTED_NODE_RECTANGLE_COLOR)) {
+                    mapView.repaintSelecteds(true);
+                    return;
+                }
+                if (propertyName.equals(ResourceController.RESOURCE_DRAW_RECTANGLE_FOR_SELECTION)) {
+                    MapView.drawsRectangleForSelection = TreeXmlReader.xmlToBoolean(newValue);
+                    mapView.repaintSelecteds(true);
+                    return;
+                }
+                if (propertyName.equals(ResourceController.RESOURCE_HIGHLIGHT_ASCENDANT_EDGES)) {
+                    MapView.highlightAscendantEdgesEnabled = TreeXmlReader.xmlToBoolean(newValue);
+                    mapView.setRepaintsViewOnSelectionChange(highlightAscendantEdgesEnabled);
+                    updateHighlightAscendantEdgeCache();
+                    mapView.updateAllNodeViews();
+                    mapView.repaint();
+                    return;
+                }
+                if (propertyName.equals(SPOTLIGHT_BACKGROUND_COLOR)) {
+                    MapView.spotlightBackgroundColor = ColorUtils.stringToColor(newValue);
+                    mapView.repaint();
+                    return;
+                }
 				}
 				for(Component c : Controller.getCurrentController().getMapViewManager().getMapViews()) {
 					if (!(c instanceof MapView)) {
@@ -2536,11 +2550,12 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		g.setStroke(s);
 	}
 
-	private void updateSelectionColors() {
-	    ResourceController resourceController = ResourceController.getResourceController();
-	    selectionRectangleColor = ColorUtils.stringToColor(resourceController.getProperty(
-	            MapView.RESOURCES_SELECTED_NODE_RECTANGLE_COLOR));
-	}
+    private void updateSelectionColors() {
+        ResourceController resourceController = ResourceController.getResourceController();
+        selectionRectangleColor = ColorUtils.stringToColor(resourceController.getProperty(
+                MapView.RESOURCES_SELECTED_NODE_RECTANGLE_COLOR));
+        updateHighlightAscendantEdgeCache();
+    }
 
 	private RoundRectangle2D.Float getRoundRectangleAround(final NodeView selected, int gap, final int arcw) {
 		final JComponent content = selected.getContent();
@@ -3118,6 +3133,23 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     static public boolean drawsRectangleForSelection() {
         return drawsRectangleForSelection;
+    }
+
+    static void updateHighlightAscendantEdgeCache() {
+        if (highlightAscendantEdgesEnabled && selectionRectangleColor != null) {
+            highlightAscendantEdgeColorRule = new ConstantObject<Color, EdgeController.Rules>(selectionRectangleColor);
+        }
+        else {
+            highlightAscendantEdgeColorRule = null;
+        }
+    }
+
+    public static ConstantObject<Color, EdgeController.Rules> getHighlightAscendantEdgeColorRule() {
+        return highlightAscendantEdgeColorRule;
+    }
+
+    static boolean isHighlightAscendantEdgesEnabled() {
+        return highlightAscendantEdgesEnabled;
     }
 
     public void onEditingStarted(ZoomableLabel label) {

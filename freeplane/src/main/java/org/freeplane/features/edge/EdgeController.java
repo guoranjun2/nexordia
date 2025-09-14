@@ -53,7 +53,7 @@ public class EdgeController implements IExtension {
 	public static EdgeController getController() {
 		return getController(Controller.getCurrentModeController());
 	}
-	
+
 	public static EdgeController getController(ModeController modeController) {
 		return modeController.getExtension(EdgeController.class);
 	}
@@ -76,13 +76,13 @@ public class EdgeController implements IExtension {
 		styleHandlers = new ExclusivePropertyChain<EdgeStyle, NodeModel>();
 		widthHandlers = new ExclusivePropertyChain<Integer, NodeModel>();
 		dashHandlers = new ExclusivePropertyChain<Dash, NodeModel>();
-		
+
 		addColorGetter(IPropertyHandler.NODE, new IPropertyHandler<ObjectRule<Color, Rules>, NodeModel>() {
 			public ObjectRule<Color, Rules> getProperty(final NodeModel node, LogicalStyleController.StyleOption option, final ObjectRule<Color, Rules> currentValue) {
 				return getStyleEdgeColorRule(node, option);
 			}
 		});
-		
+
 		addColorGetter(IPropertyHandler.AUTO, new IPropertyHandler<ObjectRule<Color, Rules>, NodeModel>() {
 			@Override
 			public ObjectRule<Color, Rules> getProperty(NodeModel model, LogicalStyleController.StyleOption option, ObjectRule<Color, Rules> currentValue) {
@@ -113,7 +113,7 @@ public class EdgeController implements IExtension {
 				return new RuleReference<Color, EdgeController.Rules>(Rules.BY_PARENT);
 			}
 		});
-		
+
 		addStyleGetter(IPropertyHandler.STYLE, new IPropertyHandler<EdgeStyle, NodeModel>() {
 			public EdgeStyle getProperty(final NodeModel node, LogicalStyleController.StyleOption option, final EdgeStyle currentValu) {
 				return getStyleStyle(node.getMap(), LogicalStyleController.getController(modeController).getStyles(node, option));
@@ -132,7 +132,7 @@ public class EdgeController implements IExtension {
 				return getStyleWidth(node.getMap(), LogicalStyleController.getController(modeController).getStyles(node, option));
 			}
 		});
-		
+
 		addWidthGetter(IPropertyHandler.DEFAULT, new IPropertyHandler<Integer, NodeModel>() {
 			public Integer getProperty(NodeModel node, LogicalStyleController.StyleOption option, final Integer currentValue) {
 				if(node.getParentNode() != null){
@@ -141,13 +141,13 @@ public class EdgeController implements IExtension {
 				return new Integer(EdgeModel.STANDARD_WIDTH);
 			}
 		});
-		
+
 		addDashGetter(IPropertyHandler.STYLE, new IPropertyHandler<Dash, NodeModel>() {
 			public Dash getProperty(final NodeModel node, LogicalStyleController.StyleOption option, final Dash currentValue) {
 				return getStyleDash(node.getMap(), LogicalStyleController.getController(modeController).getStyles(node, option));
 			}
 		});
-		
+
 		addDashGetter(IPropertyHandler.DEFAULT, new IPropertyHandler<Dash, NodeModel>() {
 			public Dash getProperty(NodeModel node, LogicalStyleController.StyleOption option, final Dash currentValue) {
 				if(node.getParentNode() != null){
@@ -156,7 +156,7 @@ public class EdgeController implements IExtension {
 				return Dash.DEFAULT;
 			}
 		});
-		
+
 		final MapController mapController = Controller.getCurrentModeController().getMapController();
 		final ReadManager readManager = mapController.getReadManager();
 		final WriteManager writeManager = mapController.getWriteManager();
@@ -185,10 +185,6 @@ public class EdgeController implements IExtension {
 	}
 
 	public Color getColor(final NodeModel node, StyleOption option) {
-		return getColor(node, true, option);
-	}
-
-	public Color getColor(final NodeModel node, final boolean resolveColor, StyleOption option) {
 	    final ObjectRule<Color, Rules> colorRule = getColorRule(node, option);
 		if(colorRule.hasValue())
 			return colorRule.getValue();
@@ -226,7 +222,7 @@ public class EdgeController implements IExtension {
 			return getWidth(node.getParentNode(), option);
 		return width;
     }
-	
+
 	public Dash getDash(NodeModel node, StyleOption option) {
 		return getDash(node, option, true);
 	}
@@ -237,10 +233,10 @@ public class EdgeController implements IExtension {
 			return getDash(node.getParentNode(), option);
 		return dash;
 	}
-	
+
 
 	private ObjectRule<Color, Rules> getStyleEdgeColorRule(NodeModel node, StyleOption option) {
-		MapModel map = node.getMap(); 
+		MapModel map = node.getMap();
 		Collection<IStyle> collection = LogicalStyleController.getController(modeController).getStyles(node, option);
 		final MapStyleModel styles = MapStyleModel.getExtension(map);
 		for(IStyle styleKey : collection){
@@ -282,7 +278,7 @@ public class EdgeController implements IExtension {
 		}
 		return null;
 	}
-	
+
 	private Dash getStyleDash(final MapModel map, final Collection<IStyle> collection) {
 		final MapStyleModel model = MapStyleModel.getExtension(map);
 		for(IStyle styleKey : collection){
@@ -302,8 +298,8 @@ public class EdgeController implements IExtension {
 		}
 		return null;
 	}
-	
-	
+
+
 
 	private EdgeStyle getStyleStyle(final MapModel map, final Collection<IStyle> collection) {
 		final MapStyleModel model = MapStyleModel.getExtension(map);

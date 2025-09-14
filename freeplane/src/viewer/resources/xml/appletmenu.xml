@@ -28,7 +28,7 @@
 			</Entry>
 			<Entry name="menu_viewmode">
 				<Entry name="ViewLayoutTypeAction.OUTLINE" />
-				<Entry name="ShowSelectionAsRectangleAction" />
+				<Entry name="SetBooleanPropertyAction.standarddrawrectangleforselection" />
 			</Entry>
 			<Entry name="menu_hoverView">
 				<Entry accelerator="alt F2" name="ToggleDetailsAction" />

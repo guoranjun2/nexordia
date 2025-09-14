@@ -59,6 +59,7 @@ import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.TagIcon;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
+import org.freeplane.core.util.ConstantObject;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.ObjectRule;
 import org.freeplane.features.attribute.AttributeController;
@@ -2021,10 +2022,10 @@ public class NodeView extends JComponent implements INodeView {
 		return 1;
     }
 
-	public Color getEdgeColor() {
-		if(edgeColor.hasValue())
-			return edgeColor.getValue();
-		Rules rule = edgeColor.getRule();
+    public Color getEdgeColor() {
+       if(edgeColor.hasValue())
+            return edgeColor.getValue();
+        Rules rule = edgeColor.getRule();
 		if(rule == EdgeController.Rules.BY_COLUMN){
 			final Color color = new AutomaticEdgeStyle(this).getColor();
 			edgeColor.setCache(color);

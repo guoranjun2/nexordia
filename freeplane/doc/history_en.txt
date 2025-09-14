@@ -2,6 +2,7 @@
 1.12.14
 ==============================
 Disable or force node minimization per map view (View->View settings->Displayed node content->...)
+Option to highlight edges from root to selected nodes (View->View settings->Highlight edges from selection to root)
 Bug fixes
 Map outline panel
 

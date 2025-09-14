@@ -35,7 +35,6 @@ import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.SetAcceleratorOnNextClickAction;
-import org.freeplane.core.ui.ShowSelectionAsRectangleAction;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.resizer.CollapseableBoxBuilder;
@@ -141,7 +140,6 @@ public class SModeControllerFactory {
 		FilterController.install();
 		TextController.install();
 		controller.addAction(new ViewLayoutTypeAction(MapViewLayout.OUTLINE));
-		controller.addAction(new ShowSelectionAsRectangleAction());
 		modeController = new SModeController(controller);
 		modeController.createOptionPanelControls();
 		controller.selectModeForBuild(modeController);

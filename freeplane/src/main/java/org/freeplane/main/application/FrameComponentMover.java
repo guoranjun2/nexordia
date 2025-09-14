@@ -26,6 +26,7 @@ import java.awt.Window;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
+import javax.swing.FocusManager;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -123,6 +124,8 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	}
 
 	private void moveNonCenterComponents(JFrame fromFrame, JFrame toFrame) {
+		if(toFrame != KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow())
+			return;
 		moveMenuBar(fromFrame, toFrame);
 
 		Container fromContentPane = fromFrame.getContentPane();
