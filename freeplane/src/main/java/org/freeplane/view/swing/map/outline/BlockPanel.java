@@ -9,10 +9,10 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.InputMap;
-import javax.swing.ActionMap;
 import javax.swing.KeyStroke;
 
 class BlockPanel extends JPanel {
@@ -20,25 +20,21 @@ class BlockPanel extends JPanel {
 
     private final OutlineSelection selection;
 
-    BlockPanel(List<TreeNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount, OutlineSelection selection) {
+    BlockPanel(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.selection = selection;
 
-        createNodeComponents(nodes, firstIdx, rowHeight, parentPanel, breadcrumbNodeCount);
+        createNodeComponents(nodes, rowHeight, parentPanel);
     }
 
-    private void createNodeComponents(List<TreeNode> nodes, int firstIdx, int rowHeight, ScrollableTreePanel parentPanel, int breadcrumbNodeCount) {
+    private void createNodeComponents(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel) {
         int visibleButtonIndex = 0;
         for (int i = 0; i < nodes.size(); i++) {
             TreeNode node = nodes.get(i);
-            int idx = firstIdx + i;
-
-            if (idx >= breadcrumbNodeCount) {
-                int y = visibleButtonIndex * rowHeight;
-                createActionButton(node, y, rowHeight, parentPanel);
-                visibleButtonIndex++;
-            }
+            int y = visibleButtonIndex * rowHeight;
+            createActionButton(node, y, rowHeight, parentPanel);
+            visibleButtonIndex++;
         }
     }
 

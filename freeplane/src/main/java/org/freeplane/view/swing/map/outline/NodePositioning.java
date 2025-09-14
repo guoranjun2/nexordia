@@ -47,15 +47,13 @@ class NodePositioning {
         return new Point(0, targetY);
     }
 
-    Rectangle calculateBlockBounds(int blockIndex, int blockSize, int breadcrumbAreaHeight, int panelWidth) {
+    Rectangle calculateBlockBounds(int blockIndex, int blockSize, int panelWidth) {
         int start = blockIndex * blockSize;
-        int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
 
-        int visibleStart = Math.max(start, breadcrumbNodeCount);
         int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
-        int visibleNodesInBlock = end - visibleStart;
+        int visibleNodesInBlock = end - start;
 
-        int blockY = breadcrumbAreaHeight + (visibleStart - breadcrumbNodeCount) * geometry.rowHeight;
+        int blockY = start * geometry.rowHeight;
         int blockHeight = visibleNodesInBlock * geometry.rowHeight;
 
         return new Rectangle(0, blockY, panelWidth, blockHeight);
@@ -63,6 +61,6 @@ class NodePositioning {
 
     int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
         int effectiveViewportY = viewRect.y + breadcrumbAreaHeight;
-        return Math.max(0, (effectiveViewportY + (geometry.rowHeight/2 - 1)) / geometry.rowHeight);
+        return Math.max(0, (effectiveViewportY + geometry.rowHeight - 1) / geometry.rowHeight);
     }
 }

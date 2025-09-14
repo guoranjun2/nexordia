@@ -31,10 +31,10 @@ class OutlineViewport {
         setViewPosition(viewPosition);
     }
 
-    int getPageSize() {
-        int viewportHeight = scrollPane.getViewport().getHeight();
-        return Math.max(1, viewportHeight / geometry.rowHeight - 1);
-    }
+	int getViewportHeight() {
+		int viewportHeight = scrollPane.getViewport().getHeight();
+		return viewportHeight;
+	}
 
     int getViewportWidth() {
         return scrollPane.getViewport().getWidth();

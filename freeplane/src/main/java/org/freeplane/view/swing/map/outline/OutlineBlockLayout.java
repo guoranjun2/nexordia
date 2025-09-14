@@ -32,7 +32,7 @@ class OutlineBlockLayout {
     void createVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
         for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
             if (!blockCache.has(b))
-                createBlock(owner, b, range.getBreadcrumbAreaHeight(), panelWidth);
+                createBlock(owner, b, panelWidth);
         }
     }
 
@@ -61,24 +61,20 @@ class OutlineBlockLayout {
         }
     }
 
-    private void createBlock(JPanel owner, int blockIndex, int yOffset, int panelWidth) {
+    private void createBlock(JPanel owner, int blockIndex, int panelWidth) {
         int start = blockIndex * blockSize;
         int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
-        int breadcrumbNodeCount = visibleState.getBreadcrumbAreaHeight() / geometry.rowHeight;
-        if (end <= breadcrumbNodeCount) return;
 
         List<TreeNode> blockNodes = new ArrayList<>();
         for (int i = start; i < end; i++) {
             TreeNode n = visibleState.getNodeAtVisibleIndex(i);
             if (n != null) blockNodes.add(n);
         }
-        BlockPanel bp = new BlockPanel(blockNodes, start, geometry.rowHeight, (ScrollableTreePanel) owner, breadcrumbNodeCount, ((ScrollableTreePanel) owner).getOutlineSelection());
-        Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, yOffset, panelWidth);
+        BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, (ScrollableTreePanel) owner, ((ScrollableTreePanel) owner).getOutlineSelection());
+        Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, panelWidth);
         bp.setBounds(bounds);
         owner.add(bp);
         blockCache.put(blockIndex, bp);
-
-        // update cached max width using this block's buttons only
         for (Component comp : bp.getComponents()) {
             if (comp instanceof JButton) {
                 int rightEdge = comp.getX() + comp.getWidth();
@@ -101,7 +97,5 @@ class OutlineBlockLayout {
             }
         }
         for (int idx : toRemove) blockCache.remove(idx);
-        // Recompute cached width conservatively if many blocks were removed
-        // (optional). We keep width non-decreasing for simplicity.
     }
 }

@@ -45,6 +45,27 @@ class BreadcrumbPath {
         return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, firstFullyVisibleNodeIndex);
     }
 
+    BreadcrumbState calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
+        int count = visibleState.getVisibleNodeCount();
+        if (count == 0) {
+            return null;
+        }
+
+        int clampedIndex = Math.max(0, Math.min(firstVisibleNodeIndex, count - 1));
+        TreeNode firstNode = visibleState.getNodeAtVisibleIndex(clampedIndex);
+        if (firstNode == null) {
+            return null;
+        }
+
+        if (firstNode == root) {
+            return new BreadcrumbState(Collections.emptyList(), 0, clampedIndex);
+        }
+
+        List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(firstNode);
+        int newBreadcrumbHeight = newBreadcrumbNodes.size() * geometry.rowHeight;
+        return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, clampedIndex);
+    }
+
     private List<TreeNode> collectBreadcrumbNodes(TreeNode fromNode) {
         List<TreeNode> breadcrumbNodes = new ArrayList<>();
         TreeNode current = fromNode.getParent();
