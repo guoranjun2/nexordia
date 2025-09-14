@@ -81,11 +81,13 @@ import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
+import org.freeplane.core.util.ConstantObject;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.ModelessAttributeController;
 import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
 import org.freeplane.features.edge.EdgeColorsConfigurationFactory;
+import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.highlight.NodeHighlighter;
 import org.freeplane.features.icon.Tag;
@@ -3135,14 +3137,14 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     static void updateHighlightAscendantEdgeCache() {
         if (highlightAscendantEdgesEnabled && selectionRectangleColor != null) {
-            highlightAscendantEdgeColorRule = new org.freeplane.core.util.ConstantObject<Color, org.freeplane.features.edge.EdgeController.Rules>(selectionRectangleColor);
+            highlightAscendantEdgeColorRule = new ConstantObject<Color, EdgeController.Rules>(selectionRectangleColor);
         }
         else {
             highlightAscendantEdgeColorRule = null;
         }
     }
 
-    static org.freeplane.core.util.ConstantObject<Color, org.freeplane.features.edge.EdgeController.Rules> getHighlightAscendantEdgeColorRule() {
+    public static ConstantObject<Color, EdgeController.Rules> getHighlightAscendantEdgeColorRule() {
         return highlightAscendantEdgeColorRule;
     }
 

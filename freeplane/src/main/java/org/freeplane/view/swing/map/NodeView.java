@@ -2023,16 +2023,7 @@ public class NodeView extends JComponent implements INodeView {
     }
 
     public Color getEdgeColor() {
-        ConstantObject<Color, Rules> ascendantRule = MapView.getHighlightAscendantEdgeColorRule();
-        if (ascendantRule != null) {
-            for (final NodeView selected : map.getSelection()) {
-                final NodeModel selectedNode = selected.getNode();
-                if (selectedNode == viewedNode || selectedNode.isDescendantOf(viewedNode)) {
-                    return ascendantRule.getValue();
-                }
-            }
-        }
-        if(edgeColor.hasValue())
+       if(edgeColor.hasValue())
             return edgeColor.getValue();
         Rules rule = edgeColor.getRule();
 		if(rule == EdgeController.Rules.BY_COLUMN){
