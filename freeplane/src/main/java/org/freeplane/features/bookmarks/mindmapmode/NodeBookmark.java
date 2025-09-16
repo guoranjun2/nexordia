@@ -5,6 +5,8 @@
  */
 package org.freeplane.features.bookmarks.mindmapmode;
 
+import javax.swing.SwingUtilities;
+
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.filter.hidden.NodeVisibility;
@@ -85,7 +87,7 @@ public class NodeBookmark {
 		final Controller controller = Controller.getCurrentController();
 		final IMapViewManager mapViewManager = controller.getMapViewManager();
 		mapViewManager.newMapView(node.getMap(), controller.getModeController());
-		open(true);
+		SwingUtilities.invokeLater(() -> open(true));
 	}
 
 	public void alternativeOpen() {
