@@ -40,8 +40,8 @@ public abstract class SharpEdgeView extends EdgeView {
         return deltaX;
     }
 
-	public SharpEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public SharpEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
     @Override

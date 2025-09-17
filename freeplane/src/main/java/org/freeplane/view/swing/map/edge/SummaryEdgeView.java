@@ -38,8 +38,8 @@ public class SummaryEdgeView extends EdgeView {
 	private static final int CHILD_XCTRL = 20;
 	private static final int XCTRL = 4;
 
-	public SummaryEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public SummaryEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override

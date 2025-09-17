@@ -32,8 +32,8 @@ import org.freeplane.view.swing.map.link.CollisionDetector;
  * This class represents a single Edge of a MindMap.
  */
 public class LinearEdgeView extends EdgeView {
-	public LinearEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public LinearEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override

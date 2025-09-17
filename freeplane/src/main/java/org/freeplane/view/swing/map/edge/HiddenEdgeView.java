@@ -34,8 +34,8 @@ import org.freeplane.view.swing.map.NodeView;
 public class HiddenEdgeView extends BezierEdgeView {
 	private static Stroke STROKE;
 
-	public HiddenEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public HiddenEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	protected static Stroke getHiddenStroke() {

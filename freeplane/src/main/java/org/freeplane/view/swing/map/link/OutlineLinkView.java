@@ -39,7 +39,7 @@ public class OutlineLinkView extends EdgeView {
 	private int ys[];
 
 	public OutlineLinkView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	    super(source, target, paintedComponent, false);
     }
 
 	@Override

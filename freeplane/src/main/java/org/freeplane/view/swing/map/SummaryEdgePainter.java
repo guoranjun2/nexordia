@@ -32,7 +32,7 @@ class SummaryEdgePainter {
 		currentY1 = yMins[level];
 		currentY2 = yMaxs[level];
 	}
-	
+
 	final private int yMins[];
 	final private int yMaxs[];
 	final private int xs[];
@@ -47,8 +47,8 @@ class SummaryEdgePainter {
 			return;
 		setCurrentLevel(child);
         updateLevelValues(child);
-		
-		
+
+
 	}
 	private void updateLevelValues(NodeView child) {
 		resetLevelValuesForStart(child);
@@ -95,7 +95,7 @@ class SummaryEdgePainter {
 	private boolean hasSummaryEdge(){
 		return level > 0 && currentY1 != Integer.MAX_VALUE;
 	}
-	
+
 	boolean paintSummaryEdge(Graphics2D g, NodeView source, NodeView target) {
 		if(! hasSummaryEdge())
 			return false;
@@ -105,7 +105,7 @@ class SummaryEdgePainter {
 		final NodeView parentView = target.getParentView();
 		UITools.convertPointToAncestor(parentView, start1, source);
 		UITools.convertPointToAncestor(parentView, start2, source);
-		final EdgeView edgeView = new SummaryEdgeView(source, target, source);
+		final EdgeView edgeView = new SummaryEdgeView(source, target, source, false);
 		edgeView.setShapeStart(start1);
 		edgeView.paint(g);
 		edgeView.setShapeStart(start2);

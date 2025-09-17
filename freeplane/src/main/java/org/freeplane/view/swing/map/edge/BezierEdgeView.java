@@ -34,8 +34,8 @@ public class BezierEdgeView extends EdgeView {
 	private static final int CHILD_XCTRL = 20;
 	private static final int XCTRL = 12;
 
-	public BezierEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public BezierEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override
