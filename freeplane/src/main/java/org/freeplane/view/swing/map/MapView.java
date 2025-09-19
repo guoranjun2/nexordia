@@ -81,8 +81,8 @@ import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
-import org.freeplane.core.util.ConstantObject;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.SupplierRule;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.ModelessAttributeController;
 import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
@@ -745,7 +745,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	static private boolean drawsRectangleForSelection;
     static private Color selectionRectangleColor;
     static private boolean highlightAscendantEdgesEnabled;
-    static private org.freeplane.core.util.ConstantObject<Color, org.freeplane.features.edge.EdgeController.Rules> highlightAscendantEdgeColorRule;
+    private static final SupplierRule<Color, EdgeController.Rules> highlightAscendantEdgeColorRule = new SupplierRule<Color, EdgeController.Rules>(() -> selectionRectangleColor);
 	/** Used to identify a right click onto a link curve. */
 	private Vector<ILinkView> arrowLinkViews;
 	private ScalableComponent backgroundComponent;
@@ -1057,7 +1057,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
                 if (propertyName.equals(ResourceController.RESOURCE_HIGHLIGHT_ASCENDANT_EDGES)) {
                     MapView.highlightAscendantEdgesEnabled = TreeXmlReader.xmlToBoolean(newValue);
                     mapView.setRepaintsViewOnSelectionChange(highlightAscendantEdgesEnabled);
-                    updateHighlightAscendantEdgeCache();
                     mapView.updateAllNodeViews();
                     mapView.repaint();
                     return;
@@ -2554,7 +2553,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         ResourceController resourceController = ResourceController.getResourceController();
         selectionRectangleColor = ColorUtils.stringToColor(resourceController.getProperty(
                 MapView.RESOURCES_SELECTED_NODE_RECTANGLE_COLOR));
-        updateHighlightAscendantEdgeCache();
     }
 
 	private RoundRectangle2D.Float getRoundRectangleAround(final NodeView selected, int gap, final int arcw) {
@@ -3135,16 +3133,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         return drawsRectangleForSelection;
     }
 
-    static void updateHighlightAscendantEdgeCache() {
-        if (highlightAscendantEdgesEnabled && selectionRectangleColor != null) {
-            highlightAscendantEdgeColorRule = new ConstantObject<Color, EdgeController.Rules>(selectionRectangleColor);
-        }
-        else {
-            highlightAscendantEdgeColorRule = null;
-        }
-    }
-
-    public static ConstantObject<Color, EdgeController.Rules> getHighlightAscendantEdgeColorRule() {
+    public static SupplierRule<Color, EdgeController.Rules> getHighlightAscendantEdgeColorRule() {
         return highlightAscendantEdgeColorRule;
     }
 

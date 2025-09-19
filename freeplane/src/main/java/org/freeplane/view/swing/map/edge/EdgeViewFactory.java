@@ -32,37 +32,37 @@ import org.freeplane.view.swing.map.NodeView;
 public class EdgeViewFactory {
 	final private static EdgeViewFactory instance = new EdgeViewFactory();
 
-	public EdgeView getEdge(final NodeView source, final NodeView target, Component paintedComponent) {
+	public EdgeView getEdge(final NodeView source, final NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
 		final EdgeStyle edgeStyle = target.getEdgeStyle();
 		if (source.getMap().getLayoutType() == MapViewLayout.OUTLINE) {
 			if(edgeStyle.equals(EdgeStyle.EDGESTYLE_HIDDEN))
-				return new HiddenOutlineEdgeView(source, target, paintedComponent);
-			return new OutlineEdgeView(source, target, paintedComponent);
+				return new HiddenOutlineEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
+			return new OutlineEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		if (edgeStyle.equals(EdgeStyle.EDGESTYLE_LINEAR)) {
-			return new LinearEdgeView(source, target, paintedComponent);
+			return new LinearEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_BEZIER)) {
-			return new BezierEdgeView(source, target, paintedComponent);
+			return new BezierEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_SUMMARY)) {
-            return new SummaryEdgeView(source, target, paintedComponent);
+            return new SummaryEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
         }
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_SHARP_LINEAR)) {
-			return new SharpLinearEdgeView(source, target, paintedComponent);
+			return new SharpLinearEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_SHARP_BEZIER)) {
-			return new SharpBezierEdgeView(source, target, paintedComponent);
+			return new SharpBezierEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_HORIZONTAL)) {
-			return new HorizontalEdgeView(source, target, paintedComponent);
+			return new HorizontalEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else if (edgeStyle.equals(EdgeStyle.EDGESTYLE_HIDDEN)) {
-			return new HiddenEdgeView(source, target, paintedComponent);
+			return new HiddenEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 		else {
 			System.err.println("Unknown Edge Type.");
-			return new LinearEdgeView(source, target, paintedComponent);
+			return new LinearEdgeView(source, target, paintedComponent, highlightsAscendantEdge);
 		}
 	}
 

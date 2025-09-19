@@ -31,11 +31,11 @@ import java.awt.Stroke;
 import java.awt.Window;
 import java.awt.dnd.DragGestureListener;
 import java.awt.dnd.DropTargetListener;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,7 +59,6 @@ import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.TagIcon;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
-import org.freeplane.core.util.ConstantObject;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.ObjectRule;
 import org.freeplane.features.attribute.AttributeController;
@@ -1540,6 +1539,7 @@ public class NodeView extends JComponent implements INodeView {
         	end = getComponentCount();
         	step = 1;
         }
+        List<EdgeView> highlightedEdges = new ArrayList<>();
 		for (int i = start; i != end; i+=step) {
             final Component component = getComponent(i);
             if (!(component instanceof NodeView)) {
@@ -1565,15 +1565,30 @@ public class NodeView extends JComponent implements INodeView {
         		}
             }
         	if (nodeView.isContentVisible()) {
-        		final EdgeView edge = EdgeViewFactory.getInstance().getEdge(source, nodeView, source);
-        		edge.paint(g);
+        		boolean highlightsEdge = highlightsAscendantEdge(nodeView);
+				final EdgeView edge = EdgeViewFactory.getInstance().getEdge(source, nodeView, source, highlightsEdge);
+				if(highlightsEdge)
+					highlightedEdges.add(edge);
+				else
+					edge.paint(g);
         	}
         	else {
         		nodeView.paintEdges(g, source);
         	}
         }
+		highlightedEdges.forEach(edge -> edge.paint(g));
     }
 
+	private boolean highlightsAscendantEdge(NodeView target) {
+		if (MapView.isHighlightAscendantEdgesEnabled()) {
+		    for (final NodeView selected : target.getMap().getSelection()) {
+		        if (selected == target || SwingUtilities.isDescendingFrom(selected, target)) {
+		            return true;
+		        }
+		    }
+		}
+		return false;
+	}
 
     public ChildNodesLayout recalculateChildNodesLayout() {
         childNodesLayout = null;

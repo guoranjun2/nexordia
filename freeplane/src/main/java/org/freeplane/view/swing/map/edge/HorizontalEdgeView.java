@@ -41,8 +41,8 @@ public class HorizontalEdgeView extends EdgeView {
 	private int xs[];
 	private int ys[];
 
-	public HorizontalEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public HorizontalEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override

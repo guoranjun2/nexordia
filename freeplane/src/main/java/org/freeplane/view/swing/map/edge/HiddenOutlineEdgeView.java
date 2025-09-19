@@ -31,8 +31,8 @@ import org.freeplane.view.swing.map.NodeView;
  */
 public class HiddenOutlineEdgeView extends OutlineEdgeView {
 
-	public HiddenOutlineEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public HiddenOutlineEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override
@@ -47,6 +47,6 @@ public class HiddenOutlineEdgeView extends OutlineEdgeView {
 		}
 	    super.paint(g);
     }
-	
-	
+
+
 }

@@ -36,8 +36,8 @@ import org.freeplane.view.swing.map.link.CollisionDetector;
 public class SharpBezierEdgeView extends SharpEdgeView {
 	private static final float XCTRL = 12;
 	Point2D.Float one, two;
-	public SharpBezierEdgeView(NodeView source, NodeView target, Component paintedComponent) {
-	    super(source, target, paintedComponent);
+	public SharpBezierEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
+	    super(source, target, paintedComponent, highlightsAscendantEdge);
     }
 
 	@Override

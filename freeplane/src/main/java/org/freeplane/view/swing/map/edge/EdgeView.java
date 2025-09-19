@@ -27,16 +27,11 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 
-import javax.swing.SwingUtilities;
-
 import org.freeplane.api.ChildNodesAlignment;
 import org.freeplane.api.ChildrenSides;
 import org.freeplane.api.Dash;
 import org.freeplane.api.LayoutOrientation;
 import org.freeplane.core.ui.components.UITools;
-import org.freeplane.core.util.ConstantObject;
-import org.freeplane.features.edge.EdgeController.Rules;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MainView.ConnectorLocation;
 import org.freeplane.view.swing.map.MapView;
@@ -60,6 +55,27 @@ public abstract class EdgeView {
 
     private final NodeView source;
     protected Point start, shapeStart, end;
+    private final NodeView target;
+    private Color color;
+    private Integer width;
+    private ConnectorLocation startConnectorLocation;
+    private ConnectorLocation endConnectorLocation;
+    private int[] dash;
+	private final boolean highlightsAscendantEdge;
+
+
+
+    public EdgeView(final NodeView source, final NodeView target, final Component paintedComponent, boolean highlightsAscendantEdge) {
+        this.source = source;
+        this.target = target;
+		this.highlightsAscendantEdge = highlightsAscendantEdge;
+        createStart();
+        UITools.convertPointToAncestor(target.getMainView(), end, paintedComponent);
+        UITools.convertPointToAncestor(source.getMainView(), start, paintedComponent);
+        if(start != shapeStart && shapeStart != null)
+        	UITools.convertPointToAncestor(source.getMainView(), shapeStart, paintedComponent);
+        align(start, end);
+    }
 
     public void setShapeStart(Point shapeStart) {
     	this.shapeStart = this.start = shapeStart;
@@ -76,13 +92,6 @@ public abstract class EdgeView {
     public Point getEnd() {
         return end;
     }
-
-    private final NodeView target;
-    private Color color;
-    private Integer width;
-    private ConnectorLocation startConnectorLocation;
-    private ConnectorLocation endConnectorLocation;
-    private int[] dash;
 
     protected void createStart() {
         final MainView mainView = source.getMainView();
@@ -222,24 +231,12 @@ public abstract class EdgeView {
 
 	public Color getColor() {
 		if (color == null) {
-	        if(highlightsAscendantEdge())
+	        if(highlightsAscendantEdge)
 	    		color = MapView.getHighlightAscendantEdgeColorRule().getValue();
 	        else
 	        	color = target.getEdgeColor();
         }
         return color;
-	}
-
-	private boolean highlightsAscendantEdge() {
-		ConstantObject<Color, Rules> ascendantRule = MapView.getHighlightAscendantEdgeColorRule();
-		if (ascendantRule != null) {
-		    for (final NodeView selected : target.getMap().getSelection()) {
-		        if (selected == target || SwingUtilities.isDescendingFrom(selected, target)) {
-		            return true;
-		        }
-		    }
-		}
-		return false;
 	}
 
     public void setColor(final Color color) {
@@ -283,7 +280,7 @@ public abstract class EdgeView {
             return width;
         }
         width = target.getEdgeWidth();
-        if(highlightsAscendantEdge())
+        if(highlightsAscendantEdge)
         	width = width.intValue() + 2;
         return width;
     }
@@ -318,17 +315,6 @@ public abstract class EdgeView {
         draw(g);
         g.setStroke(stroke);
         g.setColor(color);
-    }
-
-    public EdgeView(final NodeView source, final NodeView target, final Component paintedComponent) {
-        this.source = source;
-        this.target = target;
-        createStart();
-        UITools.convertPointToAncestor(target.getMainView(), end, paintedComponent);
-        UITools.convertPointToAncestor(source.getMainView(), start, paintedComponent);
-        if(start != shapeStart && shapeStart != null)
-        	UITools.convertPointToAncestor(source.getMainView(), shapeStart, paintedComponent);
-        align(start, end);
     }
 
     abstract public boolean detectCollision(Point p);

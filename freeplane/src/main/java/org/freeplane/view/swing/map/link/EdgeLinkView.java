@@ -53,7 +53,7 @@ public class EdgeLinkView extends AConnectorView {
 			edgeView = new OutlineLinkView(source, target, map);
 		}
 		else{
-			edgeView = EdgeViewFactory.getInstance().getEdge(source, target, map);
+			edgeView = EdgeViewFactory.getInstance().getEdge(source, target, map, false);
 		}
 		Color color;
 		linkController = LinkController.getController(modeController);
