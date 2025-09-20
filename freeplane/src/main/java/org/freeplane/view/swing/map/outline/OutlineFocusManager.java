@@ -47,6 +47,8 @@ class OutlineFocusManager {
         }
         if(! requestFocusInWindow) {
             final Component focusOwner = FocusManager.getCurrentManager().getCurrentFocusCycleRoot();
+            if(focusOwner == null)
+            	return;
             if (! SwingUtilities.isDescendingFrom(focusOwner, panel)) {
                 if (selectionBridge != null) selectionBridge.focusMapNode();
                 return;
