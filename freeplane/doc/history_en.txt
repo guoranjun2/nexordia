@@ -1,4 +1,9 @@
 ==============================
+1.12.15
+==============================
+Open selection as root in a new view (alt+shift+ESCAPE)
+
+==============================
 1.12.14
 ==============================
 Disable or force node minimization per map view (View->View settings->Displayed node content->...)

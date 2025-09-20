@@ -296,6 +296,7 @@
 				</Entry>
 		<Entry name="view">
 			<Entry name="NewMapViewAction" />
+			<Entry name="OpenSelectionAsNewViewRootAction" accelerator="alt shift ESCAPE"/>
 			<Entry name="zoom">
 				<Entry name="ZoomInAction" accelerator="alt UP" />
 				<Entry name="ZoomOutAction" accelerator="alt DOWN" />
@@ -559,6 +560,7 @@
 			<Entry name="GotoNodeAction" />
 			<Entry name="BookmarkNodeAction" />
 			<Entry name="JumpInAction"  accelerator="shift ESCAPE"/>
+			<Entry name="OpenSelectionAsNewViewRootAction" accelerator="alt shift ESCAPE"/>
 			<Entry name="JumpOutAction"  accelerator="control ESCAPE"/>
 			<Entry name="node_selector" >
 	            <Entry name="FreeSelectNodeAction.LEFT" />
