@@ -31,6 +31,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     private OutlineActions actions;
     private OutlineController controller;
     private Rectangle lastBreadcrumbBounds;
+	protected FreeplaneToolBar toolbar;
 
     OutlinePane(TreeNode rootNode) {
         this.breadcrumbPanel = new BreadcrumbPanel();
@@ -44,21 +45,8 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
         breadcrumbPanel.initialize(controller, treePanel.getOutlineSelection());
         actions = new OutlineActions(this);
         actionMenu = actions.buildMenuLocalized();
-        final FreeplaneToolBar toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
-        final JButton menuButton = new JButton("\u2261");
-        TranslatedElementFactory.createTooltip(menuButton, "outline.menu.tooltip");
-        menuButton.addActionListener(e -> {
-            TreeNode selected = treePanel.getOutlineSelection().getSelectedNode();
-            boolean hasParent = selected != null && selected.getParent() != null;
-            boolean hasChild = selected != null && !selected.getChildren().isEmpty();
-            boolean canToggle = selected != null && hasChild && selected.getLevel() > 0;
-            actions.selectInMap.setEnabled(selected != null);
-            actions.goParent.setEnabled(hasParent);
-            actions.goChild.setEnabled(hasChild);
-            actions.toggleExpand.setEnabled(canToggle);
-            actionMenu.show(menuButton, 0, menuButton.getHeight());
-        });
-        toolbar.add(menuButton);
+		toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
+		configureToolbar(toolbar);
         JPanel topBarContainer = new JPanel(new BorderLayout());
         topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
         topBarContainer.add(toolbar, BorderLayout.WEST);
@@ -99,6 +87,23 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
         setupScrollListeners();
     }
+
+	private void configureToolbar(final FreeplaneToolBar toolbar) {
+        final JButton menuButton = new JButton("\u2261");
+        TranslatedElementFactory.createTooltip(menuButton, "outline.menu.tooltip");
+        menuButton.addActionListener(e -> {
+            TreeNode selected = treePanel.getOutlineSelection().getSelectedNode();
+            boolean hasParent = selected != null && selected.getParent() != null;
+            boolean hasChild = selected != null && !selected.getChildren().isEmpty();
+            boolean canToggle = selected != null && hasChild && selected.getLevel() > 0;
+            actions.selectInMap.setEnabled(selected != null);
+            actions.goParent.setEnabled(hasParent);
+            actions.goChild.setEnabled(hasChild);
+            actions.toggleExpand.setEnabled(canToggle);
+            actionMenu.show(menuButton, 0, menuButton.getHeight());
+        });
+        toolbar.add(menuButton);
+	}
 
     ScrollableTreePanel getTreePanel() {
         return treePanel;

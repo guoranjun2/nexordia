@@ -14,6 +14,8 @@ class NodeTreeBuilder {
 
     private NodeModel rootModel;
     private Filter filter;
+    private NodeModel overrideRootModel;
+    private Filter overrideFilter;
 
     private TreeNode root;
     private OutlineViewState applicableState;
@@ -25,11 +27,14 @@ class NodeTreeBuilder {
     }
 
     NodeTreeBuilder build() {
-        if (mapView == null || mapView.getMap() == null || mapView.getRoot() == null || mapView.getRoot().getNode() == null) {
+        if (mapView == null || mapView.getMap() == null) {
             return this;
         }
-        this.rootModel = mapView.getRoot().getNode();
-        this.filter = mapView.getFilter();
+        initializeRootModel();
+        if (rootModel == null) {
+            return this;
+        }
+        initializeFilter();
 
         boolean canApply = false;
         if (saved != null) {
@@ -50,6 +55,40 @@ class NodeTreeBuilder {
         }
 
         return this;
+    }
+
+    NodeTreeBuilder withRootModel(NodeModel rootModel) {
+        this.overrideRootModel = rootModel;
+        return this;
+    }
+
+    NodeTreeBuilder withFilter(Filter filter) {
+        this.overrideFilter = filter;
+        return this;
+    }
+
+    private void initializeRootModel() {
+        if (overrideRootModel != null) {
+            rootModel = overrideRootModel;
+            return;
+        }
+        if (mapView != null && mapView.getRoot() != null && mapView.getRoot().getNode() != null) {
+            rootModel = mapView.getRoot().getNode();
+        } else {
+            rootModel = null;
+        }
+    }
+
+    private void initializeFilter() {
+        if (overrideFilter != null) {
+            filter = overrideFilter;
+            return;
+        }
+        if (mapView != null) {
+            filter = mapView.getFilter();
+        } else {
+            filter = null;
+        }
     }
 
     private void visitChildren(NodeModel model, MapTreeNode parentOut) {
