@@ -6,6 +6,9 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+
+import org.freeplane.core.ui.components.UITools;
+
 import java.awt.Point;
 
 class NavigationButtons {
@@ -48,7 +51,7 @@ class NavigationButtons {
 
     private void configureNavButton(JButton button, ActionListener actionListener) {
         button.setMargin(new Insets(0, 0, 0, 0));
-        button.setFont(button.getFont().deriveFont(10f));
+        button.setFont(button.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 10f));
         button.setFocusable(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setVisible(false);

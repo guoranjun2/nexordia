@@ -15,6 +15,8 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
+import org.freeplane.core.ui.components.UITools;
+
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
     private OutlineController controller;
@@ -57,7 +59,7 @@ class BreadcrumbPanel extends JPanel {
             int actionX = controller.calcTextButtonX(level);
 
             NodeButton breadcrumbButton = new NodeButton(node);
-            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(8f));
+            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 8f));
             breadcrumbButton.setText(node.getTitle());
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
 

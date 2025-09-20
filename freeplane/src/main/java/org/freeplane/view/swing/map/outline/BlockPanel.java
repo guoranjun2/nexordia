@@ -15,6 +15,8 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
+import org.freeplane.core.ui.components.UITools;
+
 class BlockPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
@@ -42,7 +44,7 @@ class BlockPanel extends JPanel {
     private void createActionButton(TreeNode node, int y, int rowHeight, ScrollableTreePanel parentPanel) {
         String buttonText = node.getTitle();
         NodeButton button = new NodeButton(node);
-        button.setFont(button.getFont().deriveFont(8f));
+        button.setFont(button.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 8f));
         button.setText(buttonText);
 
         int computedLevel = node.getLevel();

@@ -3,6 +3,9 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.Dimension;
 
 import javax.swing.JButton;
+
+import org.freeplane.core.ui.components.UITools;
+
 import java.awt.Insets;
 import javax.swing.BorderFactory;
 
@@ -15,7 +18,7 @@ class OutlineGeometry {
     OutlineGeometry(JButton sampleButton) {
 
         sampleButton.setMargin(new Insets(0, 0, 0, 0));
-        sampleButton.setFont(sampleButton.getFont().deriveFont(10f));
+        sampleButton.setFont(sampleButton.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 10f));
         sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
 
 
