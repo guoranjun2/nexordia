@@ -87,7 +87,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	    	.orElse(null);
 
     	if(outlineNode == null)
-    		return null;
+    		return findVisibleOutlineNodeOrAncestor(node.getParentNode());
     	return outlineNode.findVisibleAncestorOrSelf();
     }
 
@@ -169,20 +169,17 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             return;
         }
         refreshScheduled = true;
-        try {
-            refreshOutline();
-        }
-        finally {
-            refreshScheduled = false;
-        }
+        SwingUtilities.invokeLater(this::refreshOutline);
     }
 
     private void refreshOutline() {
         if (currentMapView == null) {
             showNoMapState();
-            return;
         }
-        updateTreeFromMap(currentMapView);
+        else {
+        	updateTreeFromMap(currentMapView);
+        }
+        refreshScheduled = false;
     }
 
 

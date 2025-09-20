@@ -50,7 +50,7 @@ class NodeTreeBuilder {
 
         visitChildren(rootModel, outRoot);
 
-        if (this.applicableState == null && this.root != null) {
+        if (this.root != null && (this.applicableState == null || root.getExpansionLevel() < 1)) {
             this.root.applyExpansionLevel(1);
         }
 

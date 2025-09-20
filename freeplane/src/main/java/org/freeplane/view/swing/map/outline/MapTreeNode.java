@@ -23,6 +23,10 @@ class MapTreeNode extends TreeNode implements INodeView {
         this.outlinePane = outlinePane;
     }
 
+    NodeModel getNodeModel() {
+        return nodeModel;
+    }
+
     private static String getNodeText(NodeModel nodeModel) {
         return TextController.getController().getShortPlainText(nodeModel);
     }
