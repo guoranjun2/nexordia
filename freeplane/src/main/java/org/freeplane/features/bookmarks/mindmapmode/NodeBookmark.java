@@ -19,7 +19,7 @@ public class NodeBookmark {
 	private final NodeModel node;
 	private final NodeBookmarkDescriptor descriptor;
 
-	NodeBookmark(NodeModel node, NodeBookmarkDescriptor descriptor) {
+	public NodeBookmark(NodeModel node, NodeBookmarkDescriptor descriptor) {
 		super();
 		this.node = node;
 		this.descriptor = descriptor;

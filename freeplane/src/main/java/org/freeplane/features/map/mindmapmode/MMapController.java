@@ -390,6 +390,7 @@ public class MMapController extends MapController {
         modeController.addAction(new NodeUpAction());
         modeController.addAction(new NodeDownAction());
         modeController.addAction(new ConvertCloneToIndependentNodeAction());
+        modeController.addAction(new OpenSelectionAsNewViewRootAction());
     }
 
     public void deleteNode(NodeModel node) {
