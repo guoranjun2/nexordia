@@ -3,8 +3,6 @@ package org.freeplane.features.bookmarks.mindmapmode.ui;
 import java.awt.dnd.DragGestureEvent;
 import java.awt.dnd.DragGestureListener;
 
-import javax.swing.JButton;
-
 import org.freeplane.features.bookmarks.mindmapmode.NodeBookmark;
 
 class BookmarkDragGestureListener implements DragGestureListener {
