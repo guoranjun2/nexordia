@@ -337,7 +337,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                         }
                     }
                 }
-                else if (removedWindow instanceof View) {
+                else if (removedWindow instanceof View && ((View)removedWindow).getComponent() instanceof MapViewPane) {
                     Component contained = getContainedMapView((View) removedWindow);
                     Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
                     if (sourceTop instanceof RootPaneContainer) {
