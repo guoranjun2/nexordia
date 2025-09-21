@@ -18,7 +18,7 @@ class MapTreeNode extends TreeNode implements INodeView {
     private final OutlinePane outlinePane;
 
     MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
-        super(getNodeText(nodeModel), nodeModel.createID());
+        super(nodeModel.createID(), () -> getNodeText(nodeModel));
         this.nodeModel = nodeModel;
         this.outlinePane = outlinePane;
     }
@@ -34,9 +34,7 @@ class MapTreeNode extends TreeNode implements INodeView {
     @Override
     public void nodeChanged(NodeChangeEvent event) {
     	if (event.getNode() == nodeModel) {
-
-    		String newText = getNodeText(nodeModel);
-    		setTitle(newText);
+    		updateTitle();
     		SwingUtilities.invokeLater(() -> {
     			outlinePane.updateNodeTitle(this);
     		});

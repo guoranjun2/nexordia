@@ -7,9 +7,9 @@ public class OutlineSelectionManagerTest {
 
     @Test
     public void preferredChildDefaultsToFirstAndTracksLastSelected() {
-        TreeNode parent = new TreeNode("p", "p");
-        TreeNode c1 = new TreeNode("c1", "c1");
-        TreeNode c2 = new TreeNode("c2", "c2");
+        TreeNode parent = new TreeNode("p", () -> "p");
+        TreeNode c1 = new TreeNode("c1", () -> "c1");
+        TreeNode c2 = new TreeNode("c2", () -> "c2");
         parent.addChild(c1);
         parent.addChild(c2);
 

@@ -9,9 +9,10 @@ import java.awt.*;
 public class OutlineViewportTest {
 
     private static TreeNode createLinearTree(int count) {
-        TreeNode root = new TreeNode("root", "root");
+        TreeNode root = new TreeNode("root", () -> "root");
         for (int i = 0; i < count; i++) {
-            root.addChild(new TreeNode("n"+i, "id"+i));
+        	int k = i;
+            root.addChild(new TreeNode("id"+i, () -> "n" + k));
         }
         root.applyExpansionLevel(1);
         return root;

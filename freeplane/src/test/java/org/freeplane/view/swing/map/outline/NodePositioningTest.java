@@ -1,18 +1,18 @@
 package org.freeplane.view.swing.map.outline;
 
-import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.awt.Rectangle;
+
 import javax.swing.JButton;
+
+import org.junit.Test;
 
 public class NodePositioningTest {
 
     @Test
     public void calculateTextButtonXIsMonotonic() {
         OutlineGeometry geometry = new OutlineGeometry(new JButton("▶"));
-        VisibleOutlineState vs = new VisibleOutlineState(new TreeNode("root","r"));
-        NodePositioning pos = new NodePositioning(geometry, vs);
 
         int x0 = geometry.calculateNodeButtonX(0);
         int x1 = geometry.calculateNodeButtonX(1);
@@ -25,7 +25,7 @@ public class NodePositioningTest {
     @Test
     public void calculateFirstVisibleNodeIndexRespectsBreadcrumbHeight() {
         OutlineGeometry geometry = new OutlineGeometry(new JButton("▶"));
-        VisibleOutlineState vs = new VisibleOutlineState(new TreeNode("root","r"));
+        VisibleOutlineState vs = new VisibleOutlineState(new TreeNode("r", () -> "root"));
         NodePositioning pos = new NodePositioning(geometry, vs);
 
         Rectangle viewRect = new Rectangle(0, 0, 400, geometry.rowHeight * 10);

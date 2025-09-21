@@ -12,9 +12,9 @@ public class BreadcrumbPathTest {
     @Test
     public void computesBreadcrumbFromFirstFullyVisibleNode() {
         // Tree: root -> a -> b
-        TreeNode root = new TreeNode("root", "r");
-        TreeNode a = new TreeNode("a", "a");
-        TreeNode b = new TreeNode("b", "b");
+        TreeNode root = new TreeNode("r", () -> "root");
+        TreeNode a = new TreeNode("a", () -> "a");
+        TreeNode b = new TreeNode("b", () -> "b");
         root.addChild(a);
         a.addChild(b);
         root.applyExpansionLevel(2);

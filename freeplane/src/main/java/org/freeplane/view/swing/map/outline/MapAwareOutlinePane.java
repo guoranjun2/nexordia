@@ -33,7 +33,7 @@ import org.freeplane.view.swing.map.MapView;
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
 	private static final long serialVersionUID = 1L;
 	private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
-	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode(TextUtils.getText("no_open_map"), "empty");
+	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
 

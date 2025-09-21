@@ -2,24 +2,27 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 
 class TreeNode {
+    private final Supplier<String> titleSupplier;
     private String title;
+
     private final String id;
     private final List<TreeNode> children = new ArrayList<>();
     private int expansionLevel = -1;
     private TreeNode parent = null;
     private int level = 0;
 
-    TreeNode(String title, String id) {
-        this.setTitle(title);
-        this.id = id;
+    TreeNode(String id, Supplier<String> titleSupplier) {
+    	this.id = id;
+        this.titleSupplier = titleSupplier;
     }
 
-    void setTitle(String newTitle) {
-        this.title = newTitle;
+    void updateTitle() {
+        this.title = null;
     }
 
     void addChild(TreeNode child) {
@@ -109,6 +112,8 @@ class TreeNode {
     }
 
 	String getTitle() {
+		if(title == null)
+			title = titleSupplier.get();
 		return title;
 	}
 
