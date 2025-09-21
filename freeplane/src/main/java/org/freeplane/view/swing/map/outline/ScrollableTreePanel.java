@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -21,7 +20,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	private  final NavigationButtons navButtons;
 	private final SelectionCircleIcon selectionIcon;
     private final BreadcrumbPanel breadcrumbPanel;
-    final OutlineGeometry geometry;
     private final ExpansionControls expansionControls;
     private NodePositioning nodePositioning;
     private  final BreadcrumbPath breadcrumbPath;
@@ -56,14 +54,12 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.breadcrumbPanel = breadcrumbPanel;
         this.outlineSelection = new OutlineSelection(root);
         this.visibleState = new VisibleOutlineState(root);
-
-        this.geometry = new OutlineGeometry(new JButton("▶"));
         this.expansionControls = new ExpansionControls(this, outlineSelection);
-        this.nodePositioning = new NodePositioning(geometry, visibleState);
-        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
-        this.navButtons = new NavigationButtons(geometry, expansionControls);
-        this.selectionIcon = new SelectionCircleIcon(Color.BLUE, geometry.iconDiameter);
-        this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, geometry, nodePositioning, blockSize);
+        this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleState);
+        this.breadcrumbPath = new BreadcrumbPath(root, OutlineGeometry.getInstance(), visibleState, null);
+        this.navButtons = new NavigationButtons(OutlineGeometry.getInstance(), expansionControls);
+        this.selectionIcon = new SelectionCircleIcon(Color.BLUE, OutlineGeometry.getInstance().iconDiameter);
+        this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, OutlineGeometry.getInstance(), nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
 
 
@@ -95,7 +91,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
     void setScrollPane(JScrollPane scroll) {
-        this.viewport = new OutlineViewport(scroll, geometry, visibleState, nodePositioning);
+        this.viewport = new OutlineViewport(scroll, visibleState, nodePositioning);
         this.breadcrumbPath.setViewport(viewport);
         resetBlockCache();
     }
@@ -252,11 +248,11 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     int getRowHeight() {
-        return geometry.rowHeight;
+        return OutlineGeometry.getInstance().rowHeight;
     }
 
     int calcTextButtonX(int level) {
-        return geometry.calculateNodeButtonX(level);
+        return OutlineGeometry.getInstance().calculateNodeButtonX(level);
     }
 
     int getViewportWidth() {
@@ -312,8 +308,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                     btn.setText(node.getTitle());
                     int level = calculateNodeLevel(node);
                     if (level >= 0) {
-                        int x = geometry.calculateNodeButtonX(level);
-                        btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
+                        int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);
+                        btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
                         int rightEdge = btn.getX() + btn.getWidth();
                         blockLayout.recordButtonRightEdge(rightEdge);
                     }
@@ -334,8 +330,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                         btn.setText(node.getTitle());
                         int level = calculateNodeLevel(node);
                         if (level >= 0) {
-                            int x = geometry.calculateNodeButtonX(level);
-                            btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, geometry.rowHeight);
+                            int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);
+                            btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
                             int rightEdge = btn.getX() + btn.getWidth();
                             blockLayout.recordButtonRightEdge(rightEdge);
                         }
@@ -614,15 +610,15 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (viewport != null) {
             int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
             int viewportHeight = viewport.getViewportHeight() - breadcrumbAreaHeight;
-            return Math.max(1, viewportHeight / geometry.rowHeight - 1);
+            return Math.max(1, viewportHeight / OutlineGeometry.getInstance().rowHeight - 1);
         }
         return 10;
     }
 
     private int getContentRowsForBreadcrumbRows(int breadcrumbRowCount) {
         if (viewport != null) {
-            int viewportHeight = viewport.getViewportHeight() - breadcrumbRowCount * geometry.rowHeight;
-            return Math.max(1, viewportHeight / geometry.rowHeight - 1);
+            int viewportHeight = viewport.getViewportHeight() - breadcrumbRowCount * OutlineGeometry.getInstance().rowHeight;
+            return Math.max(1, viewportHeight / OutlineGeometry.getInstance().rowHeight - 1);
         }
         return 10;
     }

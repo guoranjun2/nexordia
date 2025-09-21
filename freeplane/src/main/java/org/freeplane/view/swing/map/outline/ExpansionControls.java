@@ -2,6 +2,8 @@ package org.freeplane.view.swing.map.outline;
 
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.resources.ResourceController;
+
 class ExpansionControls {
     private final ScrollableTreePanel treePanel;
 	private final OutlineSelection outlineSelection;
@@ -30,7 +32,8 @@ class ExpansionControls {
 
     void reduceNodeExpansion(TreeNode node) {
         int currentLevel = node.getMaxExpansionLevel();
-        if (currentLevel > 0 && (currentLevel != 1 || node.getLevel() != 0)) {
+		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+        if (currentLevel > minimalLevel - node.getLevel()) {
             node.applyExpansionLevel(currentLevel - 1);
             selectParentIfNeeded();
             refreshAfterExpansionChange();

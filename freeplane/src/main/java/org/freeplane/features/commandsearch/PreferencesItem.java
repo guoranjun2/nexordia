@@ -75,8 +75,12 @@ public class PreferencesItem extends SearchItem {
 
     @Override
     void execute(InputEvent event) {
-        new ShowPreferenceItemAction(this).actionPerformed(null);
+        openPreferences();
     }
+
+	public void openPreferences() {
+		new ShowPreferenceItemAction(this).actionPerformed(null);
+	}
 
     @Override
     void assignNewAccelerator() {

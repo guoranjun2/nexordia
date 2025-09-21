@@ -162,6 +162,13 @@
 				<length defaultUnit = "px" name="outline_hgap" min="0" max = "1000" step = "0.1" />
 				<boolean name="outline_view_fits_window_width"/>
 			</separator>
+			<separator name="outline_panel">
+				<number name="outlineItemFontSize" min="3" />
+				<number name="initiallyExpandedOutlineLevel" min="1" />
+				<number name="minimalFoldableOutlineLevel" min="1" />
+				<boolean name="showOutlineFoldingButtons" />
+				<length defaultUnit = "mm" name="outlineItemIndentation" min="0" max = "1000" step = "0.1" />
+			</separator>
 			<separator name="icon_properties">
 				<boolean name="structured_icon_toolbar" />
 				<boolean name="add_emojis_to_menu" />

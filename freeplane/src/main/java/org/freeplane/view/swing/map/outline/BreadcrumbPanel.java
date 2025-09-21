@@ -59,7 +59,7 @@ class BreadcrumbPanel extends JPanel {
             int actionX = controller.calcTextButtonX(level);
 
             NodeButton breadcrumbButton = new NodeButton(node);
-            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 8f));
+            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(OutlineGeometry.itemFontSize()));
             breadcrumbButton.setText(node.getTitle());
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
 

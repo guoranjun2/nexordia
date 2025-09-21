@@ -7,13 +7,11 @@ import javax.swing.JScrollPane;
 
 class OutlineViewport {
     private final JScrollPane scrollPane;
-    private final OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
     private final NodePositioning nodePositioning;
 
-    OutlineViewport(JScrollPane scrollPane, OutlineGeometry geometry, VisibleOutlineState visibleState, NodePositioning nodePositioning) {
+    OutlineViewport(JScrollPane scrollPane, VisibleOutlineState visibleState, NodePositioning nodePositioning) {
         this.scrollPane = scrollPane;
-        this.geometry = geometry;
         this.visibleState = visibleState;
         this.nodePositioning = nodePositioning;
     }
@@ -47,7 +45,7 @@ class OutlineViewport {
 
     OutlineVisibleBlockRange calculateVisibleBlockRange(int blockSize) {
         Rectangle viewRect = getViewRect();
-        int blockHeight = blockSize * geometry.rowHeight;
+        int blockHeight = blockSize * OutlineGeometry.getInstance().rowHeight;
         int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
 
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();

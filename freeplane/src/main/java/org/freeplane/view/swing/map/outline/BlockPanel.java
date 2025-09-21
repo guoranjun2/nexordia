@@ -44,11 +44,11 @@ class BlockPanel extends JPanel {
     private void createActionButton(TreeNode node, int y, int rowHeight, ScrollableTreePanel parentPanel) {
         String buttonText = node.getTitle();
         NodeButton button = new NodeButton(node);
-        button.setFont(button.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 8f));
+        button.setFont(button.getFont().deriveFont(OutlineGeometry.itemFontSize()));
         button.setText(buttonText);
 
         int computedLevel = node.getLevel();
-        int actionX = parentPanel.geometry.calculateNodeButtonX(computedLevel);
+        int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(computedLevel);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 

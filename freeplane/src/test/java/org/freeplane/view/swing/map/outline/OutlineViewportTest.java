@@ -20,8 +20,7 @@ public class OutlineViewportTest {
 
     @Test
     public void calculatesVisibleBlockRangeWithBreadcrumbOffset() {
-        JButton sample = new JButton("▶");
-        OutlineGeometry geometry = new OutlineGeometry(sample);
+        OutlineGeometry geometry = OutlineGeometry.getInstance();
         TreeNode root = createLinearTree(25);
 
         VisibleOutlineState vs = new VisibleOutlineState(root);
@@ -36,7 +35,7 @@ public class OutlineViewportTest {
         viewport.setExtentSize(new Dimension(600, geometry.rowHeight * 5));
         viewport.setViewPosition(new Point(0, geometry.rowHeight * 0));
 
-        OutlineViewport ov = new OutlineViewport(scroll, geometry, vs, pos);
+        OutlineViewport ov = new OutlineViewport(scroll, vs, pos);
         int blockSize = 10;
 
         OutlineVisibleBlockRange r0 = ov.calculateVisibleBlockRange(blockSize);

@@ -19,7 +19,7 @@ public class BreadcrumbPathTest {
         a.addChild(b);
         root.applyExpansionLevel(2);
 
-        OutlineGeometry geometry = new OutlineGeometry(new JButton("▶"));
+        final OutlineGeometry geometry = OutlineGeometry.getInstance();
         VisibleOutlineState visibleState = new VisibleOutlineState(root);
         NodePositioning positioning = new NodePositioning(geometry, visibleState);
 
@@ -33,7 +33,7 @@ public class BreadcrumbPathTest {
         // Make node index 2 (b) the first fully visible by scrolling to its y
         jv.setViewPosition(new Point(0, geometry.rowHeight * 2));
 
-        OutlineViewport ov = new OutlineViewport(scroll, geometry, visibleState, positioning);
+        OutlineViewport ov = new OutlineViewport(scroll, visibleState, positioning);
         BreadcrumbPath uut = new BreadcrumbPath(root, geometry, visibleState, ov);
 
         BreadcrumbState state = uut.calculateBreadcrumbState();

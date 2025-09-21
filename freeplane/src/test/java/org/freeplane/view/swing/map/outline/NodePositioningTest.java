@@ -4,15 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.awt.Rectangle;
 
-import javax.swing.JButton;
-
 import org.junit.Test;
 
 public class NodePositioningTest {
 
     @Test
     public void calculateTextButtonXIsMonotonic() {
-        OutlineGeometry geometry = new OutlineGeometry(new JButton("▶"));
+        OutlineGeometry geometry = OutlineGeometry.getInstance();
 
         int x0 = geometry.calculateNodeButtonX(0);
         int x1 = geometry.calculateNodeButtonX(1);
@@ -24,7 +22,7 @@ public class NodePositioningTest {
 
     @Test
     public void calculateFirstVisibleNodeIndexRespectsBreadcrumbHeight() {
-        OutlineGeometry geometry = new OutlineGeometry(new JButton("▶"));
+        OutlineGeometry geometry = OutlineGeometry.getInstance();
         VisibleOutlineState vs = new VisibleOutlineState(new TreeNode("r", () -> "root"));
         NodePositioning pos = new NodePositioning(geometry, vs);
 

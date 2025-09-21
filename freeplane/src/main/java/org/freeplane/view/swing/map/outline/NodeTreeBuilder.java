@@ -27,9 +27,6 @@ class NodeTreeBuilder {
     }
 
     NodeTreeBuilder build() {
-        if (mapView == null || mapView.getMap() == null) {
-            return this;
-        }
         initializeRootModel();
         if (rootModel == null) {
             return this;
@@ -50,10 +47,6 @@ class NodeTreeBuilder {
 
         visitChildren(rootModel, outRoot);
 
-        if (this.root != null && (this.applicableState == null || root.getExpansionLevel() < 1)) {
-            this.root.applyExpansionLevel(1);
-        }
-
         return this;
     }
 
@@ -72,11 +65,7 @@ class NodeTreeBuilder {
             rootModel = overrideRootModel;
             return;
         }
-        if (mapView != null && mapView.getRoot() != null && mapView.getRoot().getNode() != null) {
-            rootModel = mapView.getRoot().getNode();
-        } else {
-            rootModel = null;
-        }
+        rootModel = mapView.getRoot().getNode();
     }
 
     private void initializeFilter() {

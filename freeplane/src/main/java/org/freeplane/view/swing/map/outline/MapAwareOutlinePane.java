@@ -13,6 +13,7 @@ import javax.swing.Icon;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
@@ -202,39 +203,40 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
                         () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
                 MapModel mapModel = mapView.getMap();
-                if (mapModel != null && mapModel.getRootNode() != null) {
-                    builder.withRootModel(mapModel.getRootNode());
-                }
+                builder.withRootModel(mapModel.getRootNode());
                 if (bookmarkFilter != null) {
                     builder.withFilter(bookmarkFilter);
                 }
             }
             builder.build();
+			final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
 
-            if (builder.getRoot() != null) {
-                currentRoot = builder.getRoot();
-                setRootNode(currentRoot);
-                ScrollableTreePanel panel = getTreePanel();
-                if (panel != null) {
-                    panel.setSelectionBridge(new OutlineSelectionBridge(this));
-                }
-                try {
-                    addMapChangeListeners();
-                } catch (Exception ignore) {}
-                if (builder.getApplicableState() != null) {
-                    panel = getTreePanel();
-                    if (panel != null) {
-                        builder.getApplicableState().applyTo(panel.getRoot());
-                        panel.updateVisibleNodes();
-                    }
-                }
 
-                try {
-                    synchronizeOutlineSelection(false);
-                } catch (Exception ignore) {}
-            } else {
-                showNoMapState();
+    		currentRoot = builder.getRoot();
+    		if (builder.getApplicableState() == null || currentRoot.getExpansionLevel() < minimalLevel) {
+    			final int initialLevel = ResourceController.getResourceController().getIntProperty("initiallyExpandedOutlineLevel", 1);
+                currentRoot.applyExpansionLevel(Math.max(initialLevel, minimalLevel));
             }
+    		setRootNode(currentRoot);
+    		ScrollableTreePanel panel = getTreePanel();
+    		if (panel != null) {
+    			panel.setSelectionBridge(new OutlineSelectionBridge(this));
+    		}
+    		try {
+    			addMapChangeListeners();
+    		} catch (Exception ignore) {}
+    		if (builder.getApplicableState() != null) {
+    			panel = getTreePanel();
+    			if (panel != null) {
+    				builder.getApplicableState().applyTo(panel.getRoot());
+    				panel.updateVisibleNodes();
+    			}
+    		}
+
+    		try {
+    			synchronizeOutlineSelection(false);
+    		} catch (Exception ignore) {}
+
         } catch (Exception e) {
             System.err.println("Failed to update tree from map: " + e.getMessage());
             e.printStackTrace();

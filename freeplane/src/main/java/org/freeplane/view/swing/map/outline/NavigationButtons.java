@@ -7,6 +7,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
 
 import java.awt.Point;
@@ -51,7 +52,7 @@ class NavigationButtons {
 
     private void configureNavButton(JButton button, ActionListener actionListener) {
         button.setMargin(new Insets(0, 0, 0, 0));
-        button.setFont(button.getFont().deriveFont(UITools.FONT_SCALE_FACTOR * 10f));
+        button.setFont(button.getFont().deriveFont(OutlineGeometry.buttonFontSize()));
         button.setFocusable(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setVisible(false);
@@ -73,14 +74,16 @@ class NavigationButtons {
         currentParent = targetPanel;
 
 
-        Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
-        if (position == null) return;
+        final boolean showFoldingButtons = ResourceController.getResourceController().getBooleanProperty("showOutlineFoldingButtons", true);
+        if(showFoldingButtons) {
+        	Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
+        	if (position == null) return;
 
-        int baseX = position.x;
-        int y = position.y;
-        int level = nodePositioning.calculateNodeLevel(node);
-
-        showButtons(baseX, y, level);
+        	int baseX = position.x;
+        	int y = position.y;
+        	int level = nodePositioning.calculateNodeLevel(node);
+        	showButtons(baseX, y, level);
+        }
     }
 
     private void detachFromCurrentParent() {
@@ -102,7 +105,8 @@ class NavigationButtons {
     }
 
     private void showButtons(int baseX, int y, int level) {
-        if (level > 0) {
+		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+        if (level >= minimalLevel) {
         	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
         	toggleButton.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
         	toggleButton.setVisible(true);

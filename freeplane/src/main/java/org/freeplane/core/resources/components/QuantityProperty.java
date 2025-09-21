@@ -54,7 +54,7 @@ public class QuantityProperty<U extends Enum<U> & PhysicalUnit> extends Property
 		numberSpinner = new JSpinner(new SpinnerNumberModel(min, min, max, step));
 		((NumberEditor)numberSpinner.getEditor()).getTextField().setColumns(3);
 		TranslatedObject[] units = TranslatedObject.fromEnum(defaultUnit.getDeclaringClass());
-		JComboBox<TranslatedObject> c = new JComboBox<TranslatedObject>(units) {
+		unitBox = new JComboBox<TranslatedObject>(units) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -62,8 +62,11 @@ public class QuantityProperty<U extends Enum<U> & PhysicalUnit> extends Property
 				return super.getPreferredSize();
 			}
 		};
-		c.setMaximumRowCount(JComboBoxFactory.MAXIMUM_ROW_COUNT);
-		unitBox = c;
+		final Dimension preferredSize = unitBox.getPreferredSize();
+		final Dimension updatedPreferredSize = new Dimension(preferredSize);
+		updatedPreferredSize.width += 4;
+		unitBox.setPreferredSize(updatedPreferredSize);
+		unitBox.setMaximumRowCount(JComboBoxFactory.MAXIMUM_ROW_COUNT);
 		addChangeListeners();
 	}
 
