@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 class TreeNode {
-    private final Supplier<String> titleSupplier;
+    private Supplier<String> titleSupplier;
     private String title;
 
     private final String id;
@@ -21,7 +21,15 @@ class TreeNode {
         this.titleSupplier = titleSupplier;
     }
 
-    void updateTitle() {
+
+
+    protected void setTitleSupplier(Supplier<String> titleSupplier) {
+		this.titleSupplier = titleSupplier;
+	}
+
+
+
+	void updateTitle() {
         this.title = null;
     }
 
