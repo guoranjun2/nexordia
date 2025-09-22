@@ -20,22 +20,29 @@
 package org.freeplane.core.resources.components;
 
 import java.awt.Component;
+import java.awt.Container;
+import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JViewport;
+import javax.swing.SwingUtilities;
 
 import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.util.TextUtils;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class SeparatorProperty implements IPropertyControl {
+public class SeparatorProperty implements HighlightablePropertyControl {
 	private static final AffineTransform FONT_TRANSFORM = AffineTransform.getScaleInstance(1.5, 1.5);
     private final String label;
+	private final String name;
+	private JComponent separator;
+	private JLabel labelComponent;
 
-	public SeparatorProperty(final String label) {
-		super();
+	public SeparatorProperty(final String name, final String label) {
+		this.name = name;
 		this.label = label;
 	}
 
@@ -50,7 +57,7 @@ public class SeparatorProperty implements IPropertyControl {
 
 	@Override
 	public String getName() {
-		return null;
+		return name;
 	}
 
 	@Override
@@ -59,12 +66,13 @@ public class SeparatorProperty implements IPropertyControl {
 		final String text = TextUtils.getOptionalText(labelKey);
 		if (builder.getColumn() > 1)
 			builder.nextLine();
-		final JComponent separator = builder.appendSeparator(text);
+		separator = builder.appendSeparator(text);
 		if(text != null) {
 			for (Component child : separator.getComponents()) {
 				if(child instanceof JLabel) {
-                    TranslatedElement.TEXT.setKey((JComponent) child, labelKey);
-                    child.setFont(child.getFont().deriveFont(FONT_TRANSFORM));
+					this.labelComponent = (JLabel) child;
+                    TranslatedElement.TEXT.setKey(labelComponent, labelKey);
+                    labelComponent.setFont(labelComponent.getFont().deriveFont(FONT_TRANSFORM));
                 }
 				break;
 			}
@@ -74,4 +82,20 @@ public class SeparatorProperty implements IPropertyControl {
 	@Override
 	public void setEnabled(final boolean pEnabled) {
 	}
+
+	public void scrollRectToVisible() {
+		final Container viewport = SwingUtilities.getAncestorOfClass(JViewport.class, separator);
+		if(viewport != null) {
+			Rectangle bounds = new Rectangle(separator.getWidth(), viewport.getHeight());
+			separator.scrollRectToVisible(bounds);
+		}
+	}
+
+	@Override
+	public void highlight() {
+		if(labelComponent != null)
+			PropertyAdapter.highlight(labelComponent);
+		scrollRectToVisible();
+	}
+
 }

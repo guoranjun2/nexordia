@@ -18,11 +18,8 @@
 package org.freeplane.core.resources.components;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.Rectangle;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,26 +40,21 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.Vector;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
-import org.freeplane.api.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.JViewport;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.plaf.basic.BasicLabelUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
 
 import org.apache.commons.lang.StringUtils;
 import org.dpolivaev.mnemonicsetter.MnemonicSetter;
+import org.freeplane.api.swing.JFileChooser;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.resources.components.IValidator.ValidationResult;
 import org.freeplane.core.ui.FileOpener;
@@ -84,7 +76,6 @@ class OptionPanel {
 	}
 
 	static final String PREFERENCE_STORAGE_PROPERTY = "OptionPanel_Window_Properties";
-	private static JTextField selectionColorCheckingTextFieldComponent;
 
 	private Vector<IPropertyControl> controls;
 	final private IOptionPanelFeedback feedback;
@@ -247,44 +238,15 @@ class OptionPanel {
 	{
 		for (IPropertyControl control: this.controls)
 		{
-			if (control instanceof PropertyAdapter)
+			if (selectedProperty.equals(control.getName()))
 			{
-				final PropertyAdapter property = (PropertyAdapter) control;
-				if (property.getName().equals(selectedProperty))
+				if (control instanceof HighlightablePropertyControl)
 				{
-					JLabel label = property.getLabelComponent();
-					highlight(label);
-					final JViewport viewPort = (JViewport) label.getParent().getParent();
-					Rectangle bounds = label.getBounds();
-					// make sure the whole label is visible!
-					bounds.setBounds(bounds.getLocation().x, bounds.getLocation().y, bounds.getSize().width, bounds.getSize().height * 3);
-					viewPort.scrollRectToVisible(bounds);
-					property.getValueComponent().requestFocusInWindow();
+					final HighlightablePropertyControl property = (HighlightablePropertyControl) control;
+					property.highlight();
 				}
 			}
 		}
-	}
-
-	private void highlight(JLabel label) {
-		if(selectionColorCheckingTextFieldComponent == null)
-			selectionColorCheckingTextFieldComponent = new JTextField();
-		Color selectionColor = selectionColorCheckingTextFieldComponent.getSelectionColor();
-		Color selectedTextColor = selectionColorCheckingTextFieldComponent.getSelectedTextColor();
-		if(selectionColor == null || selectedTextColor == null) {
-			selectionColor = label.getForeground();
-			selectedTextColor = label.getBackground();
-		}
-		if(selectionColor == null || selectedTextColor == null) {
-			selectionColor = Color.BLUE;
-			selectedTextColor = Color.WHITE;
-		}
-		Font font = label.getFont();
-		label.setUI(new BasicLabelUI());
-		label.setOpaque(true);
-		label.setFont(font);
-		label.setForeground(selectedTextColor);
-		label.setBackground(selectionColor);
-		label.setBorder(BorderFactory.createLineBorder(selectionColor, 3, true));
 	}
 
 	private void saveOptionsToFile() {
