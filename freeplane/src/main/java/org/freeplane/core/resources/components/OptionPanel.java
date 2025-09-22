@@ -149,10 +149,18 @@ class OptionPanel {
 				propertyPane.border(Borders.DIALOG);
 				final JScrollPane bottomComponent = new JScrollPane(propertyPane);
 				UITools.setScrollbarIncrement(bottomComponent);
-				final String tabName = TextUtils.getOptionalText(newTab.getLabel());
-				tabStringToIndexMap.put(tabName, tabIndex);
-				tabIndexToStringMap.put(tabIndex, tabName);
-				tabbedPane.addTab(tabName, bottomComponent);
+				final String tabId = newTab.getName();
+				if(tabId == null) {
+					continue;
+				}
+				final String tabLabel = TextUtils.getOptionalText(newTab.getLabel());
+				if(selectedPanel != null && selectedPanel.equals(tabLabel)) {
+					selectedPanel = tabId;
+				}
+				tabStringToIndexMap.put(tabId, tabIndex);
+				tabIndexToStringMap.put(tabIndex, tabId);
+				final String displayedLabel = tabLabel != null ? tabLabel : newTab.getLabel();
+				tabbedPane.addTab(displayedLabel, bottomComponent);
 				tabIndex++;
 			}
 			else {

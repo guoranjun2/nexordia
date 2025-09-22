@@ -49,7 +49,7 @@ class ShowPreferenceItemAction extends AbstractAction {
 		ShowPreferencesAction showPreferencesAction = MModeController.createShowPreferencesAction(optionPanelBuilder, true, this.preferencesItem.getPropertyName());
         int uniqueId = new Long(System.currentTimeMillis()).intValue();
         showPreferencesAction.actionPerformed(
-                new ActionEvent(this, uniqueId, OptionPanelConstants.OPTION_PANEL_RESOURCE_PREFIX + preferencesItem.getTab()));
+                new ActionEvent(this, uniqueId, OptionPanelConstants.OPTION_PANEL_RESOURCE_PREFIX + preferencesItem.getTabIdentifier()));
     }
 
 }

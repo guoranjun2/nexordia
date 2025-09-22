@@ -33,18 +33,21 @@ public class PreferencesItem extends SearchItem {
     private static final ImageIcon SELECTED_OPTION_ICON = FreeplaneIconFactory.toImageIcon(ResourceController.getResourceController().getIcon("SelectedOption.icon"));
     private static final String PREFERENCES_PATH =  TextUtils.getText(ShowPreferencesAction.KEY + ".text") + ITEM_PATH_SEPARATOR;
 
-    private final String tab;
+    private final String tabIdentifier;
+    private final String tabLabel;
     private final String propertyName;
     private final String displayedText;
     private final String searchedText;
     private final String tooltip;
 
-    PreferencesItem(final String tab, final String propertyName, final String path, final String tooltip)
+    PreferencesItem(final String tabIdentifier, final String tabLabel, final String propertyName, final String path, final String tooltip)
     {
-        this.tab = tab;
+        this.tabIdentifier = tabIdentifier;
+        this.tabLabel = tabLabel != null ? tabLabel : tabIdentifier;
         this.propertyName = propertyName;
-        this.displayedText =  tab + ITEM_PATH_SEPARATOR + path;
-        this.searchedText = normalizeText(path);
+        final String safePath = path != null ? path : "";
+        this.displayedText =  this.tabLabel + ITEM_PATH_SEPARATOR + safePath;
+        this.searchedText = normalizeText(safePath);
         this.tooltip = tooltip;
     }
 
@@ -72,7 +75,7 @@ public class PreferencesItem extends SearchItem {
     public String getTooltip() {
         return tooltip;
     }
-
+    
     @Override
     void execute(InputEvent event) {
         openPreferences();
@@ -102,7 +105,11 @@ public class PreferencesItem extends SearchItem {
     }
 
 	String getTab() {
-		return tab;
+		return tabLabel;
+	}
+
+	String getTabIdentifier() {
+		return tabIdentifier != null ? tabIdentifier : tabLabel;
 	}
 
 	String getPropertyName() {
