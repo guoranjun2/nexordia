@@ -14,19 +14,26 @@ class ExpansionControls {
     }
 
     void expandNode(TreeNode node) {
-        node.applyExpansionLevel(1);
-        refreshAfterExpansionChange();
+    	if(! node.isExpanded()) {
+    		node.applyExpansionLevel(1);
+    		refreshAfterExpansionChange();
+    	}
     }
 
     void collapseNode(TreeNode node) {
-        node.applyExpansionLevel(0);
-        selectParentIfNeeded();
-        refreshAfterExpansionChange();
+    	if(node.isExpanded()) {
+    		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+    		if (node.getLevel() >= minimalLevel) {
+    			node.applyExpansionLevel(0);
+    			selectParentIfNeeded();
+    			refreshAfterExpansionChange();
+    		}
+    	}
     }
 
     void expandNodeMore(TreeNode node) {
-        int currentLevel = node.getMaxExpansionLevel();
-        node.applyExpansionLevel(currentLevel + 1);
+    	int currentLevel = node.getMaxExpansionLevel();
+    	node.applyExpansionLevel(currentLevel + 1);
         refreshAfterExpansionChange();
     }
 
