@@ -51,7 +51,7 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
  *  - dir [true|false]: if the configured path is a directory
  *  - suffixes: a comma-separated string containing allowed suffixes (without the dot)
  */
-public class PathProperty extends PropertyBean implements IPropertyControl {
+public class PathProperty extends PropertyBean {
 	private class SelectFileAction implements ActionListener {
 		public void actionPerformed(final ActionEvent e) {
 			final Object source = e.getSource();

@@ -32,7 +32,7 @@ import org.freeplane.core.ui.svgicons.FixSizeIconWrapper;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class ButtonPanelProperty extends PropertyBean implements IPropertyControl {
+public class ButtonPanelProperty extends PropertyBean {
 
     protected final JButton startButton;
     protected final ButtonSelectorPanel buttons;

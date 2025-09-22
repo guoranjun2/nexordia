@@ -27,7 +27,7 @@ import org.freeplane.core.ui.components.UITools;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class TextBoxProperty extends PropertyBean implements IPropertyControl {
+public class TextBoxProperty extends PropertyBean {
 	final JTextArea mTextArea;
 
 	/**

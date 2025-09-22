@@ -45,7 +45,7 @@ import org.freeplane.features.styles.mindmapmode.styleeditorpanel.IconFont;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class ColorProperty extends PropertyBean implements IPropertyControl {
+public class ColorProperty extends PropertyBean {
 	private static final Color TRANSPARENT_COLOR = new Color(0, 0, 0, 0);
 	Color color;
 	final private Color defaultColor;

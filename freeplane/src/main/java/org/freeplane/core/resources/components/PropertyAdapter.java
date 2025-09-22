@@ -31,7 +31,7 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
  * @author Dimitry Polivaev
  * 26.12.2008
  */
-abstract public class PropertyAdapter {
+abstract public class PropertyAdapter implements IPropertyControl {
 	private String tooltip;
 	private String label;
 

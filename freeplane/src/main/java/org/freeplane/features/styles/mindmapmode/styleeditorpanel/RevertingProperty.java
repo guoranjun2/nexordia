@@ -36,7 +36,7 @@ import org.freeplane.core.util.TextUtils;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-class RevertingProperty extends PropertyBean implements IPropertyControl {
+class RevertingProperty extends PropertyBean {
 
     static final String NAME = "revert";
     private static final int PADDING = (int) (UITools.FONT_SCALE_FACTOR * 2);

@@ -33,7 +33,7 @@ import org.freeplane.core.ui.components.JComboBoxFactory;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public abstract class EditableComboProperty<T> extends PropertyBean implements IPropertyControl {
+public abstract class EditableComboProperty<T> extends PropertyBean {
 	private final JComboBox mComboBox;
 	private T selected;
 

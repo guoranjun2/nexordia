@@ -35,7 +35,7 @@ import org.freeplane.features.icon.MindIcon;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class IconProperty extends PropertyBean implements IPropertyControl, ActionListener {
+public class IconProperty extends PropertyBean implements ActionListener {
 	private MindIcon mActualIcon;
 	private final JButton mButton;
 	/**

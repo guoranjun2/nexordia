@@ -41,7 +41,7 @@ import org.freeplane.core.ui.components.JComboBoxFactory;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class QuantityProperty<U extends Enum<U> & PhysicalUnit> extends PropertyBean implements IPropertyControl {
+public class QuantityProperty<U extends Enum<U> & PhysicalUnit> extends PropertyBean {
 	final private JSpinner numberSpinner;
 	@SuppressWarnings("rawtypes")
 	final private JComboBox unitBox;

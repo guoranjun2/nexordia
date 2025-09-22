@@ -29,7 +29,7 @@ import javax.swing.event.ChangeListener;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class NumberProperty extends PropertyBean implements IPropertyControl {
+public class NumberProperty extends PropertyBean {
 //	final private int max;
 //	final private int min;
 //	final private int step;
