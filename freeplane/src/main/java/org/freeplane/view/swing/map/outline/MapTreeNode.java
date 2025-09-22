@@ -25,7 +25,6 @@ class MapTreeNode extends TreeNode implements INodeView {
 
     private final NodeModel nodeModel;
     private final OutlinePane outlinePane;
-    private Icon icon;
 	private final NodeStyleController styleController;
 	private final Color mapBackground;
 
@@ -60,13 +59,6 @@ class MapTreeNode extends TreeNode implements INodeView {
     		});
     	}
     }
-
-	@Override
-	void update() {
-        this.icon = null;
-        super.update();
-    }
-
 
     @Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
@@ -165,14 +157,6 @@ class MapTreeNode extends TreeNode implements INodeView {
     }
 
 	public Icon getIcon(JComponent component) {
-		if(icon ==  null)
-			icon =createIcon(component);
-		return icon;
-	}
-
-
-
-	private Icon createIcon(JComponent component) {
 		Color color = styleController.getColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
 		Color backgroundColor = styleController.getBackgroundColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
         if (backgroundColor != null) {
