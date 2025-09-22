@@ -6,10 +6,12 @@ import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JPopupMenu;
-import javax.swing.JMenuItem;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import javax.swing.KeyStroke;
 import java.awt.event.ActionEvent;
+
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.mode.mindmapmode.MModeController;
 
 class OutlineActions {
     private final OutlineActionTargetProvider provider;
@@ -43,6 +45,13 @@ class OutlineActions {
     };
     final Action selectInMap = new AbstractAction("Select in Map") {
         @Override public void actionPerformed(ActionEvent e) { provider.getTarget().selectSelectedInMap(); }
+    };
+    final Action openPreferences = new AbstractAction("Preferences") {
+        @Override public void actionPerformed(ActionEvent e) {
+            final Controller controller = Controller.getCurrentController();
+            final MModeController modeController = (MModeController) controller.getModeController(MModeController.MODENAME);
+            modeController.showPreferences("Appearance", "outline_panel");
+        }
     };
 
     OutlineActions(OutlineActionTargetProvider provider) {
@@ -103,6 +112,8 @@ class OutlineActions {
         menu.add(TranslatedElementFactory.createMenuItem(expandMore, "outline.expand.more"));
         menu.add(TranslatedElementFactory.createMenuItem(reduceExpansion, "outline.reduce.expansion"));
         menu.add(TranslatedElementFactory.createMenuItem(toggleExpand, "outline.toggle.expand"));
+        menu.addSeparator();
+        menu.add(TranslatedElementFactory.createMenuItem(openPreferences, "preferences"));
         return menu;
     }
 }
