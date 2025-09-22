@@ -27,7 +27,11 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
 import org.freeplane.core.resources.ResourceController;
+import java.awt.event.ActionEvent;
+
 import org.freeplane.core.resources.components.OptionPanelBuilder;
+import org.freeplane.core.resources.components.OptionPanelConstants;
+import org.freeplane.core.resources.components.PreferencesDialogLauncher;
 import org.freeplane.core.resources.components.ShowPreferencesAction;
 import org.freeplane.core.ui.IndexedTree;
 import org.freeplane.core.ui.flatlaf.FlatAtomOneDarkContrastIJTheme;
@@ -155,16 +159,23 @@ public class MModeController extends ModeController {
 		getController().addAction(createShowPreferencesAction(optionPanelBuilder, true));
 	}
 
-	public static ShowPreferencesAction createShowPreferencesAction(OptionPanelBuilder optionPanelBuilder, boolean arePropertyValidatorsEnabled)
-	{
-		return createShowPreferencesAction(optionPanelBuilder, arePropertyValidatorsEnabled, null);
+	public static ShowPreferencesAction createShowPreferencesAction(OptionPanelBuilder optionPanelBuilder,
+	        boolean arePropertyValidatorsEnabled) {
+		return new ShowPreferencesAction(optionPanelBuilder.getRoot(), arePropertyValidatorsEnabled);
+    }
+
+	public static void showPreferences(OptionPanelBuilder optionPanelBuilder,
+	        boolean arePropertyValidatorsEnabled, String tabIdentifier, String selectedProperty) {
+		final String actionCommand = tabIdentifier != null ?
+		        OptionPanelConstants.OPTION_PANEL_RESOURCE_PREFIX + tabIdentifier : null;
+		final ActionEvent event = new ActionEvent(optionPanelBuilder, ActionEvent.ACTION_PERFORMED, actionCommand);
+		PreferencesDialogLauncher.open(optionPanelBuilder.getRoot(), selectedProperty,
+		        arePropertyValidatorsEnabled, event);
 	}
 
-	public static ShowPreferencesAction createShowPreferencesAction(OptionPanelBuilder optionPanelBuilder,
-	        boolean arePropertyValidatorsEnabled, String selectedProperty) {
-		return new ShowPreferencesAction(optionPanelBuilder.getRoot(), selectedProperty,
-		        arePropertyValidatorsEnabled);
-    }
+	public void showPreferences(String tabIdentifier, String selectedProperty) {
+		showPreferences(optionPanelBuilder, true, tabIdentifier, selectedProperty);
+	}
 
     private static void addCurrentLookAndFeelIfNecessary(Vector<String> lafNames, Vector<String> translatedLafNames) {
         final String currentLaf = ResourceController.getResourceController().getProperty(LOOKANDFEEL_PROPERTY);

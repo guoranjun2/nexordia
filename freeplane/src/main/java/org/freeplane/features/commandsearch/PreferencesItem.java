@@ -26,6 +26,8 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.resources.components.ShowPreferencesAction;
 import org.freeplane.core.ui.svgicons.FreeplaneIconFactory;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.mode.mindmapmode.MModeController;
 
 public class PreferencesItem extends SearchItem {
 
@@ -75,15 +77,17 @@ public class PreferencesItem extends SearchItem {
     public String getTooltip() {
         return tooltip;
     }
-    
+
     @Override
     void execute(InputEvent event) {
         openPreferences();
     }
 
-	public void openPreferences() {
-		new ShowPreferenceItemAction(this).actionPerformed(null);
-	}
+    public void openPreferences() {
+    	final Controller controller = Controller.getCurrentController();
+    	MModeController modeController = (MModeController) controller.getModeController(MModeController.MODENAME);
+    	modeController.showPreferences(getTabIdentifier(), getPropertyName());
+    }
 
     @Override
     void assignNewAccelerator() {
