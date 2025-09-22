@@ -305,7 +305,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             if (comp instanceof NodeButton) {
                 NodeButton btn = (NodeButton) comp;
                 if (btn.getNode() == node) {
-                    btn.setText(node.getTitle());
+                    btn.updateLabel();
                     int level = calculateNodeLevel(node);
                     if (level >= 0) {
                         int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);
@@ -327,7 +327,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 if (comp instanceof NodeButton) {
                     NodeButton btn = (NodeButton) comp;
                     if (btn.getNode() == node) {
-                        btn.setText(node.getTitle());
+                        btn.updateLabel();
                         int level = calculateNodeLevel(node);
                         if (level >= 0) {
                             int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);

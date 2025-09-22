@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.BasicStroke;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
@@ -17,6 +18,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 
+import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.features.bookmarks.mindmapmode.NodeNavigator;
 import org.freeplane.features.map.NodeModel;
@@ -38,9 +40,12 @@ class NodeButton extends JButton {
     private final TreeNode node;
     private boolean dropFeedbackVisible;
 
-    NodeButton(TreeNode node) {
+    NodeButton(TreeNode node, boolean usesColoredOutlineItems) {
         super();
         this.node = node;
+        final Font font = getFont().deriveFont(OutlineGeometry.itemFontSize());
+        setFont(font);
+        updateLabel(usesColoredOutlineItems);
         installNodePopupMenu();
         installDragAndDrop();
         installClipboardActions();
@@ -205,7 +210,15 @@ class NodeButton extends JButton {
 
     @Override
     protected void paintComponent(Graphics graphics) {
-        super.paintComponent(graphics);
+    	if(getIcon() != null) {
+    		Graphics2D g2 = (Graphics2D)graphics.create();
+            AntiAliasingConfigurator.setAntialiasing(g2);
+            super.paintComponent(g2);
+            g2.dispose();
+
+    	}
+    	else
+    		super.paintComponent(graphics);
         if (!dropFeedbackVisible) {
             return;
         }
@@ -222,4 +235,18 @@ class NodeButton extends JButton {
             graphics2D.dispose();
         }
     }
+
+	void updateLabel() {
+		updateLabel(getIcon() != null);
+	}
+
+	private void updateLabel(boolean usesColoredOutlineItems) {
+		if(usesColoredOutlineItems && node instanceof MapTreeNode) {
+			setIcon(((MapTreeNode)node).getIcon(this));
+		}
+		else {
+			String buttonText = node.getTitle();
+			setText(buttonText);
+		}
+	}
 }

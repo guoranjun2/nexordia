@@ -164,7 +164,8 @@
 			</separator>
 			<separator name="outline_panel">
 				<number name="outlineItemFontSize" min="3" />
-				<length defaultUnit = "mm" name="outlineItemIndentation" min="0" max = "1000" step = "0.1" />
+				<boolean name="useColoredOutlineItems" />
+				<length name="outlineItemIndentation" min="0" max = "1000" step = "0.1" defaultUnit = "mm" />
 				<boolean name="showOutlineFoldingButtons" />
 				<number name="initiallyExpandedOutlineLevel" min="1" />
 				<number name="minimalFoldableOutlineLevel" min="1" />

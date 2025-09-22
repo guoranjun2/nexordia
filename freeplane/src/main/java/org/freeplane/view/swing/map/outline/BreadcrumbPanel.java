@@ -1,6 +1,5 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -15,7 +14,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
-import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.resources.ResourceController;
 
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
@@ -58,9 +57,7 @@ class BreadcrumbPanel extends JPanel {
 
             int actionX = controller.calcTextButtonX(level);
 
-            NodeButton breadcrumbButton = new NodeButton(node);
-            breadcrumbButton.setFont(breadcrumbButton.getFont().deriveFont(OutlineGeometry.itemFontSize()));
-            breadcrumbButton.setText(node.getTitle());
+            NodeButton breadcrumbButton = new NodeButton(node, ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false));
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
 
             final TreeNode nodeToSelect = node;

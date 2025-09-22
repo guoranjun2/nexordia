@@ -1,12 +1,21 @@
 
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Color;
+
+import javax.swing.Icon;
+import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+
+import org.freeplane.core.ui.components.TextIcon;
+import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.map.INodeView;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.nodestyle.NodeStyleController;
+import org.freeplane.features.styles.LogicalStyleController.StyleOption;
 import org.freeplane.features.text.TextController;
-import javax.swing.SwingUtilities;
 
 /**
  * TreeNode that wraps a NodeModel and implements INodeView to receive
@@ -16,15 +25,25 @@ class MapTreeNode extends TreeNode implements INodeView {
 
     private final NodeModel nodeModel;
     private final OutlinePane outlinePane;
+    private Icon icon;
+	private final NodeStyleController styleController;
+	private final Color mapBackground;
 
-    MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane) {
+    MapTreeNode(NodeModel nodeModel, OutlinePane outlinePane, NodeStyleController styleController, Color mapBackground) {
         super(nodeModel.createID(), null);
         this.nodeModel = nodeModel;
         this.outlinePane = outlinePane;
+		this.styleController = styleController;
+		this.mapBackground = mapBackground;
         setTitleSupplier(this::getNodeText);
     }
 
-    NodeModel getNodeModel() {
+    public MapTreeNode(MapTreeNode parent, NodeModel child, OutlinePane pane) {
+    	this(child, pane, parent.styleController, parent.mapBackground);
+    	parent.addChild(this);
+	}
+
+	NodeModel getNodeModel() {
         return nodeModel;
     }
 
@@ -35,18 +54,25 @@ class MapTreeNode extends TreeNode implements INodeView {
     @Override
     public void nodeChanged(NodeChangeEvent event) {
     	if (event.getNode() == nodeModel) {
-    		updateTitle();
+    		update();
     		SwingUtilities.invokeLater(() -> {
     			outlinePane.updateNodeTitle(this);
     		});
     	}
     }
 
+	@Override
+	void update() {
+        this.icon = null;
+        super.update();
+    }
+
+
     @Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
         if (parent == nodeModel) {
 
-            MapTreeNode childTreeNode = createMapTreeNodeRecursively(child, outlinePane);
+            MapTreeNode childTreeNode = createMapTreeNodeRecursively(child);
 
             add(childTreeNode, newIndex);
             childTreeNode.setParent(this);
@@ -57,12 +83,12 @@ class MapTreeNode extends TreeNode implements INodeView {
         }
     }
 
-    private static MapTreeNode createMapTreeNodeRecursively(NodeModel nodeModel, OutlinePane outlinePane) {
-        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane);
+    private MapTreeNode createMapTreeNodeRecursively(NodeModel nodeModel) {
+        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane, styleController, mapBackground);
         nodeModel.addViewer(treeNode);
 
         for (NodeModel childNode : nodeModel.getChildren()) {
-            MapTreeNode childTreeNode = createMapTreeNodeRecursively(childNode, outlinePane);
+            MapTreeNode childTreeNode = createMapTreeNodeRecursively(childNode);
             treeNode.addChild(childTreeNode);
         }
 
@@ -137,4 +163,29 @@ class MapTreeNode extends TreeNode implements INodeView {
     boolean isContainedIn(MapAwareOutlinePane pane) {
     	return pane== outlinePane;
     }
+
+	public Icon getIcon(JComponent component) {
+		if(icon ==  null)
+			icon =createIcon(component);
+		return icon;
+	}
+
+
+
+	private Icon createIcon(JComponent component) {
+		Color color = styleController.getColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
+		Color backgroundColor = styleController.getBackgroundColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
+        if (backgroundColor != null) {
+            if (backgroundColor.getAlpha() < 255) {
+            	backgroundColor = ColorUtils.blendColors(backgroundColor, mapBackground);
+            }
+        }
+        else
+        	backgroundColor = mapBackground;
+		final TextIcon textIcon = new TextIcon(getTitle(), component.getFontMetrics(component.getFont()));
+		textIcon.setIconTextColor(color);
+		textIcon.setIconBackgroundColor(backgroundColor);
+		return textIcon;
+	}
+
 }

@@ -29,7 +29,7 @@ class TreeNode {
 
 
 
-	void updateTitle() {
+	void update() {
         this.title = null;
     }
 

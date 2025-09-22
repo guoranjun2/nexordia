@@ -15,6 +15,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
 
 class BlockPanel extends JPanel {
@@ -42,10 +43,7 @@ class BlockPanel extends JPanel {
 
     @SuppressWarnings("serial")
     private void createActionButton(TreeNode node, int y, int rowHeight, ScrollableTreePanel parentPanel) {
-        String buttonText = node.getTitle();
-        NodeButton button = new NodeButton(node);
-        button.setFont(button.getFont().deriveFont(OutlineGeometry.itemFontSize()));
-        button.setText(buttonText);
+        NodeButton button = new NodeButton(node, ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false));
 
         int computedLevel = node.getLevel();
         int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(computedLevel);

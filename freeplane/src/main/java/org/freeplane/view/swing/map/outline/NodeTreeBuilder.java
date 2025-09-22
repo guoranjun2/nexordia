@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.SummaryNode;
+import org.freeplane.features.nodestyle.NodeStyleController;
 import org.freeplane.view.swing.map.MapView;
 
 class NodeTreeBuilder {
@@ -41,7 +42,8 @@ class NodeTreeBuilder {
         }
         this.applicableState = canApply ? saved : null;
 
-        MapTreeNode outRoot = new MapTreeNode(rootModel, pane);
+        MapTreeNode outRoot = new MapTreeNode(rootModel, pane, mapView.getModeController().getExtension(NodeStyleController.class),
+        		mapView.getBackground());
         rootModel.addViewer(outRoot);
         this.root = outRoot;
 
@@ -85,9 +87,8 @@ class NodeTreeBuilder {
             boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisibleOrAncestor(child));
             MapTreeNode nextParent = parentOut;
             if (visible) {
-                MapTreeNode out = new MapTreeNode(child, pane);
+                MapTreeNode out = new MapTreeNode(parentOut, child, pane);
                 child.addViewer(out);
-                parentOut.addChild(out);
                 nextParent = out;
             }
             visitChildren(child, nextParent);
