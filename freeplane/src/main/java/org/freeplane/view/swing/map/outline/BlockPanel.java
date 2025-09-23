@@ -16,7 +16,6 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.components.UITools;
 
 class BlockPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -28,28 +27,29 @@ class BlockPanel extends JPanel {
         setOpaque(false);
         this.selection = selection;
 
-        createNodeComponents(nodes, rowHeight, parentPanel);
+        createNodeButtons(nodes, rowHeight, parentPanel);
     }
 
-    private void createNodeComponents(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel) {
+    private void createNodeButtons(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel) {
         int visibleButtonIndex = 0;
-        for (int i = 0; i < nodes.size(); i++) {
+        final boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+       for (int i = 0; i < nodes.size(); i++) {
             TreeNode node = nodes.get(i);
             int y = visibleButtonIndex * rowHeight;
-            createActionButton(node, y, rowHeight, parentPanel);
+            createNodeButton(node, y, rowHeight, useColoredOutlineItems, parentPanel);
             visibleButtonIndex++;
         }
     }
 
-    @SuppressWarnings("serial")
-    private void createActionButton(TreeNode node, int y, int rowHeight, ScrollableTreePanel parentPanel) {
-        NodeButton button = new NodeButton(node, ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false));
+    private void createNodeButton(TreeNode node, int y, int rowHeight, boolean useColoredOutlineItems, ScrollableTreePanel parentPanel) {
+		NodeButton button = new NodeButton(node, useColoredOutlineItems);
 
         int computedLevel = node.getLevel();
         int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(computedLevel);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 
+        @SuppressWarnings("serial")
         final AbstractAction selectAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -64,12 +64,14 @@ class BlockPanel extends JPanel {
         im.put(KeyStroke.getKeyStroke("ENTER"), "selectMapNode");
         am.put("selectMapNode", selectAction);
         im.put(KeyStroke.getKeyStroke("SPACE"), "toggleExpand");
-        am.put("toggleExpand", new AbstractAction() {
+        @SuppressWarnings("serial")
+        final AbstractAction expandAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 parentPanel.toggleExpandSelected();
             }
-        });
+        };
+		am.put("toggleExpand", expandAction);
 
         button.addMouseListener(new MouseAdapter() {
             @Override

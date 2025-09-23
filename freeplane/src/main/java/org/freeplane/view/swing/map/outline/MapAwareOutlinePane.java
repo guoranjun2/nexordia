@@ -1,6 +1,7 @@
 
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Window;
 import java.beans.PropertyChangeListener;
@@ -221,18 +222,15 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             }
     		setRootNode(currentRoot);
     		ScrollableTreePanel panel = getTreePanel();
-    		if (panel != null) {
-    			panel.setSelectionBridge(new OutlineSelectionBridge(this));
-    		}
+    		panel.setBackgroundColorSupplier(this::getBackgroundColor);
+    		panel.setSelectionBridge(new OutlineSelectionBridge(this));
     		try {
     			addMapChangeListeners();
     		} catch (Exception ignore) {}
     		if (builder.getApplicableState() != null) {
     			panel = getTreePanel();
-    			if (panel != null) {
-    				builder.getApplicableState().applyTo(panel.getRoot());
-    				panel.updateVisibleNodes();
-    			}
+    			builder.getApplicableState().applyTo(panel.getRoot());
+    			panel.updateVisibleNodes();
     		}
 
     		try {
@@ -263,6 +261,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         displayState.setCurrentMode(OutlineDisplayMode.MAP_VIEW);
         displayState.putViewState(null);
         setRootNode(currentRoot);
+        getTreePanel().setBackgroundColorSupplier(null);
     }
 
 
@@ -477,5 +476,15 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         MapModel mapModel = node.getMap();
         return mapModel != null && MapBookmarks.of(mapModel).contains(node.getID());
     }
+
+	private Color getBackgroundColor() {
+		if(currentMapView == null)
+			return null;
+		boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+		if(useColoredOutlineItems)
+			return currentMapView.getBackground();
+		else
+			return null;
+	}
 
 }

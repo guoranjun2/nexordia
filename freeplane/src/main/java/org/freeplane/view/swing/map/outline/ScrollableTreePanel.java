@@ -1,9 +1,11 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -31,7 +33,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private OutlineSelectionBridge selectionBridge;
     private OutlineFocusManager focusManager;
     private final OutlineSelectionManager selectionManager = new OutlineSelectionManager();
-
+    private Supplier<Color> backgroundColorSupplier;
 
     private int lastFirstBlock = -1;
     private int lastLastBlock = -1;
@@ -76,6 +78,19 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         new OutlineActions(() -> this).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
+	void setBackgroundColorSupplier(Supplier<Color> backgroundColorSupplier) {
+		this.backgroundColorSupplier = backgroundColorSupplier;
+	}
+
+    @Override
+	public Color getBackground() {
+		 if (backgroundColorSupplier != null) {
+			final Color suppliedColor = backgroundColorSupplier.get();
+			if(suppliedColor != null)
+				return suppliedColor;
+		 }
+		 return super.getBackground();
+	}
 
 
     void synchronizeSelectionButton(boolean requestFocusInWindow) {

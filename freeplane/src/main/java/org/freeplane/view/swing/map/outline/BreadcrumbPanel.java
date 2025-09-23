@@ -1,7 +1,9 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -17,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.UITools;
 
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
@@ -36,10 +39,15 @@ class BreadcrumbPanel extends JPanel {
 
     @Override
 	public Color getBackground() {
-		 return backgroundColorSupplier != null ? backgroundColorSupplier.get() : super.getBackground();
+		 if (backgroundColorSupplier != null) {
+			final Color suppliedColor = backgroundColorSupplier.get();
+			if(suppliedColor != null)
+				return suppliedColor;
+		 }
+		 return super.getBackground();
 	}
 
-	protected void setBackgroundColorSupplier(Supplier<Color> backgroundColorSupplier) {
+	void setBackgroundColorSupplier(Supplier<Color> backgroundColorSupplier) {
 		this.backgroundColorSupplier = backgroundColorSupplier;
 	}
 
@@ -59,20 +67,22 @@ class BreadcrumbPanel extends JPanel {
         this.currentBreadcrumbNodes = new ArrayList<>(state.getBreadcrumbNodes());
 
         controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
-        updateNavigationButtons();
+        updateNodeButtons();
     }
 
-    void updateNavigationButtons() {
+    void updateNodeButtons() {
         removeAll();
+        final boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+        final int rowHeight = controller.getRowHeight();
         for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
             int level = getNodeLevel(node);
-            int y = i * controller.getRowHeight();
+			int y = i * rowHeight;
 
             int actionX = controller.calcTextButtonX(level);
 
-            NodeButton breadcrumbButton = new NodeButton(node, ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false));
-            breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, controller.getRowHeight());
+			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems);
+            breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, rowHeight);
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
@@ -160,7 +170,7 @@ class BreadcrumbPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         if (preferredBreadcrumbHeight > 0) {
-            g.setColor(getForeground());
+            g.setColor(UITools.getDisabledTextColorForBackground(getBackground()));
             g.drawLine(0, preferredBreadcrumbHeight - 1, getWidth(), preferredBreadcrumbHeight - 1);
         }
         SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
