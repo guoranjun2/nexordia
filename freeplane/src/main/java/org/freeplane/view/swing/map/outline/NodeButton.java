@@ -17,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 
 import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
@@ -45,6 +46,7 @@ class NodeButton extends JButton {
         this.node = node;
         final Font font = getFont().deriveFont(OutlineGeometry.itemFontSize());
         setFont(font);
+        setHorizontalAlignment(SwingConstants.LEADING);
         updateLabel(usesColoredOutlineItems);
         installNodePopupMenu();
         installDragAndDrop();
