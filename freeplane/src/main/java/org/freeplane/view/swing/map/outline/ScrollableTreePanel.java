@@ -188,18 +188,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         lastVisibleNodeCount = -1;
     }
 
-    boolean isNodeVisibleInBlocks(TreeNode node) {
-        for (BlockPanel panel : blockCache.values()) {
-            for (Component comp : panel.getComponents()) {
-                if (comp instanceof NodeButton) {
-                    NodeButton btn = (NodeButton) comp;
-                    if (btn.getNode() == node && comp.isShowing()) return true;
-                }
-            }
-        }
-        return false;
-    }
-
     boolean isNodeFullyVisibleInViewport(TreeNode node) {
         if (viewport == null || node == null) return false;
         int index = visibleState.findNodeIndexInVisibleList(node);
