@@ -104,8 +104,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     private boolean isNodeVisible(TreeNode node, ScrollableTreePanel panel) {
-        if (panel.isNodeInBreadcrumbArea(node)) return true;
-        if (panel.isNodeVisibleInBlocks(node)) return true;
+        if (panel.isNodeInBreadcrumbArea(node))
+        	return true;
+        if (panel.isNodeVisibleInBlocks(node))
+        	return true;
         return false;
     }
 

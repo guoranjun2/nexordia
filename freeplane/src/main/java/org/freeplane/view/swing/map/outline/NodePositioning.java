@@ -34,13 +34,6 @@ class NodePositioning {
 		return new Point(baseX, y);
     }
 
-	Point calculateSelectionIconPosition(Rectangle buttonBounds) {
-        int iconX = buttonBounds.x + buttonBounds.width;
-
-        int iconY = buttonBounds.y + (buttonBounds.height - geometry.iconDiameter) / 2;
-        return new Point(iconX, iconY);
-    }
-
     Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
         int targetY = (startFromNodeIndex * geometry.rowHeight) - breadcrumbAreaHeight;
         targetY = Math.max(0, targetY);

@@ -76,14 +76,6 @@ class OutlineController implements OutlineActionTarget {
         return treePanel.findNodeIndexInBreadcrumbPath(node, breadcrumbNodes);
     }
 
-    Icon getSelectionIcon() {
-        return treePanel.getSelectionIcon();
-    }
-
-    Point calculateSelectionIconPosition(Rectangle bounds) {
-        return treePanel.getNodePositioning().calculateSelectionIconPosition(bounds);
-    }
-
     TreeNode getHoveredNode() {
         return treePanel.getVisibleState().getHoveredNode();
     }

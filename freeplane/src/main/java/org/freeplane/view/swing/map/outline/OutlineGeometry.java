@@ -17,7 +17,6 @@ class OutlineGeometry {
     final int rowHeight;
     final int navButtonWidth;
     private final int indent;
-    final int iconDiameter;
 	static final float itemFontSize() {
 		return UITools.FONT_SCALE_FACTOR * (float) ResourceController.getResourceController().getDoubleProperty("outlineItemFontSize", 8f);
 	}
@@ -61,7 +60,6 @@ class OutlineGeometry {
 			this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
 		else
 			this.navButtonWidth = 0;
-        this.iconDiameter = Math.round(preferredButtonSize.width * 10 / 13);
     }
 
     int calculateNodeButtonX(int level) {

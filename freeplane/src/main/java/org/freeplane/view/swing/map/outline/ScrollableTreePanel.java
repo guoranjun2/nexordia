@@ -1,12 +1,10 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.util.Collection;
 import java.util.List;
 
-import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -18,7 +16,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
 	private  final NavigationButtons navButtons;
-	private final SelectionCircleIcon selectionIcon;
     private final BreadcrumbPanel breadcrumbPanel;
     private final ExpansionControls expansionControls;
     private NodePositioning nodePositioning;
@@ -45,6 +42,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     ScrollableTreePanel(TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(root, BLOCK_SIZE,breadcrumbPanel);
         addMouseListener(new FocusSelectedButtonClickAdapter(focusManager));
+        setOpaque(true);
 	}
 
     private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
@@ -58,7 +56,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleState);
         this.breadcrumbPath = new BreadcrumbPath(root, OutlineGeometry.getInstance(), visibleState, null);
         this.navButtons = new NavigationButtons(OutlineGeometry.getInstance(), expansionControls);
-        this.selectionIcon = new SelectionCircleIcon(Color.BLUE, OutlineGeometry.getInstance().iconDiameter);
         this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, OutlineGeometry.getInstance(), nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
 
@@ -216,7 +213,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     private void createVisibleBlocks() {
         OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        blockLayout.createVisibleBlocks(this, range, getPreferredSize().width);
+        blockLayout.createVisibleBlocks(this, range, getWidth());
     }
 
     private void updatePreferredFromActualBlocks() { blockLayout.updatePreferredFromActualBlocks(this); }
@@ -744,10 +741,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
         return breadcrumbPath.findNodeIndexInBreadcrumbPath(node, breadcrumbNodes);
-    }
-
-    Icon getSelectionIcon() {
-        return selectionIcon;
     }
 
     boolean areNavButtonsVisible() {

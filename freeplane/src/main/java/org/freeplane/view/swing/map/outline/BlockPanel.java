@@ -81,7 +81,14 @@ class BlockPanel extends JPanel {
         add(button);
     }
 
+
     @Override
+	public int getWidth() {
+    	final Container parent = getParent();
+    	return parent != null ? parent.getWidth() : 0;
+	}
+
+	@Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 

@@ -1,11 +1,13 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
@@ -23,13 +25,25 @@ class BreadcrumbPanel extends JPanel {
     private int preferredBreadcrumbHeight = 0;
     private List<TreeNode> currentBreadcrumbNodes = new ArrayList<>();
 	private OutlineSelectionBridge selectionBridge;
+	private Supplier<Color> backgroundColorSupplier;
 
     BreadcrumbPanel() {
         setLayout(null);
         setOpaque(true);
     }
 
-    void initialize(OutlineController controller, OutlineSelection selection) {
+
+
+    @Override
+	public Color getBackground() {
+		 return backgroundColorSupplier != null ? backgroundColorSupplier.get() : super.getBackground();
+	}
+
+	protected void setBackgroundColorSupplier(Supplier<Color> backgroundColorSupplier) {
+		this.backgroundColorSupplier = backgroundColorSupplier;
+	}
+
+	void initialize(OutlineController controller, OutlineSelection selection) {
         this.controller = controller;
         this.selection = selection;
         setupKeyBindings();
@@ -145,12 +159,10 @@ class BreadcrumbPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
-        SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
-
         if (preferredBreadcrumbHeight > 0) {
             g.setColor(getForeground());
             g.drawLine(0, preferredBreadcrumbHeight - 1, getWidth(), preferredBreadcrumbHeight - 1);
         }
+        SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
     }
 }

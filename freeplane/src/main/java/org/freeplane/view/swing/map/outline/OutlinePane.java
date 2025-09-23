@@ -37,6 +37,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
         this.breadcrumbPanel = new BreadcrumbPanel();
 
         this.treePanel = new ScrollableTreePanel(rootNode, breadcrumbPanel);
+        breadcrumbPanel.setBackgroundColorSupplier(treePanel::getBackground);
         this.treeScrollPane = new JScrollPane(treePanel);
         UITools.setScrollbarIncrement(treeScrollPane);
         treePanel.setScrollPane(this.treeScrollPane);
@@ -133,6 +134,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
         BreadcrumbPanel newBreadcrumbPanel = new BreadcrumbPanel();
 
         ScrollableTreePanel newTreePanel = new ScrollableTreePanel(newRootNode, newBreadcrumbPanel);
+        newBreadcrumbPanel.setBackgroundColorSupplier(newTreePanel::getBackground);
         JScrollPane newScrollPane = new JScrollPane(newTreePanel);
         UITools.setScrollbarIncrement(newScrollPane);
 
