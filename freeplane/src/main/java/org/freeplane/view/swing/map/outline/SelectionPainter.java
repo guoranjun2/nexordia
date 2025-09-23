@@ -1,10 +1,11 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+
+import org.freeplane.core.resources.ResourceController;
 
 final class SelectionPainter {
     private SelectionPainter() {}
@@ -25,7 +26,7 @@ final class SelectionPainter {
     }
 
 	private static void underlineSelection(Graphics g, Component panel, Component btn) {
-		g.setColor(Color.BLUE);
+		g.setColor(ResourceController.getResourceController().getColorProperty("standardselectednoderectanglecolor"));
 		((Graphics2D)g).setStroke(new BasicStroke(3));
 		final int y1 = btn.getY() - 1;
 		g.drawLine(0, y1, panel.getWidth(), y1);
