@@ -8,6 +8,7 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.ui.components.TextIcon;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.map.INodeView;
 import org.freeplane.features.map.NodeChangeEvent;
@@ -169,6 +170,7 @@ class MapTreeNode extends TreeNode implements INodeView {
 		final TextIcon textIcon = new TextIcon(getTitle(), component.getFontMetrics(component.getFont()));
 		textIcon.setIconTextColor(color);
 		textIcon.setIconBackgroundColor(backgroundColor);
+		textIcon.setPaddingX((int) (3 * UITools.FONT_SCALE_FACTOR));
 		return textIcon;
 	}
 

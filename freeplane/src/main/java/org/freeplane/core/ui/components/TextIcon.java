@@ -21,7 +21,8 @@ public class TextIcon implements Icon {
     private Color iconBackgroundColor;
     private Color iconBorderColor;
     private BasicStroke borderStroke;
-    private int padding = 0;
+    private int paddingX = 0;
+    private int paddingY = 0;
 
     public TextIcon(String text, FontMetrics fontMetrics) {
         this.text = text;
@@ -48,13 +49,11 @@ public class TextIcon implements Icon {
         if(text != null) {
             g2d.setColor(textColor);
             g2d.setFont(fontMetrics.getFont());
-            int textX = x + padding;
-            int textY = y + padding + fontMetrics.getAscent();
+            int textX = x + paddingX;
+            int textY = y + paddingY + fontMetrics.getAscent();
             g2d.drawString(text, textX, textY);
         }
     }
-
-
 
     public Color getIconTextColor() {
         return iconTextColor;
@@ -96,20 +95,33 @@ public class TextIcon implements Icon {
 
     @Override
     public int getIconWidth() {
-        return (text == null ? 0 : fontMetrics.stringWidth(text)) +  2 * padding;
+        return (text == null ? 0 : fontMetrics.stringWidth(text)) +  2 * paddingX;
     }
 
     @Override
     public int getIconHeight() {
-        return fontMetrics.getHeight() + 2 * padding;
+        return fontMetrics.getHeight() + 2 * paddingY;
     }
 
-    int getPadding() {
-        return padding;
-    }
+    public int getPaddingX() {
+		return paddingX;
+	}
 
-    void setPadding(int padding) {
-        this.padding = padding;
+    public void setPaddingX(int paddingX) {
+		this.paddingX = paddingX;
+	}
+
+    public int getPaddingY() {
+		return paddingY;
+	}
+
+    public void setPaddingY(int paddingY) {
+		this.paddingY = paddingY;
+	}
+
+	void setPadding(int padding) {
+		setPaddingX(padding);
+		setPaddingY(padding);
     }
 
     public String getText() {
