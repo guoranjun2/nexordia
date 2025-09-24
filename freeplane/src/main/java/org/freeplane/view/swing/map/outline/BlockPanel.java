@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -21,24 +22,32 @@ class BlockPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
     private final OutlineSelection selection;
+    private final List<TreeNode> nodes;
+    private final int rowHeight;
+    private final ScrollableTreePanel parentPanel;
 
     BlockPanel(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.selection = selection;
+        this.nodes = new ArrayList<>(nodes);
+        this.rowHeight = rowHeight;
+        this.parentPanel = parentPanel;
 
-        createNodeButtons(nodes, rowHeight, parentPanel);
+        rebuildNodeButtons();
     }
 
-    private void createNodeButtons(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel) {
+    void rebuildNodeButtons() {
+        removeAll();
         int visibleButtonIndex = 0;
         final boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
-       for (int i = 0; i < nodes.size(); i++) {
-            TreeNode node = nodes.get(i);
+        for (TreeNode node : nodes) {
             int y = visibleButtonIndex * rowHeight;
             createNodeButton(node, y, rowHeight, useColoredOutlineItems, parentPanel);
             visibleButtonIndex++;
         }
+        revalidate();
+        repaint();
     }
 
     private void createNodeButton(TreeNode node, int y, int rowHeight, boolean useColoredOutlineItems, ScrollableTreePanel parentPanel) {

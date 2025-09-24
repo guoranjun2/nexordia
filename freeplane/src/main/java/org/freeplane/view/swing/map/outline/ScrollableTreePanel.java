@@ -11,6 +11,9 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import org.freeplane.core.resources.IFreeplanePropertyListener;
+import org.freeplane.core.resources.ResourceController;
+
 class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	private static final long serialVersionUID = 1;
     private static final int BLOCK_SIZE = 50;
@@ -31,6 +34,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private OutlineGeometry currentGeometry;
     private final OutlineGeometry.GeometryListener geometryListener;
     private boolean geometryListenerRegistered;
+    private final IFreeplanePropertyListener outlinePropertyListener;
+    private boolean outlinePropertyListenerRegistered;
     private final OutlineBlockViewCache blockCache = new OutlineBlockViewCache();
     private OutlineBlockLayout blockLayout;
     private OutlineSelectionBridge selectionBridge;
@@ -66,6 +71,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, geometry, nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
         this.geometryListener = this::handleGeometryChange;
+        this.outlinePropertyListener = this::handleOutlinePropertyChange;
 
 
         setFocusable(true);
@@ -86,6 +92,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             OutlineGeometry.registerListener(geometryListener);
             geometryListenerRegistered = true;
         }
+        if (!outlinePropertyListenerRegistered) {
+            ResourceController.getResourceController().addPropertyChangeListener(outlinePropertyListener);
+            outlinePropertyListenerRegistered = true;
+        }
     }
 
     @Override
@@ -93,6 +103,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (geometryListenerRegistered) {
             OutlineGeometry.unregisterListener(geometryListener);
             geometryListenerRegistered = false;
+        }
+        if (outlinePropertyListenerRegistered) {
+            ResourceController.getResourceController().removePropertyChangeListener(outlinePropertyListener);
+            outlinePropertyListenerRegistered = false;
         }
         super.removeNotify();
     }
@@ -144,6 +158,50 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             revalidate();
             repaint();
         }
+    }
+
+    private void handleOutlinePropertyChange(String propertyName, String newValue, String oldValue) {
+        if (!"useColoredOutlineItems".equals(propertyName)) {
+            return;
+        }
+
+        refreshColoredOutlineItems();
+    }
+
+    private void refreshColoredOutlineItems() {
+        for (BlockPanel panel : blockCache.values()) {
+            panel.rebuildNodeButtons();
+        }
+        blockLayout.recomputeCachedMaxWidth();
+        blockLayout.updatePreferredFromActualBlocks(this);
+
+        breadcrumbPanel.updateNodeButtons();
+
+        navButtons.hideNavigationButtons();
+        TreeNode hoveredNode = visibleState.getHoveredNode();
+        reattachNavigationButtons(hoveredNode);
+
+        revalidate();
+        repaint();
+    }
+
+    private void reattachNavigationButtons(TreeNode hoveredNode) {
+        if (hoveredNode == null || hoveredNode.getChildren().isEmpty()) {
+            return;
+        }
+
+        boolean inBreadcrumb = isNodeInBreadcrumbArea(hoveredNode);
+        int breadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
+        if (inBreadcrumb) {
+            List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
+            int rowIndex = findNodeIndexInBreadcrumbPath(hoveredNode, breadcrumbNodes);
+            if (rowIndex >= 0) {
+                navButtons.attachToNode(hoveredNode, breadcrumbPanel, true, rowIndex, breadcrumbHeight, nodePositioning);
+            }
+            return;
+        }
+
+        navButtons.attachToNode(hoveredNode, this, false, -1, breadcrumbHeight, nodePositioning);
     }
 
     @SuppressWarnings("serial")

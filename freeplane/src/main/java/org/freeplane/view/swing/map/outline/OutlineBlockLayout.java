@@ -95,6 +95,20 @@ class OutlineBlockLayout {
         cachedMaxWidth = 0;
     }
 
+    void recomputeCachedMaxWidth() {
+        resetCachedMaxWidth();
+        for (BlockPanel panel : blockCache.values()) {
+            for (Component comp : panel.getComponents()) {
+                if (comp instanceof JButton) {
+                    int rightEdge = comp.getX() + comp.getWidth();
+                    if (rightEdge > cachedMaxWidth) {
+                        cachedMaxWidth = rightEdge;
+                    }
+                }
+            }
+        }
+    }
+
     void removeBlocksOutsideRange(JPanel owner, OutlineVisibleBlockRange range) {
         java.util.List<Integer> toRemove = new java.util.ArrayList<>();
         for (int idx : blockCache.keySet()) {
