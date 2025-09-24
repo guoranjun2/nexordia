@@ -2,6 +2,8 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -12,6 +14,11 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
 
 class OutlineGeometry {
+	interface GeometryListener {
+		void onGeometryChanged(OutlineGeometry geometry);
+	}
+
+	private static final List<GeometryListener> LISTENERS = new ArrayList<>();
 	private static OutlineGeometry INSTANCE;
 	static OutlineGeometry getInstance() {return INSTANCE;}
     final int rowHeight;
@@ -41,7 +48,26 @@ class OutlineGeometry {
 		if(propertyName.equals("outlineItemFontSize")
 				|| propertyName.equals("outlineItemIndentation")
 				|| propertyName.equals("showOutlineFoldingButtons"))
-			INSTANCE = new OutlineGeometry();
+			replaceInstance(new OutlineGeometry());
+	}
+
+	static void registerListener(GeometryListener listener) {
+		if(listener == null)
+			return;
+		LISTENERS.add(listener);
+	}
+
+	static void unregisterListener(GeometryListener listener) {
+		if(listener == null)
+			return;
+		LISTENERS.remove(listener);
+	}
+
+	private static void replaceInstance(OutlineGeometry newInstance) {
+		INSTANCE = newInstance;
+		for(GeometryListener listener : LISTENERS) {
+			listener.onGeometryChanged(INSTANCE);
+		}
 	}
 
     private OutlineGeometry() {

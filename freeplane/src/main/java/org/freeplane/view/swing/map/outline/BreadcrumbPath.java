@@ -6,7 +6,7 @@ import java.util.List;
 
 class BreadcrumbPath {
     private final TreeNode root;
-    private final OutlineGeometry geometry;
+    private OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
     private OutlineViewport viewport;
 
@@ -15,6 +15,10 @@ class BreadcrumbPath {
         this.geometry = geometry;
         this.visibleState = visibleState;
         this.viewport = viewport;
+    }
+
+    void updateGeometry(OutlineGeometry geometry) {
+        this.geometry = geometry;
     }
 
     void setViewport(OutlineViewport viewport) {

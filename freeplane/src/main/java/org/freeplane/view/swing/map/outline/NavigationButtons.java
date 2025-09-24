@@ -18,7 +18,7 @@ class NavigationButtons {
     final JButton expandMoreBtn;
     final JButton reduceBtn;
 
-    private final OutlineGeometry geometry;
+    private OutlineGeometry geometry;
     private final ExpansionControls expansionControls;
     private JPanel currentParent;
 	private TreeNode node;
@@ -52,11 +52,15 @@ class NavigationButtons {
 
     private void configureNavButton(JButton button, ActionListener actionListener) {
         button.setMargin(new Insets(0, 0, 0, 0));
-        button.setFont(button.getFont().deriveFont(OutlineGeometry.buttonFontSize()));
+        applyButtonFont(button);
         button.setFocusable(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setVisible(false);
         button.addActionListener(actionListener);
+    }
+
+    private void applyButtonFont(JButton button) {
+        button.setFont(button.getFont().deriveFont(OutlineGeometry.buttonFontSize()));
     }
 
     public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
@@ -128,5 +132,20 @@ class NavigationButtons {
         collapseBtn.setVisible(false);
         expandMoreBtn.setVisible(false);
         reduceBtn.setVisible(false);
+    }
+
+    void updateGeometry(OutlineGeometry geometry) {
+        this.geometry = geometry;
+        applyButtonFont(expandBtn);
+        applyButtonFont(collapseBtn);
+        applyButtonFont(expandMoreBtn);
+        applyButtonFont(reduceBtn);
+        detachFromCurrentParent();
+        hideNavigationButtons();
+        if (currentParent != null) {
+            currentParent.revalidate();
+            currentParent.repaint();
+        }
+        currentParent = null;
     }
 }

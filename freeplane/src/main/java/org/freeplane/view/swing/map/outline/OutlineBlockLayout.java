@@ -12,7 +12,7 @@ import javax.swing.JPanel;
 class OutlineBlockLayout {
     private final OutlineBlockViewCache blockCache;
     private final VisibleOutlineState visibleState;
-    private final OutlineGeometry geometry;
+    private OutlineGeometry geometry;
     private final NodePositioning nodePositioning;
     private final int blockSize;
     private int cachedMaxWidth = 0;
@@ -27,6 +27,11 @@ class OutlineBlockLayout {
         this.geometry = geometry;
         this.nodePositioning = nodePositioning;
         this.blockSize = blockSize;
+    }
+
+    void updateGeometry(OutlineGeometry geometry) {
+        this.geometry = geometry;
+        resetCachedMaxWidth();
     }
 
     void createVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {

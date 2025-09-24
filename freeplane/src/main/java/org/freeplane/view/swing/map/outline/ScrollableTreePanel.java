@@ -28,6 +28,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private final OutlineSelection outlineSelection;
     private final int blockSize;
     private VisibleOutlineState visibleState;
+    private OutlineGeometry currentGeometry;
+    private final OutlineGeometry.GeometryListener geometryListener;
+    private boolean geometryListenerRegistered;
     private final OutlineBlockViewCache blockCache = new OutlineBlockViewCache();
     private OutlineBlockLayout blockLayout;
     private OutlineSelectionBridge selectionBridge;
@@ -56,10 +59,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.visibleState = new VisibleOutlineState(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleState);
-        this.breadcrumbPath = new BreadcrumbPath(root, OutlineGeometry.getInstance(), visibleState, null);
-        this.navButtons = new NavigationButtons(OutlineGeometry.getInstance(), expansionControls);
-        this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, OutlineGeometry.getInstance(), nodePositioning, blockSize);
+        OutlineGeometry geometry = OutlineGeometry.getInstance();
+        this.currentGeometry = geometry;
+        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
+        this.navButtons = new NavigationButtons(geometry, expansionControls);
+        this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, geometry, nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
+        this.geometryListener = this::handleGeometryChange;
 
 
         setFocusable(true);
@@ -71,6 +77,73 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         add(navButtons.reduceBtn);
 
         navButtons.hideNavigationButtons();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        if (!geometryListenerRegistered) {
+            OutlineGeometry.registerListener(geometryListener);
+            geometryListenerRegistered = true;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        if (geometryListenerRegistered) {
+            OutlineGeometry.unregisterListener(geometryListener);
+            geometryListenerRegistered = false;
+        }
+        super.removeNotify();
+    }
+
+    private void handleGeometryChange(OutlineGeometry geometry) {
+        if (geometry == null) {
+            return;
+        }
+
+        currentGeometry = geometry;
+        nodePositioning.updateGeometry(geometry);
+        blockLayout.updateGeometry(geometry);
+        breadcrumbPath.updateGeometry(geometry);
+        navButtons.updateGeometry(geometry);
+
+        TreeNode hoveredNode = visibleState.getHoveredNode();
+        String firstVisibleNodeId = visibleState.getFirstVisibleNodeId();
+        int firstVisibleIndex = visibleState.findNodeIndexById(firstVisibleNodeId);
+        if (firstVisibleIndex < 0) {
+            firstVisibleIndex = 0;
+        }
+        List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
+
+        removeAll();
+        blockCache.clear();
+        blockLayout.resetCachedMaxWidth();
+        resetBlockCache();
+        navButtons.hideNavigationButtons();
+
+        visibleState.setHoveredNode(hoveredNode);
+
+        if (breadcrumbNodes != null) {
+            BreadcrumbState restoredState = new BreadcrumbState(breadcrumbNodes,
+                    breadcrumbNodes.size() * geometry.rowHeight,
+                    firstVisibleIndex);
+            breadcrumbPanel.update(restoredState);
+        } else {
+            visibleState.setBreadcrumbAreaHeight(0);
+            breadcrumbPanel.removeAll();
+            breadcrumbPanel.revalidate();
+            breadcrumbPanel.repaint();
+        }
+
+        int visibleCount = visibleState.getVisibleNodeCount();
+        if (viewport != null && visibleCount > 0) {
+            int clampedIndex = Math.min(firstVisibleIndex, visibleCount - 1);
+            updateVisibleBlocks(clampedIndex);
+        } else {
+            revalidate();
+            repaint();
+        }
     }
 
     @SuppressWarnings("serial")

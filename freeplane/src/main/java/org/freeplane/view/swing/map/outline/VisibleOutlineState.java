@@ -50,6 +50,14 @@ class VisibleOutlineState {
         this.firstVisibleNodeId = id;
     }
 
+    int findNodeIndexById(String id) {
+        if (id == null) {
+            return -1;
+        }
+        Integer idx = indexById.get(id);
+        return idx != null ? idx : -1;
+    }
+
     int findNodeIndexInVisibleList(TreeNode node) {
         if (node == null) return -1;
         Integer idx = indexById.get(node.getId());

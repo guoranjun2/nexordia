@@ -4,12 +4,16 @@ import java.awt.Point;
 import java.awt.Rectangle;
 
 class NodePositioning {
-    private final OutlineGeometry geometry;
+    private OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
 
     NodePositioning(OutlineGeometry geometry, VisibleOutlineState visibleState) {
         this.geometry = geometry;
         this.visibleState = visibleState;
+    }
+
+    void updateGeometry(OutlineGeometry geometry) {
+        this.geometry = geometry;
     }
 
     int calculateNodeLevel(TreeNode node) {
