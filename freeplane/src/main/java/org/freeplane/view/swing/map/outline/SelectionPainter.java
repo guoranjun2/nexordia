@@ -28,9 +28,9 @@ final class SelectionPainter {
 	private static void underlineSelection(Graphics g, Component panel, Component btn) {
 		g.setColor(ResourceController.getResourceController().getColorProperty("standardselectednoderectanglecolor"));
 		((Graphics2D)g).setStroke(new BasicStroke(3));
-		final int y1 = btn.getY() - 1;
+		final int y1 = Math.max(0, btn.getY() - 1);
 		g.drawLine(0, y1, panel.getWidth(), y1);
-		final int y2 = y1 + OutlineGeometry.getInstance().rowHeight;
+		final int y2 =  Math.min(panel.getHeight() - 2, btn.getY() + OutlineGeometry.getInstance().rowHeight + 1);
 		g.drawLine(0, y2, panel.getWidth(), y2);
 	}
 
