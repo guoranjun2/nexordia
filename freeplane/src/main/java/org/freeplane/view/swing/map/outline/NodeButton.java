@@ -18,6 +18,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
@@ -53,7 +54,17 @@ class NodeButton extends JButton {
         installClipboardActions();
     }
 
-    TreeNode getNode() {
+
+
+    @Override
+	public void updateUI() {
+    	setUI(new BasicButtonUI());
+    	setOpaque(false);
+	}
+
+
+
+	TreeNode getNode() {
         return node;
     }
 
