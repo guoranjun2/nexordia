@@ -33,7 +33,7 @@ import org.freeplane.features.script.IScriptEditorStarter;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-class ScriptEditorProperty extends PropertyBean implements IPropertyControl, ActionListener {
+class ScriptEditorProperty extends PropertyBean implements ActionListener {
 	JButton mButton;
 	final JPopupMenu menu = new JPopupMenu();
 // 	final private ModeController mMindMapController;

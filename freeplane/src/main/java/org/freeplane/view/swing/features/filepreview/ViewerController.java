@@ -520,8 +520,10 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 		final ExternalResource preview = (ExternalResource) extension;
 		for(NodeModel nodeClone : node.allClones()){
 			for (final INodeView iNodeView : nodeClone.getViewers()) {
-				final NodeView view = (NodeView) iNodeView;
-				createViewer(preview, view);
+				if(iNodeView instanceof NodeView) {
+					final NodeView view = (NodeView) iNodeView;
+					createViewer(preview, view);
+				}
 			}
 		}
 		super.add(node, extension);

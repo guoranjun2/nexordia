@@ -37,7 +37,25 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 
 public class PreferencesIndexer
 {
-    private final List<String> path;
+    private static class StructurePathEntry {
+        private final String identifier;
+        private final String label;
+
+        StructurePathEntry(String identifier, String label) {
+            this.identifier = identifier;
+            this.label = label != null ? label : identifier;
+        }
+
+        String getIdentifier() {
+            return identifier;
+        }
+
+        String getLabel() {
+            return label;
+        }
+    }
+
+    private final List<StructurePathEntry> path;
 
     private final List<PreferencesItem> prefs;
 
@@ -78,29 +96,34 @@ public class PreferencesIndexer
 				    if(ResourceController.getResourceController().getBooleanProperty(propertyName + ".hide"))
 	                    continue;
 				    String tooltipText = HtmlUtils.htmlToPlain(userObject.getTranslatedTooltipText());
-				    String currentTabTranslated = path.get(0);
+				    if(path.isEmpty())
+				        continue;
+				    StructurePathEntry currentTab = path.get(0);
+				    String currentTabTranslated = currentTab.getLabel();
 				    if(path.size() > 1) {
-				    	String currentSeparatorTranslated = path.get(1);
+				    	StructurePathEntry currentSeparator = path.get(1);
+				    	String currentSeparatorTranslated = currentSeparator.getLabel();
 //				    	System.out.println(currentTabTranslated + ITEM_PATH_SEPARATOR + currentSeparatorTranslated + ITEM_PATH_SEPARATOR + translatedText);
 				    	if(parent.getChildCount() < 20) {
 				    		String prefPath = currentSeparatorTranslated + ITEM_PATH_SEPARATOR + translatedText;
-				    		prefs.add(new PreferencesItem(currentTabTranslated, propertyName, prefPath, tooltipText));
+				    		prefs.add(new PreferencesItem(currentTab.getIdentifier(), currentTabTranslated, propertyName, prefPath, tooltipText));
 				    	}
 				    	else {
-				    		prefs.add(new PreferencesItem(currentTabTranslated, propertyName, translatedText, tooltipText));
+				    		prefs.add(new PreferencesItem(currentTab.getIdentifier(), currentTabTranslated, propertyName, translatedText, tooltipText));
 				    	}
 				    }
 				    else {
-				    	prefs.add(new PreferencesItem(currentTabTranslated, propertyName, translatedText, tooltipText));
+				    	prefs.add(new PreferencesItem(currentTab.getIdentifier(), currentTabTranslated, propertyName, translatedText, tooltipText));
 				    }
 				}
 				else {
-					path.add(translatedText);
+					final String structureIdentifier = userObject.getStructureIdentifier();
+					path.add(new StructurePathEntry(structureIdentifier, translatedText));
 				}
 				if(level < 2) {
 					load(child, level + 1);
 				}
-				if(propertyName.isEmpty()){
+				if(propertyName.isEmpty() && !path.isEmpty()){
 					path.remove(path.size() - 1);
 				}
 			}

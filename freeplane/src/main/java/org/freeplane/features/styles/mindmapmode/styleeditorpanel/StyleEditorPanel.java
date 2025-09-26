@@ -202,7 +202,7 @@ public class StyleEditorPanel extends JPanel {
 		formBuilder.border(Paddings.DLU2);
 		formBuilder.lineGapSize(LayoutStyle.getCurrent().getNarrowLinePad());
 		formBuilder.paragraphGapSize(panelConfiguration.paragraphGapSize);
-		new SeparatorProperty("OptionPanel.separator.NodeStyle").appendToForm(formBuilder);
+		new SeparatorProperty("", "OptionPanel.separator.NodeStyle").appendToForm(formBuilder);
 
 		for (ControlGroup controlGroup :controlGroups) {
 			controlGroup.addControlGroup(formBuilder);

@@ -19,8 +19,16 @@
  */
 package org.freeplane.core.resources.components;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Rectangle;
+
+import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.JViewport;
+import javax.swing.plaf.basic.BasicLabelUI;
 
 import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.util.TextUtils;
@@ -31,7 +39,9 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
  * @author Dimitry Polivaev
  * 26.12.2008
  */
-abstract public class PropertyAdapter {
+abstract public class PropertyAdapter implements HighlightablePropertyControl {
+	private static JTextField selectionColorCheckingTextFieldComponent;
+
 	private String tooltip;
 	private String label;
 
@@ -104,4 +114,42 @@ abstract public class PropertyAdapter {
 		labelComponent.setToolTipText(tooltip);
 		component.setToolTipText(tooltip);
 	}
+
+	private void scrollRectToVisible() {
+		Rectangle bounds = new Rectangle(labelComponent.getWidth(), 3 * labelComponent.getHeight());
+		labelComponent.scrollRectToVisible(bounds);
+	}
+
+	@Override
+	public void highlight() {
+		JLabel label = getLabelComponent();
+		highlight(label);
+		scrollRectToVisible();
+		final JComponent valueComponent = getValueComponent();
+		if(valueComponent != null)
+			valueComponent.requestFocusInWindow();
+	}
+
+	static void highlight(JLabel label) {
+		if(selectionColorCheckingTextFieldComponent == null)
+			selectionColorCheckingTextFieldComponent = new JTextField();
+		Color selectionColor = selectionColorCheckingTextFieldComponent.getSelectionColor();
+		Color selectedTextColor = selectionColorCheckingTextFieldComponent.getSelectedTextColor();
+		if(selectionColor == null || selectedTextColor == null) {
+			selectionColor = label.getForeground();
+			selectedTextColor = label.getBackground();
+		}
+		if(selectionColor == null || selectedTextColor == null) {
+			selectionColor = Color.BLUE;
+			selectedTextColor = Color.WHITE;
+		}
+		Font font = label.getFont();
+		label.setUI(new BasicLabelUI());
+		label.setOpaque(true);
+		label.setFont(font);
+		label.setForeground(selectedTextColor);
+		label.setBackground(selectionColor);
+		label.setBorder(BorderFactory.createLineBorder(selectionColor, 3, true));
+	}
+
 }

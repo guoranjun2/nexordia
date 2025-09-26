@@ -2,7 +2,7 @@ package org.freeplane.view.swing.map.overview;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.util.List;
+import java.awt.Window;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
@@ -26,9 +26,6 @@ import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 
-import net.infonode.docking.DockingWindow;
-import net.infonode.docking.DockingWindowAdapter;
-import net.infonode.docking.View;
 
 public class BookmarkToolbarPane extends JComponent implements IMapViewChangeListener, IFreeplanePropertyListener, IMapChangeListener, INodeSelectionListener {
     private static final long serialVersionUID = 1L;
@@ -55,66 +52,18 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         Controller.getCurrentController().getMapViewManager().addMapViewChangeListener(this);
         ResourceController.getResourceController().addPropertyChangeListener(this);
 
-        attachDockingWindowListeners(rootWindow);
 
-        SwingUtilities.invokeLater(this::initializeToolbarForContainedMapViews);
-    }
-
-    private void attachDockingWindowListeners(Component window) {
-        if (window instanceof DockingWindow) {
-            ((DockingWindow) window).addListener(createDockingWindowAdapter());
-        }
-    }
-
-    private DockingWindowAdapter createDockingWindowAdapter() {
-        return new DockingWindowAdapter() {
-            @Override
-            public void viewFocusChanged(View previouslyFocusedView, View focusedView) {
-                if (focusedView != null && SwingUtilities.isDescendingFrom(focusedView, rootWindow) ) {
-                    Component containedMapView = getContainedMapView(focusedView);
-                    if (containedMapView instanceof MapView) {
-                        updateToolbarForMapView((MapView) containedMapView);
-                    }
-                }
-            }
-
-            @Override
-            public void windowAdded(DockingWindow addedToWindow, DockingWindow addedWindow) {
-            	if ((currentSelectedMapView == null
-            			|| ! currentSelectedMapView.isSelected()) && (addedWindow instanceof View)
-            			&& SwingUtilities.isDescendingFrom(addedWindow, rootWindow)) {
-					final MapView mapView = getContainedMapView((View) addedWindow);
-					if(mapView != null)
-						updateToolbarForMapView(mapView);
-				}
-            }
-
-            @Override
-            public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
-                if (currentSelectedMapView != null && removedWindow instanceof View) {
-                    Component containedMapView = getContainedMapView((View) removedWindow);
-                    if (containedMapView == currentSelectedMapView) {
-                    	refreshToolbarForContainedMapViews();
-                    }
-                }
-            }
-        };
-    }
-
-    @Override
-    public void afterViewChange(Component oldView, Component newView) {
         refreshToolbarForContainedMapViews();
     }
 
     @Override
-    public void afterViewClose(Component oldView) {
-        refreshToolbarForContainedMapViews();
-    }
+    public void afterViewChange(Component oldView, Component newView) {  }
 
     @Override
-    public void afterViewCreated(Component newView) {
-        refreshToolbarForContainedMapViews();
-    }
+    public void afterViewClose(Component oldView) {  }
+
+    @Override
+    public void afterViewCreated(Component newView) {  }
 
     @Override
     public void propertyChanged(String propertyName, String newValue, String oldValue) {
@@ -127,7 +76,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
                 if (bookmarksToolbar != null) {
                     bookmarksToolbar.setVisible(isBookmarksToolbarVisible);
                 }
-                updateBookmarksToolbar();
+                refreshToolbarLater();
             }
         }
     }
@@ -137,21 +86,9 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
         return mapView.getModeController().getModeName().equals(MModeController.MODENAME);
     }
 
-    private MapView getContainedMapView(View dockedWindow) {
-        if (dockedWindow.getComponent() instanceof MapViewPane) {
-            MapViewPane mapViewPane = (MapViewPane) dockedWindow.getComponent();
-            return (MapView) mapViewPane.getMapViewScrollPane().getViewport().getView();
-        }
-        return null;
-    }
-
-    private void initializeToolbarForContainedMapViews() {
-        refreshToolbarForContainedMapViews();
-    }
-
     private void refreshToolbarForContainedMapViews() {
         final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
-		MapView mapViewToUse = (MapView) mapViewManager.findMapViewContainedIn(rootWindow);
+        MapView mapViewToUse = (MapView) mapViewManager.getLastSelectedMapViewContainedIn(rootWindow);
         if (mapViewToUse != null) {
             updateToolbarForMapView(mapViewToUse);
         } else {
@@ -159,11 +96,11 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
                 remove(bookmarksToolbar);
                 bookmarksToolbar = null;
             }
-            currentSelectedMapView = null;
             if (currentMap != null) {
                 currentMap.removeMapChangeListener(this);
                 currentMap = null;
             }
+            currentSelectedMapView = null;
         }
     }
 
@@ -218,6 +155,22 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
             }
         }
         bookmarksUpdateScheduled = false;
+    }
+
+    private boolean refreshScheduled;
+
+    private void refreshToolbarLater() {
+        if (refreshScheduled) {
+            return;
+        }
+        refreshScheduled = true;
+        SwingUtilities.invokeLater(() -> {
+            try {
+                refreshToolbarForContainedMapViews();
+            } finally {
+                refreshScheduled = false;
+            }
+        });
     }
 
     private void updateBookmarksToolbarLater() {
@@ -278,9 +231,9 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
     @Override
     public void onSelect(NodeModel node) {
         if(currentSelectedMapView == null) {
-        	final Component selectedMapView = Controller.getCurrentController().getMapViewManager().getMapViewComponent();
-        	if(selectedMapView instanceof MapView && SwingUtilities.isDescendingFrom(selectedMapView, rootWindow))
-        		updateToolbarForMapView((MapView) selectedMapView);
+            final Component selectedMapView = Controller.getCurrentController().getMapViewManager().getMapViewComponent();
+            if(selectedMapView instanceof MapView && SwingUtilities.isDescendingFrom(selectedMapView, rootWindow))
+                refreshToolbarLater();
         }
         if (currentSelectedMapView != null && currentSelectedMapView.isSelected()) {
             updateBookmarksToolbarLater();
@@ -299,4 +252,21 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
             currentSelectedMapView = null;
         }
     }
+
+    @Override
+    public void afterWindowLastSelectedMapViewChanged(Window window, Component newView) {
+        Window myWindow = SwingUtilities.getWindowAncestor(this);
+        if (myWindow == window && newView != currentSelectedMapView && newView instanceof MapView) {
+            updateToolbarForMapView((MapView) newView);
+        }
+    }
+
+    @Override
+    public void afterWindowLastSelectedMapViewRemoved(Window window) {
+        Window myWindow = SwingUtilities.getWindowAncestor(this);
+        if (myWindow == window) {
+            refreshToolbarForContainedMapViews();
+        }
+    }
+
 }

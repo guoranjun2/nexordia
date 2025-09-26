@@ -15,28 +15,35 @@ import javax.swing.JComponent;
 import javax.swing.JSplitPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
-
+import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.ui.ViewController;
 
-class AuxillaryEditorSplitPane extends JSplitPane {
-	private static final String AUX_SPLIT_PANE_LAST_POSITION = "aux_split_pane_last_position";
-
-
+class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyListener {
 	private static final long serialVersionUID = 1L;
 	private JComponent auxillaryComponent;
 	private Component mainComponent;
 	private boolean dividerLocationIsRestored;
-	/** Contains the value where the Note Window should be displayed (right, left, top, bottom) */
-	private static String auxillaryComponentLocation = ResourceController.getResourceController().getProperty("note_location", "bottom");
-	final private ApplicationResourceController resourceController;
-
+	final private AuxiliarySplitPaneController controller;
+	private String currentLocation;
+	private AuxiliarySplitPanes manager;
 
 	private String mode;
 
+	// Optional binding to a visibility property (e.g., "outlineVisible")
+	private String auxVisibilityBaseKey; // e.g., "outlineVisible"
+	private boolean auxVisibilityBound;
+
 	public AuxillaryEditorSplitPane(Component mainComponent) {
-		resourceController = (ApplicationResourceController) ResourceController.getResourceController();
+		this(mainComponent, new AuxiliarySplitPaneController("aux_split_pane_last_position", "note_location", "bottom"));
+	}
+
+	public AuxillaryEditorSplitPane(Component mainComponent, AuxiliarySplitPaneController controller) {
+		this.controller = controller;
 		this.mainComponent = mainComponent;
-		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		this.currentLocation = controller.getLocation();
+		if (JSplitPane.TOP.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			setLeftComponent(null);
 			setRightComponent(mainComponent);
 		} else {
@@ -70,7 +77,8 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	private void insertComponentIntoSplitPane(final JComponent pAuxillaryComponent) {
 		Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		if (JSplitPane.RIGHT.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		this.currentLocation = controller.getLocation();
+		if (JSplitPane.RIGHT.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			if(getOrientation() != JSplitPane.HORIZONTAL_SPLIT) {
 				setOrientation(JSplitPane.HORIZONTAL_SPLIT);
 				dividerLocationIsRestored = false;
@@ -82,7 +90,7 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 				dividerLocationIsRestored = false;
 			}
 		}
-		if (JSplitPane.TOP.equals(auxillaryComponentLocation) || JSplitPane.LEFT.equals(auxillaryComponentLocation)) {
+		if (JSplitPane.TOP.equals(currentLocation) || JSplitPane.LEFT.equals(currentLocation)) {
 			if(getRightComponent() != mainComponent) {
 				repositionComponent(mainComponent, JSplitPane.RIGHT);
 			}
@@ -115,6 +123,7 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		}
 		revalidate();
 		repaint();
+		applyAuxVisibility();
 	}
 
 	private void repositionComponent(Component component, String constraints) {
@@ -155,11 +164,11 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 		if(dividerLocationIsRestored || auxillaryComponent == null)
 			return;
 		double lastSplitPanePosition = Double.NaN;
-		if (JSplitPane.LEFT.equals(auxillaryComponentLocation) || JSplitPane.TOP.equals(auxillaryComponentLocation)) {
-			lastSplitPanePosition = 1.0 - resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
+		if (JSplitPane.LEFT.equals(currentLocation) || JSplitPane.TOP.equals(currentLocation)) {
+			lastSplitPanePosition = 1.0 - controller.getPosition(Double.NaN);
 		}
 		else {
-			lastSplitPanePosition = resourceController.getDoubleProperty(AUX_SPLIT_PANE_LAST_POSITION, Double.NaN);
+			lastSplitPanePosition = controller.getPosition(Double.NaN);
 		}
 
 		if (Double.isNaN(lastSplitPanePosition)) {
@@ -181,11 +190,11 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	private void saveSplitPanePosition() {
 		double proportionalLocation = getProportionalDividerLocation();
-		if ("left".equals(auxillaryComponentLocation) || "top".equals(auxillaryComponentLocation)) {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(1.0 - proportionalLocation));
+		if ("left".equals(currentLocation) || "top".equals(currentLocation)) {
+			controller.setPosition(1.0 - proportionalLocation);
 		}
 		else {
-			resourceController.setProperty(AUX_SPLIT_PANE_LAST_POSITION, String.valueOf(proportionalLocation));
+			controller.setPosition(proportionalLocation);
 		}
 	}
 
@@ -200,9 +209,13 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 	}
 
 	public void changeNoteWindowLocation(String location) {
-		if(location == null || location.equals(auxillaryComponentLocation))
+		if(location == null || location.equals(currentLocation))
 			return;
-		auxillaryComponentLocation = resourceController.getProperty("note_location");
+		
+		// Update the controller's location and save current location
+		controller.setLocation(location);
+		
+		// Re-layout if we have both components
 		if(getLeftComponent() != null && getRightComponent() != null){
 			insertComponentIntoSplitPane(auxillaryComponent);
 		}
@@ -210,6 +223,22 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 
 	public JComponent getAuxiliaryComponent() {
 		return auxillaryComponent;
+	}
+	
+	/**
+	 * Sets the manager that created this split pane.
+	 * This allows access back to the nested structure manager.
+	 */
+	void setManager(AuxiliarySplitPanes manager) {
+		this.manager = manager;
+	}
+	
+	/**
+	 * Gets the manager that created this split pane.
+	 * @return the manager or null if this was created directly
+	 */
+	public AuxiliarySplitPanes getManager() {
+		return manager;
 	}
 
 
@@ -226,6 +255,10 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 			super.remove(auxillaryComponent);
 			auxillaryComponent = null;
 			dividerLocationIsRestored = false;
+			if (getLeftComponent() != mainComponent) {
+				repositionComponent(mainComponent, JSplitPane.LEFT);
+				setRightComponent(null);
+			}
 		}
 	}
 
@@ -236,6 +269,51 @@ class AuxillaryEditorSplitPane extends JSplitPane {
 				toSplitPane.insertComponentIntoSplitPane(auxillaryComponent, mode);
 			else
 				removeAuxiliaryComponent();
+		}
+	}
+
+	// --- Property binding for auxiliary component visibility ---
+	public void bindAuxiliaryVisibilityToProperty(String baseKey) {
+		this.auxVisibilityBaseKey = baseKey; // expects keys baseKey and baseKey+".fullscreen"
+		if (!auxVisibilityBound) {
+			ResourceController.getResourceController().addPropertyChangeListener(this);
+			auxVisibilityBound = true;
+		}
+		applyAuxVisibility();
+	}
+
+	private void applyAuxVisibility() {
+		if (auxVisibilityBaseKey == null) return;
+		boolean fs = false;
+		try {
+			ViewController vc = Controller.getCurrentController().getViewController();
+			fs = vc != null && vc.isFullScreenEnabled();
+		} catch (Exception ignore) { }
+		String key = auxVisibilityBaseKey + (fs ? ".fullscreen" : "");
+		boolean visible = ResourceController.getResourceController().getBooleanProperty(key);
+		if (auxillaryComponent != null) {
+			auxillaryComponent.setVisible(visible);
+			revalidate();
+			repaint();
+		}
+	}
+
+	@Override
+	public void propertyChanged(String propertyName, String newValue, String oldValue) {
+		if (auxVisibilityBaseKey == null) return;
+		if (propertyName.equals(auxVisibilityBaseKey)
+				|| propertyName.equals(auxVisibilityBaseKey + ".fullscreen")
+				|| ViewController.FULLSCREEN_ENABLED_PROPERTY.equals(propertyName)) {
+			applyAuxVisibility();
+		}
+	}
+
+	@Override
+	public void removeNotify() {
+		super.removeNotify();
+		if (auxVisibilityBound) {
+			ResourceController.getResourceController().removePropertyChangeListener(this);
+			auxVisibilityBound = false;
 		}
 	}
 }

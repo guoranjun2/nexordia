@@ -30,7 +30,7 @@ import org.freeplane.core.util.TextUtils;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
 /** implementation of <remind> properties. */
-public class MaybeBooleanProperty extends PropertyBean implements IPropertyControl {
+public class MaybeBooleanProperty extends PropertyBean {
 	public static final String ASK_VALUE = "ask";
 	protected static final int ASK_VALUE_INT = 2;
 	static public final String FALSE_VALUE = "false";

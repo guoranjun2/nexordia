@@ -232,6 +232,13 @@ public class Filter implements IExtension {
 				|| accepts(node);
 	}
 
+	public boolean isVisibleOrAncestor(final NodeModel node) {
+		return filteredElement == FilteredElement.CONNECTOR && ! NodeVisibility.isHidden(node)
+				|| accepts(node, hidesMatchingElements
+                		? (options | FilterInfo.SHOW_AS_HIDDEN_ANCESTOR)
+                		: (options | FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
+	}
+
 	public boolean isVisible(final ConnectorModel connector) {
 	    return filteredElement == FilteredElement.NODE
 	            || accepts(connector.getSource())
@@ -243,9 +250,10 @@ public class Filter implements IExtension {
     }
 
     public boolean isFoldable(final NodeModel node) {
-        return  filteredElement == FilteredElement.CONNECTOR || (hidesMatchingElements ?
-                accepts(node, options & FilterInfo.SHOW_AS_HIDDEN_DESCENDANT | FilterInfo.SHOW_AS_HIDDEN_ANCESTOR)
-                : accepts(node, options & FilterInfo.SHOW_AS_MATCHED_DESCENDANT | FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
+        return  filteredElement == FilteredElement.CONNECTOR ||
+                accepts(node, hidesMatchingElements
+                		? (options & FilterInfo.SHOW_AS_HIDDEN_DESCENDANT | FilterInfo.SHOW_AS_HIDDEN_ANCESTOR)
+                		: (options & FilterInfo.SHOW_AS_MATCHED_DESCENDANT | FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
     }
 
     private boolean accepts(final NodeModel node, int options) {
@@ -355,7 +363,36 @@ public class Filter implements IExtension {
         }
     }
 
-	public void reset(NodeModel node) {
-		getFilterInfo(node).reset();
-	}
+    public void reset(NodeModel node) {
+        getFilterInfo(node).reset();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Filter)) return false;
+        Filter other = (Filter) obj;
+        return this.hidesMatchingElements == other.hidesMatchingElements
+                && this.appliesToVisibleElementsOnly == other.appliesToVisibleElementsOnly
+                && this.filteredElement == other.filteredElement
+                && this.areAncestorsShown() == other.areAncestorsShown()
+                && this.areDescendantsShown() == other.areDescendantsShown()
+                && Objects.equals(this.condition, other.condition)
+                && Objects.equals(this.baseFilter, other.baseFilter);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(condition, hidesMatchingElements, appliesToVisibleElementsOnly,
+                filteredElement, Boolean.valueOf(areAncestorsShown()), Boolean.valueOf(areDescendantsShown()), baseFilter);
+    }
+
+    public boolean equalsIgnoringAncestors(Filter other) {
+        if (other == null) return false;
+        return this.hidesMatchingElements == other.hidesMatchingElements
+                && this.appliesToVisibleElementsOnly == other.appliesToVisibleElementsOnly
+                && this.filteredElement == other.filteredElement
+                && Objects.equals(this.condition, other.condition)
+                && Objects.equals(this.baseFilter, other.baseFilter);
+    }
 }

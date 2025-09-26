@@ -26,7 +26,7 @@ import javax.swing.event.ChangeListener;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class NumberSliderProperty extends PropertyBean implements IPropertyControl {
+public class NumberSliderProperty extends PropertyBean {
 
 	final private JSlider transparencySlider;
 

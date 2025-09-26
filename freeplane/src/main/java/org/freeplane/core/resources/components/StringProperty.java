@@ -27,7 +27,7 @@ import javax.swing.JTextField;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class StringProperty extends PropertyBean implements IPropertyControl {
+public class StringProperty extends PropertyBean {
 	final JTextField mTextField;
 
 	/**

@@ -20,6 +20,9 @@
 package org.freeplane.features.ui;
 
 import java.awt.Component;
+import java.awt.Window;
+
+import org.freeplane.features.filter.Filter;
 
 public interface IMapViewChangeListener {
 	default void afterViewChange(Component oldView, Component newView) {};
@@ -28,7 +31,13 @@ public interface IMapViewChangeListener {
 
 	default void afterViewCreated(Component newView) {};
 
+	default void afterFilterChange(Component view, Filter newFilter) {};
+
 	default void afterViewDisplayed(Component oldView, Component newView) {};
 
-	default void beforeViewChange(Component oldView, Component newView) {};
+    default void beforeViewChange(Component oldView, Component newView) {};
+
+
+    default void afterWindowLastSelectedMapViewChanged(Window window, Component newView) {};
+    default void afterWindowLastSelectedMapViewRemoved(Window window) {};
 }

@@ -39,7 +39,7 @@ import org.freeplane.core.util.TextUtils;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class ComboProperty extends PropertyBean implements IPropertyControl, ActionListener {
+public class ComboProperty extends PropertyBean implements ActionListener {
 	static public Vector<Object> translate(final String[] possibles) {
 		final Vector<Object> displayedItems = new Vector<Object>(possibles.length);
 		for (int i = 0; i < possibles.length; i++) {

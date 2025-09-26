@@ -706,7 +706,7 @@ public class UITools {
         }
         catch (Exception e) {
         }
-		FONT_SCALE_FACTOR = factor;
+		FONT_SCALE_FACTOR = factor > 0 ? factor :Defaults.DEFAULT_FONT_SCALING_FACTOR;
 	}
 	private static JTabbedPane FREEPLANE_TABBED_PANEL;
 

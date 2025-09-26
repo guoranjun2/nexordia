@@ -524,7 +524,7 @@ public class OptionPanelBuilder {
 		@Override
 		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
 			final String label = data.getAttribute("text", "OptionPanel.separator." + name);
-			return createSeparatorCreator(label);
+			return createSeparatorCreator(name, label);
 		}
 	}
 
@@ -548,7 +548,7 @@ public class OptionPanelBuilder {
 		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
 			final String label = "OptionPanel." + name;
 			final String layout = data.getAttribute("layout", null);
-			return createTabCreator(label, layout);
+			return createTabCreator(name, label, layout);
 		}
 	}
 
@@ -633,8 +633,8 @@ public class OptionPanelBuilder {
 		addCreator(path, createMaybeBooleanProperty(name), name, position);
 	}
 
-	public void addSeparator(final String path, final String name, final int position) {
-		addCreator(path, createSeparatorCreator(name), name, position);
+	public void addSeparator(final String path, final String name, final String label, final int position) {
+		addCreator(path, createSeparatorCreator(name, label), name, position);
 	}
 
 	public void addStringProperty(final String path, final String name, final int position) {
@@ -646,7 +646,8 @@ public class OptionPanelBuilder {
 	}
 
 	public void addTab(final String name, final String layout, final int position) {
-		tree.addElement(tree, createTabCreator(name, layout), name, position);
+		final String label = "OptionPanel." + name;
+		tree.addElement(tree, createTabCreator(name, label, layout), name, position);
 	}
 
 	public void addText(final String path, final String name, final int position) {
@@ -777,11 +778,11 @@ public class OptionPanelBuilder {
             }
         };
     }
-	private IPropertyControlCreator createSeparatorCreator(final String label) {
+	private IPropertyControlCreator createSeparatorCreator(final String name, final String label) {
 		return new IPropertyControlCreator() {
 			@Override
 			public IPropertyControl createControl() {
-				return new SeparatorProperty(label);
+				return new SeparatorProperty(name, label);
 			}
 
 			@Override
@@ -792,6 +793,11 @@ public class OptionPanelBuilder {
 			@Override
 			public String getTranslatedText() {
 				return TextUtils.getOptionalText(label, "");
+			}
+
+			@Override
+			public String getStructureIdentifier() {
+				return name;
 			}
 		};
 	}
@@ -824,14 +830,14 @@ public class OptionPanelBuilder {
 		};
 	}
 
-	private IPropertyControlCreator createTabCreator(final String label, final String layout) {
+	private IPropertyControlCreator createTabCreator(final String name, final String label, final String layout) {
 		return new IPropertyControlCreator() {
 			@Override
 			public IPropertyControl createControl() {
 				if (layout != null) {
-					return new TabProperty(label, layout);
+					return new TabProperty(name, label, layout);
 				}
-				return new TabProperty(label);
+				return new TabProperty(name, label);
 			}
 
 			@Override
@@ -842,6 +848,11 @@ public class OptionPanelBuilder {
 			@Override
 			public String getTranslatedText() {
 				return TextUtils.getOptionalText(label, "");
+			}
+
+			@Override
+			public String getStructureIdentifier() {
+				return name;
 			}
 
 		};

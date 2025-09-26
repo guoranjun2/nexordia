@@ -22,13 +22,11 @@ package org.freeplane.features.map.mindmapmode;
 import java.awt.event.ActionEvent;
 
 import org.freeplane.core.ui.AFreeplaneAction;
-import org.freeplane.features.mode.Controller;
-import org.freeplane.features.bookmarks.mindmapmode.NodeBookmark;
-import org.freeplane.features.bookmarks.mindmapmode.NodeBookmarkDescriptor;
+import org.freeplane.features.bookmarks.mindmapmode.NodeNavigator;
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.mode.Controller;
 class OpenSelectionAsNewViewRootAction extends AFreeplaneAction {
-	private static final NodeBookmarkDescriptor EMPTY_DESCRIPTOR = new NodeBookmarkDescriptor("", true);
 	/**
 	 *
 	 */
@@ -47,7 +45,7 @@ class OpenSelectionAsNewViewRootAction extends AFreeplaneAction {
 		final IMapSelection selection = currentController.getSelection();
 		if(selection != null) {
 			NodeModel viewRoot = selection.getSelected();
-			new NodeBookmark(viewRoot, EMPTY_DESCRIPTOR).openAsNewView();
+			new NodeNavigator(viewRoot).openAsNewView();
 		}
 	}
 }

@@ -73,7 +73,7 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 		Window newFocusedWindow = (Window) evt.getNewValue();
 		final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
 		final JComponent selectedComponent = mapViewManager.getMapViewComponent();
-		final JComponent containedMapView = mapViewManager.findMapViewContainedIn(newFocusedWindow);
+        final JComponent containedMapView = mapViewManager.getLastSelectedMapViewContainedIn(newFocusedWindow);
 		if(selectedComponent == containedMapView) {
 			if(uiElementsFollowSelectedMap)
 				afterUIWindowChange(newFocusedWindow);
@@ -173,26 +173,33 @@ class FrameComponentMover implements IMapViewChangeListener, PropertyChangeListe
 	}
 
 	private void moveAuxiliaryComponents(JFrame fromFrame, JFrame toFrame) {
-		AuxillaryEditorSplitPane fromSplitPane = findAuxiliarySplitPane(fromFrame);
-		AuxillaryEditorSplitPane toSplitPane = findAuxiliarySplitPane(toFrame);
+		AuxiliarySplitPanes fromSplitPanes = findAuxiliarySplitPanes(fromFrame);
+		AuxiliarySplitPanes toSplitPanes = findAuxiliarySplitPanes(toFrame);
 
-		if (fromSplitPane != null && toSplitPane != null) {
+		if (fromSplitPanes != null && toSplitPanes != null) {
 			EventQueue.invokeLater(() ->
-				fromSplitPane.moveAuxillaryComponentTo(toSplitPane, Controller.getCurrentModeController().getModeName()));
+				moveAuxiliaryComponentBetweenManagers(fromSplitPanes, toSplitPanes));
 		}
 	}
 
-	private AuxillaryEditorSplitPane findAuxiliarySplitPane(JFrame frame) {
+	private AuxiliarySplitPanes findAuxiliarySplitPanes(JFrame frame) {
 		Container contentPane = frame.getContentPane();
 		if (contentPane.getLayout() instanceof BorderLayout) {
 			Component centerComponent = ((BorderLayout) contentPane.getLayout())
 				.getLayoutComponent(contentPane, BorderLayout.CENTER);
 			if (centerComponent instanceof AuxillaryEditorSplitPane) {
-				return (AuxillaryEditorSplitPane) centerComponent;
+				AuxillaryEditorSplitPane rootPane = (AuxillaryEditorSplitPane) centerComponent;
+				return rootPane.getManager();
 			}
 		}
 		return null;
 	}
+
+    private void moveAuxiliaryComponentBetweenManagers(AuxiliarySplitPanes fromManager, AuxiliarySplitPanes toManager) {
+        String modeName = Controller.getCurrentModeController().getModeName();
+        // Only move the level-0 auxiliary (note pane). Outline and other levels remain per-frame.
+        fromManager.moveAuxiliaryNoteTo(toManager, modeName);
+    }
 
 	public JFrame getUIFrame() {
 		return lastUIFrame;

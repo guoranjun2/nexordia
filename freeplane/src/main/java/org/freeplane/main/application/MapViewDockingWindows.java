@@ -27,6 +27,7 @@ import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
 import java.awt.Window;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
@@ -59,8 +60,6 @@ import javax.swing.RootPaneContainer;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
-import javax.swing.event.InternalFrameAdapter;
-import javax.swing.event.InternalFrameEvent;
 
 import org.apache.commons.codec.binary.Base64;
 import org.freeplane.api.TextWritingDirection;
@@ -74,8 +73,10 @@ import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.IMapViewChangeListener;
+import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.url.mindmapmode.DroppedMindMapOpener;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.MapViewController;
 import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.map.overview.MapViewPane;
 import org.freeplane.view.swing.ui.DefaultMapMouseListener;
@@ -125,7 +126,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 	private static final String FREEPLANE_FLOATING_WINDOW = "freeplaneFloatingWindow";
 	private static final String CUSTOMIZED_TAB_NAME_PROPERTY = "customizedTabName";
-    // // 	final private Controller controller;
+
 	private static final String OPENED_NOW = "openedNow_1.3.04";
 	private RootWindow rootWindow = null;
 	final private Vector<Component> mapViews;
@@ -138,7 +139,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	private Dimension capturedWindowSize = null;
 	private final ApplicationViewController applicationViewController;
 
-	public MapViewDockingWindows(ApplicationViewController applicationViewController) {
+    public MapViewDockingWindows(ApplicationViewController applicationViewController) {
 		this.applicationViewController = applicationViewController;
 		viewSerializer = new MapViewSerializer();
 		rootWindow = new RootWindow(viewSerializer);
@@ -161,19 +162,55 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 		final Controller controller = Controller.getCurrentController();
 		controller.getMapViewManager().addMapViewChangeListener(this);
+
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("focusedWindow", evt -> {
+			Window newWindow = (Window) evt.getNewValue();
+			if (newWindow == null)
+				return;
+			IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+			JComponent candidate = null;
+            try {
+                JComponent selected = mgr.getMapViewComponent();
+                if (selected != null && SwingUtilities.isDescendingFrom(selected, newWindow))
+                    candidate = selected;
+                else
+                    candidate = mgr.getLastSelectedMapViewContainedIn(newWindow);
+            } catch (Exception ignore) { }
+            if (candidate == null) {
+                candidate = findAnyVisibleMapViewInWindow(newWindow);
+            }
+			if (newWindow instanceof RootPaneContainer) {
+				JRootPane root = ((RootPaneContainer) newWindow).getRootPane();
+				root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, candidate);
+			}
+			if (mgr instanceof MapViewController) {
+				((MapViewController) mgr).updateWindowLastSelectedMapView(newWindow,
+						candidate instanceof MapView ? (MapView) candidate : null);
+			}
+        });
 		rootWindow.addListener(new DockingWindowAdapter(){
 
 			private IconColorReplacer iconColorReplacer;
 
 			@Override
             public void viewFocusChanged(View previouslyFocusedView, View focusedView) {
-				if (focusedView != null) {
-	            	Component containedMapView = getContainedMapView(focusedView);
-					final Component mapViewComponent = Controller.getCurrentController().getMapViewManager()
-					    .getMapViewComponent();
-					if (containedMapView != mapViewComponent)
-						viewSelectionChanged(containedMapView);
-	            }
+                if (focusedView != null) {
+                    Component containedMapView = getContainedMapView(focusedView);
+
+                    Window top = (Window) focusedView.getTopLevelAncestor();
+                    if (top instanceof RootPaneContainer && containedMapView instanceof MapView) {
+                        JRootPane root = ((RootPaneContainer) top).getRootPane();
+                        root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
+                        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                        if (mgr instanceof MapViewController) {
+                            ((MapViewController) mgr).updateWindowLastSelectedMapView(top, (MapView) containedMapView);
+                        }
+                    }
+                    final Component mapViewComponent = Controller.getCurrentController().getMapViewManager()
+                            .getMapViewComponent();
+                    if (containedMapView != mapViewComponent)
+                        viewSelectionChanged(containedMapView);
+                }
             }
 
 			@Override
@@ -188,7 +225,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 			@Override
             public void windowAdded(final DockingWindow addedToWindow, final DockingWindow addedWindow) {
-				if(addedWindow instanceof TabWindow) {
+                if(addedWindow instanceof TabWindow) {
 					final DockingWindowProperties windowProperties = addedWindow.getWindowProperties();
 					windowProperties.setDockEnabled(false);
 					windowProperties.setUndockEnabled(false);
@@ -197,9 +234,9 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 					else
 						setTabAreaPolicy((TabWindow) addedWindow, TabAreaVisiblePolicy.NEVER);
                 }
-				else if(addedWindow instanceof FloatingWindow) {
-					final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
-					if(topLevelAncestor instanceof JFrame){
+                else if(addedWindow instanceof FloatingWindow) {
+                    final Container topLevelAncestor = addedWindow.getTopLevelAncestor();
+                    if(topLevelAncestor instanceof JFrame){
 						if(iconColorReplacer == null)
 							iconColorReplacer = new IconColorReplacer((UITools.getFrame()).getIconImages());
 						final List<Image> iconImages = iconColorReplacer.getNextIconImages();
@@ -212,9 +249,48 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 						applyCapturedSize(topLevelAncestor);
 
 						Compat.registerFullScreenListener(frame);
-					}
-				}
-				setTabPolicies(addedWindow);
+
+                        addedWindow.addListener(new DockingWindowAdapter() {
+                            @Override
+                            public void viewFocusChanged(View previouslyFocusedView, View focusedView) {
+                                if (focusedView != null) {
+                                    Component containedMapView = getContainedMapView(focusedView);
+                                    Window top = (Window) focusedView.getTopLevelAncestor();
+                                    if (top instanceof RootPaneContainer && containedMapView instanceof MapView) {
+                                        JRootPane root = ((RootPaneContainer) top).getRootPane();
+                                        root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
+                                        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                                        if (mgr instanceof MapViewController) {
+                                            ((MapViewController) mgr)
+                                                    .updateWindowLastSelectedMapView(top, (MapView) containedMapView);
+                                        }
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
+                                if (removedWindow instanceof View) {
+                                    Component contained = getContainedMapView((View) removedWindow);
+                                    Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
+                                    if (sourceTop instanceof RootPaneContainer) {
+                                        JRootPane root = ((RootPaneContainer) sourceTop).getRootPane();
+                                        Object value = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                                        if (value == contained) {
+                                            root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                                            IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                                            if (mgr instanceof MapViewController) {
+                                                ((MapViewController) mgr)
+                                                        .updateWindowLastSelectedMapView((Window) removedFromWindow.getTopLevelAncestor(), null);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                setTabPolicies(addedWindow);
             }
 
 			private void setTabPolicies(final DockingWindow window) {
@@ -234,19 +310,49 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 			@Override
             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
-				// Capture CENTER component size from main frame before removal
+
 				captureCenterComponentSize(removedFromWindow);
 
 				if(removedWindow instanceof TabWindow) {
-	                if (removedFromWindow == rootWindow) {
-	                	final TabAreaProperties tabAreaProperties = ((TabWindow)removedWindow).getTabWindowProperties().getTabbedPanelProperties().getTabAreaProperties();
-	                    tabAreaProperties.setTabAreaVisiblePolicy(TabAreaVisiblePolicy.ALWAYS);
+                    if (removedFromWindow == rootWindow) {
+                    	final TabAreaProperties tabAreaProperties = ((TabWindow)removedWindow).getTabWindowProperties().getTabbedPanelProperties().getTabAreaProperties();
+                        tabAreaProperties.setTabAreaVisiblePolicy(TabAreaVisiblePolicy.ALWAYS);
                     }
                 }
                 else if(removedWindow instanceof FloatingWindow) {
-                    final Container topLevelAncestor = removedWindow.getTopLevelAncestor();
+                    final Container topLevelAncestor = removedFromWindow.getTopLevelAncestor();
                     if(topLevelAncestor instanceof Window) {
                         applicationViewController.removeAuxillaryPaneForFloatingWindow((Window) topLevelAncestor);
+
+                        if (topLevelAncestor instanceof RootPaneContainer) {
+                            JRootPane root = ((RootPaneContainer) topLevelAncestor).getRootPane();
+                            Object old = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                            if (old != null) {
+                                root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                                IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                                if (mgr instanceof MapViewController) {
+                                    ((MapViewController) mgr).updateWindowLastSelectedMapView((Window) topLevelAncestor, null);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (removedWindow instanceof View && ((View)removedWindow).getComponent() instanceof MapViewPane) {
+                    Component contained = getContainedMapView((View) removedWindow);
+                    Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
+                    if (sourceTop instanceof RootPaneContainer) {
+                        JRootPane root = ((RootPaneContainer) sourceTop).getRootPane();
+                        Object value = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                        if (value == contained) {
+
+                            IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                            JComponent replacement = findAnyVisibleMapViewInWindow(sourceTop);
+                            root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, replacement);
+                            if (mgr instanceof MapViewController) {
+                                ((MapViewController) mgr).updateWindowLastSelectedMapView(sourceTop,
+                                        replacement instanceof MapView ? (MapView) replacement : null);
+                            }
+                        }
                     }
                 }
             }
@@ -266,12 +372,12 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 	private void applyCapturedSize(Container topLevelAncestor) {
 		if (capturedWindowSize != null && topLevelAncestor instanceof RootPaneContainer) {
-			// Use InfoNode's exact same logic from setInternalSize()
+
 			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(capturedWindowSize);
 			((Window) topLevelAncestor).pack();
 			((RootPaneContainer) topLevelAncestor).getRootPane().setPreferredSize(null);
 
-			// Reset for next use
+
 			capturedWindowSize = null;
 		}
 	}
@@ -397,19 +503,55 @@ class MapViewDockingWindows implements IMapViewChangeListener {
         return UITools.getUIFontSize(0.8);
     }
 
+    private JComponent findAnyVisibleMapViewInWindow(Window window) {
+        for (Component c : mapViews.toArray(new Component[0])) {
+            if (c instanceof MapView && c.isShowing() && SwingUtilities.isDescendingFrom(c, window)) {
+                return (JComponent) c;
+            }
+        }
+        return null;
+    }
+
+    private JComponent resolveCandidateForWindow(Window window) {
+        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+        try {
+            JComponent selected = mgr.getMapViewComponent();
+            if (selected != null && SwingUtilities.isDescendingFrom(selected, window))
+                return selected;
+            JComponent last = mgr.getLastSelectedMapViewContainedIn(window);
+            if (last != null)
+                return last;
+        } catch (Exception ignore) { }
+        return findAnyVisibleMapViewInWindow(window);
+    }
+
+    private void setWindowLastSelectedMapView(Window window, JComponent candidate) {
+        if (window instanceof RootPaneContainer) {
+            ((RootPaneContainer) window).getRootPane()
+                    .putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, candidate);
+        }
+        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+        if (mgr instanceof MapViewController) {
+            ((MapViewController) mgr).updateWindowLastSelectedMapView(window,
+                    candidate instanceof MapView ? (MapView) candidate : null);
+        }
+    }
+
 	private void removeDesktopPaneAccelerators() {
 		 final InputMap map = new InputMap();
 		 rootWindow.setInputMap(JDesktopPane.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, map);
 	}
 
 
-	private DockingWindow getLastFocusedChildWindow(DockingWindow parentWindow) {
-  	  DockingWindow lastFocusedChildWindow = parentWindow.getLastFocusedChildWindow();
-  	  if(lastFocusedChildWindow == null)
-  		  return parentWindow;
-  	  else
-  		  return getLastFocusedChildWindow(lastFocusedChildWindow);
+    private DockingWindow getLastFocusedChildWindow(DockingWindow parentWindow) {
+        DockingWindow lastFocusedChildWindow = parentWindow.getLastFocusedChildWindow();
+        if(lastFocusedChildWindow == null)
+            return parentWindow;
+        else
+            return getLastFocusedChildWindow(lastFocusedChildWindow);
     }
+
+
 
 	@Override
 	public void afterViewChange(final Component pOldMap, final Component pNewMap) {
@@ -536,19 +678,29 @@ class MapViewDockingWindows implements IMapViewChangeListener {
         tabProperties.setToolTipText(file != null ? TextWritingDirection.LEFT_TO_RIGHT.isolatePathSeparators(file.getAbsolutePath()) :  null);
     }
 
-	@Override
-	public void afterViewClose(final Component pOldMapView) {
-		for (int i = 0; i < mapViews.size(); ++i) {
-			if (mapViews.get(i) == pOldMapView) {
-				mPaneSelectionUpdate = false;
-				getContainingDockedWindow(pOldMapView).close();
-				mapViews.remove(i);
-				mPaneSelectionUpdate = true;
-				rootWindow.repaint();
-				return;
-			}
-		}
-	}
+    @Override
+    public void afterViewClose(final Component pOldMapView) {
+        for (int i = 0; i < mapViews.size(); ++i) {
+            if (mapViews.get(i) == pOldMapView) {
+                mPaneSelectionUpdate = false;
+                getContainingDockedWindow(pOldMapView).close();
+                mapViews.remove(i);
+                mPaneSelectionUpdate = true;
+                rootWindow.repaint();
+
+                Window w = SwingUtilities.getWindowAncestor(pOldMapView);
+                if (w instanceof RootPaneContainer) {
+                    Object value = ((RootPaneContainer) w).getRootPane()
+                            .getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                    if (value == pOldMapView) {
+                        ((RootPaneContainer) w).getRootPane().putClientProperty(
+                                IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, null);
+                    }
+                }
+                return;
+            }
+        }
+    }
 	private void viewSelectionChanged(final Component mapView) {
 		if (!mPaneSelectionUpdate ||
 				! SwingUtilities.isDescendingFrom(mapView, applicationViewController.getMenuComponent())

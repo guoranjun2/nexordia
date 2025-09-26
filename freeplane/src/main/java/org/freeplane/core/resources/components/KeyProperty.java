@@ -38,7 +38,7 @@ import com.jgoodies.forms.layout.Sizes;
  * @author Dimitry Polivaev
  * 27.12.2008
  */
-public class KeyProperty extends PropertyBean implements IPropertyControl {
+public class KeyProperty extends PropertyBean {
 	private static RowSpec rowSpec;
 	private Icon icon;
 	private String labelText;

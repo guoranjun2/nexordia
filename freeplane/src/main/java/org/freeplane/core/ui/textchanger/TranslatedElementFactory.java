@@ -72,6 +72,21 @@ public class TranslatedElementFactory {
         return component;
     }
 
+    public static JMenuItem createMenuItem(Action action, String labelKey) {
+        final JMenuItem component = action != null ? new JMenuItem(action) : new JMenuItem();
+        final String text = TextUtils.getRawText(labelKey);
+        LabelAndMnemonicSetter.setLabelAndMnemonic(component, text);
+        TranslatedElement.TEXT.setKey(component, labelKey);
+        createTooltip(component, labelKey + ".tooltip");
+        if (action != null) {
+            Object ks = action.getValue(Action.ACCELERATOR_KEY);
+            if (ks instanceof javax.swing.KeyStroke) {
+                component.setAccelerator((javax.swing.KeyStroke) ks);
+            }
+        }
+        return component;
+    }
+
     public static JCheckBoxMenuItem createCheckboxMenuItem(String labelKey) {
         final String text = TextUtils.getRawText(labelKey);
         final JCheckBoxMenuItem component = new JCheckBoxMenuItem();

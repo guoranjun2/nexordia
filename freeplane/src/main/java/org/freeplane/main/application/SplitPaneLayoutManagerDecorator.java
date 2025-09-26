@@ -25,6 +25,7 @@ import java.awt.Dimension;
 import java.awt.LayoutManager;
 
 import javax.swing.JSplitPane;
+import javax.swing.JComponent;
 
 /**
  * @author Dimitry Polivaev
@@ -45,6 +46,12 @@ class SplitPaneLayoutManagerDecorator implements LayoutManager {
 	    final JSplitPane splitPane = (JSplitPane) parent;
     	if(isDividerRequired(splitPane))
     		return lm.preferredLayoutSize(parent);
+        if (splitPane instanceof AuxillaryEditorSplitPane) {
+            AuxillaryEditorSplitPane a = (AuxillaryEditorSplitPane) splitPane;
+            final Component aux = a.getAuxiliaryComponent();
+            final Component primary = aux == splitPane.getLeftComponent() ? splitPane.getRightComponent() : splitPane.getLeftComponent();
+            return primary != null ? primary.getPreferredSize() : lm.preferredLayoutSize(parent);
+        }
     	return splitPane.getLeftComponent().getPreferredSize();  		
     }
 
@@ -52,6 +59,12 @@ class SplitPaneLayoutManagerDecorator implements LayoutManager {
 	    final JSplitPane splitPane = (JSplitPane) parent;
     	if(isDividerRequired(splitPane))
     		return lm.minimumLayoutSize(parent);
+        if (splitPane instanceof AuxillaryEditorSplitPane) {
+            AuxillaryEditorSplitPane a = (AuxillaryEditorSplitPane) splitPane;
+            final Component aux = a.getAuxiliaryComponent();
+            final Component primary = aux == splitPane.getLeftComponent() ? splitPane.getRightComponent() : splitPane.getLeftComponent();
+            return primary != null ? primary.getMinimumSize() : lm.minimumLayoutSize(parent);
+        }
     	return splitPane.getLeftComponent().getMinimumSize();  		
     }
 
@@ -61,10 +74,18 @@ class SplitPaneLayoutManagerDecorator implements LayoutManager {
         	lm.layoutContainer(parent);
         	return;
     	}
-    	final Component leftComponent = splitPane.getLeftComponent();
+        final Component primary;
+        if (splitPane instanceof AuxillaryEditorSplitPane) {
+            AuxillaryEditorSplitPane a = (AuxillaryEditorSplitPane) splitPane;
+            final Component aux = a.getAuxiliaryComponent();
+            primary = aux == splitPane.getLeftComponent() ? splitPane.getRightComponent() : splitPane.getLeftComponent();
+        }
+        else {
+            primary = splitPane.getLeftComponent();
+        }
     	for(int i = 0; i < splitPane.getComponentCount(); i++){
     		final Component component = splitPane.getComponent(i);
-    		if(component.equals(leftComponent)){
+    		if(component.equals(primary)){
     			component.setBounds(0, 0, splitPane.getWidth(), splitPane.getHeight());
     		}
     		else{
@@ -74,9 +95,14 @@ class SplitPaneLayoutManagerDecorator implements LayoutManager {
     }
 
 	boolean isDividerRequired(final JSplitPane splitPane) {
+        if (splitPane instanceof AuxillaryEditorSplitPane) {
+            AuxillaryEditorSplitPane a = (AuxillaryEditorSplitPane) splitPane;
+            JComponent aux = a.getAuxiliaryComponent();
+            return aux != null && aux.isVisible();
+        }
         final Component rightComponent = splitPane.getRightComponent();
-    	final boolean rightComponentVisible = rightComponent != null&& rightComponent.isVisible();
-    	return rightComponentVisible;
+		final boolean rightComponentVisible = rightComponent != null && rightComponent.isVisible();
+		return rightComponentVisible;
     }
 
     public void addLayoutComponent(String name, Component comp) {

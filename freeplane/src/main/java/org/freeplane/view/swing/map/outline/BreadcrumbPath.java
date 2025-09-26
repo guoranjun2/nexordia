@@ -1,0 +1,95 @@
+package org.freeplane.view.swing.map.outline;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+class BreadcrumbPath {
+    private final TreeNode root;
+    private OutlineGeometry geometry;
+    private final VisibleOutlineState visibleState;
+    private OutlineViewport viewport;
+
+    BreadcrumbPath(TreeNode root, OutlineGeometry geometry, VisibleOutlineState visibleState, OutlineViewport viewport) {
+        this.root = root;
+        this.geometry = geometry;
+        this.visibleState = visibleState;
+        this.viewport = viewport;
+    }
+
+    void updateGeometry(OutlineGeometry geometry) {
+        this.geometry = geometry;
+    }
+
+    void setViewport(OutlineViewport viewport) {
+        this.viewport = viewport;
+    }
+
+    BreadcrumbState calculateBreadcrumbState() {
+        if (visibleState.getVisibleNodeCount() == 0) {
+            return null;
+        }
+
+        int currentBreadcrumbHeight = visibleState.getBreadcrumbAreaHeight();
+        int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
+
+        TreeNode firstFullyVisibleNode = visibleState.getNodeAtVisibleIndex(firstFullyVisibleNodeIndex);
+        if (firstFullyVisibleNode == null) return null;
+
+        if (firstFullyVisibleNode == root) {
+            if (currentBreadcrumbHeight == 0) {
+                return null;
+            } else {
+                return new BreadcrumbState(Collections.emptyList(), 0, 0);
+            }
+        }
+
+        List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(firstFullyVisibleNode);
+        int newBreadcrumbHeight = newBreadcrumbNodes.size() * geometry.rowHeight;
+        return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, firstFullyVisibleNodeIndex);
+    }
+
+    BreadcrumbState calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
+        int count = visibleState.getVisibleNodeCount();
+        if (count == 0) {
+            return null;
+        }
+
+        int clampedIndex = Math.max(0, Math.min(firstVisibleNodeIndex, count - 1));
+        TreeNode firstNode = visibleState.getNodeAtVisibleIndex(clampedIndex);
+        if (firstNode == null) {
+            return null;
+        }
+
+        if (firstNode == root) {
+            return new BreadcrumbState(Collections.emptyList(), 0, clampedIndex);
+        }
+
+        List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(firstNode);
+        int newBreadcrumbHeight = newBreadcrumbNodes.size() * geometry.rowHeight;
+        return new BreadcrumbState(newBreadcrumbNodes, newBreadcrumbHeight, clampedIndex);
+    }
+
+    private List<TreeNode> collectBreadcrumbNodes(TreeNode fromNode) {
+        List<TreeNode> breadcrumbNodes = new ArrayList<>();
+        TreeNode current = fromNode.getParent();
+        while (current != null) {
+            breadcrumbNodes.add(0, current);
+            current = current.getParent();
+        }
+        return breadcrumbNodes;
+    }
+
+    boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+        return breadcrumbNodes.contains(node);
+    }
+
+    int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
+        for (int i = 0; i < breadcrumbNodes.size(); i++) {
+            if (breadcrumbNodes.get(i) == node) {
+                return i;
+            }
+        }
+        return -1;
+    }
+}

@@ -22,7 +22,7 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Vector;
 
-public abstract class PropertyBean extends PropertyAdapter implements IPropertyControl {
+public abstract class PropertyBean extends PropertyAdapter {
 	
 	final private List<PropertyChangeListener> mPropertyChangeListeners = new Vector<PropertyChangeListener>();
 

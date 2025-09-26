@@ -26,37 +26,39 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
  * 27.12.2008
  */
 public class TabProperty implements IPropertyControl {
-	private static final String DEFAULT_LAYOUT_FORMAT = "right:max(40dlu;p), 4dlu, 200dlu:grow, 7dlu";
-	final private String label;
-	final private String layoutFormat;
+    private static final String DEFAULT_LAYOUT_FORMAT = "right:max(40dlu;p), 4dlu, 200dlu:grow, 7dlu";
+    private final String name;
+    private final String labelKey;
+    private final String layoutFormat;
 
-	public TabProperty(final String label) {
-		this(label, TabProperty.DEFAULT_LAYOUT_FORMAT);
-	}
+    public TabProperty(final String name, final String labelKey) {
+        this(name, labelKey, TabProperty.DEFAULT_LAYOUT_FORMAT);
+    }
 
-	public TabProperty(final String label, final String layoutFormat) {
-		super();
-		this.label = label;
-		this.layoutFormat = layoutFormat;
-	}
+    public TabProperty(final String name, final String labelKey, final String layoutFormat) {
+        super();
+        this.name = name;
+        this.labelKey = labelKey;
+        this.layoutFormat = layoutFormat != null ? layoutFormat : TabProperty.DEFAULT_LAYOUT_FORMAT;
+    }
 
-	@Override
-	public String getTooltip() {
-		return null;
-	}
+    @Override
+    public String getTooltip() {
+        return null;
+    }
 
-	@Override
-	public String getName() {
-		return null;
-	}
+    @Override
+    public String getName() {
+        return name;
+    }
 
-	public String getLabel() {
-		return label;
-	}
+    public String getLabel() {
+        return labelKey;
+    }
 
-	public String getLayout() {
-		return layoutFormat;
-	}
+    public String getLayout() {
+        return layoutFormat;
+    }
 
 	@Override
 	public void appendToForm(final DefaultFormBuilder builder) {

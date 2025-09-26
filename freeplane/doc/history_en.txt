@@ -2,6 +2,7 @@
 1.12.15
 ==============================
 Open selection as root in a new view (alt+shift+ESCAPE)
+Map outline panel
 
 ==============================
 1.12.14

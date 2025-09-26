@@ -35,4 +35,7 @@ public interface IPropertyControlCreator {
 	default String getTranslatedTooltipText() {
 		return TextUtils.getOptionalText("OptionPanel." + getPropertyName() + ".tooltip", "");
 	}
+	default String getStructureIdentifier() {
+		return "";
+	}
 }

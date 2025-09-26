@@ -24,7 +24,7 @@ import javax.swing.JComponent;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 
-public class ButtonProperty extends PropertyBean implements IPropertyControl {
+public class ButtonProperty extends PropertyBean {
 	final JButton mButton;
 
 	/**
