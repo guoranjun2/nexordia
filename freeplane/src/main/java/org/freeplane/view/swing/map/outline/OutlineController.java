@@ -60,7 +60,7 @@ class OutlineController implements OutlineActionTarget {
     @Override public void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
 
     void attachNavigationNode(TreeNode node, boolean isBreadcrumb, int rowIndex) {
-        int currentBreadcrumbHeight = treePanel.getVisibleState().getBreadcrumbAreaHeight();
+        int currentBreadcrumbHeight = treePanel.getVisibleNodes().getBreadcrumbAreaHeight();
         treePanel.attachNavigationNode(node, isBreadcrumb, rowIndex, currentBreadcrumbHeight);
     }
 
@@ -69,7 +69,7 @@ class OutlineController implements OutlineActionTarget {
     }
 
     TreeNode getHoveredNode() {
-        return treePanel.getVisibleState().getHoveredNode();
+        return treePanel.getVisibleNodes().getHoveredNode();
     }
 
     boolean areNavButtonsVisible() {

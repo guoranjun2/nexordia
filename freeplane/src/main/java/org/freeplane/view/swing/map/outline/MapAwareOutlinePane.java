@@ -66,7 +66,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	final NodeModel node = currentMapView.getSelected().getNode();
     	final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findVisibleOutlineNodeOrAncestor(node);
-        VisibleOutlineNodes vs = panel.getVisibleState();
+        VisibleOutlineNodes vs = panel.getVisibleNodes();
         int index = findVisibleIndex(target, vs, panel.getRoot());
         boolean visible = isNodeVisible(target, panel);
         if (!visible) {
@@ -362,7 +362,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     private OutlineTreeViewState captureCurrentState(ScrollableTreePanel panel) {
-        String firstId = panel.getVisibleState().getFirstVisibleNodeId();
+        String firstId = panel.getVisibleNodes().getFirstVisibleNodeId();
         TreeNode root = panel.getRoot();
         Map<String, Integer> levels = new HashMap<>();
         collectExpanded(root, levels);

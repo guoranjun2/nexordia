@@ -31,7 +31,7 @@ class OutlineSelectionManager {
         onSelected(node);
         selection.selectNode(node);
         panel.repaint();
-        VisibleOutlineNodes vs = panel.getVisibleState();
+        VisibleOutlineNodes vs = panel.getVisibleNodes();
         if (vs.findNodeIndexInVisibleList(node) < 0) {
             TreeNode preservedHoveredNode = vs.getHoveredNode();
             panel.hardResetBlocksPreservingHovered(preservedHoveredNode);
