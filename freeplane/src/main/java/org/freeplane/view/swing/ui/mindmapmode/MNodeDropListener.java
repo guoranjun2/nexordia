@@ -338,7 +338,7 @@ public class MNodeDropListener implements DropTargetListener {
 	private void handleLocalNodeMove(final DropTargetDropEvent dtde, DropContext context) throws Exception {
 		dtde.acceptDrop(context.dropAction);
 
-		final Collection<NodeModel> selectedNodes = context.mapController.getSelectedNodes();
+		final Collection<NodeModel> selectedNodes = NodeDropUtils.getNodeObjects(context.transferable);
 		final NodeModel[] selectedArray = selectedNodes.toArray(new NodeModel[selectedNodes.size()]);
 
 		NodeDropUtils.handleMoveOrCopyAction(context.transferable, context.targetNode,
@@ -350,7 +350,7 @@ public class MNodeDropListener implements DropTargetListener {
 	private void updateSelectionAfterNodeMove(DropContext context, NodeModel[] selectedArray) {
 		if (context.dropAsSibling || !context.targetNodeView.isFolded()) {
 			MouseEventActor.INSTANCE.withMouseEvent(() ->
-				context.controller.getSelection().replaceSelection(selectedArray));
+				context.mapView.getMapSelection().replaceSelection(selectedArray));
 		} else {
 			MouseEventActor.INSTANCE.withMouseEvent(() ->
 				context.mapView.selectAsTheOnlyOneSelected(context.targetNodeView));
