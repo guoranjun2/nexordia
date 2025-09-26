@@ -33,10 +33,10 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     private Rectangle lastBreadcrumbBounds;
 	protected FreeplaneToolBar toolbar;
 
-    OutlinePane(TreeNode rootNode) {
+    OutlinePane(OutlineDisplayMode displayMode, TreeNode rootNode) {
         this.breadcrumbPanel = new BreadcrumbPanel();
 
-        this.treePanel = new ScrollableTreePanel(rootNode, breadcrumbPanel);
+        this.treePanel = new ScrollableTreePanel(displayMode, rootNode, breadcrumbPanel);
         breadcrumbPanel.setBackgroundColorSupplier(treePanel::getBackground);
         this.treeScrollPane = new JScrollPane(treePanel);
         UITools.setScrollbarIncrement(treeScrollPane);
@@ -120,7 +120,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     	treePanel.rebuildFromNode(node);
     }
 
-    void setRootNode(TreeNode newRootNode) {
+    void setRootNode(OutlineDisplayMode displayMode, TreeNode newRootNode) {
         if (treePanel != null) {
             TreeNode oldRoot = treePanel.getRoot();
             if (oldRoot != null) {
@@ -133,7 +133,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
         BreadcrumbPanel newBreadcrumbPanel = new BreadcrumbPanel();
 
-        ScrollableTreePanel newTreePanel = new ScrollableTreePanel(newRootNode, newBreadcrumbPanel);
+        ScrollableTreePanel newTreePanel = new ScrollableTreePanel(displayMode, newRootNode, newBreadcrumbPanel);
         newBreadcrumbPanel.setBackgroundColorSupplier(newTreePanel::getBackground);
         JScrollPane newScrollPane = new JScrollPane(newTreePanel);
         UITools.setScrollbarIncrement(newScrollPane);
@@ -201,5 +201,9 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
 	public void setSelected(TreeNode node) {
 		treePanel.getOutlineSelection().selectNode(node);
+	}
+
+	OutlineDisplayMode getDisplayMode() {
+		return OutlineDisplayMode.DEFAULT;
 	}
 }

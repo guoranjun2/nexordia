@@ -54,7 +54,7 @@ class BlockPanel extends JPanel {
 		NodeButton button = new NodeButton(node, useColoredOutlineItems);
 
         int computedLevel = node.getLevel();
-        int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(computedLevel);
+        int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(parentPanel.getDisplayMode().showsNavigationButtons(), computedLevel);
 
         button.setBounds(actionX, y, button.getPreferredSize().width, rowHeight);
 

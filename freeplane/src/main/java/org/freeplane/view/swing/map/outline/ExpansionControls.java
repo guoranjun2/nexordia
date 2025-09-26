@@ -22,7 +22,7 @@ class ExpansionControls {
 
     void collapseNode(TreeNode node) {
     	if(node.isExpanded()) {
-    		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+    		final int minimalLevel = treePanel.getDisplayMode().getMinimalOutlineLevel();
     		if (node.getLevel() >= minimalLevel) {
     			node.applyExpansionLevel(0);
     			selectParentIfNeeded();
@@ -39,7 +39,7 @@ class ExpansionControls {
 
     void reduceNodeExpansion(TreeNode node) {
         int currentLevel = node.getMaxExpansionLevel();
-		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+		final int minimalLevel = treePanel.getDisplayMode().getMinimalOutlineLevel();
         if (currentLevel > minimalLevel - node.getLevel()) {
             node.applyExpansionLevel(currentLevel - 1);
             selectParentIfNeeded();

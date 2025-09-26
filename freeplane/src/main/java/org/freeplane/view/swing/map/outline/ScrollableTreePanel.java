@@ -48,14 +48,16 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private int lastBreadcrumbAreaHeight = -1;
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
+	private OutlineDisplayMode displayMode;
 
-    ScrollableTreePanel(TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
-        this(root, BLOCK_SIZE,breadcrumbPanel);
+    ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
+        this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
+		this.displayMode = displayMode;
         addMouseListener(new FocusSelectedButtonClickAdapter(focusManager));
         setOpaque(true);
 	}
 
-    private ScrollableTreePanel(TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
+    private ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
         super(null);
         this.root = root;
         this.blockSize = blockSize;
@@ -65,7 +67,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleNodes);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
-        this.navButtons = new NavigationButtons(geometry, expansionControls);
+        this.navButtons = new NavigationButtons(geometry, displayMode, expansionControls);
         this.blockLayout = new OutlineBlockLayout(blockCache, visibleNodes, geometry, nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
         this.geometryListener = this::handleGeometryChange;
@@ -376,7 +378,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     int calcTextButtonX(int level) {
-        return OutlineGeometry.getInstance().calculateNodeButtonX(level);
+        return OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
     }
 
     int getViewportWidth() {
@@ -432,7 +434,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                     btn.updateLabel();
                     int level = calculateNodeLevel(node);
                     if (level >= 0) {
-                        int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);
+                        int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
                         btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
                         int rightEdge = btn.getX() + btn.getWidth();
                         blockLayout.recordButtonRightEdge(rightEdge);
@@ -454,7 +456,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                         btn.updateLabel();
                         int level = calculateNodeLevel(node);
                         if (level >= 0) {
-                            int x = OutlineGeometry.getInstance().calculateNodeButtonX(level);
+                            int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
                             btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
                             int rightEdge = btn.getX() + btn.getWidth();
                             blockLayout.recordButtonRightEdge(rightEdge);
@@ -547,8 +549,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         }
         return false;
     }
-
-    private void removeBlocksFromBlockIndex(int startBlock) { blockLayout.removeBlocksFromBlockIndex(this, startBlock); }
 
     void onContentButtonHovered(TreeNode node) {
         TreeNode hoveredNode = visibleNodes.getHoveredNode();
@@ -896,4 +896,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
     Collection<BlockPanel> getBlockPanels() { return blockCache.values(); }
+
+	OutlineDisplayMode getDisplayMode() {
+		return displayMode;
+	}
 }

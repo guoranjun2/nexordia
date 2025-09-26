@@ -112,7 +112,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     public MapAwareOutlinePane() {
-    	super(NO_MAP_AVAILABLE);
+    	super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);
     	selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
     	displayState = new OutlineTreeViewStates();
     	bookmarkFilterCache = new BookmarkModeFilterCache();
@@ -201,7 +201,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             currentMapView = mapView;
             OutlineTreeViewState saved = loadSavedViewState(currentMapView);
             NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, saved);
-            if (displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK) {
+            final OutlineDisplayMode displayMode = displayState.getCurrentMode();
+			if (displayMode == OutlineDisplayMode.BOOKMARK) {
                 Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
                         () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
                 MapModel mapModel = mapView.getMap();
@@ -211,15 +212,19 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 }
             }
             builder.build();
-			final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+            currentRoot = builder.getRoot();
 
-
-    		currentRoot = builder.getRoot();
-    		if (builder.getApplicableState() == null || currentRoot.getExpansionLevel() < minimalLevel) {
-    			final int initialLevel = ResourceController.getResourceController().getIntProperty("initiallyExpandedOutlineLevel", 1);
-                currentRoot.applyExpansionLevel(Math.max(initialLevel, minimalLevel));
+            if(displayMode != OutlineDisplayMode.BOOKMARK) {
+            	final int minimalLevel = displayMode.getMinimalOutlineLevel();
+            	if (builder.getApplicableState() == null || currentRoot.getExpansionLevel() < minimalLevel) {
+            		final int initialLevel = displayMode.getInitialOutlineLevel();
+            		currentRoot.applyExpansionLevel(Math.max(initialLevel, minimalLevel));
+            	}
             }
-    		setRootNode(currentRoot);
+            else if(currentRoot.getExpansionLevel() < 10000) {
+            	currentRoot.applyExpansionLevel(10000);
+            }
+    		setRootNode(displayMode, currentRoot);
     		ScrollableTreePanel panel = getTreePanel();
     		panel.setBackgroundColorSupplier(this::getBackgroundColor);
     		panel.setSelectionBridge(new OutlineSelectionBridge(this));
@@ -259,7 +264,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         bookmarkFilterCache.reset();
         displayState.setCurrentMode(OutlineDisplayMode.MAP_VIEW);
         displayState.putViewState(null);
-        setRootNode(currentRoot);
+        setRootNode(OutlineDisplayMode.DEFAULT, currentRoot);
         getTreePanel().setBackgroundColorSupplier(null);
     }
 
@@ -480,6 +485,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 			return currentMapView.getBackground();
 		else
 			return null;
+	}
+
+	@Override
+	OutlineDisplayMode getDisplayMode() {
+		return displayState.getCurrentMode();
 	}
 
 }

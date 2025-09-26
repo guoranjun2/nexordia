@@ -108,8 +108,8 @@ class OutlineGeometry {
 		this.itemFontSize = itemFontSize;
 	}
 
-    int calculateNodeButtonX(int level) {
-    	if(navButtonWidth == 0)
+    int calculateNodeButtonX(boolean showNavigationButtons, int level) {
+    	if(!showNavigationButtons  || navButtonWidth == 0)
     		return level * indent;
     	else
     		return level == 0 ? 2 * navButtonWidth : (level - 1) * indent + 3 * navButtonWidth;

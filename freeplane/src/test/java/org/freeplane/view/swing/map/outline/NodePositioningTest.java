@@ -12,9 +12,9 @@ public class NodePositioningTest {
     public void calculateTextButtonXIsMonotonic() {
         OutlineGeometry geometry = OutlineGeometry.getInstance();
 
-        int x0 = geometry.calculateNodeButtonX(0);
-        int x1 = geometry.calculateNodeButtonX(1);
-        int x2 = geometry.calculateNodeButtonX(2);
+        int x0 = geometry.calculateNodeButtonX(true, 0);
+        int x1 = geometry.calculateNodeButtonX(true, 1);
+        int x2 = geometry.calculateNodeButtonX(true, 2);
 
         assertThat(x0).isLessThanOrEqualTo(x1);
         assertThat(x1).isLessThanOrEqualTo(x2);

@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
@@ -8,9 +9,6 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.components.UITools;
-
-import java.awt.Point;
 
 class NavigationButtons {
     final JButton expandBtn;
@@ -22,10 +20,12 @@ class NavigationButtons {
     private final ExpansionControls expansionControls;
     private JPanel currentParent;
 	private TreeNode node;
+	private final OutlineDisplayMode displayMode;
 
-    NavigationButtons(OutlineGeometry geometry, ExpansionControls expansionControls) {
+    NavigationButtons(OutlineGeometry geometry, OutlineDisplayMode displayMode, ExpansionControls expansionControls) {
         this.geometry = geometry;
         this.expansionControls = expansionControls;
+		this.displayMode = displayMode;
 
         expandBtn = new JButton("▶");
         collapseBtn = new JButton("◀");
@@ -109,7 +109,9 @@ class NavigationButtons {
     }
 
     private void showButtons(int baseX, int y, int level) {
-		final int minimalLevel = ResourceController.getResourceController().getIntProperty("minimalFoldableOutlineLevel", 1);
+    	if(displayMode == OutlineDisplayMode.BOOKMARK)
+    		return;
+		final int minimalLevel = displayMode.getMinimalOutlineLevel();
         if (level >= minimalLevel) {
         	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
         	toggleButton.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
