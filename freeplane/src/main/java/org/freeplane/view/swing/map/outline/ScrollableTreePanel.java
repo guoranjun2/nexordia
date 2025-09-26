@@ -47,6 +47,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
 	private final OutlineDisplayMode displayMode;
+	private final BreadcrumbDisplayMode breadcrumbMode = BreadcrumbDisplayMode.BY_FIRST_NODE;
 
     ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
@@ -625,7 +626,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		return newBreadcrumbNodes;
     }
 
-    private List<TreeNode> calculateBreadcrumbStateForSelection(int firstVisibleNodeIndex) {
+    private List<TreeNode> calculateBreadcrumbStateForSelection() {
         TreeNode breadcrumbTargetNode = outlineSelection.getSelectedNode();
         if(breadcrumbTargetNode == null)
 			return null;
