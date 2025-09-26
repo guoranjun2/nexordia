@@ -120,10 +120,10 @@ class BreadcrumbPanel extends JPanel {
 
         TreeNode hoveredNode = controller.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
-            boolean isInBreadcrumb = controller.isNodeInBreadcrumbPath(hoveredNode, currentBreadcrumbNodes);
+            boolean isInBreadcrumb = currentBreadcrumbNodes.contains(hoveredNode);
 
             if (isInBreadcrumb) {
-                int hoveredRowIndex = controller.findNodeIndexInBreadcrumbPath(hoveredNode, currentBreadcrumbNodes);
+                int hoveredRowIndex = currentBreadcrumbNodes.indexOf(hoveredNode);
                 if (hoveredRowIndex >= 0) {
                     controller.attachNavigationNode(hoveredNode, true, hoveredRowIndex);
                 }

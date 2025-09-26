@@ -31,7 +31,7 @@ public class BreadcrumbPathTest {
 
         jv.setViewPosition(new Point(0, geometry.rowHeight * 2));
 
-        BreadcrumbPath uut = new BreadcrumbPath(geometry, visibleState, new OutlineSelection(root));
+        BreadcrumbPath uut = new BreadcrumbPath(visibleState, new OutlineSelection(root));
 
         BreadcrumbState state = uut.calculateBreadcrumbStateForIndex(2);
         assertThat(state).isNotNull();

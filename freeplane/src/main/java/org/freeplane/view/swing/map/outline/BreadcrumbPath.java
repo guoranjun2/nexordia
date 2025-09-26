@@ -9,14 +9,9 @@ class BreadcrumbPath {
     private final VisibleOutlineState visibleState;
 	private final OutlineSelection outlineSelection;
 
-    BreadcrumbPath(OutlineGeometry geometry, VisibleOutlineState visibleState, OutlineSelection outlineSelection) {
-        this.geometry = geometry;
+    BreadcrumbPath(VisibleOutlineState visibleState, OutlineSelection outlineSelection) {
         this.visibleState = visibleState;
 		this.outlineSelection = outlineSelection;
-    }
-
-    void updateGeometry(OutlineGeometry geometry) {
-        this.geometry = geometry;
     }
 
     BreadcrumbState calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
@@ -40,18 +35,5 @@ class BreadcrumbPath {
         }
         Collections.reverse(breadcrumbNodes);
         return breadcrumbNodes;
-    }
-
-    boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
-        return breadcrumbNodes.contains(node);
-    }
-
-    int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
-        for (int i = 0; i < breadcrumbNodes.size(); i++) {
-            if (breadcrumbNodes.get(i) == node) {
-                return i;
-            }
-        }
-        return -1;
     }
 }

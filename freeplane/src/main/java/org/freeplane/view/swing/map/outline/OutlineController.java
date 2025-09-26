@@ -68,14 +68,6 @@ class OutlineController implements OutlineActionTarget {
         treePanel.setBreadcrumbAreaHeight(height);
     }
 
-    boolean isNodeInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
-        return treePanel.isNodeInBreadcrumbPath(node, breadcrumbNodes);
-    }
-
-    int findNodeIndexInBreadcrumbPath(TreeNode node, List<TreeNode> breadcrumbNodes) {
-        return treePanel.findNodeIndexInBreadcrumbPath(node, breadcrumbNodes);
-    }
-
     TreeNode getHoveredNode() {
         return treePanel.getVisibleState().getHoveredNode();
     }
