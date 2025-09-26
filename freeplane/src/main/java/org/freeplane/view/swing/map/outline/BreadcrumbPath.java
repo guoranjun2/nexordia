@@ -7,11 +7,9 @@ import java.util.List;
 class BreadcrumbPath {
     private OutlineGeometry geometry;
     private final VisibleOutlineState visibleState;
-	private final OutlineSelection outlineSelection;
 
-    BreadcrumbPath(VisibleOutlineState visibleState, OutlineSelection outlineSelection) {
+    BreadcrumbPath(VisibleOutlineState visibleState) {
         this.visibleState = visibleState;
-		this.outlineSelection = outlineSelection;
     }
 
     BreadcrumbState calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
