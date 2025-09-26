@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class VisibleOutlineState {
+class VisibleOutlineNodes {
     private final TreeNode root;
     private List<TreeNode> visibleNodes = new ArrayList<>();
     private final Map<String, Integer> indexById = new HashMap<>();
@@ -13,7 +13,7 @@ class VisibleOutlineState {
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
 
-    VisibleOutlineState(TreeNode root) {
+    VisibleOutlineNodes(TreeNode root) {
         this.root = root;
         this.hoveredNode = root;
         updateVisibleNodes();

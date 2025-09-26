@@ -5,9 +5,9 @@ import java.awt.Rectangle;
 
 class NodePositioning {
     private OutlineGeometry geometry;
-    private final VisibleOutlineState visibleState;
+    private final VisibleOutlineNodes visibleState;
 
-    NodePositioning(OutlineGeometry geometry, VisibleOutlineState visibleState) {
+    NodePositioning(OutlineGeometry geometry, VisibleOutlineNodes visibleState) {
         this.geometry = geometry;
         this.visibleState = visibleState;
     }

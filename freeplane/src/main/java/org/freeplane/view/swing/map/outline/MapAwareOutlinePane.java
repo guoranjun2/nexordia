@@ -40,7 +40,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     private TreeNode currentRoot;
     private MapView currentMapView;
-    private final OutlineDisplayState displayState;
+    private final OutlineTreeViewStates displayState;
     private final BookmarkModeFilterCache bookmarkFilterCache;
     private JToggleButton bookmarkModeToggleButton;
     private boolean skipNextStateCapture;
@@ -66,7 +66,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	final NodeModel node = currentMapView.getSelected().getNode();
     	final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findVisibleOutlineNodeOrAncestor(node);
-        VisibleOutlineState vs = panel.getVisibleState();
+        VisibleOutlineNodes vs = panel.getVisibleState();
         int index = findVisibleIndex(target, vs, panel.getRoot());
         boolean visible = isNodeVisible(target, panel);
         if (!visible) {
@@ -92,7 +92,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	return outlineNode.findVisibleAncestorOrSelf();
     }
 
-    private int findVisibleIndex(TreeNode node, VisibleOutlineState vs, TreeNode root) {
+    private int findVisibleIndex(TreeNode node, VisibleOutlineNodes vs, TreeNode root) {
         TreeNode n = node;
         while (n != null) {
             int idx = vs.findNodeIndexInVisibleList(n);
@@ -114,7 +114,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     public MapAwareOutlinePane() {
     	super(NO_MAP_AVAILABLE);
     	selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
-    	displayState = new OutlineDisplayState();
+    	displayState = new OutlineTreeViewStates();
     	bookmarkFilterCache = new BookmarkModeFilterCache();
     	configureToolbar(toolbar);
     }
@@ -199,7 +199,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             cleanupCurrentTree();
 
             currentMapView = mapView;
-            OutlineViewState saved = loadSavedViewState(currentMapView);
+            OutlineTreeViewState saved = loadSavedViewState(currentMapView);
             NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, saved);
             if (displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK) {
                 Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
@@ -361,7 +361,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         }
     }
 
-    private OutlineViewState captureCurrentState(ScrollableTreePanel panel) {
+    private OutlineTreeViewState captureCurrentState(ScrollableTreePanel panel) {
         String firstId = panel.getVisibleState().getFirstVisibleNodeId();
         TreeNode root = panel.getRoot();
         Map<String, Integer> levels = new HashMap<>();
@@ -376,7 +376,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 ? bookmarkFilterCache.current()
                 : currentMapView != null ? currentMapView.getFilter() : null;
         WeakReference<Filter> ref = new WeakReference<>(stateFilter);
-        return new OutlineViewState(firstId, levels, rootId, ref);
+        return new OutlineTreeViewState(firstId, levels, rootId, ref);
     }
 
     private void collectExpanded(TreeNode node, Map<String, Integer> out) {
@@ -438,7 +438,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     private void storeCurrentDisplayState(ScrollableTreePanel panel) {
-        OutlineViewState state = captureCurrentState(panel);
+        OutlineTreeViewState state = captureCurrentState(panel);
         if (state != null) {
             displayState.putViewState(state);
             storeDisplayStatesOnMapView();
@@ -452,7 +452,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         currentMapView.putClientProperty(OUTLINE_STATE_KEY, displayState.copy());
     }
 
-    private OutlineViewState loadSavedViewState(MapView mapView) {
+    private OutlineTreeViewState loadSavedViewState(MapView mapView) {
         if (mapView == null) {
             return null;
         }

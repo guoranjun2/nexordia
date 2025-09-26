@@ -3,21 +3,21 @@ package org.freeplane.view.swing.map.outline;
 import java.util.EnumMap;
 import java.util.Map;
 
-class OutlineDisplayState {
+class OutlineTreeViewStates {
     private OutlineDisplayMode currentMode;
-    private final EnumMap<OutlineDisplayMode, OutlineViewState> viewStatesByMode;
+    private final EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode;
 
-    OutlineDisplayState() {
+    OutlineTreeViewStates() {
         this(OutlineDisplayMode.MAP_VIEW, new EnumMap<>(OutlineDisplayMode.class));
     }
 
-    OutlineDisplayState(OutlineDisplayMode currentMode, EnumMap<OutlineDisplayMode, OutlineViewState> viewStatesByMode) {
+    OutlineTreeViewStates(OutlineDisplayMode currentMode, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
         this.currentMode = currentMode != null ? currentMode : OutlineDisplayMode.MAP_VIEW;
         this.viewStatesByMode = viewStatesByMode;
     }
 
-    OutlineDisplayState copy() {
-        return new OutlineDisplayState(currentMode, new EnumMap<>(viewStatesByMode));
+    OutlineTreeViewStates copy() {
+        return new OutlineTreeViewStates(currentMode, new EnumMap<>(viewStatesByMode));
     }
 
     OutlineDisplayMode getCurrentMode() {
@@ -30,11 +30,11 @@ class OutlineDisplayState {
         }
     }
 
-    OutlineViewState getViewState() {
+    OutlineTreeViewState getViewState() {
         return viewStatesByMode.get(currentMode);
     }
 
-    void putViewState(OutlineViewState state) {
+    void putViewState(OutlineTreeViewState state) {
         if (state == null) {
             viewStatesByMode.remove(currentMode);
         } else {
@@ -42,7 +42,7 @@ class OutlineDisplayState {
         }
     }
 
-    void loadFrom(OutlineDisplayState other) {
+    void loadFrom(OutlineTreeViewStates other) {
         if (other == null) {
             return;
         }
@@ -58,8 +58,8 @@ class OutlineDisplayState {
             return;
         }
         for (Map.Entry<?, ?> entry : storedStates.entrySet()) {
-            if (entry.getKey() instanceof OutlineDisplayMode && entry.getValue() instanceof OutlineViewState) {
-                viewStatesByMode.put((OutlineDisplayMode) entry.getKey(), (OutlineViewState) entry.getValue());
+            if (entry.getKey() instanceof OutlineDisplayMode && entry.getValue() instanceof OutlineTreeViewState) {
+                viewStatesByMode.put((OutlineDisplayMode) entry.getKey(), (OutlineTreeViewState) entry.getValue());
             }
         }
     }
@@ -67,16 +67,16 @@ class OutlineDisplayState {
     void restoreFrom(Object storedState) {
         viewStatesByMode.clear();
         currentMode = OutlineDisplayMode.MAP_VIEW;
-        if (storedState instanceof OutlineDisplayState) {
-            loadFrom((OutlineDisplayState) storedState);
+        if (storedState instanceof OutlineTreeViewStates) {
+            loadFrom((OutlineTreeViewStates) storedState);
             return;
         }
         if (storedState instanceof Map<?, ?>) {
             loadFromMap((Map<?, ?>) storedState);
             return;
         }
-        if (storedState instanceof OutlineViewState) {
-            viewStatesByMode.put(currentMode, (OutlineViewState) storedState);
+        if (storedState instanceof OutlineTreeViewState) {
+            viewStatesByMode.put(currentMode, (OutlineTreeViewState) storedState);
         }
     }
 }

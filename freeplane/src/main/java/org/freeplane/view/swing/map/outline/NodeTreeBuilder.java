@@ -11,7 +11,7 @@ import org.freeplane.view.swing.map.MapView;
 class NodeTreeBuilder {
     private final MapView mapView;
     private final OutlinePane pane;
-    private final OutlineViewState saved;
+    private final OutlineTreeViewState saved;
 
     private NodeModel rootModel;
     private Filter filter;
@@ -19,9 +19,9 @@ class NodeTreeBuilder {
     private Filter overrideFilter;
 
     private TreeNode root;
-    private OutlineViewState applicableState;
+    private OutlineTreeViewState applicableState;
 
-    NodeTreeBuilder(MapView mapView, OutlinePane pane, OutlineViewState saved) {
+    NodeTreeBuilder(MapView mapView, OutlinePane pane, OutlineTreeViewState saved) {
         this.mapView = mapView;
         this.pane = pane;
         this.saved = saved;
@@ -96,5 +96,5 @@ class NodeTreeBuilder {
     }
 
     TreeNode getRoot() { return root; }
-    OutlineViewState getApplicableState() { return applicableState; }
+    OutlineTreeViewState getApplicableState() { return applicableState; }
 }

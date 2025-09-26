@@ -7,10 +7,10 @@ import javax.swing.JScrollPane;
 
 class OutlineViewport {
     private final JScrollPane scrollPane;
-    private final VisibleOutlineState visibleState;
+    private final VisibleOutlineNodes visibleState;
     private final NodePositioning nodePositioning;
 
-    OutlineViewport(JScrollPane scrollPane, VisibleOutlineState visibleState, NodePositioning nodePositioning) {
+    OutlineViewport(JScrollPane scrollPane, VisibleOutlineNodes visibleState, NodePositioning nodePositioning) {
         this.scrollPane = scrollPane;
         this.visibleState = visibleState;
         this.nodePositioning = nodePositioning;

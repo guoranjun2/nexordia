@@ -23,7 +23,7 @@ public class OutlineViewportTest {
         OutlineGeometry geometry = OutlineGeometry.getInstance();
         TreeNode root = createLinearTree(25);
 
-        VisibleOutlineState vs = new VisibleOutlineState(root);
+        VisibleOutlineNodes vs = new VisibleOutlineNodes(root);
         vs.setBreadcrumbAreaHeight(geometry.rowHeight * 2);
         NodePositioning pos = new NodePositioning(geometry, vs);
 

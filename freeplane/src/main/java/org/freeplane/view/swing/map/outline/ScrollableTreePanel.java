@@ -31,7 +31,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private TreeNode root;
     private final OutlineSelection outlineSelection;
     private final int blockSize;
-    private VisibleOutlineState visibleState;
+    private VisibleOutlineNodes visibleState;
     private final OutlineGeometry.GeometryListener geometryListener;
     private boolean geometryListenerRegistered;
     private final IFreeplanePropertyListener outlinePropertyListener;
@@ -61,7 +61,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
         this.outlineSelection = new OutlineSelection(root);
-        this.visibleState = new VisibleOutlineState(root);
+        this.visibleState = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleState);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
@@ -383,7 +383,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return viewport != null ? viewport.getViewportWidth() : getWidth();
     }
 
-    VisibleOutlineState getVisibleState() {
+    VisibleOutlineNodes getVisibleState() {
         return visibleState;
     }
 

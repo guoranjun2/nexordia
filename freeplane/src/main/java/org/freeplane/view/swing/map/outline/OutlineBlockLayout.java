@@ -11,14 +11,14 @@ import javax.swing.JPanel;
 
 class OutlineBlockLayout {
     private final OutlineBlockViewCache blockCache;
-    private final VisibleOutlineState visibleState;
+    private final VisibleOutlineNodes visibleState;
     private OutlineGeometry geometry;
     private final NodePositioning nodePositioning;
     private final int blockSize;
     private int cachedMaxWidth = 0;
 
     OutlineBlockLayout(OutlineBlockViewCache blockCache,
-                       VisibleOutlineState visibleState,
+                       VisibleOutlineNodes visibleState,
                        OutlineGeometry geometry,
                        NodePositioning nodePositioning,
                        int blockSize) {
