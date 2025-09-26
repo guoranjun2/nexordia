@@ -31,7 +31,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private final OutlineSelection outlineSelection;
     private final int blockSize;
     private VisibleOutlineState visibleState;
-    private OutlineGeometry currentGeometry;
     private final OutlineGeometry.GeometryListener geometryListener;
     private boolean geometryListenerRegistered;
     private final IFreeplanePropertyListener outlinePropertyListener;
@@ -65,8 +64,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleState);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
-        this.currentGeometry = geometry;
-        this.breadcrumbPath = new BreadcrumbPath(root, geometry, visibleState, null);
+        this.breadcrumbPath = new BreadcrumbPath(geometry, visibleState, outlineSelection);
         this.navButtons = new NavigationButtons(geometry, expansionControls);
         this.blockLayout = new OutlineBlockLayout(blockCache, visibleState, geometry, nodePositioning, blockSize);
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
@@ -116,7 +114,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             return;
         }
 
-        currentGeometry = geometry;
         nodePositioning.updateGeometry(geometry);
         blockLayout.updateGeometry(geometry);
         breadcrumbPath.updateGeometry(geometry);
@@ -235,7 +232,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     void setScrollPane(JScrollPane scroll) {
         this.viewport = new OutlineViewport(scroll, visibleState, nodePositioning);
-        this.breadcrumbPath.setViewport(viewport);
         resetBlockCache();
     }
 
@@ -788,7 +784,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     private BreadcrumbState calculateBreadcrumbState() {
-        return breadcrumbPath.calculateBreadcrumbState();
+    	int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
+    	return breadcrumbPath.calculateBreadcrumbStateForIndex(firstFullyVisibleNodeIndex);
     }
 
     void ensureSelectionVisibleTop() {

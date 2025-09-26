@@ -21,7 +21,6 @@ public class BreadcrumbPathTest {
 
         final OutlineGeometry geometry = OutlineGeometry.getInstance();
         VisibleOutlineState visibleState = new VisibleOutlineState(root);
-        NodePositioning positioning = new NodePositioning(geometry, visibleState);
 
         JPanel view = new JPanel();
         view.setPreferredSize(new Dimension(600, geometry.rowHeight * 100));
@@ -30,16 +29,13 @@ public class BreadcrumbPathTest {
         jv.setView(view);
         jv.setExtentSize(new Dimension(600, geometry.rowHeight * 5));
 
-        // Make node index 2 (b) the first fully visible by scrolling to its y
         jv.setViewPosition(new Point(0, geometry.rowHeight * 2));
 
-        OutlineViewport ov = new OutlineViewport(scroll, visibleState, positioning);
-        BreadcrumbPath uut = new BreadcrumbPath(root, geometry, visibleState, ov);
+        BreadcrumbPath uut = new BreadcrumbPath(geometry, visibleState, new OutlineSelection(root));
 
-        BreadcrumbState state = uut.calculateBreadcrumbState();
+        BreadcrumbState state = uut.calculateBreadcrumbStateForIndex(2);
         assertThat(state).isNotNull();
         assertThat(state.getFirstVisibleNodeIndex()).isEqualTo(2);
-
         List<TreeNode> crumbs = state.getBreadcrumbNodes();
         assertThat(crumbs).hasSize(2);
         assertThat(crumbs.get(0)).isSameAs(root);
