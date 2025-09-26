@@ -45,7 +45,8 @@ class NodeButton extends JButton {
     NodeButton(TreeNode node, boolean usesColoredOutlineItems) {
         super();
         this.node = node;
-        final Font font = getFont().deriveFont(OutlineGeometry.itemFontSize());
+        final float itemFontSize = OutlineGeometry.getInstance().getItemFontSize();
+        final Font font = getFont().deriveFont(itemFontSize);
         setFont(font);
         setHorizontalAlignment(SwingConstants.LEADING);
         updateLabel(usesColoredOutlineItems);

@@ -12,6 +12,7 @@ import org.freeplane.api.LengthUnit;
 import org.freeplane.api.Quantity;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.features.mode.Controller;
 
 class OutlineGeometry {
 	interface GeometryListener {
@@ -21,22 +22,29 @@ class OutlineGeometry {
 	private static final List<GeometryListener> LISTENERS = new ArrayList<>();
 	private static OutlineGeometry INSTANCE;
 	static OutlineGeometry getInstance() {return INSTANCE;}
-    final int rowHeight;
-    final int navButtonWidth;
-    private final int indent;
-	static final float itemFontSize() {
-		return UITools.FONT_SCALE_FACTOR * (float) ResourceController.getResourceController().getDoubleProperty("outlineItemFontSize", 8f);
+	final int rowHeight;
+	final int navButtonWidth;
+	private final int indent;
+	private final float itemFontSize;
+
+	float getItemFontSize() {
+		return itemFontSize;
 	}
-	public static float buttonFontSize() {
-		return itemFontSize() * 5 / 4;
+
+	float getButtonFontSize() {
+		return itemFontSize * 5 / 4;
 	}
 
 	static {
-		INSTANCE = new OutlineGeometry();
-		final ResourceController resourceController = ResourceController.getResourceController();
-		resourceController.setDefaultProperty("outlineItemIndentation",
-				asLength(INSTANCE.rowHeight).toString());
-		resourceController.addPropertyChangeListener(OutlineGeometry::updateGeometry);
+		if(Controller.getCurrentController() != null) {
+			INSTANCE = createFromConfiguration();
+			final ResourceController resourceController = ResourceController.getResourceController();
+			resourceController.setDefaultProperty("outlineItemIndentation",
+					asLength(INSTANCE.rowHeight).toString());
+			resourceController.addPropertyChangeListener(OutlineGeometry::updateGeometry);
+		}
+		else
+			INSTANCE = new OutlineGeometry(10, 10, 10, UITools.FONT_SCALE_FACTOR * 8f);
 	}
 
 	private static Quantity<LengthUnit> asLength(int rowHeight) {
@@ -48,7 +56,7 @@ class OutlineGeometry {
 		if(propertyName.equals("outlineItemFontSize")
 				|| propertyName.equals("outlineItemIndentation")
 				|| propertyName.equals("showOutlineFoldingButtons"))
-			replaceInstance(new OutlineGeometry());
+			replaceInstance(createFromConfiguration());
 	}
 
 	static void registerListener(GeometryListener listener) {
@@ -70,23 +78,35 @@ class OutlineGeometry {
 		}
 	}
 
-    private OutlineGeometry() {
-    	JButton sampleButton = new JButton("▶");
-        sampleButton.setMargin(new Insets(0, 0, 0, 0));
-        sampleButton.setFont(sampleButton.getFont().deriveFont(buttonFontSize()));
-        sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
+	private static OutlineGeometry createFromConfiguration() {
+		final ResourceController resourceController = ResourceController.getResourceController();
+		final float configuredItemFontSize = UITools.FONT_SCALE_FACTOR * (float) resourceController.getDoubleProperty("outlineItemFontSize", 8f);
 
-        final Dimension preferredButtonSize = sampleButton.getPreferredSize();
-        this.rowHeight = Math.round(preferredButtonSize.height);
-        final ResourceController resourceController = ResourceController.getResourceController();
+		JButton sampleButton = new JButton("▶");
+		sampleButton.setMargin(new Insets(0, 0, 0, 0));
+		sampleButton.setFont(sampleButton.getFont().deriveFont(configuredItemFontSize * 5 / 4));
+		sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
+
+		final Dimension preferredButtonSize = sampleButton.getPreferredSize();
+		final int configuredRowHeight = Math.round(preferredButtonSize.height);
 		final Quantity<LengthUnit> indentQuantity = resourceController.getLengthQuantityProperty("outlineItemIndentation");
-		this.indent = indentQuantity != null ? indentQuantity.toBaseUnitsRounded() : rowHeight;
+		final int configuredIndent = indentQuantity != null ? indentQuantity.toBaseUnitsRounded() : configuredRowHeight;
 
+		final int configuredNavigationButtonWidth;
 		if(resourceController.getBooleanProperty("showOutlineFoldingButtons", true))
-			this.navButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
+			configuredNavigationButtonWidth = Math.round(preferredButtonSize.width * 20 / 13);
 		else
-			this.navButtonWidth = 0;
-    }
+			configuredNavigationButtonWidth = 0;
+
+		return new OutlineGeometry(configuredRowHeight, configuredNavigationButtonWidth, configuredIndent, configuredItemFontSize);
+	}
+
+	private OutlineGeometry(int rowHeight, int navigationButtonWidth, int indent, float itemFontSize) {
+		this.rowHeight = rowHeight;
+		this.navButtonWidth = navigationButtonWidth;
+		this.indent = indent;
+		this.itemFontSize = itemFontSize;
+	}
 
     int calculateNodeButtonX(int level) {
     	if(navButtonWidth == 0)

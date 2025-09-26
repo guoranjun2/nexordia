@@ -60,7 +60,7 @@ class NavigationButtons {
     }
 
     private void applyButtonFont(JButton button) {
-        button.setFont(button.getFont().deriveFont(OutlineGeometry.buttonFontSize()));
+        button.setFont(button.getFont().deriveFont(geometry.getButtonFontSize()));
     }
 
     public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
