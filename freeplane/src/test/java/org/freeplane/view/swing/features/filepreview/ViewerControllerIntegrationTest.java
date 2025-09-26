@@ -3,7 +3,6 @@ package org.freeplane.view.swing.features.filepreview;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 

@@ -54,7 +54,6 @@ import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeMoveEvent;
 import org.freeplane.features.map.NodeWriter;
-import org.freeplane.features.map.ITooltipProvider.TooltipTrigger;
 import org.freeplane.features.mode.CombinedPropertyChain;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.IPropertyHandler;

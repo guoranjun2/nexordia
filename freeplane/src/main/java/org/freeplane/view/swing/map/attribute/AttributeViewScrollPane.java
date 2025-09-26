@@ -23,12 +23,8 @@ import java.awt.Adjustable;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
 
 class AttributeViewScrollPane extends JScrollPane {
 	/**

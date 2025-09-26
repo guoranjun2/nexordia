@@ -20,19 +20,14 @@
 package org.freeplane.features.ui;
 
 import java.awt.Component;
-import java.awt.Window;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JRootPane;
-
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
 import org.freeplane.core.util.Hyperlink;
 import org.freeplane.features.mode.Controller;

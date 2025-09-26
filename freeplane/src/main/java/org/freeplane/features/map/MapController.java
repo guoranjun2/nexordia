@@ -38,12 +38,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-
 import javax.swing.Action;
 import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-
 import org.freeplane.core.extension.IExtension;
 import org.freeplane.core.io.IAttributeHandler;
 import org.freeplane.core.io.ReadManager;

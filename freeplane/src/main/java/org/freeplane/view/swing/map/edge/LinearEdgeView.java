@@ -22,7 +22,6 @@ package org.freeplane.view.swing.map.edge;
 import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 
 import org.freeplane.view.swing.map.NodeView;

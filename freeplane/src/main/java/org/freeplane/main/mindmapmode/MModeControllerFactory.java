@@ -25,7 +25,6 @@ import java.awt.Container;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.InputMethodEvent;
 import java.awt.event.KeyEvent;
 
 import javax.swing.Box;

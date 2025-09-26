@@ -90,7 +90,6 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.ActionAcceleratorManager;
 import org.freeplane.core.ui.components.TypedListCellRenderer;
 import org.freeplane.core.ui.components.UITools;
-import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.Hyperlink;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.AttributeRegistry;

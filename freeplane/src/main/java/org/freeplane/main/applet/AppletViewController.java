@@ -24,11 +24,8 @@ import java.awt.Component;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.function.Function;
-
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneMenuBar;

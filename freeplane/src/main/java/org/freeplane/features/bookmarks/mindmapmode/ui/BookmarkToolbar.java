@@ -16,7 +16,6 @@ import java.awt.event.MouseEvent;
 
 import javax.swing.JList;
 import javax.swing.LayoutFocusTraversalPolicy;
-import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import javax.swing.plaf.ToolBarUI;

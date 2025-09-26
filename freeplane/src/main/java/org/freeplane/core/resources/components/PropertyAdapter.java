@@ -27,7 +27,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
-import javax.swing.JViewport;
 import javax.swing.plaf.basic.BasicLabelUI;
 
 import org.freeplane.core.ui.textchanger.TranslatedElement;

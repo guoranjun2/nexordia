@@ -1,10 +1,5 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.util.List;
-
-import javax.swing.Icon;
 import javax.swing.JScrollPane;
 
 class OutlineController implements OutlineActionTarget {

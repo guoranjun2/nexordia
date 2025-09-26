@@ -19,7 +19,6 @@
  */
 package org.freeplane.main.application;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;

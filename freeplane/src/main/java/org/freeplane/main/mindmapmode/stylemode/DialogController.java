@@ -24,12 +24,9 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.io.IOException;
 import java.net.URL;
-import java.util.function.Function;
-
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLayeredPane;
-import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 
 import org.freeplane.core.ui.components.FreeplaneMenuBar;

@@ -11,7 +11,6 @@ import javax.swing.SwingUtilities;
 import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.view.swing.map.outline.MapAwareOutlinePane;
-import org.freeplane.features.ui.IMapViewManager;
 
 public class FocusOutlineAction extends AFreeplaneAction {
     private static final long serialVersionUID = 1L;

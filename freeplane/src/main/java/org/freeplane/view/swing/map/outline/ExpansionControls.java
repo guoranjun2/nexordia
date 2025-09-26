@@ -2,8 +2,6 @@ package org.freeplane.view.swing.map.outline;
 
 import javax.swing.SwingUtilities;
 
-import org.freeplane.core.resources.ResourceController;
-
 class ExpansionControls {
     private final ScrollableTreePanel treePanel;
 	private final OutlineSelection outlineSelection;

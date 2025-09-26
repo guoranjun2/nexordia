@@ -30,7 +30,6 @@ import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.ITooltipProvider;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.map.ITooltipProvider.TooltipTrigger;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 

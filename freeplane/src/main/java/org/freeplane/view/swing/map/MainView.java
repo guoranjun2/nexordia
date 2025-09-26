@@ -92,10 +92,8 @@ import org.freeplane.features.styles.LogicalStyleController.StyleOption;
 import org.freeplane.features.styles.MapViewLayout;
 import org.freeplane.features.text.HighlightedTransformedObject;
 import org.freeplane.features.text.TextController;
-import java.awt.Rectangle;
 import java.text.AttributedString;
 
-import javax.swing.text.AttributeSet; // Or your preferred AttributeSet implementation
 import java.awt.im.InputMethodRequests;
 
 

@@ -22,8 +22,6 @@ package org.freeplane.view.swing.map.mindmapmode;
 import java.awt.Window;
 import java.io.File;
 import java.io.FileWriter;
-import java.text.MessageFormat;
-
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.FileUtils;
 import org.freeplane.core.util.LogUtils;
