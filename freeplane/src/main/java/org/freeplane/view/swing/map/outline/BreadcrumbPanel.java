@@ -1,9 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -62,9 +60,9 @@ class BreadcrumbPanel extends JPanel {
         new OutlineActions(() -> controller).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
-    void update(BreadcrumbState state) {
-        preferredBreadcrumbHeight = state.getBreadcrumbHeight();
-        this.currentBreadcrumbNodes = new ArrayList<>(state.getBreadcrumbNodes());
+    void update(List<TreeNode> breadcrumbNodes) {
+        preferredBreadcrumbHeight = OutlineGeometry.getInstance().calculateHeight(breadcrumbNodes);
+        this.currentBreadcrumbNodes = breadcrumbNodes;
 
         controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
         updateNodeButtons();

@@ -119,4 +119,8 @@ class OutlineGeometry {
 		final int baseX = level == 0 ? -navButtonWidth : (level - 1) * indent;
 		return baseX;
 	}
+
+	int calculateHeight(List<TreeNode> nodes) {
+		return rowHeight * nodes.size();
+	}
 }
