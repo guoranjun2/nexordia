@@ -20,9 +20,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	private static final long serialVersionUID = 1;
     private static final int BLOCK_SIZE = 50;
 
-
-
-	private  final NavigationButtons navButtons;
+    private  final NavigationButtons navButtons;
     private final BreadcrumbPanel breadcrumbPanel;
     private final ExpansionControls expansionControls;
     private NodePositioning nodePositioning;
@@ -48,17 +46,17 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private int lastBreadcrumbAreaHeight = -1;
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
-	private OutlineDisplayMode displayMode;
+	private final OutlineDisplayMode displayMode;
 
     ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
-		this.displayMode = displayMode;
         addMouseListener(new FocusSelectedButtonClickAdapter(focusManager));
         setOpaque(true);
 	}
 
     private ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
         super(null);
+		this.displayMode = displayMode;
         this.root = root;
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
