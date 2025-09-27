@@ -275,11 +275,6 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	// --- Property binding for auxiliary component visibility ---
 	public void bindAuxiliaryVisibilityToProperty(String baseKey) {
 		this.auxVisibilityBaseKey = baseKey; // expects keys baseKey and baseKey+".fullscreen"
-		if (!auxVisibilityBound) {
-			ResourceController.getResourceController().addPropertyChangeListener(this);
-			auxVisibilityBound = true;
-		}
-		applyAuxVisibility();
 	}
 
 	private void applyAuxVisibility() {
@@ -309,9 +304,19 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	}
 
 	@Override
+	public void addNotify() {
+		super.addNotify();
+		if (auxVisibilityBaseKey != null && !auxVisibilityBound) {
+			ResourceController.getResourceController().addPropertyChangeListener(this);
+			auxVisibilityBound = true;
+		}
+		applyAuxVisibility();
+	}
+
+	@Override
 	public void removeNotify() {
 		super.removeNotify();
-		if (auxVisibilityBound) {
+		if (auxVisibilityBaseKey != null && auxVisibilityBound) {
 			ResourceController.getResourceController().removePropertyChangeListener(this);
 			auxVisibilityBound = false;
 		}

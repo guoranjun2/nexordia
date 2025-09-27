@@ -29,7 +29,6 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FocusOutlineAction;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
-import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
@@ -286,10 +285,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if ("back".equals(action)) {
             	currentMapView.getSelected().getMainView().requestFocusInWindow();
                 return;
-            }
-            ViewController vc = Controller.getCurrentController().getViewController();
-            if (!vc.isOutlineVisible()) {
-                vc.setOutlineVisible(true);
             }
             ScrollableTreePanel panel = getTreePanel();
             if (panel != null) {
