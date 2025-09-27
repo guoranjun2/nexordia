@@ -72,8 +72,6 @@ class BreadcrumbPanel extends JPanel {
 			controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
 			updateNodeButtons();
 		}
-		else
-			attachNavigationButtons();
     }
 
     void updateNodeButtons() {
@@ -124,35 +122,9 @@ class BreadcrumbPanel extends JPanel {
 
         }
 
-        attachNavigationButtons();
-
         revalidate();
         repaint();
 	}
-
-
-
-	private void attachNavigationButtons() {
-		TreeNode hoveredNode = controller.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
-            boolean isInBreadcrumb = controller.isHoveredNodeContainedInBreadcrumb()
-            		&& currentBreadcrumbNodes.contains(hoveredNode);
-
-            if (isInBreadcrumb) {
-                int hoveredRowIndex = currentBreadcrumbNodes.indexOf(hoveredNode);
-                if (hoveredRowIndex >= 0) {
-                    controller.attachNavigationNode(hoveredNode, true, hoveredRowIndex);
-                }
-            } else {
-                boolean buttonsCurrentlyVisible = controller.areNavButtonsVisible();
-
-                if (buttonsCurrentlyVisible) {
-                    controller.attachNavigationNode(hoveredNode, false, -1);
-                }
-            }
-        }
-	}
-
 
     int getPreferredBreadcrumbHeight() {
         return preferredBreadcrumbHeight;

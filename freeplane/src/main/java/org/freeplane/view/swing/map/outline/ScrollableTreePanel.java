@@ -173,14 +173,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         breadcrumbPanel.updateNodeButtons();
 
         navButtons.hideNavigationButtons();
-        TreeNode hoveredNode = visibleNodes.getHoveredNode();
-        reattachNavigationButtons(hoveredNode);
+        reattachNavigationButtons();
 
         revalidate();
         repaint();
     }
 
-    private void reattachNavigationButtons(TreeNode hoveredNode) {
+    private void reattachNavigationButtons() {
+    	TreeNode hoveredNode = visibleNodes.getHoveredNode();
         if (hoveredNode == null || hoveredNode.getChildren().isEmpty()) {
             return;
         }
@@ -664,12 +664,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	private void applyBreadcrumbState(List<TreeNode> breadcrumbState) {
 		if (breadcrumbState != null) {
 			breadcrumbPanel.update(breadcrumbState);
-			return;
 		}
-		visibleNodes.setBreadcrumbAreaHeight(0);
-		breadcrumbPanel.removeAll();
-		breadcrumbPanel.revalidate();
-		breadcrumbPanel.repaint();
+		else {
+			visibleNodes.setBreadcrumbAreaHeight(0);
+			breadcrumbPanel.removeAll();
+			breadcrumbPanel.revalidate();
+			breadcrumbPanel.repaint();
+		}
+		reattachNavigationButtons();
 	}
 
 	private int getCurrentBreadcrumbRowCount() {
