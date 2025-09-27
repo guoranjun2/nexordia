@@ -16,11 +16,12 @@ final class SelectionPainter {
             if (comp instanceof NodeButton) {
                 NodeButton btn = (NodeButton) comp;
                 TreeNode node = btn.getNode();
-                if (node != null && selection.isSelected(node)) {
-                    if (! parentPanel.isNodeInBreadcrumbArea(node)) {
-                    	underlineSelection(g, panel, btn);
-                    }
-                }
+			if (node != null && selection.isSelected(node)) {
+				boolean allowBreadcrumbOverlap = parentPanel.isSelectionDrivenBreadcrumbMode();
+				if (allowBreadcrumbOverlap || ! parentPanel.isNodeInBreadcrumbArea(node)) {
+					underlineSelection(g, panel, btn);
+				}
+			}
             }
         }
     }
@@ -34,8 +35,9 @@ final class SelectionPainter {
 		g.drawLine(0, y2, panel.getWidth(), y2);
 	}
 
-    static void paintForBreadcrumbPanel(BreadcrumbPanel panel, OutlineController controller, OutlineSelection selection, Graphics g) {
+	static void paintForBreadcrumbPanel(BreadcrumbPanel panel, OutlineController controller, OutlineSelection selection, Graphics g) {
         if (panel == null || controller == null || selection == null || g == null) return;
+        if (controller.getBreadcrumbMode() == BreadcrumbMode.FOLLOW_SELECTED_NODE) return;
         for (Component comp : panel.getComponents()) {
             if (comp instanceof NodeButton) {
                 NodeButton btn = (NodeButton) comp;

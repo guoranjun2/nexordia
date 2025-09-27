@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -79,7 +80,7 @@ class BreadcrumbPanel extends JPanel {
 
             int actionX = controller.calcTextButtonX(level);
 
-			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems);
+			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, Font.BOLD | Font.ITALIC);
             breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, rowHeight);
 
             final TreeNode nodeToSelect = node;

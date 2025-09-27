@@ -47,7 +47,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
 	private final OutlineDisplayMode displayMode;
-	private final BreadcrumbDisplayMode breadcrumbMode = BreadcrumbDisplayMode.BY_FIRST_NODE;
+	private BreadcrumbMode breadcrumbMode = BreadcrumbMode.FOLLOW_FIRST_NODE;
 
     ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
@@ -218,6 +218,29 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		 return super.getBackground();
 	}
 
+	BreadcrumbMode getBreadcrumbMode() {
+		return breadcrumbMode;
+	}
+
+	void setBreadcrumbMode(BreadcrumbMode newMode) {
+		BreadcrumbMode resolvedMode = newMode != null ? newMode : BreadcrumbMode.FOLLOW_FIRST_NODE;
+		if (breadcrumbMode == resolvedMode) {
+			return;
+		}
+		breadcrumbMode = resolvedMode;
+		if (isSelectionDrivenBreadcrumbMode()) {
+			updateBreadcrumbForSelection();
+		}
+		else {
+			updateBreadcrumbForCurrentFirstVisibleNode();
+		}
+		updateVisibleBlocks();
+	}
+
+	boolean isSelectionDrivenBreadcrumbMode() {
+		return breadcrumbMode == BreadcrumbMode.FOLLOW_SELECTED_NODE;
+	}
+
 
     void synchronizeSelectionButton(boolean requestFocusInWindow) {
     	selectionBridge.synchronizeOutlineSelection(requestFocusInWindow);
@@ -333,7 +356,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int index = visibleNodes.findNodeIndexInVisibleList(node);
         if (index < 0) return false;
         int first = viewport.calculateFirstVisibleNodeIndex();
-        int currentBreadcrumbRows = getNodeLevelAtVisibleIndex(first);
+	int currentBreadcrumbRows = getBreadcrumbRowsForIndex(first);
         int contentRows = getContentRowsForBreadcrumbRows(currentBreadcrumbRows);
         int last = Math.max(first, first + contentRows - 1);
         return index >= first && index <= last;
@@ -363,9 +386,15 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.setFirstVisibleNodeId(visibleNodes.getNodeIdAtVisibleIndex(index));
     }
 
-    void setSelectedNode(TreeNode node, boolean requestFocus) {
+	void setSelectedNode(TreeNode node, boolean requestFocus) {
         selectionManager.select(this, outlineSelection, node, requestFocus);
     }
+
+	void onSelectedNodeChanged() {
+		if (isSelectionDrivenBreadcrumbMode()) {
+			updateBreadcrumbForSelection();
+		}
+	}
 
 
     OutlineSelection getOutlineSelection() {
@@ -485,7 +514,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.updateVisibleNodes();
 		int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
 
-        List<TreeNode> state = calculateBreadcrumbStateForIndex(firstFullyVisibleNodeIndex);
+		List<TreeNode> state = isSelectionDrivenBreadcrumbMode()
+			? calculateBreadcrumbStateForSelection()
+			: calculateBreadcrumbStateForIndex(firstFullyVisibleNodeIndex);
 
         TreeNode preservedHovered = visibleNodes.getHoveredNode();
         removeAll();
@@ -494,9 +525,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         navButtons.hideNavigationButtons();
         visibleNodes.setHoveredNode(preservedHovered);
 
-        if (state != null) {
-            breadcrumbPanel.update(state);
-            updateVisibleBlocks(firstFullyVisibleNodeIndex);
+		if (state != null) {
+			applyBreadcrumbState(state);
+			updateVisibleBlocks(firstFullyVisibleNodeIndex);
 
             TreeNode hovered = visibleNodes.getHoveredNode();
             if (hovered != null && visibleNodes.findNodeIndexInVisibleList(hovered) < 0) {
@@ -599,26 +630,72 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             return;
         }
         int currentFirstVisibleIndex = viewport.calculateFirstVisibleNodeIndex();
-        int currentBreadcrumbRowCount = getNodeLevelAtVisibleIndex(currentFirstVisibleIndex);
-        int nextBreadcrumbRowCount = getNodeLevelAtVisibleIndex(Math.min(currentFirstVisibleIndex + 1, size - 1));
+		int currentBreadcrumbRowCount = getBreadcrumbRowsForIndex(currentFirstVisibleIndex);
+		int nextBreadcrumbRowCount = getBreadcrumbRowsForIndex(Math.min(currentFirstVisibleIndex + 1, size - 1));
         int breadcrumbRowDelta = nextBreadcrumbRowCount - currentBreadcrumbRowCount; // изменение высоты крошек при продвижении верхнего на 1
         int minimalScrollRows = Math.max(0, 1 + breadcrumbRowDelta);
 
         int tentativeFirstIndex = Math.min(currentFirstVisibleIndex + minimalScrollRows, size - 1);
-        int breadcrumbRowsAtTentative = getNodeLevelAtVisibleIndex(tentativeFirstIndex);
+		int breadcrumbRowsAtTentative = getBreadcrumbRowsForIndex(tentativeFirstIndex);
         int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
         int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
         int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-		List<TreeNode> planned = calculateBreadcrumbStateForIndex(targetFirstIndex);
-        if (planned != null) {
-            breadcrumbPanel.update(planned);
-            updateVisibleBlocks(targetFirstIndex);
-        }
+		List<TreeNode> plannedBreadcrumbState = isSelectionDrivenBreadcrumbMode()
+			? calculateBreadcrumbStateForSelection()
+			: calculateBreadcrumbStateForIndex(targetFirstIndex);
+		if (plannedBreadcrumbState != null) {
+			applyBreadcrumbState(plannedBreadcrumbState);
+			updateVisibleBlocks(targetFirstIndex);
+		}
 
         setSelectedNode(nextNode, true);
     }
 
-    private List<TreeNode> calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
+	private void updateBreadcrumbForSelection() {
+		List<TreeNode> breadcrumbState = calculateBreadcrumbStateForSelection();
+		applyBreadcrumbState(breadcrumbState);
+	}
+
+	private void updateBreadcrumbForCurrentFirstVisibleNode() {
+		int firstVisibleIndex = 0;
+		if (viewport != null) {
+			firstVisibleIndex = viewport.calculateFirstVisibleNodeIndex();
+		}
+		List<TreeNode> breadcrumbState = calculateBreadcrumbStateForIndex(firstVisibleIndex);
+		applyBreadcrumbState(breadcrumbState);
+	}
+
+	private void applyBreadcrumbState(List<TreeNode> breadcrumbState) {
+		if (breadcrumbState != null) {
+			breadcrumbPanel.update(breadcrumbState);
+			return;
+		}
+		visibleNodes.setBreadcrumbAreaHeight(0);
+		breadcrumbPanel.removeAll();
+		breadcrumbPanel.revalidate();
+		breadcrumbPanel.repaint();
+	}
+
+	private int getCurrentBreadcrumbRowCount() {
+		int rowHeight = OutlineGeometry.getInstance().rowHeight;
+		if (rowHeight <= 0) {
+			return 0;
+		}
+		int height = visibleNodes.getBreadcrumbAreaHeight();
+		if (height <= 0) {
+			return 0;
+		}
+		return Math.max(0, height / rowHeight);
+	}
+
+	private int getBreadcrumbRowsForIndex(int visibleIndex) {
+		if (isSelectionDrivenBreadcrumbMode()) {
+			return getCurrentBreadcrumbRowCount();
+		}
+		return getNodeLevelAtVisibleIndex(visibleIndex);
+	}
+
+	private List<TreeNode> calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
         TreeNode breadcrumbTargetNode = visibleNodes.getNodeAtVisibleIndex(firstVisibleNodeIndex);
         if(breadcrumbTargetNode == null)
 			return null;
@@ -663,15 +740,17 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 return;
             }
             int tentativeFirstIndex = Math.max(0, currentFirstVisibleIndex - pageSize + 1); // overlap = 1
-            int breadcrumbRowsAtTentative = getNodeLevelAtVisibleIndex(tentativeFirstIndex);
+			int breadcrumbRowsAtTentative = getBreadcrumbRowsForIndex(tentativeFirstIndex);
             int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
             int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
             int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-            List<TreeNode> planned = calculateBreadcrumbStateForIndex(targetFirstIndex);
-            if (planned != null) {
-                breadcrumbPanel.update(planned);
-                updateVisibleBlocks(targetFirstIndex);
-            }
+			List<TreeNode> plannedBreadcrumbState = isSelectionDrivenBreadcrumbMode()
+				? calculateBreadcrumbStateForSelection()
+				: calculateBreadcrumbStateForIndex(targetFirstIndex);
+			if (plannedBreadcrumbState != null) {
+				applyBreadcrumbState(plannedBreadcrumbState);
+				updateVisibleBlocks(targetFirstIndex);
+			}
             TreeNode newFirstNode = visibleNodes.getNodeAtVisibleIndex(targetFirstIndex);
             if (newFirstNode != null) setSelectedNode(newFirstNode, true);
         }
@@ -694,15 +773,17 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 return;
             }
             int tentativeFirstIndex = Math.min(size - 1, currentFirstVisibleIndex + pageSize - 1); // overlap = 1
-            int breadcrumbRowsAtTentative = getNodeLevelAtVisibleIndex(tentativeFirstIndex);
+			int breadcrumbRowsAtTentative = getBreadcrumbRowsForIndex(tentativeFirstIndex);
             int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
             int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
             int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-            List<TreeNode> planned = calculateBreadcrumbStateForIndex(targetFirstIndex);
-            if (planned != null) {
-                breadcrumbPanel.update(planned);
-                updateVisibleBlocks(targetFirstIndex);
-            }
+			List<TreeNode> plannedBreadcrumbState = isSelectionDrivenBreadcrumbMode()
+				? calculateBreadcrumbStateForSelection()
+				: calculateBreadcrumbStateForIndex(targetFirstIndex);
+			if (plannedBreadcrumbState != null) {
+				applyBreadcrumbState(plannedBreadcrumbState);
+				updateVisibleBlocks(targetFirstIndex);
+			}
 
             int newLastVisibleIndex = Math.min(size - 1, targetFirstIndex + contentRowCountAfterTentative - 1);
             TreeNode newLastVisibleNode = visibleNodes.getNodeAtVisibleIndex(newLastVisibleIndex);
@@ -792,10 +873,12 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
 		int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
-        List<TreeNode> state = calculateBreadcrumbStateForIndex(firstFullyVisibleNodeIndex);
-        if (state != null) {
-            int oldBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
-            breadcrumbPanel.update(state);
+		List<TreeNode> state = isSelectionDrivenBreadcrumbMode()
+			? calculateBreadcrumbStateForSelection()
+			: calculateBreadcrumbStateForIndex(firstFullyVisibleNodeIndex);
+		if (state != null) {
+			int oldBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
+			applyBreadcrumbState(state);
             int newBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
             if (newBreadcrumbHeight != oldBreadcrumbHeight) {
                 TreeNode preservedHovered = visibleNodes.getHoveredNode();
@@ -815,7 +898,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int selectedIndex = selected != null ? visibleNodes.findNodeIndexInVisibleList(selected) : -1;
 
         int first = viewport.calculateFirstVisibleNodeIndex();
-        int currentBreadcrumbRows = getNodeLevelAtVisibleIndex(first);
+		int currentBreadcrumbRows = getBreadcrumbRowsForIndex(first);
         int contentRows = getContentRowsForBreadcrumbRows(currentBreadcrumbRows);
         int last = Math.max(first, first + contentRows - 1);
         boolean haveButtons = getComponentCount() > 0 || !blockCache.isEmpty();
@@ -825,28 +908,28 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         }
 
         int visibleCount = visibleNodes.getVisibleNodeCount();
-        if (haveButtons) {
-            if (selected == null || selectedIndex < 0) return;
-            if (isNodeInBreadcrumbArea(selected)) return;
+		if (haveButtons) {
+			if (selected == null || selectedIndex < 0) return;
+			if (!isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(selected)) return;
             if (selectedIndex >= first && selectedIndex <= last) return;
         }
         int targetFirst;
         if (selected == null || selectedIndex < 0) {
             targetFirst = first;
         }
-        else if (isNodeInBreadcrumbArea(selected)) {
-            targetFirst = first;
-        }
+		else if (!isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(selected)) {
+			targetFirst = first;
+		}
         else if (selectedIndex < first) {
             int desiredFirst = Math.max(0, selectedIndex);
-            int br = getNodeLevelAtVisibleIndex(desiredFirst);
+			int br = getBreadcrumbRowsForIndex(desiredFirst);
             int cr = getContentRowsForBreadcrumbRows(br);
             int maxFeasibleFirst = Math.max(0, visibleCount - cr);
             targetFirst = Math.min(desiredFirst, maxFeasibleFirst);
         }
         else if (selectedIndex > last) {
             int desiredFirst = Math.max(0, selectedIndex - (contentRows - 1));
-            int br = getNodeLevelAtVisibleIndex(desiredFirst);
+			int br = getBreadcrumbRowsForIndex(desiredFirst);
             int cr = getContentRowsForBreadcrumbRows(br);
             int maxFeasibleFirst = Math.max(0, visibleCount - cr);
             targetFirst = Math.min(desiredFirst, maxFeasibleFirst);
@@ -854,10 +937,12 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         else {
             targetFirst = first;
         }
-        List<TreeNode> planned = calculateBreadcrumbStateForIndex(targetFirst);
-        if (planned != null) {
-            int oldBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
-            breadcrumbPanel.update(planned);
+		List<TreeNode> planned = isSelectionDrivenBreadcrumbMode()
+			? calculateBreadcrumbStateForSelection()
+			: calculateBreadcrumbStateForIndex(targetFirst);
+		if (planned != null) {
+			int oldBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
+			applyBreadcrumbState(planned);
             int newBreadcrumbHeight = visibleNodes.getBreadcrumbAreaHeight();
             if (newBreadcrumbHeight != oldBreadcrumbHeight) {
                 TreeNode preservedHovered = visibleNodes.getHoveredNode();

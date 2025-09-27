@@ -103,13 +103,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return rootIdx >= 0 ? rootIdx : 0;
     }
 
-    private boolean isNodeVisible(TreeNode node, ScrollableTreePanel panel) {
-        if (panel.isNodeInBreadcrumbArea(node))
-        	return true;
-        if (panel.isNodeFullyVisibleInViewport(node))
-        	return true;
-        return false;
-    }
+	private boolean isNodeVisible(TreeNode node, ScrollableTreePanel panel) {
+		if (!panel.isSelectionDrivenBreadcrumbMode() && panel.isNodeInBreadcrumbArea(node))
+			return true;
+		if (panel.isNodeFullyVisibleInViewport(node))
+			return true;
+		return false;
+	}
 
     public MapAwareOutlinePane() {
     	super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);

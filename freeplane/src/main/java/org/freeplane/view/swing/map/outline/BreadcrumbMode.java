@@ -5,6 +5,6 @@
  */
 package org.freeplane.view.swing.map.outline;
 
-enum BreadcrumbDisplayMode {
-	BY_FIRST_NODE, BY_SELECTED_NODE
+public enum BreadcrumbMode {
+	FOLLOW_FIRST_NODE, FOLLOW_SELECTED_NODE
 }

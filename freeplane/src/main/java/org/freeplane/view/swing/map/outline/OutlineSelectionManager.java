@@ -26,18 +26,22 @@ class OutlineSelectionManager {
         return children.get(0);
     }
 
-    void select(ScrollableTreePanel panel, OutlineSelection selection, TreeNode node, boolean requestFocus) {
+	void select(ScrollableTreePanel panel, OutlineSelection selection, TreeNode node, boolean requestFocus) {
         if (node == null) return;
         onSelected(node);
         selection.selectNode(node);
+        panel.onSelectedNodeChanged();
         panel.repaint();
-        VisibleOutlineNodes vs = panel.getVisibleNodes();
-        if (vs.findNodeIndexInVisibleList(node) < 0) {
-            TreeNode preservedHoveredNode = vs.getHoveredNode();
+        VisibleOutlineNodes visibleOutlineNodes = panel.getVisibleNodes();
+        if (visibleOutlineNodes.findNodeIndexInVisibleList(node) < 0) {
+            TreeNode preservedHoveredNode = visibleOutlineNodes.getHoveredNode();
             panel.hardResetBlocksPreservingHovered(preservedHoveredNode);
         }
 
-        boolean visible = panel.isNodeInBreadcrumbArea(node) || panel.isNodeFullyVisibleInViewport(node);
+        boolean visible = panel.isNodeFullyVisibleInViewport(node);
+        if (!panel.isSelectionDrivenBreadcrumbMode() && panel.isNodeInBreadcrumbArea(node)) {
+            visible = true;
+        }
         if (!visible) {
             panel.ensureSelectionVisibleTop();
         }

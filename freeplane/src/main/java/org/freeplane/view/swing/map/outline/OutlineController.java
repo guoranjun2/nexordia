@@ -24,9 +24,13 @@ class OutlineController implements OutlineActionTarget {
         return treePanel.calcTextButtonX(level);
     }
 
-    int calculateNodeLevel(TreeNode node) {
+	int calculateNodeLevel(TreeNode node) {
         return treePanel.calculateNodeLevel(node);
     }
+
+	BreadcrumbMode getBreadcrumbMode() {
+		return treePanel.getBreadcrumbMode();
+	}
 
     void toggleNodeExpansion(TreeNode node) {
         if (node == null) return;
