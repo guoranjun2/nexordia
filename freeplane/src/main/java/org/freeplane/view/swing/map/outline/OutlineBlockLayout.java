@@ -34,11 +34,16 @@ class OutlineBlockLayout {
         resetCachedMaxWidth();
     }
 
-    void createVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
+    void updateVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
         for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
             if (!blockCache.has(b))
                 createBlock(owner, b, panelWidth);
+			else {
+				final BlockPanel block = blockCache.get(b);
+				block.setBounds(nodePositioning.calculateBlockBounds(b, blockSize, panelWidth));
+			}
         }
+        owner.repaint();
     }
 
     void removeBlocksFromBlockIndex(JPanel owner, int startBlock) {

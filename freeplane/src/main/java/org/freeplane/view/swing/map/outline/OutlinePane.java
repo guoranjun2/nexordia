@@ -167,7 +167,8 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
          treeScrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
              treePanel.updateVisibleBlocks();
-             scrollDebounceTimer.restart();
+             if(!treePanel.isSelectionDrivenBreadcrumbMode())
+            	 scrollDebounceTimer.restart();
         });
         treeScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
@@ -179,7 +180,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
     private void performInitialSetup() {
         SwingUtilities.invokeLater(() -> {
-            treePanel.updateVisibleBlocks();
+            treePanel.performInitialSetup();
         });
     }
 

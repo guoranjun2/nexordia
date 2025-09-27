@@ -62,11 +62,18 @@ class BreadcrumbPanel extends JPanel {
     }
 
     void update(List<TreeNode> breadcrumbNodes) {
-        preferredBreadcrumbHeight = OutlineGeometry.getInstance().calculateHeight(breadcrumbNodes);
-        this.currentBreadcrumbNodes = breadcrumbNodes;
+    	final int lastIndex = breadcrumbNodes.size() - 1;
+		if(currentBreadcrumbNodes.size() != breadcrumbNodes.size()
+				|| ! (breadcrumbNodes.isEmpty()
+						|| breadcrumbNodes.get(lastIndex) == currentBreadcrumbNodes.get(lastIndex))) {
+			preferredBreadcrumbHeight = OutlineGeometry.getInstance().calculateHeight(breadcrumbNodes);
+			this.currentBreadcrumbNodes = breadcrumbNodes;
 
-        controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
-        updateNodeButtons();
+			controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
+			updateNodeButtons();
+		}
+		else
+			attachNavigationButtons();
     }
 
     void updateNodeButtons() {
@@ -102,7 +109,7 @@ class BreadcrumbPanel extends JPanel {
             am.put("toggleExpand", new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    controller.toggleNodeExpansion(nodeToSelect);
+                    controller.toggleBreadcrumbNodeExpansion(nodeToSelect);
                 }
             });
 
@@ -117,9 +124,19 @@ class BreadcrumbPanel extends JPanel {
 
         }
 
-        TreeNode hoveredNode = controller.getHoveredNode();
+        attachNavigationButtons();
+
+        revalidate();
+        repaint();
+	}
+
+
+
+	private void attachNavigationButtons() {
+		TreeNode hoveredNode = controller.getHoveredNode();
         if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
-            boolean isInBreadcrumb = currentBreadcrumbNodes.contains(hoveredNode);
+            boolean isInBreadcrumb = controller.isHoveredNodeContainedInBreadcrumb()
+            		&& currentBreadcrumbNodes.contains(hoveredNode);
 
             if (isInBreadcrumb) {
                 int hoveredRowIndex = currentBreadcrumbNodes.indexOf(hoveredNode);
@@ -134,9 +151,6 @@ class BreadcrumbPanel extends JPanel {
                 }
             }
         }
-
-        revalidate();
-        repaint();
 	}
 
 

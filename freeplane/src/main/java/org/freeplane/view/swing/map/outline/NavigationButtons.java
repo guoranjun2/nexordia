@@ -69,17 +69,17 @@ class NavigationButtons {
 		if (node.getChildren().isEmpty()) {
             return;
         }
+		final boolean showFoldingButtons = ResourceController.getResourceController().getBooleanProperty("showOutlineFoldingButtons", true);
+		if(showFoldingButtons) {
 
-        targetPanel.add(expandBtn);
-        targetPanel.add(collapseBtn);
-        targetPanel.add(expandMoreBtn);
-        targetPanel.add(reduceBtn);
+            targetPanel.add(expandBtn);
+            targetPanel.add(collapseBtn);
+            targetPanel.add(expandMoreBtn);
+            targetPanel.add(reduceBtn);
 
-        currentParent = targetPanel;
+            currentParent = targetPanel;
 
 
-        final boolean showFoldingButtons = ResourceController.getResourceController().getBooleanProperty("showOutlineFoldingButtons", true);
-        if(showFoldingButtons) {
         	Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
         	if (position == null) return;
 

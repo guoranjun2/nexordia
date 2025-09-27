@@ -12,6 +12,7 @@ class VisibleOutlineNodes {
     private int breadcrumbAreaHeight = 0;
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
+	private boolean isHoveredNodeContainedInBreadcrumb;
 
     VisibleOutlineNodes(TreeNode root) {
         this.root = root;
@@ -76,11 +77,20 @@ class VisibleOutlineNodes {
         return hoveredNode;
     }
 
+    void setHoveredNode(TreeNode node, boolean isBreadcrumb) {
+        this.hoveredNode = node;
+		this.isHoveredNodeContainedInBreadcrumb = isBreadcrumb;
+    }
+
     void setHoveredNode(TreeNode node) {
         this.hoveredNode = node;
     }
 
-    TreeNode getNodeAtVisibleIndex(int index) {
+    boolean isHoveredNodeContainedInBreadcrumb() {
+		return isHoveredNodeContainedInBreadcrumb;
+	}
+
+	TreeNode getNodeAtVisibleIndex(int index) {
         if (index < 0 || index >= visibleNodes.size()) return null;
         return visibleNodes.get(index);
     }

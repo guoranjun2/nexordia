@@ -56,8 +56,8 @@ class OutlineFocusManager {
         }
         TreeNode n = outlineSelection.getSelectedNode();
         while (n != null) {
-            if (focusButtonInBreadcrumbForNode(n)) return;
             if (focusButtonInBlocksForNode(n)) return;
+            if (focusButtonInBreadcrumbForNode(n)) return;
             n = n.getParent();
         }
     }

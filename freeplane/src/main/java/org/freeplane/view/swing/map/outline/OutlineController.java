@@ -32,10 +32,8 @@ class OutlineController implements OutlineActionTarget {
 		return treePanel.getBreadcrumbMode();
 	}
 
-    void toggleNodeExpansion(TreeNode node) {
-        if (node == null) return;
-        treePanel.setSelectedNode(node, true);
-        treePanel.toggleExpandSelected();
+    void toggleBreadcrumbNodeExpansion(TreeNode node) {
+        treePanel.toggleBreadcrumbNodeExpansion(node, true);
     }
 
     @Override
@@ -69,6 +67,10 @@ class OutlineController implements OutlineActionTarget {
 
     TreeNode getHoveredNode() {
         return treePanel.getVisibleNodes().getHoveredNode();
+    }
+
+    boolean isHoveredNodeContainedInBreadcrumb() {
+        return treePanel.getVisibleNodes().isHoveredNodeContainedInBreadcrumb();
     }
 
     boolean areNavButtonsVisible() {
