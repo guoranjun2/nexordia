@@ -37,7 +37,7 @@ final class SelectionPainter {
 
 	static void paintForBreadcrumbPanel(BreadcrumbPanel panel, OutlineController controller, OutlineSelection selection, Graphics g) {
         if (panel == null || controller == null || selection == null || g == null) return;
-        if (controller.getBreadcrumbMode() == BreadcrumbMode.FOLLOW_SELECTED_NODE) return;
+        if (controller.getBreadcrumbMode() == BreadcrumbMode.FOLLOW_SELECTED_ITEM) return;
         for (Component comp : panel.getComponents()) {
             if (comp instanceof NodeButton) {
                 NodeButton btn = (NodeButton) comp;

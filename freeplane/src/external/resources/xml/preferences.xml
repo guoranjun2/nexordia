@@ -163,6 +163,7 @@
 				<boolean name="outline_view_fits_window_width"/>
 			</separator>
 			<separator name="outline_panel">
+				<radiobuttons name="outlineBreadcrumbMode" enum="org.freeplane.view.swing.map.outline.BreadcrumbMode"/>
 				<number name="outlineItemFontSize" min="3" />
 				<boolean name="useColoredOutlineItems" />
 				<length name="outlineItemIndentation" min="0" max = "1000" step = "0.1" defaultUnit = "mm" />

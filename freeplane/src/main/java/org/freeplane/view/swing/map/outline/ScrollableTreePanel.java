@@ -3,6 +3,7 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,7 +48,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private int lastViewportWidth = -1;
     private int lastVisibleNodeCount = -1;
 	private final OutlineDisplayMode displayMode;
-	private BreadcrumbMode breadcrumbMode = BreadcrumbMode.FOLLOW_FIRST_NODE;
+	private BreadcrumbMode breadcrumbMode;
 
     ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
@@ -61,6 +62,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.root = root;
         this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
+        this.breadcrumbMode = ResourceController.getResourceController().getEnumProperty("", BreadcrumbMode.DEFAULT);
         this.outlineSelection = new OutlineSelection(root);
         this.visibleNodes = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
@@ -71,8 +73,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.focusManager = new OutlineFocusManager(this, breadcrumbPanel, outlineSelection);
         this.geometryListener = this::handleGeometryChange;
         this.outlinePropertyListener = this::handleOutlinePropertyChange;
-
-
         setFocusable(true);
         setupKeyBindings();
 
@@ -156,11 +156,12 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     @SuppressWarnings("unused")
 	private void handleOutlinePropertyChange(String propertyName, String newValue, String oldValue) {
-        if (!"useColoredOutlineItems".equals(propertyName)) {
-            return;
+        if ("useColoredOutlineItems".equals(propertyName)) {
+        	refreshColoredOutlineItems();
         }
-
-        refreshColoredOutlineItems();
+        else if ("outlineBreadcrumbMode".equals(propertyName)) {
+        	setBreadcrumbMode(BreadcrumbMode.valueOf(newValue));
+        }
     }
 
     private void refreshColoredOutlineItems() {
@@ -223,7 +224,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	}
 
 	void setBreadcrumbMode(BreadcrumbMode newMode) {
-		BreadcrumbMode resolvedMode = newMode != null ? newMode : BreadcrumbMode.FOLLOW_FIRST_NODE;
+		BreadcrumbMode resolvedMode = newMode != null ? newMode : BreadcrumbMode.DEFAULT;
 		if (breadcrumbMode == resolvedMode) {
 			return;
 		}
@@ -238,7 +239,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	}
 
 	boolean isSelectionDrivenBreadcrumbMode() {
-		return breadcrumbMode == BreadcrumbMode.FOLLOW_SELECTED_NODE;
+		return breadcrumbMode == BreadcrumbMode.FOLLOW_SELECTED_ITEM;
 	}
 
 
