@@ -57,8 +57,7 @@ class OutlineController implements OutlineActionTarget {
     @Override public void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
 
     void attachNavigationNode(TreeNode node, boolean isBreadcrumb, int rowIndex) {
-        int currentBreadcrumbHeight = treePanel.getVisibleNodes().getBreadcrumbAreaHeight();
-        treePanel.attachNavigationNode(node, isBreadcrumb, rowIndex, currentBreadcrumbHeight);
+        treePanel.attachNavigationNode(node, isBreadcrumb, rowIndex);
     }
 
     void setBreadcrumbAreaHeight(int height) {

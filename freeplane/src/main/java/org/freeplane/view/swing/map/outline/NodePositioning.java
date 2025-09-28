@@ -22,22 +22,22 @@ class NodePositioning {
         return node != null ? node.getLevel() : -1;
     }
 
-    Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight) {
+    Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex) {
 
         final int level = calculateNodeLevel(node);
         final int baseX = geometry.calculateNavigationButtonX(level);
-        int y;
+        final int rowHeight = geometry.rowHeight;
+        final int nodeIndex;
         if (isBreadcrumb) {
-            y = rowIndex * geometry.rowHeight;
+        	nodeIndex = rowIndex;
         } else {
-            int nodeIndex = visibleState.findNodeIndexInVisibleList(node);
-            int rowHeight = geometry.rowHeight;
-            int breadcrumbNodeCount = breadcrumbAreaHeight / rowHeight;
-            int contentAreaIndex = Math.max(0, nodeIndex - breadcrumbNodeCount + reservedBreadcrumbNodeCount());
-
-            y = breadcrumbAreaHeight + contentAreaIndex * rowHeight;
+            if (node == null) {
+                return null;
+            }
+            nodeIndex = visibleState.findNodeIndexInVisibleList(node);
         }
 
+        int y = nodeIndex * rowHeight;
 		return new Point(baseX, y);
     }
 
@@ -55,7 +55,7 @@ class NodePositioning {
         int visibleNodesInBlock = end - start;
 
         int rowHeight = geometry.rowHeight;
-        int blockY = (start + reservedBreadcrumbNodeCount()) * rowHeight;
+        int blockY = start * rowHeight;
         int blockHeight = visibleNodesInBlock * rowHeight;
 
         return new Rectangle(0, blockY, panelWidth, blockHeight);
@@ -63,13 +63,12 @@ class NodePositioning {
 
     int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
         int rowHeight = geometry.rowHeight;
-        int effectiveViewportY = viewRect.y + breadcrumbAreaHeight;
+        int effectiveViewportY = viewRect.y + breadcrumbAreaHeight - getContentAreaOffset();
+        if (effectiveViewportY < 0) {
+            effectiveViewportY = 0;
+        }
         return Math.max(0, (effectiveViewportY + rowHeight - 1) / rowHeight);
     }
-
-	private int reservedBreadcrumbNodeCount() {
-		return isSelectionDrivenBreadcrumbMode()? 1: 0;
-	}
 
     void setBreadcrumbMode(BreadcrumbMode breadcrumbMode) {
         this.breadcrumbMode = breadcrumbMode;
@@ -77,5 +76,9 @@ class NodePositioning {
 
     private boolean isSelectionDrivenBreadcrumbMode() {
         return breadcrumbMode == BreadcrumbMode.FOLLOW_SELECTED_ITEM;
+    }
+
+    int getContentAreaOffset() {
+        return isSelectionDrivenBreadcrumbMode() ? geometry.rowHeight : 0;
     }
 }

@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 
 import javax.swing.JScrollPane;
+import javax.swing.JComponent;
 
 class OutlineViewport {
     private final JScrollPane scrollPane;
@@ -39,6 +40,10 @@ class OutlineViewport {
     }
 
     void refreshViewport() {
+        java.awt.Component view = scrollPane.getViewport().getView();
+        if (view instanceof JComponent) {
+            ((JComponent) view).revalidate();
+        }
         scrollPane.getViewport().revalidate();
         scrollPane.repaint();
     }
@@ -49,7 +54,8 @@ class OutlineViewport {
         int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
 
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        int adjustedViewY = Math.max(0, viewRect.y - breadcrumbAreaHeight);
+        int contentOffset = nodePositioning.getContentAreaOffset();
+        int adjustedViewY = Math.max(0, viewRect.y - breadcrumbAreaHeight - contentOffset);
         int adjustedViewHeight = viewRect.height;
 
         int firstBlock = Math.max(0, adjustedViewY / blockHeight);

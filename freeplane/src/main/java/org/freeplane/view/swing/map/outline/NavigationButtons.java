@@ -63,7 +63,7 @@ class NavigationButtons {
         button.setFont(button.getFont().deriveFont(geometry.getButtonFontSize()));
     }
 
-    public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, int breadcrumbAreaHeight, NodePositioning nodePositioning) {
+    public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, NodePositioning nodePositioning) {
         this.node = node;
         detachFromCurrentParent();
 		if (node.getChildren().isEmpty()) {
@@ -80,7 +80,7 @@ class NavigationButtons {
             currentParent = targetPanel;
 
 
-        	Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex, breadcrumbAreaHeight);
+        	Point position = nodePositioning.calculateNavigationButtonPosition(node, isBreadcrumb, rowIndex);
         	if (position == null) return;
 
         	int baseX = position.x;

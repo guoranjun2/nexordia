@@ -15,18 +15,21 @@ class OutlineBlockLayout {
     private OutlineGeometry geometry;
     private final NodePositioning nodePositioning;
     private final int blockSize;
+    private final ScrollableTreePanel treePanel;
     private int cachedMaxWidth = 0;
 
     OutlineBlockLayout(OutlineBlockViewCache blockCache,
                        VisibleOutlineNodes visibleState,
                        OutlineGeometry geometry,
                        NodePositioning nodePositioning,
-                       int blockSize) {
+                       int blockSize,
+                       ScrollableTreePanel treePanel) {
         this.blockCache = blockCache;
         this.visibleState = visibleState;
         this.geometry = geometry;
         this.nodePositioning = nodePositioning;
         this.blockSize = blockSize;
+        this.treePanel = treePanel;
     }
 
     void updateGeometry(OutlineGeometry geometry) {
@@ -36,12 +39,9 @@ class OutlineBlockLayout {
 
     void updateVisibleBlocks(JPanel owner, OutlineVisibleBlockRange range, int panelWidth) {
         for (int b = range.getFirstBlock(); b <= range.getLastBlock(); b++) {
-            if (!blockCache.has(b))
+            if (!blockCache.has(b)) {
                 createBlock(owner, b, panelWidth);
-			else {
-				final BlockPanel block = blockCache.get(b);
-				block.setBounds(nodePositioning.calculateBlockBounds(b, blockSize, panelWidth));
-			}
+            }
         }
         owner.repaint();
     }
@@ -57,17 +57,23 @@ class OutlineBlockLayout {
         }
     }
 
-    void updatePreferredFromActualBlocks(JPanel owner) {
+    Dimension updatePreferredFromActualBlocks(JPanel owner) {
         int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
         int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
-        int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight;
-        owner.setPreferredSize(new Dimension(cachedMaxWidth, height));
+        int contentOffset = nodePositioning.getContentAreaOffset();
+        int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight - contentOffset;
+        if (height < 0) {
+            height = 0;
+        }
+        Dimension preferredSize = new Dimension(cachedMaxWidth, height);
+        owner.setPreferredSize(preferredSize);
 
         for (BlockPanel panel : blockCache.values()) {
             Dimension currentSize = panel.getSize();
             panel.setSize(cachedMaxWidth, currentSize.height);
         }
+        return preferredSize;
     }
 
     private void createBlock(JPanel owner, int blockIndex, int panelWidth) {
@@ -79,7 +85,7 @@ class OutlineBlockLayout {
             TreeNode n = visibleState.getNodeAtVisibleIndex(i);
             if (n != null) blockNodes.add(n);
         }
-        BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, (ScrollableTreePanel) owner, ((ScrollableTreePanel) owner).getOutlineSelection());
+        BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, treePanel, treePanel.getOutlineSelection());
         Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, panelWidth);
         bp.setBounds(bounds);
         owner.add(bp);

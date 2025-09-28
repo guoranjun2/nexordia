@@ -103,15 +103,6 @@ class BlockPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        ScrollableTreePanel parentPanel = null;
-        Container parent = getParent();
-        while (parent != null && !(parent instanceof ScrollableTreePanel)) {
-            parent = parent.getParent();
-        }
-        if (parent instanceof ScrollableTreePanel) {
-            parentPanel = (ScrollableTreePanel) parent;
-        }
-
         if (parentPanel != null) {
             SelectionPainter.paintForBlockPanel(this, parentPanel, selection, g);
         }
