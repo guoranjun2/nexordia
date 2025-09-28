@@ -5,6 +5,8 @@
  */
 package org.freeplane.view.swing.map.outline;
 
+import javax.swing.SwingUtilities;
+
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -33,7 +35,8 @@ class OutlineSelectionBridge {
 
         mv.getModeController().getMapController().displayNode(target);
         final NodeView nodeView = mv.getNodeView(target);
-        mv.selectAsTheOnlyOneSelected(nodeView, true);
+        mv.selectAsTheOnlyOneSelected(nodeView, false);
+        SwingUtilities.invokeLater(this::focusMapNode);
     }
 
 	void synchronizeOutlineSelection(boolean requestFocusInWindow) {
