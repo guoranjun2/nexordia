@@ -67,8 +67,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.outlineSelection = new OutlineSelection(root);
         this.visibleNodes = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
-        this.nodePositioning = new NodePositioning(OutlineGeometry.getInstance(), visibleNodes, breadcrumbMode);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
+        this.nodePositioning = new NodePositioning(geometry, visibleNodes,getContentAreaOffset());
         this.navButtons = new NavigationButtons(geometry, displayMode, expansionControls);
         this.blockPanel = new JPanel(null);
         blockPanel.setOpaque(false);
@@ -81,6 +81,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         setupKeyBindings();
         navButtons.hideNavigationButtons();
     }
+
+	private int getContentAreaOffset() {
+		return isSelectionDrivenBreadcrumbMode() ? OutlineGeometry.getInstance().rowHeight : 0;
+	}
 
 	@Override
 	public void doLayout() {
@@ -235,7 +239,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			return;
 		}
 		breadcrumbMode = resolvedMode;
-		nodePositioning.setBreadcrumbMode(resolvedMode);
+		nodePositioning.setContentAreaOffset(getContentAreaOffset());
 		if (isSelectionDrivenBreadcrumbMode()) {
 			updateBreadcrumbForSelection();
 		}

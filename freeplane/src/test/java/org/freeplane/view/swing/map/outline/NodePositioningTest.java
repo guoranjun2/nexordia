@@ -24,7 +24,7 @@ public class NodePositioningTest {
     public void calculateFirstVisibleNodeIndexRespectsBreadcrumbHeight() {
         OutlineGeometry geometry = OutlineGeometry.getInstance();
         VisibleOutlineNodes vs = new VisibleOutlineNodes(new TreeNode("r", () -> "root"));
-        NodePositioning defaultPos = new NodePositioning(geometry, vs, BreadcrumbMode.DEFAULT);
+        NodePositioning defaultPos = new NodePositioning(geometry, vs, 0);
 
         Rectangle viewRect = new Rectangle(0, 0, 400, geometry.rowHeight * 10);
 
@@ -36,7 +36,7 @@ public class NodePositioningTest {
         assertThat(idxWithBreadcrumb).isGreaterThanOrEqualTo(idxNoBreadcrumb);
 
         Rectangle offsetRect = new Rectangle(0, geometry.rowHeight, 400, geometry.rowHeight * 10);
-        NodePositioning selectionDrivenPos = new NodePositioning(geometry, vs, BreadcrumbMode.FOLLOW_SELECTED_ITEM);
+        NodePositioning selectionDrivenPos = new NodePositioning(geometry, vs, geometry.rowHeight);
         int idxWithOffset = selectionDrivenPos.calculateFirstVisibleNodeIndex(offsetRect, 0);
         assertThat(idxWithOffset).isEqualTo(0);
     }

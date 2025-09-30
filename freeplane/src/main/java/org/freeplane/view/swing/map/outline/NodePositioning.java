@@ -6,12 +6,12 @@ import java.awt.Rectangle;
 class NodePositioning {
     private OutlineGeometry geometry;
     private final VisibleOutlineNodes visibleState;
-    private BreadcrumbMode breadcrumbMode;
+	private int contentAreaOffset;
 
-    NodePositioning(OutlineGeometry geometry, VisibleOutlineNodes visibleState, BreadcrumbMode breadcrumbMode) {
+    NodePositioning(OutlineGeometry geometry, VisibleOutlineNodes visibleState, int contentAreaOffset) {
         this.geometry = geometry;
         this.visibleState = visibleState;
-        this.breadcrumbMode = breadcrumbMode;
+        this.contentAreaOffset = contentAreaOffset;
     }
 
     void updateGeometry(OutlineGeometry geometry) {
@@ -70,15 +70,11 @@ class NodePositioning {
         return Math.max(0, (effectiveViewportY + rowHeight - 1) / rowHeight);
     }
 
-    void setBreadcrumbMode(BreadcrumbMode breadcrumbMode) {
-        this.breadcrumbMode = breadcrumbMode;
-    }
-
-    private boolean isSelectionDrivenBreadcrumbMode() {
-        return breadcrumbMode == BreadcrumbMode.FOLLOW_SELECTED_ITEM;
+    void setContentAreaOffset(int contentAreaOffset) {
+        this.contentAreaOffset = contentAreaOffset;
     }
 
     int getContentAreaOffset() {
-        return isSelectionDrivenBreadcrumbMode() ? geometry.rowHeight : 0;
+        return contentAreaOffset;
     }
 }
