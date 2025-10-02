@@ -62,10 +62,10 @@ class BreadcrumbPanel extends JPanel {
         new OutlineActions(() -> controller).installOn(this, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
 
-    void update(List<TreeNode> breadcrumbNodes) {
+    void update(List<TreeNode> breadcrumbNodes, boolean wasGeometryUpdated) {
     	final int breadcrumbNodeCount = breadcrumbNodes.size();
 		final int lastIndex = breadcrumbNodeCount - 1;
-		if(currentBreadcrumbNodes.size() != breadcrumbNodeCount
+		if(wasGeometryUpdated || currentBreadcrumbNodes.size() != breadcrumbNodeCount
 				|| ! (breadcrumbNodes.isEmpty()
 						|| breadcrumbNodes.get(lastIndex) == currentBreadcrumbNodes.get(lastIndex))) {
 			preferredBreadcrumbHeight = OutlineGeometry.getInstance().rowHeight * breadcrumbNodeCount + BREADCRUMB_BOTTOM_MARGIN;
@@ -85,10 +85,10 @@ class BreadcrumbPanel extends JPanel {
             int level = getNodeLevel(node);
 			int y = i * rowHeight;
 
-            int actionX = controller.calcTextButtonX(level);
+            int x = controller.calcTextButtonX(level);
 
 			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, Font.BOLD | Font.ITALIC);
-            breadcrumbButton.setBounds(actionX, y, breadcrumbButton.getPreferredSize().width, rowHeight);
+            breadcrumbButton.setBounds(x, y, breadcrumbButton.getPreferredSize().width, rowHeight);
 
             final TreeNode nodeToSelect = node;
             final int rowIndex = i;
@@ -160,6 +160,13 @@ class BreadcrumbPanel extends JPanel {
             g.setColor(UITools.getDisabledTextColorForBackground(getBackground()));
             g.drawLine(0, preferredBreadcrumbHeight - 1, getWidth(), preferredBreadcrumbHeight - 1);
         }
-        SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
     }
+
+	@Override
+	protected void paintChildren(Graphics g) {
+		 super.paintChildren(g);
+		 SelectionPainter.paintForBreadcrumbPanel(this, controller, selection, g);
+	}
+
+
 }

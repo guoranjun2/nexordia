@@ -100,12 +100,10 @@ class BlockPanel extends JPanel {
 	}
 
 	@Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        if (parentPanel != null) {
-            SelectionPainter.paintForBlockPanel(this, parentPanel, selection, g);
-        }
-    }
-
+	protected void paintChildren(Graphics g) {
+		 super.paintChildren(g);
+		 if (parentPanel != null) {
+			 SelectionPainter.paintForBlockPanel(this, parentPanel, selection, g);
+		 }
+	}
 }

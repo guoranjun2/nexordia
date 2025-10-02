@@ -19,20 +19,26 @@ final class SelectionPainter {
 			if (node != null && selection.isSelected(node)) {
 				boolean allowBreadcrumbOverlap = parentPanel.isSelectionDrivenBreadcrumbMode();
 				if (allowBreadcrumbOverlap || ! parentPanel.isNodeInBreadcrumbArea(node)) {
-					underlineSelection(g, panel, btn);
+					paintSelection(g, panel, btn);
 				}
 			}
             }
         }
     }
 
-	private static void underlineSelection(Graphics g, Component panel, Component btn) {
+	private static void paintSelection(Graphics g, Component panel, Component btn) {
 		g.setColor(ResourceController.getResourceController().getColorProperty("standardselectednoderectanglecolor"));
 		((Graphics2D)g).setStroke(new BasicStroke(3));
-		final int y1 = Math.max(0, btn.getY() - 1);
-		g.drawLine(0, y1, panel.getWidth(), y1);
-		final int y2 =  Math.min(panel.getHeight() - 2, btn.getY() + OutlineGeometry.getInstance().rowHeight + 1);
-		g.drawLine(0, y2, panel.getWidth(), y2);
+		final int y1 = Math.max(0, btn.getY() + 2);
+		final int y2 =  Math.min(panel.getHeight() - 1, btn.getY() + OutlineGeometry.getInstance().rowHeight - 1);
+		if(btn.hasFocus()) {
+			final int x1 = btn.getX();
+			g.drawRoundRect(x1, y1, btn.getWidth(), y2 - y1, 5, 5);
+		}
+		else {
+			g.drawLine(0, y1, panel.getWidth(), y1);
+			g.drawLine(0, y2, panel.getWidth(), y2);
+		}
 	}
 
 	static void paintForBreadcrumbPanel(BreadcrumbPanel panel, OutlineController controller, OutlineSelection selection, Graphics g) {
@@ -43,7 +49,7 @@ final class SelectionPainter {
                 NodeButton btn = (NodeButton) comp;
                 TreeNode node = btn.getNode();
                 if (node != null && selection.isSelected(node)) {
-                	underlineSelection(g, panel, btn);
+                	paintSelection(g, panel, btn);
                 }
             }
         }

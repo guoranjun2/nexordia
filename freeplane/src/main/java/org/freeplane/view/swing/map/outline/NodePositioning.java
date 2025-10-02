@@ -37,7 +37,7 @@ class NodePositioning {
             nodeIndex = visibleState.findNodeIndexInVisibleList(node);
         }
 
-        int y = nodeIndex * rowHeight;
+        int y = nodeIndex * rowHeight + 1;
 		return new Point(baseX, y);
     }
 

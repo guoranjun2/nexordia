@@ -147,7 +147,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.setHoveredNode(hoveredNode);
 
         if (breadcrumbNodes != null) {
-            breadcrumbPanel.update(breadcrumbNodes);
+            breadcrumbPanel.update(breadcrumbNodes, true);
         } else {
             visibleNodes.setBreadcrumbHeight(0);
             breadcrumbPanel.removeAll();
@@ -680,7 +680,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 	private void applyBreadcrumbState(List<TreeNode> breadcrumbState) {
 		if (breadcrumbState != null) {
-			breadcrumbPanel.update(breadcrumbState);
+			breadcrumbPanel.update(breadcrumbState, false);
 		}
 		else {
 			visibleNodes.setBreadcrumbHeight(0);
