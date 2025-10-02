@@ -22,7 +22,8 @@ import org.freeplane.core.ui.components.UITools;
 
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
-    private OutlineController controller;
+    static final int BREADCRUMB_BOTTOM_MARGIN = 2;
+	private OutlineController controller;
     private OutlineSelection selection;
     private int preferredBreadcrumbHeight = 0;
     private List<TreeNode> currentBreadcrumbNodes = new ArrayList<>();
@@ -62,14 +63,15 @@ class BreadcrumbPanel extends JPanel {
     }
 
     void update(List<TreeNode> breadcrumbNodes) {
-    	final int lastIndex = breadcrumbNodes.size() - 1;
-		if(currentBreadcrumbNodes.size() != breadcrumbNodes.size()
+    	final int breadcrumbNodeCount = breadcrumbNodes.size();
+		final int lastIndex = breadcrumbNodeCount - 1;
+		if(currentBreadcrumbNodes.size() != breadcrumbNodeCount
 				|| ! (breadcrumbNodes.isEmpty()
 						|| breadcrumbNodes.get(lastIndex) == currentBreadcrumbNodes.get(lastIndex))) {
-			preferredBreadcrumbHeight = OutlineGeometry.getInstance().calculateHeight(breadcrumbNodes);
+			preferredBreadcrumbHeight = OutlineGeometry.getInstance().rowHeight * breadcrumbNodeCount + BREADCRUMB_BOTTOM_MARGIN;
 			this.currentBreadcrumbNodes = breadcrumbNodes;
 
-			controller.setBreadcrumbAreaHeight(preferredBreadcrumbHeight);
+			controller.setBreadcrumbHeight(preferredBreadcrumbHeight);
 			updateNodeButtons();
 		}
     }

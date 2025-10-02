@@ -3,22 +3,22 @@ package org.freeplane.view.swing.map.outline;
 class OutlineVisibleBlockRange {
     private final int firstBlock;
     private final int lastBlock;
-    private final int breadcrumbAreaHeight;
+    private final int breadcrumbHeight;
 
-    OutlineVisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbAreaHeight) {
+    OutlineVisibleBlockRange(int firstBlock, int lastBlock, int breadcrumbHeight) {
         this.firstBlock = firstBlock;
         this.lastBlock = lastBlock;
-        this.breadcrumbAreaHeight = breadcrumbAreaHeight;
+        this.breadcrumbHeight = breadcrumbHeight;
     }
 
     int getFirstBlock() { return firstBlock; }
     int getLastBlock() { return lastBlock; }
-    int getBreadcrumbAreaHeight() { return breadcrumbAreaHeight; }
+    int getBreadcrumbHeight() { return breadcrumbHeight; }
 
     @Override
     public String toString() {
         return "OutlineVisibleBlockRange [firstBlock=" + firstBlock + ", lastBlock=" + lastBlock
-                + ", breadcrumbAreaHeight=" + breadcrumbAreaHeight + "]";
+                + ", breadcrumbHeight=" + breadcrumbHeight + "]";
     }
 }
 

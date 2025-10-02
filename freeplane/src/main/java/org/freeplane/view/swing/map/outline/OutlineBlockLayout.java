@@ -58,11 +58,11 @@ class OutlineBlockLayout {
     }
 
     Dimension updatePreferredFromActualBlocks(JPanel owner) {
-        int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        int breadcrumbNodeCount = breadcrumbAreaHeight / geometry.rowHeight;
+        int breadcrumbHeight = visibleState.getBreadcrumbHeight();
+        int breadcrumbNodeCount = (breadcrumbHeight -BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN) / geometry.rowHeight;
         int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
         int contentOffset = nodePositioning.getContentAreaOffset();
-        int height = breadcrumbAreaHeight + (contentNodesCount + 1) * geometry.rowHeight - contentOffset;
+        int height = breadcrumbHeight + (contentNodesCount + 1) * geometry.rowHeight - contentOffset;
         if (height < 0) {
             height = 0;
         }

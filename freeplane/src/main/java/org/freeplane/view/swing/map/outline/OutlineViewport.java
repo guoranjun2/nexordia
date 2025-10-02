@@ -25,8 +25,8 @@ class OutlineViewport {
         scrollPane.getViewport().setViewPosition(position);
     }
 
-    void setViewPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
-        Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbAreaHeight);
+    void setViewPosition(int startFromNodeIndex, int breadcrumbHeight) {
+        Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbHeight);
         setViewPosition(viewPosition);
     }
 
@@ -53,21 +53,21 @@ class OutlineViewport {
         int blockHeight = blockSize * OutlineGeometry.getInstance().rowHeight;
         int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
 
-        int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
+        int breadcrumbHeight = visibleState.getBreadcrumbHeight();
         int contentOffset = nodePositioning.getContentAreaOffset();
-        int adjustedViewY = Math.max(0, viewRect.y - breadcrumbAreaHeight - contentOffset);
+        int adjustedViewY = Math.max(0, viewRect.y - breadcrumbHeight - contentOffset);
         int adjustedViewHeight = viewRect.height;
 
         int firstBlock = Math.max(0, adjustedViewY / blockHeight);
         int lastBlock = Math.min(totalBlocks - 1, (adjustedViewY + adjustedViewHeight) / blockHeight);
 
-        return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbAreaHeight);
+        return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbHeight);
     }
 
     int calculateFirstVisibleNodeIndex() {
         Rectangle viewRect = getViewRect();
-        int breadcrumbAreaHeight = visibleState.getBreadcrumbAreaHeight();
-        return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbAreaHeight);
+        int breadcrumbHeight = visibleState.getBreadcrumbHeight();
+        return nodePositioning.calculateFirstVisibleNodeIndex(viewRect, breadcrumbHeight);
     }
 
 

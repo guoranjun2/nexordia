@@ -9,7 +9,7 @@ class VisibleOutlineNodes {
     private final TreeNode root;
     private List<TreeNode> visibleNodes = new ArrayList<>();
     private final Map<String, Integer> indexById = new HashMap<>();
-    private int breadcrumbAreaHeight = 0;
+    private int breadcrumbHeight = 0;
     private TreeNode hoveredNode;
     private String firstVisibleNodeId;
 	private boolean isHoveredNodeContainedInBreadcrumb;
@@ -65,12 +65,12 @@ class VisibleOutlineNodes {
         return idx != null ? idx : -1;
     }
 
-    int getBreadcrumbAreaHeight() {
-        return breadcrumbAreaHeight;
+    int getBreadcrumbHeight() {
+        return breadcrumbHeight;
     }
 
-    void setBreadcrumbAreaHeight(int height) {
-        this.breadcrumbAreaHeight = height;
+    void setBreadcrumbHeight(int height) {
+        this.breadcrumbHeight = height;
     }
 
     TreeNode getHoveredNode() {

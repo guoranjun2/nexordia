@@ -41,9 +41,9 @@ class NodePositioning {
 		return new Point(baseX, y);
     }
 
-    Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbAreaHeight) {
+    Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbHeight) {
         int rowHeight = geometry.rowHeight;
-        int targetY = (startFromNodeIndex * rowHeight) - breadcrumbAreaHeight;
+        int targetY = (startFromNodeIndex * rowHeight) - breadcrumbHeight;
         targetY = Math.max(0, targetY);
         return new Point(0, targetY);
     }
@@ -61,9 +61,9 @@ class NodePositioning {
         return new Rectangle(0, blockY, panelWidth, blockHeight);
     }
 
-    int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbAreaHeight) {
+    int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbHeight) {
         int rowHeight = geometry.rowHeight;
-        int effectiveViewportY = viewRect.y + breadcrumbAreaHeight - getContentAreaOffset();
+        int effectiveViewportY = viewRect.y + breadcrumbHeight - getContentAreaOffset();
         if (effectiveViewportY < 0) {
             effectiveViewportY = 0;
         }

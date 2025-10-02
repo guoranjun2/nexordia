@@ -24,7 +24,7 @@ public class OutlineViewportTest {
         TreeNode root = createLinearTree(25);
 
         VisibleOutlineNodes vs = new VisibleOutlineNodes(root);
-        vs.setBreadcrumbAreaHeight(geometry.rowHeight * 2);
+        vs.setBreadcrumbHeight(geometry.rowHeight * 2);
         NodePositioning pos = new NodePositioning(geometry, vs, 0);
 
         JPanel view = new JPanel();
@@ -41,11 +41,11 @@ public class OutlineViewportTest {
         OutlineVisibleBlockRange r0 = ov.calculateVisibleBlockRange(blockSize);
         assertThat(r0.getFirstBlock()).isEqualTo(0);
         assertThat(r0.getLastBlock()).isGreaterThanOrEqualTo(0);
-        assertThat(r0.getBreadcrumbAreaHeight()).isEqualTo(geometry.rowHeight * 2);
+        assertThat(r0.getBreadcrumbHeight()).isEqualTo(geometry.rowHeight * 2);
 
         // Scroll down by one block + breadcrumb height to land in block 1
         int blockHeight = blockSize * geometry.rowHeight;
-        viewport.setViewPosition(new Point(0, blockHeight + vs.getBreadcrumbAreaHeight() + 1));
+        viewport.setViewPosition(new Point(0, blockHeight + vs.getBreadcrumbHeight() + 1));
         OutlineVisibleBlockRange r1 = ov.calculateVisibleBlockRange(blockSize);
         assertThat(r1.getFirstBlock()).isGreaterThanOrEqualTo(1);
         assertThat(r1.getLastBlock()).isGreaterThanOrEqualTo(r1.getFirstBlock());
