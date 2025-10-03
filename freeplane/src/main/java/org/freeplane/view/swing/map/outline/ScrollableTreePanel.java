@@ -28,7 +28,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     private TreeNode root;
     private final OutlineSelection outlineSelection;
-    private final int blockSize;
     private final VisibleOutlineNodes visibleNodes;
     private final OutlineGeometry.GeometryListener geometryListener;
     private boolean geometryListenerRegistered;
@@ -56,14 +55,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         super(null);
 		this.displayMode = displayMode;
         this.root = root;
-        this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
         this.breadcrumbMode = ResourceController.getResourceController().getEnumProperty("outlineBreadcrumbMode", BreadcrumbMode.DEFAULT);
         this.outlineSelection = new OutlineSelection(root);
         this.visibleNodes = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
-        this.nodePositioning = new NodePositioning(geometry, visibleNodes,calculateDuplicateItemsHeight());
+        this.nodePositioning = new NodePositioning(geometry, visibleNodes, 0);
         this.navButtons = new NavigationButtons(geometry, displayMode, expansionControls);
         this.blockPanel = new JPanel(null);
         blockPanel.setOpaque(false);
@@ -85,10 +83,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 outlineSelection, this::isSelectionDrivenBreadcrumbMode, this::isNodeInBreadcrumbArea,
                 this::setBreadcrumbHeight, blockPanel);
     }
-
-	private int calculateDuplicateItemsHeight() {
-		return (isSelectionDrivenBreadcrumbMode() ? OutlineGeometry.getInstance().rowHeight : 0);
-	}
 
 	@Override
 	public void doLayout() {
@@ -224,7 +218,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			return;
 		}
 		breadcrumbMode = resolvedMode;
-		nodePositioning.setDuplicateItemsHeight(calculateDuplicateItemsHeight());
 		if (isSelectionDrivenBreadcrumbMode()) {
 			updateBreadcrumbForSelection();
 		}
@@ -609,6 +602,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 	private void updateBreadcrumbForSelection() {
 		breadcrumbLayout.updateForSelection();
+		nodePositioning.setDuplicateItemsHeight(breadcrumbPanel.getPreferredBreadcrumbHeight());
 	}
 
 	private void updateBreadcrumbForCurrentFirstVisibleNode() {
@@ -617,6 +611,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			firstVisibleIndex = viewport.calculateFirstVisibleNodeIndex();
 		}
 		breadcrumbLayout.updateForFirstVisibleIndex(firstVisibleIndex);
+		nodePositioning.setDuplicateItemsHeight(0);
 	}
 
 	private int getCurrentBreadcrumbRowCount() {
