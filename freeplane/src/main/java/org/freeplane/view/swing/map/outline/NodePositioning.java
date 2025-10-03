@@ -6,12 +6,12 @@ import java.awt.Rectangle;
 class NodePositioning {
     private OutlineGeometry geometry;
     private final VisibleOutlineNodes visibleState;
-	private int contentAreaOffset;
+	private int duplicateItemsHeight;
 
-    NodePositioning(OutlineGeometry geometry, VisibleOutlineNodes visibleState, int contentAreaOffset) {
+    NodePositioning(OutlineGeometry geometry, VisibleOutlineNodes visibleState, int duplicateItemsHeight) {
         this.geometry = geometry;
         this.visibleState = visibleState;
-        this.contentAreaOffset = contentAreaOffset;
+        this.duplicateItemsHeight = duplicateItemsHeight;
     }
 
     void updateGeometry(OutlineGeometry geometry) {
@@ -63,18 +63,18 @@ class NodePositioning {
 
     int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbHeight) {
         int rowHeight = geometry.rowHeight;
-        int effectiveViewportY = viewRect.y + breadcrumbHeight - getContentAreaOffset();
+        int effectiveViewportY = viewRect.y + breadcrumbHeight - getDuplicateItemsHeight();
         if (effectiveViewportY < 0) {
             effectiveViewportY = 0;
         }
         return Math.max(0, (effectiveViewportY + rowHeight - 1) / rowHeight);
     }
 
-    void setContentAreaOffset(int contentAreaOffset) {
-        this.contentAreaOffset = contentAreaOffset;
+    void setDuplicateItemsHeight(int duplicateItemsHeight) {
+        this.duplicateItemsHeight = duplicateItemsHeight;
     }
 
-    int getContentAreaOffset() {
-        return contentAreaOffset;
+    int getDuplicateItemsHeight() {
+        return duplicateItemsHeight;
     }
 }

@@ -22,7 +22,7 @@ import org.freeplane.core.ui.components.UITools;
 
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
-    static final int BREADCRUMB_BOTTOM_MARGIN = 2;
+    private static final int BREADCRUMB_BOTTOM_MARGIN = 2;
 	private OutlineController controller;
     private OutlineSelection selection;
     private int preferredBreadcrumbHeight = 0;

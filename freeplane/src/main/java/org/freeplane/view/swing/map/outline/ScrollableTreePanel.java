@@ -68,7 +68,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.visibleNodes = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
-        this.nodePositioning = new NodePositioning(geometry, visibleNodes,getContentAreaOffset());
+        this.nodePositioning = new NodePositioning(geometry, visibleNodes,calculateDuplicateItemsHeight());
         this.navButtons = new NavigationButtons(geometry, displayMode, expansionControls);
         this.blockPanel = new JPanel(null);
         blockPanel.setOpaque(false);
@@ -82,14 +82,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         navButtons.hideNavigationButtons();
     }
 
-	private int getContentAreaOffset() {
+	private int calculateDuplicateItemsHeight() {
 		return (isSelectionDrivenBreadcrumbMode() ? OutlineGeometry.getInstance().rowHeight : 0);
 	}
 
 	@Override
 	public void doLayout() {
 		super.doLayout();
-		int contentOffset = nodePositioning.getContentAreaOffset();
+		int contentOffset = nodePositioning.getDuplicateItemsHeight();
 		int width = getWidth();
 		int height = Math.max(0, getHeight() - contentOffset);
 		blockPanel.setBounds(0, contentOffset, width, height);
@@ -239,7 +239,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			return;
 		}
 		breadcrumbMode = resolvedMode;
-		nodePositioning.setContentAreaOffset(getContentAreaOffset());
+		nodePositioning.setDuplicateItemsHeight(calculateDuplicateItemsHeight());
 		if (isSelectionDrivenBreadcrumbMode()) {
 			updateBreadcrumbForSelection();
 		}
@@ -299,8 +299,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
         blockLayout.removeBlocksOutsideRange(blockPanel, range);
 		blockLayout.updateVisibleBlocks(blockPanel, range, getWidth());
-        updatePreferredSize();
-        refreshUI();
 
 
         lastFirstBlock = range.getFirstBlock();
@@ -308,6 +306,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         lastBreadcrumbHeight = range.getBreadcrumbHeight();
         lastViewportWidth = viewportWidth;
         lastVisibleNodeCount = visibleCount;
+
+        updatePreferredSize();
+        refreshUI();
         updateFirstVisibleNodeId();
 
         TreeNode hoveredNode = visibleNodes.getHoveredNode();
@@ -374,9 +375,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private void updatePreferredSize() {
         blockLayout.updateBlockPreferredSize(blockPanel);
         Dimension blockPreferredSize = blockPanel.getPreferredSize();
-        int contentOffset = nodePositioning.getContentAreaOffset();
+        int contentOffset = nodePositioning.getDuplicateItemsHeight();
         Dimension panelPreferredSize = new Dimension(blockPreferredSize.width,
-                blockPreferredSize.height + contentOffset);
+                Math.max(blockPreferredSize.height, lastBreadcrumbHeight) + contentOffset);
         setPreferredSize(panelPreferredSize);
     }
 

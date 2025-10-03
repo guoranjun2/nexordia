@@ -54,7 +54,7 @@ class OutlineViewport {
         int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
 
         int breadcrumbHeight = visibleState.getBreadcrumbHeight();
-        int contentOffset = nodePositioning.getContentAreaOffset();
+        int contentOffset = nodePositioning.getDuplicateItemsHeight();
         int adjustedViewY = Math.max(0, viewRect.y - breadcrumbHeight - contentOffset);
         int adjustedViewHeight = viewRect.height;
 
