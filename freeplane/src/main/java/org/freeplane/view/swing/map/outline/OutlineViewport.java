@@ -51,7 +51,8 @@ class OutlineViewport {
     OutlineVisibleBlockRange calculateVisibleBlockRange(int blockSize) {
         Rectangle viewRect = getViewRect();
         int blockHeight = blockSize * OutlineGeometry.getInstance().rowHeight;
-        int totalBlocks = (visibleState.getVisibleNodeCount() + blockSize - 1) / blockSize;
+        int visibleNodeCount = visibleState.getVisibleNodeCount();
+        int totalBlocks = (visibleNodeCount + blockSize - 1) / blockSize;
 
         int breadcrumbHeight = visibleState.getBreadcrumbHeight();
         int contentOffset = nodePositioning.getDuplicateItemsHeight();
@@ -61,7 +62,8 @@ class OutlineViewport {
         int firstBlock = Math.max(0, adjustedViewY / blockHeight);
         int lastBlock = Math.min(totalBlocks - 1, (adjustedViewY + adjustedViewHeight) / blockHeight);
 
-        return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbHeight);
+        int viewportWidth = getViewportWidth();
+        return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbHeight, viewportWidth, visibleNodeCount);
     }
 
     int calculateFirstVisibleNodeIndex() {
