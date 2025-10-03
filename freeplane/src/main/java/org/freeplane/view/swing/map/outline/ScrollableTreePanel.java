@@ -38,7 +38,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private OutlineBlockLayout blockLayout;
     private OutlineSelectionBridge selectionBridge;
     private OutlineFocusManager focusManager;
-    private final OutlineSelectionManager selectionManager = new OutlineSelectionManager();
+    private final OutlineSelectionHistory selectionHistory = new OutlineSelectionHistory();
     private Supplier<Color> backgroundColorSupplier;
 
     private VisibleBlockRenderer visibleBlockRenderer;
@@ -323,7 +323,23 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 				navButtons.hideNavigationButtons();
 				visibleNodes.setHoveredNode(null);
 			}
-			selectionManager.select(this, outlineSelection, node, requestFocus);
+			selectionHistory.record(node);
+			outlineSelection.selectNode(node);
+			onSelectedNodeChanged();
+			repaint();
+			if (visibleNodes.findNodeIndexInVisibleList(node) < 0) {
+				TreeNode preservedHoveredNode = visibleNodes.getHoveredNode();
+				hardResetBlocksPreservingHovered(preservedHoveredNode);
+			}
+
+			boolean visible = isNodeFullyVisibleInViewport(node);
+			if (!isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(node)) {
+				visible = true;
+			}
+			if (!visible) {
+				ensureSelectionVisibleTop();
+			}
+			focusSelectionButtonLater(requestFocus);
 		}
     }
 
@@ -729,7 +745,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (!node.isExpanded()) {
             expansionControls.expandNode(node);
         }
-        TreeNode targetChild = selectionManager.preferredChild(node);
+        TreeNode targetChild = selectionHistory.preferredChild(node);
 
         setSelectedNode(targetChild, true);
     }

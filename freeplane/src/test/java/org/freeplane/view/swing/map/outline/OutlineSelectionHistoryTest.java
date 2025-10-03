@@ -3,7 +3,7 @@ package org.freeplane.view.swing.map.outline;
 import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OutlineSelectionManagerTest {
+public class OutlineSelectionHistoryTest {
 
     @Test
     public void preferredChildDefaultsToFirstAndTracksLastSelected() {
@@ -13,14 +13,13 @@ public class OutlineSelectionManagerTest {
         parent.addChild(c1);
         parent.addChild(c2);
 
-        OutlineSelectionManager uut = new OutlineSelectionManager();
+        OutlineSelectionHistory uut = new OutlineSelectionHistory();
 
         // Default to first
         assertThat(uut.preferredChild(parent)).isSameAs(c1);
 
         // After selecting c2, it becomes preferred
-        uut.onSelected(c2);
+        uut.record(c2);
         assertThat(uut.preferredChild(parent)).isSameAs(c2);
     }
 }
-

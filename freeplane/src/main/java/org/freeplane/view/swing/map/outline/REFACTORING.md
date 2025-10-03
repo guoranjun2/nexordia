@@ -45,7 +45,7 @@ Controllers, actions, focus
 - OutlineSelectionBridge — syncs outline selection with MapView and focuses map node on demand.
 - OutlineActions (new) — shared Swing actions and key bindings (up/down/page, left/right, expand more/reduce) used by panels.
 - OutlineFocusManager (new) — focuses selected NodeButton, restores focus after updates, determines outline vs map focus.
-- OutlineSelectionManager (new) — orchestrates selection changes, last‑selected‑child tracking, scrolling into view, and breadcrumb/block updates.
+- OutlineSelectionHistory — keeps preferred-child tracking across selections.
 
 Rendering helpers
 - NodeButton — typed JButton bound to a TreeNode.
@@ -58,7 +58,7 @@ Integration and building
 - ExpansionHandler — interface for expansion operations (kept as an abstraction).
 
 Supporting data structures
-- lastSelectedChildByParent (Map) — move into OutlineSelectionManager to centralize selection‑related state.
+- lastSelectedChildByParent (Map) — lives in OutlineSelectionHistory to centralize selection-related state.
 - Unmodifiable children — TreeNode.getChildren returns an unmodifiable list to prevent external mutation.
 - Caches — OutlineBlockViewCache provides controlled access to BlockPanel instances.
 
@@ -125,9 +125,9 @@ Phase 5: Small internal cleanups (safe, mechanical)
 
 Phase 6: Optional consolidation of selection orchestration
 - Problem: setSelectedNode currently triggers multiple responsibilities (state update, cache invalidation, block rebuild, scrolling, and focusing) inside ScrollableTreePanel.
-- Change: introduce OutlineSelectionManager that encapsulates selection changes and the associated view updates (scrolling to reveal, breadcrumb synchronization, and last selected child tracking).
+- Change: introduce OutlineSelectionHistory to encapsulate selection tracking while keeping UI updates in ScrollableTreePanel (future selection orchestrator remains optional).
 - Success criteria: cleaner ScrollableTreePanel with selection orchestration isolated; unchanged observable behavior.
-- Touch points: ScrollableTreePanel, new OutlineSelectionManager.
+- Touch points: ScrollableTreePanel, new OutlineSelectionHistory.
 
 Phase 7: Documentation and invariants
 - Document invariants for geometry and positioning (for example, how breadcrumb height is computed and how it affects block ranges) and assert them where low‑risk.
@@ -140,7 +140,7 @@ Progress
 - Phase 3: done — focus logic extracted to OutlineFocusManager; ScrollableTreePanel now delegates.
 - Phase 4: done — unified selection painting via SelectionPainter; removed duplication in BlockPanel and BreadcrumbPanel.
 - Phase 5: done — removed unused parameter in VisibleOutlineState and empty paint override in ScrollableTreePanel.
-- Phase 6: in progress — introduced OutlineSelectionManager for preferred‑child tracking; further orchestration extraction remains optional.
+- Phase 6: in progress — introduced OutlineSelectionHistory for preferred-child tracking; further selection orchestration extraction remains optional.
 - Phase 7: done — documented invariants and added AssertJ tests for NodePositioning and OutlineViewport/OutlineVisibleBlockRange.
 
 Invariants (initial)
@@ -151,7 +151,7 @@ Invariants (initial)
 
 Verification Notes
 - Tests use AssertJ assertions. Current helper tests live under freeplane/src/test/java/org/freeplane/view/swing/map/outline/.
-- Add further tests where logic is pure and decoupled (e.g., BreadcrumbPath and OutlineSelectionManager preferredChild behavior).
+- Add further tests where logic is pure and decoupled (e.g., BreadcrumbPath and OutlineSelectionHistory preferredChild behavior).
 - Manual checks still recommended for: focus transitions (OutlineFocusManager), selection sync with MapView (OutlineSelectionBridge), and navigation buttons behavior.
 
 Risks and Rollback
