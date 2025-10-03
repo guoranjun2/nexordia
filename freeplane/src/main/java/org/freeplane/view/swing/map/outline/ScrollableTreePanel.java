@@ -318,7 +318,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 	void setSelectedNode(TreeNode node, boolean requestFocus) {
 		if(node != outlineSelection.getSelectedNode()) {
-			if(visibleNodes.getHoveredNode() != node) {
+			final TreeNode hoveredNode = visibleNodes.getHoveredNode();
+			if(hoveredNode != null && hoveredNode != node && ! hoveredNode.isAncestorOf(node)) {
 				navButtons.hideNavigationButtons();
 				visibleNodes.setHoveredNode(null);
 			}

@@ -156,4 +156,14 @@ class TreeNode {
 			throw new IllegalStateException();
 	}
 
+
+
+	boolean isAncestorOf(TreeNode node) {
+		for(TreeNode ancestor = node.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+			if(this == ancestor)
+				return true;
+		}
+		return false;
+	}
+
 }
