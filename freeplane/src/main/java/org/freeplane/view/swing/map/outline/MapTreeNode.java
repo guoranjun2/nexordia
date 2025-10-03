@@ -38,11 +38,14 @@ class MapTreeNode extends TreeNode implements INodeView {
         setTitleSupplier(this::getNodeText);
     }
 
-    public MapTreeNode(MapTreeNode parent, NodeModel child, OutlinePane pane) {
-    	this(child, pane, parent.styleController, parent.mapBackground);
+    public MapTreeNode(MapTreeNode parent, NodeModel child) {
+    	this(child, parent.outlinePane, parent.styleController, parent.mapBackground);
     	parent.addChild(this);
 	}
 
+    MapTreeNode createNode(NodeModel node) {
+    	return new MapTreeNode(node, outlinePane, styleController, mapBackground);
+    }
 	NodeModel getNodeModel() {
         return nodeModel;
     }

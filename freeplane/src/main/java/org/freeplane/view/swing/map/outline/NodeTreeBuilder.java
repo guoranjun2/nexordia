@@ -87,7 +87,7 @@ class NodeTreeBuilder {
             boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisibleOrAncestor(child));
             MapTreeNode nextParent = parentOut;
             if (visible) {
-                MapTreeNode out = new MapTreeNode(parentOut, child, pane);
+                MapTreeNode out = new MapTreeNode(parentOut, child);
                 child.addViewer(out);
                 nextParent = out;
             }

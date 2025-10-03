@@ -725,6 +725,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			return null;
 		List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(breadcrumbTargetNode);
 		newBreadcrumbNodes.add(breadcrumbTargetNode);
+		newBreadcrumbNodes.addAll(selectionBridge.collectNodesToSelection(outlineSelection.getSelectedNode()));
 		return newBreadcrumbNodes;
     }
 

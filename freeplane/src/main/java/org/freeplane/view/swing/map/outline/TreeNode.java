@@ -146,4 +146,14 @@ class TreeNode {
             child.refreshLevelsRecursively();
         }
     }
+
+
+
+	void setLevel(int level) {
+		if(parent == null)
+			this.level = level;
+		else
+			throw new IllegalStateException();
+	}
+
 }

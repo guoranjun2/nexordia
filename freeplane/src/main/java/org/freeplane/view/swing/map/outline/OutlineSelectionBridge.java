@@ -5,6 +5,10 @@
  */
 package org.freeplane.view.swing.map.outline;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -44,5 +48,25 @@ class OutlineSelectionBridge {
         final MapView mv = outlinePane.getCurrentMapView();
         if (mv == null) return;
         mv.getSelected().getMainView().requestFocusInWindow();
+	}
+
+	public Collection<? extends TreeNode> collectNodesToSelection(TreeNode ancestor) {
+		if(! (ancestor instanceof MapTreeNode))
+				return Collections.emptyList();
+        final MapView mv = outlinePane.getCurrentMapView();
+        if (mv == null)
+        	return Collections.emptyList();
+        final NodeModel selected = mv.getSelected().getNode();
+        final NodeModel ancestorNode = ((MapTreeNode) ancestor).getNodeModel();
+        if (!selected.isDescendantOf(ancestorNode))
+        	return Collections.emptyList();
+        final LinkedList<MapTreeNode> nodes = new LinkedList<MapTreeNode>();
+        for(NodeModel node = selected; node != ancestorNode; node = node.getParentNode()) {
+        	nodes.addFirst(((MapTreeNode) ancestor).createNode(node));
+        }
+        int level = ancestor.getLevel();
+        for(MapTreeNode node : nodes)
+        	node.setLevel(++level);
+        return nodes;
 	}
 }

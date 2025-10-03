@@ -95,7 +95,8 @@ class BreadcrumbPanel extends JPanel {
             final AbstractAction selectAction = new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    controller.selectNode(nodeToSelect, true);
+                	if(nodeToSelect.getParent()  != null || nodeToSelect.getLevel() == 0)
+                		controller.selectNode(nodeToSelect, true);
                     selectionBridge.selectMapNodeById(nodeToSelect.getId());
                 }
             };
