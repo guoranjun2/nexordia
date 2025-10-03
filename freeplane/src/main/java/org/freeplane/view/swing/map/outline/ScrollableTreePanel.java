@@ -399,7 +399,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
 	void setSelectedNode(TreeNode node, boolean requestFocus) {
-        selectionManager.select(this, outlineSelection, node, requestFocus);
+		if(node != outlineSelection.getSelectedNode()) {
+			if(visibleNodes.getHoveredNode() != node) {
+				navButtons.hideNavigationButtons();
+				visibleNodes.setHoveredNode(null);
+			}
+			selectionManager.select(this, outlineSelection, node, requestFocus);
+		}
     }
 
     void toggleBreadcrumbNodeExpansion(TreeNode node, boolean requestFocus) {
@@ -725,7 +731,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			return null;
 		List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(breadcrumbTargetNode);
 		newBreadcrumbNodes.add(breadcrumbTargetNode);
-		newBreadcrumbNodes.addAll(selectionBridge.collectNodesToSelection(outlineSelection.getSelectedNode()));
+		if(selectionBridge != null)
+			newBreadcrumbNodes.addAll(selectionBridge.collectNodesToSelection(outlineSelection.getSelectedNode()));
 		return newBreadcrumbNodes;
     }
 

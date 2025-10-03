@@ -65,7 +65,7 @@ class NavigationButtons {
 
     public void attachToNode(TreeNode node, JPanel targetPanel, boolean isBreadcrumb, int rowIndex, NodePositioning nodePositioning) {
         this.node = node;
-        detachFromCurrentParent();
+        hideNavigationButtons();
 		if (node.getChildren().isEmpty()) {
             return;
         }
@@ -90,8 +90,11 @@ class NavigationButtons {
         }
     }
 
-    private void detachFromCurrentParent() {
-        hideNavigationButtons();
+    void hideNavigationButtons() {
+        expandBtn.setVisible(false);
+        collapseBtn.setVisible(false);
+        expandMoreBtn.setVisible(false);
+        reduceBtn.setVisible(false);
         if (currentParent != null) {
             if (expandBtn.getParent() == currentParent) {
                 currentParent.remove(expandBtn);
@@ -105,6 +108,8 @@ class NavigationButtons {
             if (reduceBtn.getParent() == currentParent) {
                 currentParent.remove(reduceBtn);
             }
+            currentParent.revalidate();
+            currentParent.repaint();
         }
     }
 
@@ -129,25 +134,12 @@ class NavigationButtons {
         }
     }
 
-    void hideNavigationButtons() {
-        expandBtn.setVisible(false);
-        collapseBtn.setVisible(false);
-        expandMoreBtn.setVisible(false);
-        reduceBtn.setVisible(false);
-    }
-
     void updateGeometry(OutlineGeometry geometry) {
         this.geometry = geometry;
+        hideNavigationButtons();
         applyButtonFont(expandBtn);
         applyButtonFont(collapseBtn);
         applyButtonFont(expandMoreBtn);
         applyButtonFont(reduceBtn);
-        detachFromCurrentParent();
-        hideNavigationButtons();
-        if (currentParent != null) {
-            currentParent.revalidate();
-            currentParent.repaint();
-        }
-        currentParent = null;
     }
 }
