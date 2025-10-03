@@ -57,23 +57,15 @@ class OutlineBlockLayout {
         }
     }
 
-    Dimension updatePreferredFromActualBlocks(JPanel owner) {
-        int breadcrumbHeight = visibleState.getBreadcrumbHeight();
-        int breadcrumbNodeCount = (breadcrumbHeight -BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN) / geometry.rowHeight;
-        int contentNodesCount = Math.max(0, visibleState.getVisibleNodeCount() - breadcrumbNodeCount);
-        int contentOffset = nodePositioning.getContentAreaOffset();
-        int height = breadcrumbHeight + (contentNodesCount + 1) * geometry.rowHeight - contentOffset;
-        if (height < 0) {
-            height = 0;
-        }
+    void updateBlockPreferredSize(JPanel owner) {
+        final int visibleNodeCount = visibleState.getVisibleNodeCount();
+        int height =(visibleNodeCount + 1) * geometry.rowHeight;
         Dimension preferredSize = new Dimension(cachedMaxWidth, height);
         owner.setPreferredSize(preferredSize);
 
         for (BlockPanel panel : blockCache.values()) {
-            Dimension currentSize = panel.getSize();
-            panel.setSize(cachedMaxWidth, currentSize.height);
+            panel.setSize(cachedMaxWidth, panel.getHeight());
         }
-        return preferredSize;
     }
 
     private void createBlock(JPanel owner, int blockIndex, int panelWidth) {

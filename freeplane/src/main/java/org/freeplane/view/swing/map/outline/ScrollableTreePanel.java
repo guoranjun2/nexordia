@@ -149,7 +149,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (breadcrumbNodes != null) {
             breadcrumbPanel.update(breadcrumbNodes, true);
         } else {
-            visibleNodes.setBreadcrumbHeight(0);
+            setBreadcrumbHeight(0);
             breadcrumbPanel.removeAll();
             breadcrumbPanel.revalidate();
             breadcrumbPanel.repaint();
@@ -180,7 +180,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             panel.rebuildNodeButtons();
         }
         blockLayout.recomputeCachedMaxWidth();
-        updatePreferredFromActualBlocks();
+        updatePreferredSize();
 
         breadcrumbPanel.updateNodeButtons();
 
@@ -299,7 +299,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
         blockLayout.removeBlocksOutsideRange(blockPanel, range);
 		blockLayout.updateVisibleBlocks(blockPanel, range, getWidth());
-        updatePreferredFromActualBlocks();
+        updatePreferredSize();
         refreshUI();
 
 
@@ -331,7 +331,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
         blockLayout.removeBlocksOutsideRange(blockPanel, range);
 		blockLayout.updateVisibleBlocks(blockPanel, range, getWidth());
-        updatePreferredFromActualBlocks();
+        updatePreferredSize();
         refreshUI();
 
         range = viewport.calculateVisibleBlockRange(blockSize);
@@ -371,9 +371,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return index >= first && index <= last;
     }
 
-    private void updatePreferredFromActualBlocks() {
-        Dimension blockPreferredSize = blockLayout.updatePreferredFromActualBlocks(blockPanel);
-        blockPanel.setPreferredSize(blockPreferredSize);
+    private void updatePreferredSize() {
+        blockLayout.updateBlockPreferredSize(blockPanel);
+        Dimension blockPreferredSize = blockPanel.getPreferredSize();
         int contentOffset = nodePositioning.getContentAreaOffset();
         Dimension panelPreferredSize = new Dimension(blockPreferredSize.width,
                 blockPreferredSize.height + contentOffset);
@@ -514,7 +514,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             }
         }
 
-        updatePreferredFromActualBlocks();
+        updatePreferredSize();
         refreshUI();
     }
 
@@ -683,7 +683,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			breadcrumbPanel.update(breadcrumbState, false);
 		}
 		else {
-			visibleNodes.setBreadcrumbHeight(0);
+			setBreadcrumbHeight(0);
 			breadcrumbPanel.removeAll();
 			breadcrumbPanel.revalidate();
 			breadcrumbPanel.repaint();

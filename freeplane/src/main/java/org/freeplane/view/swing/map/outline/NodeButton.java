@@ -25,7 +25,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
 import javax.swing.plaf.ButtonUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
@@ -62,7 +61,8 @@ class NodeButton extends JButton {
 
 		private void repaintParent(final Component component) {
 			final Container parent = component.getParent();
-			parent.repaint(0, component.getY() - 3, parent.getWidth(), component.getHeight() + 6);
+			if(parent != null)
+				parent.repaint(0, component.getY() - 3, parent.getWidth(), component.getHeight() + 6);
 		}
 	};
 	private static final ButtonUI nodeButtonUI = new BasicButtonUI() {
