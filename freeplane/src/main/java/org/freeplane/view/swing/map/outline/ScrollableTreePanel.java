@@ -4,9 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.KeyboardFocusManager;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -25,7 +23,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private final BreadcrumbPanel breadcrumbPanel;
     private final ExpansionControls expansionControls;
     private NodePositioning nodePositioning;
-    private  OutlineViewport viewport;
+    private OutlineViewport viewport;
     private final JPanel blockPanel;
 
     private TreeNode root;
@@ -43,7 +41,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     private final OutlineSelectionManager selectionManager = new OutlineSelectionManager();
     private Supplier<Color> backgroundColorSupplier;
 
-    private OutlineVisibleBlockRange lastVisibleRange;
+    private VisibleBlockRenderer visibleBlockRenderer;
+    private BreadcrumbLayout breadcrumbLayout;
 	private final OutlineDisplayMode displayMode;
 	private BreadcrumbMode breadcrumbMode;
 
@@ -76,6 +75,15 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         setFocusable(true);
         setupKeyBindings();
         navButtons.hideNavigationButtons();
+
+        this.visibleBlockRenderer = new VisibleBlockRenderer(blockLayout, blockCache, blockPanel, visibleNodes,
+                navButtons, nodePositioning, focusManager, this::getWidth,
+                this::updatePreferredSize, this::refreshUI, this::updateFirstVisibleNodeId,
+                this::isNodeInBreadcrumbArea, blockSize);
+
+        this.breadcrumbLayout = new BreadcrumbLayout(breadcrumbPanel, visibleNodes, navButtons, nodePositioning,
+                outlineSelection, this::isSelectionDrivenBreadcrumbMode, this::isNodeInBreadcrumbArea,
+                this::setBreadcrumbHeight, blockPanel);
     }
 
 	private int calculateDuplicateItemsHeight() {
@@ -181,29 +189,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         breadcrumbPanel.updateNodeButtons();
 
         navButtons.hideNavigationButtons();
-        reattachNavigationButtons();
+        breadcrumbLayout.reattachNavigationButtons();
 
         revalidate();
         repaint();
-    }
-
-    private void reattachNavigationButtons() {
-    	TreeNode hoveredNode = visibleNodes.getHoveredNode();
-        if (hoveredNode == null || hoveredNode.getChildren().isEmpty()) {
-            return;
-        }
-
-        boolean inBreadcrumb = visibleNodes.isHoveredNodeContainedInBreadcrumb() && isNodeInBreadcrumbArea(hoveredNode);
-        if (inBreadcrumb) {
-            List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
-            int rowIndex = breadcrumbNodes.indexOf(hoveredNode);
-            if (rowIndex >= 0) {
-                navButtons.attachToNode(hoveredNode, breadcrumbPanel, true, rowIndex, nodePositioning);
-            }
-            return;
-        }
-
-        navButtons.attachToNode(hoveredNode, blockPanel, false, -1, nodePositioning);
     }
 
     @SuppressWarnings("serial")
@@ -261,6 +250,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     void setScrollPane(JScrollPane scroll) {
         this.viewport = new OutlineViewport(scroll, visibleNodes, nodePositioning);
+        if (visibleBlockRenderer != null) {
+            visibleBlockRenderer.setViewport(viewport);
+        }
         resetBlockCache();
     }
 
@@ -270,73 +262,20 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
 
-        void updateVisibleBlocks() {
-        if (viewport == null) return;
-        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
-
-
-        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        OutlineVisibleBlockRange previousRange = lastVisibleRange;
-        boolean haveBlocks = !blockCache.isEmpty();
-        boolean unchanged = haveBlocks && range.equals(previousRange);
-
-        if (unchanged) {
-            viewport.refreshViewport();
-            updateFirstVisibleNodeId();
-            lastVisibleRange = range;
-            return;
-        }
-
-        blockLayout.removeBlocksOutsideRange(blockPanel, range);
-		blockLayout.updateVisibleBlocks(blockPanel, range, getWidth());
-
-        lastVisibleRange = range;
-
-        updatePreferredSize();
-        refreshUI();
-        updateFirstVisibleNodeId();
-
-        TreeNode hoveredNode = visibleNodes.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
-            boolean isInBreadcrumb = visibleNodes.isHoveredNodeContainedInBreadcrumb() && isNodeInBreadcrumbArea(hoveredNode);
-            if (!isInBreadcrumb) {
-                navButtons.attachToNode(hoveredNode, blockPanel, false, -1, nodePositioning);
-            }
-        }
-        focusManager.restoreFocusIfNeeded(prevInOutline);
+    void updateVisibleBlocks() {
+        if (visibleBlockRenderer == null) return;
+        visibleBlockRenderer.render();
     }
 
     void updateVisibleBlocks(int startFromNodeIndex) {
-        if (viewport == null) return;
-        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
-
-        int breadcrumbHeight = visibleNodes.getBreadcrumbHeight();
-        viewport.setViewPosition(startFromNodeIndex, breadcrumbHeight);
-
-        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
-        blockLayout.removeBlocksOutsideRange(blockPanel, range);
-		blockLayout.updateVisibleBlocks(blockPanel, range, getWidth());
-        updatePreferredSize();
-        refreshUI();
-
-        OutlineVisibleBlockRange refreshedRange = viewport.calculateVisibleBlockRange(blockSize);
-        lastVisibleRange = refreshedRange;
-        updateFirstVisibleNodeId();
-
-        TreeNode hoveredNode = visibleNodes.getHoveredNode();
-        if (hoveredNode != null && !hoveredNode.getChildren().isEmpty()) {
-            boolean isInBreadcrumb = visibleNodes.isHoveredNodeContainedInBreadcrumb() && isNodeInBreadcrumbArea(hoveredNode);
-            if (!isInBreadcrumb) {
-                navButtons.attachToNode(hoveredNode, blockPanel, false, -1, nodePositioning);
-            }
-        }
-        focusManager.restoreFocusIfNeeded(prevInOutline);
+        if (visibleBlockRenderer == null) return;
+        visibleBlockRenderer.renderFromIndex(startFromNodeIndex);
     }
 
     private void resetBlockCache() {
-        lastVisibleRange = null;
+        if (visibleBlockRenderer != null) {
+            visibleBlockRenderer.resetCachedRange();
+        }
     }
 
     boolean isNodeFullyVisibleInViewport(TreeNode node) {
@@ -454,6 +393,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.selectionBridge = bridge;
         breadcrumbPanel.setSelectionBridge(bridge);
         focusManager.setSelectionBridge(bridge);
+        breadcrumbLayout.setSelectionBridge(bridge);
     }
 
     void updateNodeTitle(TreeNode node) {
@@ -516,7 +456,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.updateVisibleNodes();
 		int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
 
-		List<TreeNode> state = calculateBreadcrumbState(firstFullyVisibleNodeIndex);
+
+		List<TreeNode> state = breadcrumbLayout.calculateState(firstFullyVisibleNodeIndex);
 
         TreeNode preservedHovered = visibleNodes.getHoveredNode();
         blockPanel.removeAll();
@@ -527,7 +468,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		visibleNodes.setHoveredNode(preservedHovered);
 
 		if (state != null) {
-			applyBreadcrumbState(state);
+			breadcrumbLayout.applyState(state);
 			updateVisibleBlocks(firstFullyVisibleNodeIndex);
 
             TreeNode hovered = visibleNodes.getHoveredNode();
@@ -641,9 +582,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
         int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
         int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-		List<TreeNode> plannedBreadcrumbState = calculateBreadcrumbState(targetFirstIndex);
+		List<TreeNode> plannedBreadcrumbState = breadcrumbLayout.calculateState(targetFirstIndex);
 		if (plannedBreadcrumbState != null) {
-			applyBreadcrumbState(plannedBreadcrumbState);
+			breadcrumbLayout.applyState(plannedBreadcrumbState);
 			updateVisibleBlocks(targetFirstIndex);
 		}
 
@@ -651,8 +592,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
 	private void updateBreadcrumbForSelection() {
-		List<TreeNode> breadcrumbState = calculateBreadcrumbStateForSelection();
-		applyBreadcrumbState(breadcrumbState);
+		breadcrumbLayout.updateForSelection();
 	}
 
 	private void updateBreadcrumbForCurrentFirstVisibleNode() {
@@ -660,21 +600,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		if (viewport != null) {
 			firstVisibleIndex = viewport.calculateFirstVisibleNodeIndex();
 		}
-		List<TreeNode> breadcrumbState = calculateBreadcrumbStateForIndex(firstVisibleIndex);
-		applyBreadcrumbState(breadcrumbState);
-	}
-
-	private void applyBreadcrumbState(List<TreeNode> breadcrumbState) {
-		if (breadcrumbState != null) {
-			breadcrumbPanel.update(breadcrumbState, false);
-		}
-		else {
-			setBreadcrumbHeight(0);
-			breadcrumbPanel.removeAll();
-			breadcrumbPanel.revalidate();
-			breadcrumbPanel.repaint();
-		}
-		reattachNavigationButtons();
+		breadcrumbLayout.updateForFirstVisibleIndex(firstVisibleIndex);
 	}
 
 	private int getCurrentBreadcrumbRowCount() {
@@ -696,36 +622,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		return getNodeLevelAtVisibleIndex(visibleIndex);
 	}
 
-	private List<TreeNode> calculateBreadcrumbStateForIndex(int firstVisibleNodeIndex) {
-        TreeNode breadcrumbTargetNode = visibleNodes.getNodeAtVisibleIndex(firstVisibleNodeIndex);
-        if(breadcrumbTargetNode == null)
-			return null;
-		List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(breadcrumbTargetNode);
-		return newBreadcrumbNodes;
-    }
-
-    private List<TreeNode> calculateBreadcrumbStateForSelection() {
-        TreeNode breadcrumbTargetNode = outlineSelection.getSelectedNode();
-        if(breadcrumbTargetNode == null)
-			return null;
-		List<TreeNode> newBreadcrumbNodes = collectBreadcrumbNodes(breadcrumbTargetNode);
-		newBreadcrumbNodes.add(breadcrumbTargetNode);
-		if(selectionBridge != null)
-			newBreadcrumbNodes.addAll(selectionBridge.collectNodesToSelection(outlineSelection.getSelectedNode()));
-		return newBreadcrumbNodes;
-    }
-
-    private List<TreeNode> collectBreadcrumbNodes(TreeNode fromNode) {
-    	List<TreeNode> breadcrumbNodes = new ArrayList<>();
-        TreeNode current = fromNode.getParent();
-        while (current != null) {
-            breadcrumbNodes.add(current);
-            current = current.getParent();
-        }
-        Collections.reverse(breadcrumbNodes);
-        return breadcrumbNodes;
-    }
-
 
     @Override
     public void navigatePageUp() {
@@ -746,22 +642,15 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
             int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
             int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-			List<TreeNode> plannedBreadcrumbState = calculateBreadcrumbState(targetFirstIndex);
+			List<TreeNode> plannedBreadcrumbState = breadcrumbLayout.calculateState(targetFirstIndex);
 			if (plannedBreadcrumbState != null) {
-				applyBreadcrumbState(plannedBreadcrumbState);
+				breadcrumbLayout.applyState(plannedBreadcrumbState);
 				updateVisibleBlocks(targetFirstIndex);
 			}
             TreeNode newFirstNode = visibleNodes.getNodeAtVisibleIndex(targetFirstIndex);
             if (newFirstNode != null) setSelectedNode(newFirstNode, true);
         }
     }
-
-	private List<TreeNode> calculateBreadcrumbState(int targetFirstIndex) {
-		List<TreeNode> plannedBreadcrumbState = isSelectionDrivenBreadcrumbMode()
-			? calculateBreadcrumbStateForSelection()
-			: calculateBreadcrumbStateForIndex(targetFirstIndex);
-		return plannedBreadcrumbState;
-	}
 
     @Override
     public void navigatePageDown() {
@@ -784,9 +673,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             int contentRowCountAfterTentative = getContentRowsForBreadcrumbRows(breadcrumbRowsAtTentative);
             int maxFeasibleFirstIndex = Math.max(0, size - contentRowCountAfterTentative);
             int targetFirstIndex = Math.min(tentativeFirstIndex, maxFeasibleFirstIndex);
-			List<TreeNode> plannedBreadcrumbState = calculateBreadcrumbState(targetFirstIndex);
+			List<TreeNode> plannedBreadcrumbState = breadcrumbLayout.calculateState(targetFirstIndex);
 			if (plannedBreadcrumbState != null) {
-				applyBreadcrumbState(plannedBreadcrumbState);
+				breadcrumbLayout.applyState(plannedBreadcrumbState);
 				updateVisibleBlocks(targetFirstIndex);
 			}
 
@@ -878,10 +767,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
 		int firstFullyVisibleNodeIndex = viewport.calculateFirstVisibleNodeIndex();
-		List<TreeNode> state = calculateBreadcrumbState(firstFullyVisibleNodeIndex);
+		List<TreeNode> state = breadcrumbLayout.calculateState(firstFullyVisibleNodeIndex);
 		if (state != null) {
 			int oldBreadcrumbHeight = visibleNodes.getBreadcrumbHeight();
-			applyBreadcrumbState(state);
+			breadcrumbLayout.applyState(state);
             int newBreadcrumbHeight = visibleNodes.getBreadcrumbHeight();
             if (newBreadcrumbHeight != oldBreadcrumbHeight) {
                 TreeNode preservedHovered = visibleNodes.getHoveredNode();
@@ -940,10 +829,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         else {
             targetFirst = first;
         }
-		List<TreeNode> planned = calculateBreadcrumbState(targetFirst);
+		List<TreeNode> planned = breadcrumbLayout.calculateState(targetFirst);
 		if (planned != null) {
 			int oldBreadcrumbHeight = visibleNodes.getBreadcrumbHeight();
-			applyBreadcrumbState(planned);
+			breadcrumbLayout.applyState(planned);
             int newBreadcrumbHeight = visibleNodes.getBreadcrumbHeight();
             if (newBreadcrumbHeight != oldBreadcrumbHeight) {
                 TreeNode preservedHovered = visibleNodes.getHoveredNode();
