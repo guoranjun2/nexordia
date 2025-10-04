@@ -34,13 +34,6 @@ class NodePositioning {
 		return new Point(baseX, y);
     }
 
-    Point calculateViewportPosition(int startFromNodeIndex, int breadcrumbHeight) {
-        int rowHeight = geometry.rowHeight;
-        int targetY = (startFromNodeIndex * rowHeight) - breadcrumbHeight;
-        targetY = Math.max(0, targetY);
-        return new Point(0, targetY);
-    }
-
     Rectangle calculateBlockBounds(int blockIndex, int blockSize, int panelWidth) {
         int start = blockIndex * blockSize;
 

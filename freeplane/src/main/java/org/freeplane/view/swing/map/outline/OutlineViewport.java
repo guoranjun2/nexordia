@@ -26,8 +26,11 @@ class OutlineViewport {
     }
 
     void setViewPosition(int startFromNodeIndex, int breadcrumbHeight) {
-        Point viewPosition = nodePositioning.calculateViewportPosition(startFromNodeIndex, breadcrumbHeight);
-        setViewPosition(viewPosition);
+    	int rowHeight = OutlineGeometry.getInstance().rowHeight;
+    	int targetY = (startFromNodeIndex * rowHeight) - breadcrumbHeight;
+    	targetY = Math.max(0, targetY);
+    	Point viewPosition = new Point(0, targetY);
+    	setViewPosition(viewPosition);
     }
 
 	int getViewportHeight() {
