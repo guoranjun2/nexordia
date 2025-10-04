@@ -13,7 +13,6 @@ class OutlineBlockLayout {
     private final OutlineBlockViewCache blockCache;
     private final VisibleOutlineNodes visibleState;
     private OutlineGeometry geometry;
-    private final NodePositioning nodePositioning;
     private final int blockSize;
     private final ScrollableTreePanel treePanel;
     private int cachedMaxWidth = 0;
@@ -21,13 +20,11 @@ class OutlineBlockLayout {
     OutlineBlockLayout(OutlineBlockViewCache blockCache,
                        VisibleOutlineNodes visibleState,
                        OutlineGeometry geometry,
-                       NodePositioning nodePositioning,
                        int blockSize,
                        ScrollableTreePanel treePanel) {
         this.blockCache = blockCache;
         this.visibleState = visibleState;
         this.geometry = geometry;
-        this.nodePositioning = nodePositioning;
         this.blockSize = blockSize;
         this.treePanel = treePanel;
     }

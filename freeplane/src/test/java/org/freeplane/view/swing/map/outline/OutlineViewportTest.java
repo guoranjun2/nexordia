@@ -25,7 +25,6 @@ public class OutlineViewportTest {
 
         VisibleOutlineNodes vs = new VisibleOutlineNodes(root);
         vs.setBreadcrumbHeight(geometry.rowHeight * 2);
-        NodePositioning pos = new NodePositioning(geometry, 0);
 
         JPanel view = new JPanel();
         view.setPreferredSize(new Dimension(600, geometry.rowHeight * 100));
@@ -35,10 +34,10 @@ public class OutlineViewportTest {
         viewport.setExtentSize(new Dimension(600, geometry.rowHeight * 5));
         viewport.setViewPosition(new Point(0, geometry.rowHeight * 0));
 
-        OutlineViewport ov = new OutlineViewport(scroll, vs, pos);
         int blockSize = 10;
+        OutlineViewport ov = new OutlineViewport(scroll, vs, blockSize);
 
-        OutlineVisibleBlockRange r0 = ov.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange r0 = ov.calculateVisibleBlockRange();
         assertThat(r0.getFirstBlock()).isEqualTo(0);
         assertThat(r0.getLastBlock()).isGreaterThanOrEqualTo(0);
         assertThat(r0.getBreadcrumbHeight()).isEqualTo(geometry.rowHeight * 2);
@@ -46,7 +45,7 @@ public class OutlineViewportTest {
         // Scroll down by one block + breadcrumb height to land in block 1
         int blockHeight = blockSize * geometry.rowHeight;
         viewport.setViewPosition(new Point(0, blockHeight + vs.getBreadcrumbHeight() + 1));
-        OutlineVisibleBlockRange r1 = ov.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange r1 = ov.calculateVisibleBlockRange();
         assertThat(r1.getFirstBlock()).isGreaterThanOrEqualTo(1);
         assertThat(r1.getLastBlock()).isGreaterThanOrEqualTo(r1.getFirstBlock());
     }

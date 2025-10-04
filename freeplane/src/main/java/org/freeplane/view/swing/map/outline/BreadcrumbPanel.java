@@ -68,13 +68,19 @@ class BreadcrumbPanel extends JPanel {
 		if(wasGeometryUpdated || currentBreadcrumbNodes.size() != breadcrumbNodeCount
 				|| ! (breadcrumbNodes.isEmpty()
 						|| breadcrumbNodes.get(lastIndex) == currentBreadcrumbNodes.get(lastIndex))) {
-			preferredBreadcrumbHeight = OutlineGeometry.getInstance().rowHeight * breadcrumbNodeCount + BREADCRUMB_BOTTOM_MARGIN;
+			preferredBreadcrumbHeight = preferredBreadCrumbHeight(breadcrumbNodeCount);
 			this.currentBreadcrumbNodes = breadcrumbNodes;
 
 			controller.setBreadcrumbHeight(preferredBreadcrumbHeight);
 			updateNodeButtons();
 		}
     }
+
+
+
+	int preferredBreadCrumbHeight(final int breadcrumbNodeCount) {
+		return OutlineGeometry.getInstance().rowHeight * breadcrumbNodeCount + BREADCRUMB_BOTTOM_MARGIN;
+	}
 
     void updateNodeButtons() {
         removeAll();

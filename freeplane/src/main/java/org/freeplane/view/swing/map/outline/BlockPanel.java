@@ -21,6 +21,8 @@ import org.freeplane.core.resources.ResourceController;
 class BlockPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
+	private static final boolean DEBUG = Boolean.getBoolean("org.freeplane.view.swing.map.outline.BlockPanel.DEBUG");
+
     private final OutlineSelection selection;
     private final List<TreeNode> nodes;
     private final int rowHeight;
@@ -52,6 +54,8 @@ class BlockPanel extends JPanel {
 
     private void createNodeButton(TreeNode node, int y, int rowHeight, boolean useColoredOutlineItems, ScrollableTreePanel parentPanel) {
 		NodeButton button = new NodeButton(node, useColoredOutlineItems);
+        if(DEBUG && useColoredOutlineItems)
+        	button.setText("" + getComponentCount());
 
         int computedLevel = node.getLevel();
         int actionX = OutlineGeometry.getInstance().calculateNodeButtonX(parentPanel.getDisplayMode().showsNavigationButtons(), computedLevel);

@@ -14,7 +14,6 @@ final class VisibleBlockRenderer {
     private final JPanel blockPanel;
     private final VisibleOutlineNodes visibleNodes;
     private final NavigationButtons navigationButtons;
-    private final NodePositioning nodePositioning;
     private final OutlineFocusManager focusManager;
     private final IntSupplier panelWidthSupplier;
     private final Runnable updatePreferredSize;
@@ -29,7 +28,6 @@ final class VisibleBlockRenderer {
                          JPanel blockPanel,
                          VisibleOutlineNodes visibleNodes,
                          NavigationButtons navigationButtons,
-                         NodePositioning nodePositioning,
                          OutlineFocusManager focusManager,
                          IntSupplier panelWidthSupplier,
                          Runnable updatePreferredSize,
@@ -42,7 +40,6 @@ final class VisibleBlockRenderer {
         this.blockPanel = blockPanel;
         this.visibleNodes = visibleNodes;
         this.navigationButtons = navigationButtons;
-        this.nodePositioning = nodePositioning;
         this.focusManager = focusManager;
         this.panelWidthSupplier = panelWidthSupplier;
         this.updatePreferredSize = updatePreferredSize;
@@ -78,11 +75,10 @@ final class VisibleBlockRenderer {
         boolean focusWasInsideOutline = focusManager.isWithinOutline(previousFocus);
 
         if (repositionViewport) {
-            int breadcrumbHeight = visibleNodes.getBreadcrumbHeight();
-            viewport.setViewPosition(startFromNodeIndex, breadcrumbHeight);
+            viewport.setViewPosition(startFromNodeIndex, visibleNodes.getBreadcrumbHeight() - visibleNodes.getBlockPanelY());
         }
 
-        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange(blockSize);
+        OutlineVisibleBlockRange range = viewport.calculateVisibleBlockRange();
         boolean haveBlocks = !blockCache.isEmpty();
         boolean unchanged = !repositionViewport && haveBlocks && range.equals(lastVisibleRange);
 
