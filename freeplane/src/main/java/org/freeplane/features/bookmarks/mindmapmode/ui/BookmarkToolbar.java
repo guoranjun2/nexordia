@@ -68,7 +68,7 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 		super(FreeplaneToolBar.FLOATING_HORIZONTAL);
 		this.map = map;
     	ToolbarLayout layout = (ToolbarLayout) getLayout();
-    	layout.setGap(GAP, true, false);
+    	layout.setGap(GAP, 0, true, false);
     	setDisablesFocus(false);
     	setFocusable(true);
     	setFocusCycleRoot(true);
