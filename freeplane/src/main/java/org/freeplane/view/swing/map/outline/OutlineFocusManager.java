@@ -50,7 +50,6 @@ class OutlineFocusManager {
             if(focusOwner == null)
             	return;
             if (! SwingUtilities.isDescendingFrom(focusOwner, panel)) {
-                if (selectionBridge != null) selectionBridge.focusMapNode();
                 return;
             }
         }

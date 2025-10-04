@@ -277,8 +277,12 @@ public class NodeTooltipManager implements IExtension{
 	 */
 	public void unregisterComponent(JComponent component) {
 		component.removeMouseListener(componentMouseListener);
+		component.removeMouseMotionListener(componentMouseListener);
 	}
 
+	public void ignoreGlobalShowTooltipOption(JComponent component) {
+		component.putClientProperty(RESOURCES_SHOW_NODE_TOOLTIPS, Boolean.TRUE);
+	}
 
 	private class ComponentMouseListener extends MouseAdapter implements MouseMotionListener{
 
@@ -320,7 +324,7 @@ public class NodeTooltipManager implements IExtension{
 		}
 		hideTipWindow();
 		if(ResourceController.getResourceController().getBooleanProperty(RESOURCES_SHOW_NODE_TOOLTIPS)
-		        || null == SwingUtilities.getAncestorOfClass(NodeView.class, component)) {
+		        || Boolean.TRUE.equals(component.getClientProperty(RESOURCES_SHOW_NODE_TOOLTIPS))) {
 		    insideComponent = component;
 			mouseInsideContentListener = new MouseInsideListener(insideComponent instanceof MainView ? ((MainView)insideComponent).getNodeView().getContent() : insideComponent);
 			mouseInsideContentListener.mouseEntered(event);

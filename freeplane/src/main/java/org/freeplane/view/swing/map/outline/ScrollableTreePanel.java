@@ -381,8 +381,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     boolean isNodeButtonFocused() { return focusManager.isNodeButtonFocused(); }
 
     void selectMapNodeById(String nodeId) {
-    	if (selectionBridge != null)
-    		selectionBridge.selectMapNodeById(nodeId);
+    	if (selectionBridge != null) {
+			selectionBridge.selectMapNodeById(nodeId);
+		}
     }
 
     @Override

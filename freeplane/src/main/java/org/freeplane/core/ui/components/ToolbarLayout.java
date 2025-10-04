@@ -32,7 +32,8 @@ public class ToolbarLayout implements LayoutManager {
 
     private BlockEndPosition blockEndPosition;
 	private int maximumWidth = MAX_WIDTH_BY_PARENT_WIDTH;
-	private int gap = 0;
+	private int horizontalGap = 0;
+	private int verticalGap = 0;
 	private boolean addsHorizontalMargins = false;
 	private boolean addsVerticalMargins = false;
 	private final boolean isOrientationVertical;
@@ -52,12 +53,9 @@ public class ToolbarLayout implements LayoutManager {
         this.maximumWidth = maximumWidth;
     }
 
-	public int getGap() {
-		return gap;
-	}
-
-	public void setGap(int gap, boolean addsHorizontalMargins, boolean addsVerticalMargins) {
-		this.gap = gap;
+	public void setGap(int horizontalGap, int verticalGap, boolean addsHorizontalMargins, boolean addsVerticalMargins) {
+		this.horizontalGap = horizontalGap;
+		this.verticalGap = verticalGap;
 		this.addsHorizontalMargins = addsHorizontalMargins;
 		this.addsVerticalMargins = addsVerticalMargins;
 	}
@@ -70,8 +68,6 @@ public class ToolbarLayout implements LayoutManager {
     public void layoutContainer(final Container container) {
 		if(! container.isVisible())
 			return;
-		int horizontalGap = gap;
-		int verticalGap = gap;
 		int blockWidth = 0;
 		int blockHeight = 0;
 		boolean hasVisibleComponentInBlock = false;
@@ -185,8 +181,6 @@ public class ToolbarLayout implements LayoutManager {
     public Dimension preferredLayoutSize(final Container container) {
 		Insets insets = container.getInsets();
 		int maxWidth = calculateMaxWidth(container) - insets.left - insets.right;
-		int horizontalGap = gap;
-		int verticalGap = gap;
 		for(;;) {
 	        int width = 0;
 	        int height = 0;

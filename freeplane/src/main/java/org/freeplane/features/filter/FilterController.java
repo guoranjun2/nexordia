@@ -765,7 +765,8 @@ public class FilterController implements IExtension, IMapViewChangeListener {
                                 ASelectableCondition newCondition = selectedFilterCondition.removeCondition(removedCondition);
                                 if(newCondition != selectedFilterCondition) {
                                     apply(newCondition == null ? NO_FILTERING : newCondition);
-                                    NodeTooltipManager.getSharedInstance().hideTipWindow();
+                                    final NodeTooltipManager tooltipManeger = NodeTooltipManager.getSharedInstance();
+									tooltipManeger.hideTipWindow();
                                 }
                             }
 
@@ -831,7 +832,9 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 
 
         };
-        NodeTooltipManager.getSharedInstance().registerComponent(box);
+        final NodeTooltipManager tooltipManager = NodeTooltipManager.getSharedInstance();
+		tooltipManager.registerComponent(box);
+		tooltipManager.ignoreGlobalShowTooltipOption(box);
         box.setPrototypeDisplayValue("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
         box.addActionListener(filterChangeListener);
         return box;
