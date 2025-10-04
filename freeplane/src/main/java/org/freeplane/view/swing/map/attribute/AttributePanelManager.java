@@ -58,6 +58,7 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.view.swing.map.MainView;
+import org.freeplane.view.swing.map.NodeTooltipManager;
 import org.freeplane.view.swing.map.NodeView;
 
 /**
@@ -108,17 +109,17 @@ public class AttributePanelManager{
                 return;
             }
             removeOldView();
-            
+
             final MainView mainView = getSelectedMainView();
             if (mainView == null) {
                 return;
             }
-            
+
             final NodeView nodeView = getNodeViewSafely(mainView, node);
             if (nodeView == null) {
                 return;
             }
-            
+
             createNewAttributeView(nodeView);
             createButtonPanel();
             finalizeTablePanelLayout();
@@ -147,12 +148,12 @@ public class AttributePanelManager{
             Box buttonBox = new Box(axis);
             buttonBox.setAlignmentX(Component.LEFT_ALIGNMENT);
             tablePanel.add(buttonBox);
-            
+
             Dimension btnSize = new Dimension();
             addNewAttributeButton(buttonBox, btnSize);
             addOptimalWidthButton(buttonBox, btnSize);
             addFormatChooser(buttonBox, btnSize);
-            
+
             normalizeButtonSizes(buttonBox, btnSize);
             setupFormatChooserListeners();
         }
@@ -192,6 +193,7 @@ public class AttributePanelManager{
         private void finalizeTablePanelLayout() {
             tablePanel.add(Box.createVerticalStrut(5));
             JComponent c = attributeView.getContainer();
+            NodeTooltipManager.getSharedInstance().ignoreGlobalShowTooltipOption(attributeView.getAttributeTable());
             attributeView.update();
             c.setAlignmentX(Component.LEFT_ALIGNMENT);
             tablePanel.add(c);
