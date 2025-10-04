@@ -82,7 +82,7 @@ class BreadcrumbPanel extends JPanel {
         final int rowHeight = controller.getRowHeight();
         for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
-            int level = getNodeLevel(node);
+            int level = node.getLevel();
 			int y = i * rowHeight;
 
             int x = controller.calcTextButtonX(level);
@@ -139,11 +139,6 @@ class BreadcrumbPanel extends JPanel {
 
     void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
-    }
-
-
-    private int getNodeLevel(TreeNode node) {
-        return controller.calculateNodeLevel(node);
     }
 
     private void showNavigationButtonsForBreadcrumb(TreeNode node, int rowIndex) {

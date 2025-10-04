@@ -85,7 +85,7 @@ class NavigationButtons {
 
         	int baseX = position.x;
         	int y = position.y;
-        	int level = nodePositioning.calculateNodeLevel(node);
+        	int level = node.getLevel();
         	showButtons(baseX, y, level);
         }
     }

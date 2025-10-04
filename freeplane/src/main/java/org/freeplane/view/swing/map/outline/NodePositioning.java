@@ -18,25 +18,18 @@ class NodePositioning {
         this.geometry = geometry;
     }
 
-    int calculateNodeLevel(TreeNode node) {
-        return node != null ? node.getLevel() : -1;
-    }
+     Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex) {
 
-    Point calculateNavigationButtonPosition(TreeNode node, boolean isBreadcrumb, int rowIndex) {
-
-        final int level = calculateNodeLevel(node);
-        final int baseX = geometry.calculateNavigationButtonX(level);
-        final int rowHeight = geometry.rowHeight;
         final int nodeIndex;
         if (isBreadcrumb) {
         	nodeIndex = rowIndex;
         } else {
-            if (node == null) {
-                return null;
-            }
             nodeIndex = visibleState.findNodeIndexInVisibleList(node);
         }
 
+        final int level = node.getLevel();
+        final int baseX = geometry.calculateNavigationButtonX(level);
+        final int rowHeight = geometry.rowHeight;
         int y = nodeIndex * rowHeight + 1;
 		return new Point(baseX, y);
     }

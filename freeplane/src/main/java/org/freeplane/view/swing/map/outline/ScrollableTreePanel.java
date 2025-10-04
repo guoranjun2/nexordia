@@ -411,7 +411,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 NodeButton btn = (NodeButton) comp;
                 if (btn.getNode() == node) {
                     btn.updateLabel();
-                    int level = calculateNodeLevel(node);
+                    int level = node.getLevel();
                     if (level >= 0) {
                         int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
                         btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
@@ -433,7 +433,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                     NodeButton btn = (NodeButton) comp;
                     if (btn.getNode() == node) {
                         btn.updateLabel();
-                        int level = calculateNodeLevel(node);
+                        int level = node.getLevel();
                         if (level >= 0) {
                             int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
                             btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
@@ -855,11 +855,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             updateVisibleBlocks();
         }
     }
-    int calculateNodeLevel(TreeNode node) {
-        return nodePositioning.calculateNodeLevel(node);
-    }
-
-
 
     boolean isNodeInBreadcrumbArea(TreeNode node) {
         List<TreeNode> crumbs = breadcrumbPanel.getCurrentBreadcrumbNodes();
