@@ -34,20 +34,7 @@ class NodePositioning {
 		return new Point(baseX, y);
     }
 
-    Rectangle calculateBlockBounds(int blockIndex, int blockSize, int panelWidth) {
-        int start = blockIndex * blockSize;
-
-        int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
-        int visibleNodesInBlock = end - start;
-
-        int rowHeight = geometry.rowHeight;
-        int blockY = start * rowHeight;
-        int blockHeight = visibleNodesInBlock * rowHeight;
-
-        return new Rectangle(0, blockY, panelWidth, blockHeight);
-    }
-
-    int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbHeight) {
+     int calculateFirstVisibleNodeIndex(Rectangle viewRect, int breadcrumbHeight) {
         int rowHeight = geometry.rowHeight;
         int effectiveViewportY = viewRect.y + breadcrumbHeight - getDuplicateItemsHeight();
         if (effectiveViewportY < 0) {

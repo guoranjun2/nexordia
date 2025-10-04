@@ -78,7 +78,7 @@ class OutlineBlockLayout {
             if (n != null) blockNodes.add(n);
         }
         BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, treePanel, treePanel.getOutlineSelection());
-        Rectangle bounds = nodePositioning.calculateBlockBounds(blockIndex, blockSize, panelWidth);
+        Rectangle bounds = calculateBlockBounds(blockIndex, blockSize, panelWidth);
         bp.setBounds(bounds);
         owner.add(bp);
         blockCache.put(blockIndex, bp);
@@ -89,6 +89,20 @@ class OutlineBlockLayout {
             }
         }
     }
+
+    private Rectangle calculateBlockBounds(int blockIndex, int blockSize, int panelWidth) {
+        int start = blockIndex * blockSize;
+
+        int end = Math.min(start + blockSize, visibleState.getVisibleNodeCount());
+        int visibleNodesInBlock = end - start;
+
+        int rowHeight = geometry.rowHeight;
+        int blockY = start * rowHeight;
+        int blockHeight = visibleNodesInBlock * rowHeight;
+
+        return new Rectangle(0, blockY, panelWidth, blockHeight);
+    }
+
 
     void recordButtonRightEdge(int rightEdge) {
         if (rightEdge > cachedMaxWidth) cachedMaxWidth = rightEdge;
