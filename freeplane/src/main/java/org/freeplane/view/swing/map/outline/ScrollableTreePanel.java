@@ -61,7 +61,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.visibleNodes = new VisibleOutlineNodes(root);
         this.expansionControls = new ExpansionControls(this, outlineSelection);
         OutlineGeometry geometry = OutlineGeometry.getInstance();
-        this.nodePositioning = new NodePositioning(geometry, visibleNodes, 0);
+        this.nodePositioning = new NodePositioning(geometry, 0);
         this.navButtons = new NavigationButtons(geometry, displayMode, expansionControls);
         this.blockPanel = new JPanel(null);
         blockPanel.setOpaque(false);
@@ -79,7 +79,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                 this::updatePreferredSize, this::refreshUI, this::updateFirstVisibleNodeId,
                 this::isNodeInBreadcrumbArea, blockSize);
 
-        this.breadcrumbLayout = new BreadcrumbLayout(breadcrumbPanel, visibleNodes, navButtons, nodePositioning,
+        this.breadcrumbLayout = new BreadcrumbLayout(breadcrumbPanel, visibleNodes, navButtons,
                 outlineSelection, this::isSelectionDrivenBreadcrumbMode, this::isNodeInBreadcrumbArea,
                 this::setBreadcrumbHeight, blockPanel);
     }
@@ -540,13 +540,15 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             }
 
             visibleNodes.setHoveredNode(node, false);
-            navButtons.attachToNode(node, blockPanel, false, -1, nodePositioning);
+            int nodeIndex = visibleNodes.findNodeIndexInVisibleList(node);
+			navButtons.attachToNode(node, blockPanel, nodeIndex);
             repaint();
         }
     }
-	void attachNavigationNode(TreeNode node, boolean isBreadCrumb, int rowIndex) {
-		visibleNodes.setHoveredNode(node, isBreadCrumb);
-		navButtons.attachToNode(node, isBreadCrumb ? breadcrumbPanel : blockPanel, isBreadCrumb, rowIndex, nodePositioning);
+
+	void showNavigationButtonsForBreadcrumb(TreeNode node, int rowIndex) {
+		visibleNodes.setHoveredNode(node, true);
+		navButtons.attachToNode(node, breadcrumbPanel, rowIndex);
 	}
 
 

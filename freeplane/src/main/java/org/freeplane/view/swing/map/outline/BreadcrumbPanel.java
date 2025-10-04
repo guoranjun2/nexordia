@@ -146,7 +146,7 @@ class BreadcrumbPanel extends JPanel {
             return;
         }
 
-        controller.attachNavigationNode(node, true, rowIndex);
+        controller.showNavigationButtonsForBreadcrumb(node, rowIndex);
     }
 
     @Override

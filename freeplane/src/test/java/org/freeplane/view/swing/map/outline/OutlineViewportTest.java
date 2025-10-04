@@ -25,7 +25,7 @@ public class OutlineViewportTest {
 
         VisibleOutlineNodes vs = new VisibleOutlineNodes(root);
         vs.setBreadcrumbHeight(geometry.rowHeight * 2);
-        NodePositioning pos = new NodePositioning(geometry, vs, 0);
+        NodePositioning pos = new NodePositioning(geometry, 0);
 
         JPanel view = new JPanel();
         view.setPreferredSize(new Dimension(600, geometry.rowHeight * 100));

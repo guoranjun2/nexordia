@@ -12,7 +12,6 @@ final class BreadcrumbLayout {
     private final BreadcrumbPanel breadcrumbPanel;
     private final VisibleOutlineNodes visibleNodes;
     private final NavigationButtons navigationButtons;
-    private final NodePositioning nodePositioning;
     private final OutlineSelection outlineSelection;
     private final Supplier<Boolean> selectionDrivenMode;
     private final Predicate<TreeNode> isNodeInBreadcrumbArea;
@@ -23,7 +22,6 @@ final class BreadcrumbLayout {
     BreadcrumbLayout(BreadcrumbPanel breadcrumbPanel,
                      VisibleOutlineNodes visibleNodes,
                      NavigationButtons navigationButtons,
-                     NodePositioning nodePositioning,
                      OutlineSelection outlineSelection,
                      Supplier<Boolean> selectionDrivenMode,
                      Predicate<TreeNode> isNodeInBreadcrumbArea,
@@ -32,7 +30,6 @@ final class BreadcrumbLayout {
         this.breadcrumbPanel = breadcrumbPanel;
         this.visibleNodes = visibleNodes;
         this.navigationButtons = navigationButtons;
-        this.nodePositioning = nodePositioning;
         this.outlineSelection = outlineSelection;
         this.selectionDrivenMode = selectionDrivenMode;
         this.isNodeInBreadcrumbArea = isNodeInBreadcrumbArea;
@@ -82,12 +79,13 @@ final class BreadcrumbLayout {
             List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
             int rowIndex = breadcrumbNodes.indexOf(hoveredNode);
             if (rowIndex >= 0) {
-                navigationButtons.attachToNode(hoveredNode, breadcrumbPanel, true, rowIndex, nodePositioning);
+                navigationButtons.attachToNode(hoveredNode, breadcrumbPanel, rowIndex);
             }
             return;
         }
 
-        navigationButtons.attachToNode(hoveredNode, blockPanel, false, -1, nodePositioning);
+        int nodeIndex = visibleNodes.findNodeIndexInVisibleList(hoveredNode);
+		navigationButtons.attachToNode(hoveredNode, blockPanel, nodeIndex);
     }
 
     private List<TreeNode> calculateStateForIndex(int firstVisibleNodeIndex) {
