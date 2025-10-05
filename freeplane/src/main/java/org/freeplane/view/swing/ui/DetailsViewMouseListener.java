@@ -39,10 +39,9 @@ import org.freeplane.view.swing.map.ZoomableLabel;
  * Oct 1, 2011
  */
 public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
-	protected final NodeSelector nodeSelector;
+	protected final NodeSelector nodeSelector = NodeSelector.mapNodeSelector;
 
 	public DetailsViewMouseListener() {
-		nodeSelector = new NodeSelector();
 	}
 
 	@Override
@@ -103,9 +102,7 @@ public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 	@Override
 	public void mouseMoved(MouseEvent e) {
 		super.mouseMoved(e);
-		if (!eventFromHideDisplayArea(e) && nodeSelector.isRelevant(e))
-			nodeSelector.createTimer(e);
-		else
+		if (eventFromHideDisplayArea(e) || !nodeSelector.isRelevant(e))
 			nodeSelector.stopTimerForDelayedSelection();
 	}
 

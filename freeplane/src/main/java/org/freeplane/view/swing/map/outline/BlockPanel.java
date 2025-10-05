@@ -90,6 +90,7 @@ class BlockPanel extends JPanel {
             @Override
             public void mouseEntered(MouseEvent e) {
                 parentPanel.onContentButtonHovered(node);
+                TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
             }
         });
 

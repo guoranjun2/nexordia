@@ -33,6 +33,12 @@ class BreadcrumbPanel extends JPanel {
     BreadcrumbPanel() {
         setLayout(null);
         setOpaque(true);
+        addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
+			}
+		});
     }
 
 
@@ -124,6 +130,7 @@ class BreadcrumbPanel extends JPanel {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     showNavigationButtonsForBreadcrumb(nodeToSelect, rowIndex);
+                    TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
                 }
             });
 

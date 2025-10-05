@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.KeyboardFocusManager;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -48,6 +50,12 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root,  BreadcrumbPanel breadcrumbPanel) {
         this(displayMode, root, BLOCK_SIZE,breadcrumbPanel);
         addMouseListener(new FocusSelectedButtonClickAdapter(focusManager));
+        addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
+			}
+		});
         setOpaque(true);
 	}
 
@@ -329,11 +337,11 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			if (!visible) {
 				ensureSelectionVisibleTop();
 			}
-			focusSelectionButtonLater(requestFocus);
 		}
 		else if (isSelectionDrivenBreadcrumbMode()) {
 			updateBreadcrumbForSelection();
 		}
+		focusSelectionButtonLater(requestFocus);
 
     }
 

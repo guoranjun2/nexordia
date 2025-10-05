@@ -119,7 +119,7 @@ class NodeFolder implements MouseTimerDelegate.ActionProvider {
     private NodeModel previewUnfoldedNode = null;
     private TimeDelayedFolding delayedFolding;
 
-    void createTimer(final MouseEvent e) {
+    void handleMouseEvent(final MouseEvent e) {
         if(delayedFolding != null && delayedFolding.wasFired) {
             return;
         }
