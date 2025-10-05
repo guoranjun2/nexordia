@@ -60,7 +60,7 @@ class NavigationButtons {
     }
 
     private void applyButtonFont(JButton button) {
-        button.setFont(button.getFont().deriveFont(geometry.getButtonFontSize()));
+        button.setFont(button.getFont().deriveFont(geometry.getItemFontSize()));
     }
 
     public void attachToNode(TreeNode node, JPanel targetPanel, int rowIndex) {
@@ -126,19 +126,21 @@ class NavigationButtons {
     	if(displayMode == OutlineDisplayMode.BOOKMARK)
     		return;
 		final int minimalLevel = displayMode.getMinimalOutlineLevel();
-        if (level >= minimalLevel) {
+		final int buttonY = y + 2;
+        final int buttonHeight = geometry.rowHeight - 4;
+		if (level >= minimalLevel) {
         	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
-        	toggleButton.setBounds(baseX, y, geometry.navButtonWidth, geometry.rowHeight);
+        	toggleButton.setBounds(baseX, buttonY, geometry.navButtonWidth, buttonHeight);
         	toggleButton.setVisible(true);
         }
 
         int expandX = baseX + geometry.navButtonWidth;
-        expandMoreBtn.setBounds(expandX, y, geometry.navButtonWidth, geometry.rowHeight);
+        expandMoreBtn.setBounds(expandX, buttonY, geometry.navButtonWidth, buttonHeight);
         expandMoreBtn.setVisible(true);
 
         if(node.isExpanded() && (level > 0  || node.getMaxExpansionLevel() > 1) ) {
         	int reduceX = expandX + geometry.navButtonWidth;
-        	reduceBtn.setBounds(reduceX, y, geometry.navButtonWidth, geometry.rowHeight);
+        	reduceBtn.setBounds(reduceX, buttonY, geometry.navButtonWidth, buttonHeight);
         	reduceBtn.setVisible(true);
         }
     }

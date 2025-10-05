@@ -31,10 +31,6 @@ class OutlineGeometry {
 		return itemFontSize;
 	}
 
-	float getButtonFontSize() {
-		return itemFontSize * 5 / 4;
-	}
-
 	static {
 		if(Controller.getCurrentController() != null) {
 			INSTANCE = createFromConfiguration();
