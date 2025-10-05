@@ -96,8 +96,7 @@ public class DoAutomaticSave implements ActionListener {
                 }
                 if (file.renameTo(tempFile)) {
                     ((MFileManager) fileManager).save(model);
-                    modeController.getController().getViewController()
-                    .out(TextUtils.format("automatically_save_message", model.getFile()));
+                    outputStatusMessageAfterAutomaticSave(modeController, model.getFile());
                 }
                 else
                 	LogUtils.severe("Can't create automatic backup for " + file);
@@ -106,8 +105,7 @@ public class DoAutomaticSave implements ActionListener {
                     || ! tempFile.exists() && tempFile.getParentFile().canWrite()) {
                 ((MFileManager) fileManager)
                 .saveInternal((MMapModel) model, tempFile, true /*=internal call*/);
-                modeController.getController().getViewController()
-                .out(TextUtils.format("automatically_save_message", tempFile));
+                outputStatusMessageAfterAutomaticSave(modeController, tempFile);
             }
             else if (numberOfFiles > 0)
             	LogUtils.severe("Can't create automatic backup for " + file);
@@ -116,5 +114,11 @@ public class DoAutomaticSave implements ActionListener {
             LogUtils.severe("Error in automatic MapModel.save(): ", ex);
         }
     }
+
+	private void outputStatusMessageAfterAutomaticSave(MModeController modeController, final File savedFile) {
+		if (ResourceController.getResourceController().getBooleanProperty("outputs_status_message_after_automatic_save", true))
+			modeController.getController().getViewController()
+			.out(TextUtils.format("automatically_save_message", savedFile));
+	}
 
 }

@@ -52,6 +52,7 @@
 				<number name="backup_file_number" min="0" max="25" />
 				<boolean name="saveQuickFilters"/>
 				<number name="savedConditionLimit" min="0" max="1000"/>
+				<boolean name="outputs_status_message_after_automatic_save"/>
 			</separator>
 			<separator name="export">
 				<number name="exported_image_resolution_dpi" min="72" max="2400" />
