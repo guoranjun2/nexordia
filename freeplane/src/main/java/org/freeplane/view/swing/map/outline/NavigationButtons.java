@@ -147,7 +147,6 @@ class NavigationButtons {
 
     void updateGeometry(OutlineGeometry geometry) {
         this.geometry = geometry;
-        hideNavigationButtons();
         applyButtonFont(expandBtn);
         applyButtonFont(collapseBtn);
         applyButtonFont(expandMoreBtn);

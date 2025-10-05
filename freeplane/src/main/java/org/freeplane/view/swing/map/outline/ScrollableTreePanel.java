@@ -72,7 +72,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.outlinePropertyListener = this::handleOutlinePropertyChange;
         setFocusable(true);
         setupKeyBindings();
-        navButtons.hideNavigationButtons();
 
         this.visibleBlockRenderer = new VisibleBlockRenderer(blockLayout, blockCache, blockPanel, visibleNodes,
                 navButtons, focusManager, this::getWidth,
@@ -143,7 +142,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         blockCache.clear();
         blockLayout.resetCachedMaxWidth();
         resetBlockCache();
-        navButtons.hideNavigationButtons();
 
         visibleNodes.setHoveredNode(hoveredNode);
 
@@ -185,7 +183,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
         breadcrumbPanel.updateNodeButtons();
 
-        navButtons.hideNavigationButtons();
         breadcrumbLayout.reattachNavigationButtons();
 
         revalidate();
@@ -372,7 +369,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     void hardResetBlocksPreservingHovered(TreeNode preservedHoveredNode) {
         blockPanel.removeAll();
         blockCache.clear();
-        navButtons.hideNavigationButtons();
         visibleNodes.setHoveredNode(preservedHoveredNode);
         updateVisibleBlocks();
     }
@@ -455,8 +451,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
 
-        navButtons.hideNavigationButtons();
-
         visibleNodes.updateVisibleNodes();
 		int firstFullyVisibleNodeIndex = calculateFirstVisibleNodeIndex();
 
@@ -467,7 +461,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         blockPanel.removeAll();
         blockCache.clear();
         blockLayout.resetCachedMaxWidth();
-        navButtons.hideNavigationButtons();
         final boolean wasHoveredNodeContainedInBreadcrumb = visibleNodes.isHoveredNodeContainedInBreadcrumb();
 		visibleNodes.setHoveredNode(preservedHovered);
 
@@ -766,7 +759,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.updateVisibleNodes();
         blockPanel.removeAll();
         blockCache.clear();
-        navButtons.hideNavigationButtons();
         ensureSelectionVisibleTop();
     }
 
