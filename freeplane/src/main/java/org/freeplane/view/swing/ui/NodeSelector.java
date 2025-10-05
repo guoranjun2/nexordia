@@ -110,10 +110,10 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	private final MovedMouseEventFilter windowMouseTracker = new MovedMouseEventFilter();
 	private final MouseTimerDelegate timerDelegate = new MouseTimerDelegate();
 
-	static class TimeDelayedSelection implements ActionListener {
+	static class TimeDelayedNodeSelection implements ActionListener {
 		private final MouseEvent mouseEvent;
 
-		TimeDelayedSelection(final MouseEvent e) {
+		TimeDelayedNodeSelection(final MouseEvent e) {
 			this.mouseEvent = e;
 		}
 
@@ -178,7 +178,7 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 
 	@Override
 	public ActionListener createDelayedAction(MouseEvent e) {
-		return new TimeDelayedSelection(e);
+		return new TimeDelayedNodeSelection(e);
 	}
 
 	@Override
