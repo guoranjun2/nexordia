@@ -264,9 +264,17 @@ public class MFileManager extends UrlManager implements IMapViewChangeListener {
 		for (i = 1; i < backupFileNumber; i++) {
 			final File newFile = backupFile(backupDir, file, i, mode);
 			final File oldFile = backupFile(backupDir, file, i + 1, mode);
-			newFile.delete();
-			if (!oldFile.renameTo(newFile)) {
-				return null;
+			if (oldFile.exists()) {
+				if (!newFile.exists() || newFile.delete()) {
+					if (!oldFile.renameTo(newFile)) {
+						LogUtils.warn("Can not rename " + oldFile + " to "  + newFile);
+						return null;
+					}
+				}
+				else {
+					LogUtils.warn("Can not rename " + oldFile + " to "  + newFile);
+					return null;
+				}
 			}
 		}
 		return backupFile(backupDir, file, backupFileNumber, mode);

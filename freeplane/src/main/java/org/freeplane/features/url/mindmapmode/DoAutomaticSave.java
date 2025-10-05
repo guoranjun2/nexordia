@@ -83,6 +83,8 @@ public class DoAutomaticSave implements ActionListener {
             pathToStore.mkdirs();
             final File tempFile = MFileManager.renameAutosaveFiles(pathToStore, file, numberOfFiles, filesShouldBeDeletedAfterShutdown);
             if (tempFile == null) {
+            	if(numberOfFiles > 0)
+            		LogUtils.severe("Can't create automatic backup for " + file);
                 return;
             }
             if (filesShouldBeDeletedAfterShutdown) {
@@ -97,6 +99,8 @@ public class DoAutomaticSave implements ActionListener {
                     modeController.getController().getViewController()
                     .out(TextUtils.format("automatically_save_message", model.getFile()));
                 }
+                else
+                	LogUtils.severe("Can't create automatic backup for " + file);
             }
             else if(tempFile.isFile() && tempFile.canWrite()
                     || ! tempFile.exists() && tempFile.getParentFile().canWrite()) {
@@ -105,6 +109,8 @@ public class DoAutomaticSave implements ActionListener {
                 modeController.getController().getViewController()
                 .out(TextUtils.format("automatically_save_message", tempFile));
             }
+            else if (numberOfFiles > 0)
+            	LogUtils.severe("Can't create automatic backup for " + file);
         }
         catch (final Exception ex) {
             LogUtils.severe("Error in automatic MapModel.save(): ", ex);
