@@ -147,9 +147,6 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 		}
 	}
 
-
-
-
 	@Override
 	protected void validateTree() {
 		final boolean dividerLocationWasRestored = dividerLocationIsRestored;
@@ -211,10 +208,10 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	public void changeNoteWindowLocation(String location) {
 		if(location == null || location.equals(currentLocation))
 			return;
-		
+
 		// Update the controller's location and save current location
 		controller.setLocation(location);
-		
+
 		// Re-layout if we have both components
 		if(getLeftComponent() != null && getRightComponent() != null){
 			insertComponentIntoSplitPane(auxillaryComponent);
@@ -224,7 +221,7 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	public JComponent getAuxiliaryComponent() {
 		return auxillaryComponent;
 	}
-	
+
 	/**
 	 * Sets the manager that created this split pane.
 	 * This allows access back to the nested structure manager.
@@ -232,7 +229,7 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	void setManager(AuxiliarySplitPanes manager) {
 		this.manager = manager;
 	}
-	
+
 	/**
 	 * Gets the manager that created this split pane.
 	 * @return the manager or null if this was created directly
@@ -321,4 +318,12 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 			auxVisibilityBound = false;
 		}
 	}
+
+	@Override
+	public void setBounds(int x, int y, int width, int height) {
+		dividerLocationIsRestored = false;
+		super.setBounds(x, y, width, height);
+	}
+
+
 }
