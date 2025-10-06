@@ -48,6 +48,7 @@ class TimeDelayedOutlineSelection implements ActionListener {
 	    else {
 			node = treePanel.getOutlineSelection().getSelectedNode();
 	    }
-	    treePanel.setSelectedNode(node, true);
+	    if(node.getLevel() == 0 || node.getParent() != null)
+	    	treePanel.setSelectedNode(node, true);
 	}
 }
