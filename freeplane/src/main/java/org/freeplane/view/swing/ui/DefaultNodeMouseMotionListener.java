@@ -256,6 +256,11 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
         if (node.getCursor().getType() != requiredCursor.getType() || requiredCursor.getType() == Cursor.CUSTOM_CURSOR && node.getCursor() != requiredCursor) {
         	node.setCursor(requiredCursor);
         }
+		if (isInFoldingControl(e)) {
+			nodeFolder.handleMouseEvent(e);
+		} else {
+			nodeSelector.handleMouseEvent(e);
+		}
 	}
 
 	@Override

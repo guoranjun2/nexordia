@@ -131,6 +131,7 @@ public class DefaultMapMouseListener implements IMouseListener {
 
 	@Override
 	public void mouseMoved(final MouseEvent e) {
+		NodeSelector.mapViewSelector.handleMouseEvent(e);
 	}
 
 	@Override
