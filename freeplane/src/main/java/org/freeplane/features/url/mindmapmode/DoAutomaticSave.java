@@ -57,7 +57,10 @@ public class DoAutomaticSave implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        /* Map is dirty enough? */
+    	final URL url = model.getURL();
+    	if(url == null)
+    		return;
+    	/* Map is dirty enough? */
         if (model.isReadOnly() || model.getNumberOfChangesSinceLastSave() == changeState) {
             return;
         }
@@ -76,9 +79,7 @@ public class DoAutomaticSave implements ActionListener {
             if(!(fileManager instanceof MFileManager))
                 return;
             MModeController modeController = ((MModeController) currentModeController);
-            final URL url = model.getURL();
-            final File file = new File(url != null ? url.getFile() //
-                    : model.getTitle() + UrlManager.FREEPLANE_FILE_EXTENSION);
+            final File file = new File(url.getFile());
             final File pathToStore = MFileManager.backupDir(url != null ? file : null);
             pathToStore.mkdirs();
             final File tempFile = MFileManager.renameAutosaveFiles(pathToStore, file, numberOfFiles, filesShouldBeDeletedAfterShutdown);
