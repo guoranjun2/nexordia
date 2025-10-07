@@ -31,7 +31,9 @@ import java.awt.event.MouseEvent;
 import java.util.function.Function;
 
 import javax.swing.FocusManager;
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.text.JTextComponent;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.Compat;
@@ -137,6 +139,16 @@ public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 		if(! mouseWasMoved) {
 			return;
 		}
+		final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
+		final Component eventSource = e.getComponent();
+		if(focusOwner instanceof JTextComponent || focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, eventSource))
+			return;
+
+		Window w =  SwingUtilities.windowForComponent(eventSource);
+		final Component windowFocusOwner = w.getFocusOwner();
+		if(windowFocusOwner instanceof JTextComponent)
+			return;
+
 		if (!isInside(e)) {
 			return;
 		}
