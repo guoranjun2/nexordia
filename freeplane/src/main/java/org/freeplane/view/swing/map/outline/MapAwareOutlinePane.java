@@ -73,6 +73,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 		    if (index < 0) index = 0;
 		    panel.updateVisibleBlocks(index);
 		}
+        panel.updateBreadcrumbForSelection(target);
+
 		panel.setSelectedNode(target, requestFocus);
     }
 

@@ -228,7 +228,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		breadcrumbMode = resolvedMode;
         visibleNodes.setBlockPanelY(calculateBlockPanelY());
 		if (isSelectionDrivenBreadcrumbMode()) {
-			updateBreadcrumbForSelection();
+			synchronizeSelectionButton(false);
 		}
 		else {
 			updateBreadcrumbForCurrentFirstVisibleNode();
@@ -321,9 +321,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			}
 			selectionHistory.record(node);
 			outlineSelection.selectNode(node);
-			if (isSelectionDrivenBreadcrumbMode()) {
-				updateBreadcrumbForSelection();
-			}
 			repaint();
 			if (visibleNodes.findNodeIndexInVisibleList(node) < 0) {
 				TreeNode preservedHoveredNode = visibleNodes.getHoveredNode();
@@ -337,9 +334,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			if (!visible) {
 				ensureSelectionVisibleTop();
 			}
-		}
-		else if (isSelectionDrivenBreadcrumbMode()) {
-			updateBreadcrumbForSelection();
 		}
 		focusSelectionButtonLater(requestFocus);
 
@@ -598,8 +592,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         setSelectedNode(nextNode, true);
     }
 
-	private void updateBreadcrumbForSelection() {
-		breadcrumbLayout.updateForSelection();
+	void updateBreadcrumbForSelection(TreeNode target) {
+		breadcrumbLayout.updateForSelection(target);
 		revalidate();
 	}
 
@@ -880,7 +874,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 	void performInitialSetup() {
 		if(isSelectionDrivenBreadcrumbMode())
-			updateBreadcrumbForSelection();
+			synchronizeSelectionButton(false);
 		updateVisibleBlocks();
 	}
 }
