@@ -101,7 +101,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 	}
 
 	private int calculateBlockPanelY() {
-		return isSelectionDrivenBreadcrumbMode() ? visibleNodes.getBreadcrumbHeight() : 0;
+		return isSelectionDrivenBreadcrumbMode() ? visibleNodes.getBreadcrumbHeight() : BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN;
 	}
 
 	@Override
@@ -854,7 +854,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     private int calculateFirstVisibleNodeIndex() {
     	int viewY = viewport.getViewY();
-        int effectiveViewportY = viewY + (isSelectionDrivenBreadcrumbMode() ? 0 : visibleNodes.getBreadcrumbHeight());
+        int effectiveViewportY = viewY + visibleNodes.getBreadcrumbHeight() - visibleNodes.getBlockPanelY();
         if (effectiveViewportY < 0) {
             effectiveViewportY = 0;
         }
