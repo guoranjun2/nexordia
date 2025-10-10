@@ -859,7 +859,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             effectiveViewY = 0;
         }
         int rowHeight = OutlineGeometry.getInstance().rowHeight;
-        return Math.max(0, (effectiveViewY + rowHeight - 1) / rowHeight);
+        final int firstVisibleIndex = (effectiveViewY + rowHeight - 1) / rowHeight;
+        if(firstVisibleIndex > 1)
+        	return firstVisibleIndex;
+        else if(isSelectionDrivenBreadcrumbMode() || visibleNodes.getVisibleNodeCount() < 2)
+        	return 0;
+        else
+        	return 1;
 	}
 
     boolean isNodeInBreadcrumbArea(TreeNode node) {
