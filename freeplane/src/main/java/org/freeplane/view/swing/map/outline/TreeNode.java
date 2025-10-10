@@ -7,6 +7,30 @@ import java.util.List;
 import java.util.function.Supplier;
 
 class TreeNode {
+
+	enum LevelOperation {
+		SET {
+    		@Override
+    		boolean canApply(int newLevel, int currentLevel) {
+    			return true;
+    		}
+    	},
+		REDUCE {
+    		@Override
+    		boolean canApply(int newLevel, int currentLevel) {
+    			return newLevel < currentLevel;
+    		}
+    	},
+		EXPAND {
+    		@Override
+    		boolean canApply(int newLevel, int currentLevel) {
+    			return newLevel > currentLevel;
+    		}
+    	};
+
+		abstract boolean canApply(int newLevel, int currentLevel);
+	}
+
     private Supplier<String> titleSupplier;
     private String title;
 
@@ -42,17 +66,32 @@ class TreeNode {
     }
 
     void applyExpansionLevel(int level) {
-        this.setExpansionLevel(level);
+    	applyExpansionLevel(level, LevelOperation.SET);
+    }
+
+    private void applyExpansionLevel(int level, LevelOperation expand) {
+    	if(expand.canApply(level, expansionLevel))
+    		this.setExpansionLevel(level);
         if (level >= 0) {
             for (TreeNode child : getChildren()) {
-                child.applyExpansionLevel(level - 1);
+                child.applyExpansionLevel(level - 1, expand);
             }
         } else {
             for (TreeNode child : getChildren()) {
-                child.applyExpansionLevel(-1);
+                child.applyExpansionLevel(-1, expand);
             }
         }
     }
+
+	void reduceNodeExpansion(int level) {
+    	applyExpansionLevel(level, LevelOperation.REDUCE);
+	}
+
+	void expandNodeMore(int level) {
+    	applyExpansionLevel(level, LevelOperation.EXPAND);
+	}
+
+
 
     int getMaxExpansionLevel() {
         if (expansionLevel <= 0 || getChildren().isEmpty()) {
@@ -165,5 +204,4 @@ class TreeNode {
 		}
 		return false;
 	}
-
 }

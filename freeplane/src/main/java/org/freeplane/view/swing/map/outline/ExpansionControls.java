@@ -13,7 +13,7 @@ class ExpansionControls {
 
     void expandNode(TreeNode node) {
     	if(! node.isExpanded()) {
-    		node.applyExpansionLevel(1);
+    		node.expandNodeMore(1);
     		refreshAfterExpansionChange();
     	}
     }
@@ -22,7 +22,7 @@ class ExpansionControls {
     	if(node.isExpanded()) {
     		final int minimalLevel = treePanel.getDisplayMode().getMinimalOutlineLevel();
     		if (node.getLevel() >= minimalLevel) {
-    			node.applyExpansionLevel(0);
+    			node.reduceNodeExpansion(0);
     			selectParentIfNeeded();
     			refreshAfterExpansionChange();
     		}
@@ -31,7 +31,7 @@ class ExpansionControls {
 
     void expandNodeMore(TreeNode node) {
     	int currentLevel = node.getMaxExpansionLevel();
-    	node.applyExpansionLevel(currentLevel + 1);
+    	node.expandNodeMore(currentLevel + 1);
         refreshAfterExpansionChange();
     }
 
@@ -39,7 +39,7 @@ class ExpansionControls {
         int currentLevel = node.getMaxExpansionLevel();
 		final int minimalLevel = treePanel.getDisplayMode().getMinimalOutlineLevel();
         if (currentLevel > minimalLevel - node.getLevel()) {
-            node.applyExpansionLevel(currentLevel - 1);
+            node.reduceNodeExpansion(currentLevel - 1);
             selectParentIfNeeded();
             refreshAfterExpansionChange();
         }
