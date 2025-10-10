@@ -43,8 +43,8 @@ class OutlineSelectionBridge {
         SwingUtilities.invokeLater(this::focusMapNode);
     }
 
-	void synchronizeOutlineSelection(boolean requestFocusInWindow) {
-		outlinePane.synchronizeOutlineSelection(requestFocusInWindow);
+	void synchronizeOutlineSelection(SelectionSynchronizationTrigger selectionSynchronizationTrigger, boolean requestFocusInWindow) {
+		outlinePane.synchronizeOutlineSelection(selectionSynchronizationTrigger, requestFocusInWindow);
 	}
 
 	private void focusMapNode() {

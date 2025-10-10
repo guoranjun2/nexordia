@@ -43,7 +43,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     private VisibleBlockRenderer visibleBlockRenderer;
     private BreadcrumbLayout breadcrumbLayout;
-	private final OutlineDisplayMode displayMode;
+	private OutlineDisplayMode displayMode;
 	private final int blockSize;
 	private BreadcrumbMode breadcrumbMode;
 
@@ -61,7 +61,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
     private ScrollableTreePanel(OutlineDisplayMode displayMode, TreeNode root, int blockSize, BreadcrumbPanel breadcrumbPanel) {
         super(null);
-		this.displayMode = displayMode;
+		this.setDisplayMode(displayMode);
         this.root = root;
 		this.blockSize = blockSize;
         this.breadcrumbPanel = breadcrumbPanel;
@@ -241,7 +241,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
 
     void synchronizeSelectionButton(boolean requestFocusInWindow) {
-    	selectionBridge.synchronizeOutlineSelection(requestFocusInWindow);
+    	selectionBridge.synchronizeOutlineSelection(SelectionSynchronizationTrigger.OUTLINE, requestFocusInWindow);
     	focusManager.focusSelectionButtonLater(requestFocusInWindow);
     }
 
@@ -514,7 +514,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         if (selected == null) return;
         if (!isNodeAttachedToRoot(selected)) {
             if (selectionBridge != null) {
-                selectionBridge.synchronizeOutlineSelection(false);
+                selectionBridge.synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
             }
         }
     }
@@ -888,4 +888,49 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 			updateBreadcrumbForSelection();
 		updateVisibleBlocks();
 	}
+
+	void synchronizeOutlineSelection(TreeNode target, SelectionSynchronizationTrigger synchronizationTrigger, boolean requestFocus) {
+		if(displayMode == OutlineDisplayMode.MAP_VIEW_SYNC && synchronizationTrigger == SelectionSynchronizationTrigger.MAP) {
+			adjustExpansionLevels(target);
+			updateVisibleNodes();
+		}
+		else
+			target = target.findVisibleAncestorOrSelf();
+
+		int index = findVisibleIndex(target);
+		boolean visible = isNodeVisible(target);
+		if (!visible) {
+			if (index < 0) index = 0;
+			updateVisibleBlocks(index);
+		}
+		setSelectedNode(target, requestFocus);
+	}
+
+	private void adjustExpansionLevels(TreeNode node) {
+		final TreeNode parent = node.getParent();
+		if(parent != null) {
+			adjustExpansionLevels(parent);
+			parent.applyExpansionLevel(1);
+		}
+	}
+
+    private int findVisibleIndex(TreeNode node) {
+        TreeNode n = node;
+        while (n != null) {
+            int idx = visibleNodes.findNodeIndexInVisibleList(n);
+            if (idx >= 0) return idx;
+            n = n.getParent();
+        }
+        return 0;
+    }
+
+    private boolean isNodeVisible(TreeNode node) {
+    	return !isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(node)
+			|| isNodeFullyVisibleInViewport(node);
+	}
+
+	void setDisplayMode(OutlineDisplayMode displayMode) {
+		this.displayMode = displayMode;
+	}
+
 }

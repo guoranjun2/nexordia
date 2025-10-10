@@ -31,14 +31,15 @@ class OutlineTreeViewStates {
     }
 
     OutlineTreeViewState getViewState() {
-        return viewStatesByMode.get(currentMode);
+        return viewStatesByMode.get(currentMode.baseMode());
     }
 
     void putViewState(OutlineTreeViewState state) {
-        if (state == null) {
-            viewStatesByMode.remove(currentMode);
+        final OutlineDisplayMode stateKey = currentMode.baseMode();
+		if (state == null) {
+            viewStatesByMode.remove(stateKey);
         } else {
-            viewStatesByMode.put(currentMode, state);
+            viewStatesByMode.put(stateKey, state);
         }
     }
 
