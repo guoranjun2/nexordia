@@ -41,8 +41,8 @@ final class BreadcrumbLayout {
         this.selectionBridge = selectionBridge;
     }
 
-    void updateForSelection(TreeNode target) {
-        applyState(calculateStateForSelection(target));
+    void updateForSelection() {
+        applyState(calculateStateForSelection());
     }
 
     void updateForFirstVisibleIndex(int index) {
@@ -51,7 +51,7 @@ final class BreadcrumbLayout {
 
     List<TreeNode> calculateState(int targetFirstIndex) {
         return selectionDrivenMode.get()
-                ? null
+                ? calculateStateForSelection()
                 : calculateStateForIndex(targetFirstIndex);
     }
 
@@ -96,8 +96,9 @@ final class BreadcrumbLayout {
         return collectBreadcrumbNodes(breadcrumbTargetNode);
     }
 
- 	private List<TreeNode> calculateStateForSelection(TreeNode selected) {
-		if (selected == null) {
+    private List<TreeNode> calculateStateForSelection() {
+        TreeNode selected = outlineSelection.getSelectedNode();
+        if (selected == null) {
             return null;
         }
         List<TreeNode> nodes = collectBreadcrumbNodes(selected);
@@ -106,7 +107,7 @@ final class BreadcrumbLayout {
             nodes.addAll(selectionBridge.collectNodesToSelection(selected));
         }
         return nodes;
-	}
+    }
 
     private List<TreeNode> collectBreadcrumbNodes(TreeNode fromNode) {
         List<TreeNode> breadcrumbNodes = new ArrayList<>();
