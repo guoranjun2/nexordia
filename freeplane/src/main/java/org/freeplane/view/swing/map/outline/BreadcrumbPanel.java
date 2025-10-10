@@ -150,6 +150,10 @@ class BreadcrumbPanel extends JPanel {
         return new ArrayList<>(currentBreadcrumbNodes);
     }
 
+    int getCurrentBreadcrumbNodeCount() {
+        return currentBreadcrumbNodes.size();
+    }
+
     void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
     }

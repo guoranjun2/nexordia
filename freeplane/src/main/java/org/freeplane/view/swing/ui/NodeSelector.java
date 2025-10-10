@@ -31,7 +31,6 @@ import java.awt.event.MouseEvent;
 import java.util.function.Function;
 
 import javax.swing.FocusManager;
-import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
 
