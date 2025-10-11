@@ -35,6 +35,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private static final long serialVersionUID = 1L;
 	private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
 	private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
+	private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/jumpIn.svg?useAccentColor=true");
 	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
@@ -45,6 +46,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private final BookmarkModeFilterCache bookmarkFilterCache;
     private JToggleButton bookmarkModeToggleButton;
     private JToggleButton syncModeToggleButton;
+    private JToggleButton jumpInToggleButton;
 
 	MapView getCurrentMapView() {
 		return currentMapView;
@@ -188,6 +190,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                     builder.withFilter(bookmarkFilter);
                 }
             }
+			else if(! displayState.followsJumpIn())
+				builder.withRootModel(mapView.getMap().getRootNode());
             builder.build();
             currentRoot = builder.getRoot();
 
@@ -371,38 +375,49 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 	private void configureToolbar(FreeplaneToolBar toolbar) {
-		bookmarkModeToggleButton = new JToggleButton();
-        bookmarkModeToggleButton.setIcon(BOOKMARK_ICON);
+		bookmarkModeToggleButton = new JToggleButton(BOOKMARK_ICON);
         configureModeToggleButton(bookmarkModeToggleButton, OutlineDisplayMode.BOOKMARK);
         toolbar.add(bookmarkModeToggleButton, 0);
-		syncModeToggleButton = new JToggleButton();
-		syncModeToggleButton.setIcon(SYNC_ICON);
+		syncModeToggleButton = new JToggleButton(SYNC_ICON);
 		configureModeToggleButton(syncModeToggleButton, OutlineDisplayMode.MAP_VIEW_SYNC);
         toolbar.add(syncModeToggleButton, 1);
+        jumpInToggleButton = new JToggleButton(JUMPIN_ICON);
+        configureJumpinToggleButton(jumpInToggleButton);
+        toolbar.add(jumpInToggleButton, 2);
 	}
 
 	private void configureModeToggleButton(JToggleButton toggleButton, OutlineDisplayMode mode) {
-        toggleButton.setEnabled(true);
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(e -> {
             OutlineDisplayMode targetMode = toggleButton.isSelected()
                     ? mode
                     : OutlineDisplayMode.MAP_VIEW;
-            setOutlineDisplayMode(targetMode);
+            setOutlineDisplayMode(targetMode, displayState.followsJumpIn());
             syncToggleWithMode();
         });
     }
+	private void configureJumpinToggleButton(JToggleButton toggleButton) {
+        toggleButton.setFocusable(false);
+        toggleButton.setSelected(displayState.followsJumpIn());
+        toggleButton.addActionListener(e -> setFollowsJumpIn(toggleButton.isSelected()));
+    }
 
-    public void setOutlineDisplayMode(OutlineDisplayMode displayMode) {
+	private void setFollowsJumpIn(final boolean followsJumpIn) {
+		setOutlineDisplayMode(getDisplayMode(), followsJumpIn);
+	}
+
+    public void setOutlineDisplayMode(OutlineDisplayMode displayMode, final boolean followsJumpIn) {
         final OutlineDisplayMode lastMode = displayState.getCurrentMode();
-		if (displayMode == null || displayMode == lastMode) {
+        final boolean lastFollowsJumpIn = displayState.followsJumpIn();
+		if (displayMode == null || displayMode == lastMode && followsJumpIn == lastFollowsJumpIn) {
             syncToggleWithMode();
             return;
         }
         displayState.setCurrentMode(displayMode);
+        displayState.setFollowsJumpIn(followsJumpIn);
         ScrollableTreePanel panel = getTreePanel();
         if (currentMapView != null) {
-        	if (lastMode.baseMode() != displayMode.baseMode()) {
+        	if (lastMode.baseMode() != displayMode.baseMode() || followsJumpIn != lastFollowsJumpIn) {
         		storeCurrentDisplayState(panel);
         		updateTreeFromMap(currentMapView, false);
         	}

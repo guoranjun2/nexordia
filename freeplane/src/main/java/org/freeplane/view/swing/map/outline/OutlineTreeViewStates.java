@@ -5,22 +5,33 @@ import java.util.Map;
 
 class OutlineTreeViewStates {
     private OutlineDisplayMode currentMode;
+    private boolean followsJumpIn;
     private final EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode;
 
     OutlineTreeViewStates() {
-        this(OutlineDisplayMode.MAP_VIEW, new EnumMap<>(OutlineDisplayMode.class));
+        this(OutlineDisplayMode.MAP_VIEW, true, new EnumMap<>(OutlineDisplayMode.class));
     }
 
-    OutlineTreeViewStates(OutlineDisplayMode currentMode, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
-        this.currentMode = currentMode != null ? currentMode : OutlineDisplayMode.MAP_VIEW;
+    OutlineTreeViewStates(OutlineDisplayMode currentMode,  boolean followsJumpIn, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
+        this.followsJumpIn = followsJumpIn;
+		this.currentMode = currentMode != null ? currentMode : OutlineDisplayMode.MAP_VIEW;
         this.viewStatesByMode = viewStatesByMode;
+
     }
 
     OutlineTreeViewStates copy() {
-        return new OutlineTreeViewStates(currentMode, new EnumMap<>(viewStatesByMode));
+        return new OutlineTreeViewStates(currentMode, followsJumpIn, new EnumMap<>(viewStatesByMode));
     }
 
-    OutlineDisplayMode getCurrentMode() {
+    boolean followsJumpIn() {
+		return followsJumpIn;
+	}
+
+	void setFollowsJumpIn(boolean followsJumpIn) {
+		this.followsJumpIn = followsJumpIn;
+	}
+
+	OutlineDisplayMode getCurrentMode() {
         return currentMode;
     }
 
