@@ -67,7 +67,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	final NodeModel node = currentMapView.getSelected().getNode();
     	final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findOutlineNode(node);
-        panel.synchronizeOutlineSelection(target, synchronizationTrigger, requestFocus);
+        if(target != null)
+        	panel.synchronizeOutlineSelection(target, synchronizationTrigger, requestFocus);
     }
 
 	private TreeNode findOutlineNode(NodeModel node) {

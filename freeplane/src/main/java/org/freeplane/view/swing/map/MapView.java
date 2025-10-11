@@ -565,6 +565,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final boolean selectedChanged = selectedNode != null && selectedNode.equals(node);
 			if (selectedChanged) {
 				removeSelectionForHooks(node);
+				selectedNode = null;
 			}
 			if (removeFromSelectedSet(node)){
 				final int last = selectedList.size() - 1;
@@ -3315,7 +3316,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	private void setRootNode(NodeView newRootView, RootChange rootChange) {
 		if(currentRootView == newRootView)
 			return;
-		boolean newRootWasFolded = newRootView.isFolded() && ! (rootChange == RootChange.JUMP_OUT);
 		if(rootChange == RootChange.JUMP_OUT)
             preserveNodeLocationOnScreen(currentRootView, 0, 0);
         else if(rootChange == RootChange.JUMP_IN)
@@ -3341,7 +3341,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		    rootsHistory.clear();
 		if(nextSelectedNode.getParent() == null || ! nextSelectedNode.isContentVisible())
 		    nextSelectedNode = newRootView;
-		if(newRootWasFolded) {
+		if(newRootView.getComponentCount() == 1) {
 			newRootView.fireFoldingChanged();
 	        setSiblingMaxLevel(getSelected());
 		}
