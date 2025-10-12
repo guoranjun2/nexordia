@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
@@ -35,7 +36,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private static final long serialVersionUID = 1L;
 	private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
 	private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
-	private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/jumpIn.svg?useAccentColor=true");
+	private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/syncJumpIn.svg?useAccentColor=true");
 	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
@@ -376,12 +377,15 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 	private void configureToolbar(FreeplaneToolBar toolbar) {
 		bookmarkModeToggleButton = new JToggleButton(BOOKMARK_ICON);
+		TranslatedElementFactory.createTooltip(bookmarkModeToggleButton, "outline.showBookmarks");
         configureModeToggleButton(bookmarkModeToggleButton, OutlineDisplayMode.BOOKMARK);
         toolbar.add(bookmarkModeToggleButton, 0);
 		syncModeToggleButton = new JToggleButton(SYNC_ICON);
+		TranslatedElementFactory.createTooltip(syncModeToggleButton, "outline.followSelection");
 		configureModeToggleButton(syncModeToggleButton, OutlineDisplayMode.MAP_VIEW_SYNC);
         toolbar.add(syncModeToggleButton, 1);
         jumpInToggleButton = new JToggleButton(JUMPIN_ICON);
+        TranslatedElementFactory.createTooltip(jumpInToggleButton, "outline.followRoot");
         configureJumpinToggleButton(jumpInToggleButton);
         toolbar.add(jumpInToggleButton, 2);
 	}
@@ -393,7 +397,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                     ? mode
                     : OutlineDisplayMode.MAP_VIEW;
             setOutlineDisplayMode(targetMode, displayState.followsJumpIn());
-            syncToggleWithMode();
         });
     }
 	private void configureJumpinToggleButton(JToggleButton toggleButton) {
@@ -437,6 +440,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         boolean syncSelected = displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW_SYNC;
         if (syncModeToggleButton.isSelected() != syncSelected) {
             syncModeToggleButton.setSelected(syncSelected);
+        }
+        final boolean followsJumpIn = displayState.followsJumpIn();
+		if (jumpInToggleButton.isSelected() != followsJumpIn) {
+            bookmarkModeToggleButton.setSelected(followsJumpIn);
         }
     }
 
