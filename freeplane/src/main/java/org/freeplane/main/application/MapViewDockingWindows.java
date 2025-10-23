@@ -511,32 +511,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
         return null;
     }
 
-    private JComponent resolveCandidateForWindow(Window window) {
-        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
-        try {
-            JComponent selected = mgr.getMapViewComponent();
-            if (selected != null && SwingUtilities.isDescendingFrom(selected, window))
-                return selected;
-            JComponent last = mgr.getLastSelectedMapViewContainedIn(window);
-            if (last != null)
-                return last;
-        } catch (Exception ignore) { }
-        return findAnyVisibleMapViewInWindow(window);
-    }
-
-    private void setWindowLastSelectedMapView(Window window, JComponent candidate) {
-        if (window instanceof RootPaneContainer) {
-            ((RootPaneContainer) window).getRootPane()
-                    .putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, candidate);
-        }
-        IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
-        if (mgr instanceof MapViewController) {
-            ((MapViewController) mgr).updateWindowLastSelectedMapView(window,
-                    candidate instanceof MapView ? (MapView) candidate : null);
-        }
-    }
-
-	private void removeDesktopPaneAccelerators() {
+    private void removeDesktopPaneAccelerators() {
 		 final InputMap map = new InputMap();
 		 rootWindow.setInputMap(JDesktopPane.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, map);
 	}
