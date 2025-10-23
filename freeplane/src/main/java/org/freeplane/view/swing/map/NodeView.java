@@ -2448,7 +2448,8 @@ public class NodeView extends JComponent implements INodeView {
 	@Override
 	public void revalidate() {
 		 super.revalidate();
-		 map.repaintVisible();
+		 if(! map.isValid())
+			 map.repaintVisible();
 	}
 
 
