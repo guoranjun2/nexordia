@@ -289,6 +289,23 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                         });
                     }
                 }
+                else
+                	if (addedWindow instanceof View && ((View)addedWindow).getComponent() instanceof MapViewPane) {
+                		Component contained = getContainedMapView((View) addedWindow);
+                		Window sourceTop = (Window) addedToWindow.getTopLevelAncestor();
+                		IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+                		if (sourceTop instanceof RootPaneContainer && mgr.getMapViewComponent() == contained) {
+                			JRootPane root = ((RootPaneContainer) sourceTop).getRootPane();
+                			Object value = root.getClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY);
+                			if (value != contained) {
+                				root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, contained);
+                				if (mgr instanceof MapViewController) {
+                					((MapViewController) mgr).updateWindowLastSelectedMapView(sourceTop, (JComponent) contained);
+                				}
+                			}
+                		}
+                	}
+
                 setTabPolicies(addedWindow);
             }
 
