@@ -3,24 +3,28 @@ package org.freeplane.view.swing.map.outline;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.freeplane.features.filter.Filter;
+
 class OutlineTreeViewStates {
     private OutlineDisplayMode currentMode;
     private boolean followsJumpIn;
+    private Filter filter;
     private final EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode;
 
     OutlineTreeViewStates() {
-        this(OutlineDisplayMode.MAP_VIEW, true, new EnumMap<>(OutlineDisplayMode.class));
+        this(OutlineDisplayMode.MAP_VIEW, true, null, new EnumMap<>(OutlineDisplayMode.class));
     }
 
-    OutlineTreeViewStates(OutlineDisplayMode currentMode,  boolean followsJumpIn, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
+    OutlineTreeViewStates(OutlineDisplayMode currentMode,  boolean followsJumpIn, Filter filter, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
         this.followsJumpIn = followsJumpIn;
+		this.filter = filter;
 		this.currentMode = currentMode != null ? currentMode : OutlineDisplayMode.MAP_VIEW;
         this.viewStatesByMode = viewStatesByMode;
 
     }
 
     OutlineTreeViewStates copy() {
-        return new OutlineTreeViewStates(currentMode, followsJumpIn, new EnumMap<>(viewStatesByMode));
+        return new OutlineTreeViewStates(currentMode, followsJumpIn, filter, new EnumMap<>(viewStatesByMode));
     }
 
     boolean followsJumpIn() {
@@ -29,6 +33,15 @@ class OutlineTreeViewStates {
 
 	void setFollowsJumpIn(boolean followsJumpIn) {
 		this.followsJumpIn = followsJumpIn;
+	}
+
+
+	Filter getFilter() {
+		return filter;
+	}
+
+	void setFilter(Filter filter) {
+		this.filter = filter;
 	}
 
 	OutlineDisplayMode getCurrentMode() {

@@ -6,7 +6,7 @@ import org.freeplane.features.filter.Filter;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.view.swing.map.MapView;
 
-class BookmarkModeFilterCache {
+class FilterCache {
     private Filter cachedFilter;
     private MapModel cachedMapModel;
 

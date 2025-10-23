@@ -20,6 +20,8 @@ import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
+import org.freeplane.features.filter.FilterController;
+import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
@@ -37,6 +39,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
 	private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
 	private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/syncJumpIn.svg?useAccentColor=true");
+	private static final Icon QUICK_FILTER_ICON = ResourceController.getResourceController().getIcon("/images/apply_quick_filter.svg?useAccentColor=true");
 	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
@@ -44,10 +47,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private TreeNode currentRoot;
     private MapView currentMapView;
     private final OutlineTreeViewStates displayState;
-    private final BookmarkModeFilterCache bookmarkFilterCache;
+    private final FilterCache bookmarkFilterCache;
     private JToggleButton bookmarkModeToggleButton;
     private JToggleButton syncModeToggleButton;
     private JToggleButton jumpInToggleButton;
+    private JToggleButton quickFilterButton;
 
 	MapView getCurrentMapView() {
 		return currentMapView;
@@ -94,7 +98,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     	super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);
     	selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
     	displayState = new OutlineTreeViewStates();
-    	bookmarkFilterCache = new BookmarkModeFilterCache();
+    	bookmarkFilterCache = new FilterCache();
     	configureToolbar(toolbar);
     }
 
@@ -182,17 +186,23 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             OutlineTreeViewState saved = loadSavedViewState(currentMapView);
             NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, saved);
             final OutlineDisplayMode displayMode = displayState.getCurrentMode();
+			final MapModel map = mapView.getMap();
 			if (displayMode == OutlineDisplayMode.BOOKMARK) {
                 Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
                         () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
-                MapModel mapModel = mapView.getMap();
-                builder.withRootModel(mapModel.getRootNode());
+                builder.withRootModel(map.getRootNode());
                 if (bookmarkFilter != null) {
                     builder.withFilter(bookmarkFilter);
                 }
-            }
-			else if(! displayState.followsJumpIn())
-				builder.withRootModel(mapView.getMap().getRootNode());
+            } else {
+				if(! displayState.followsJumpIn())
+					builder.withRootModel(map.getRootNode());
+				final Filter filter = displayState.getFilter();
+				if(filter != null) {
+					filter.calculateFilterResults(map);
+					builder.withFilter(filter);
+				}
+			}
             builder.build();
             currentRoot = builder.getRoot();
 
@@ -388,6 +398,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         TranslatedElementFactory.createTooltip(jumpInToggleButton, "outline.followRoot");
         configureJumpinToggleButton(jumpInToggleButton);
         toolbar.add(jumpInToggleButton, 2);
+
+        quickFilterButton = new JToggleButton(QUICK_FILTER_ICON);
+        TranslatedElementFactory.createTooltip(quickFilterButton, "outline.filter");
+        configureQuickFilterToggleButton(quickFilterButton);
+        toolbar.add(quickFilterButton, 3);
 	}
 
 	private void configureModeToggleButton(JToggleButton toggleButton, OutlineDisplayMode mode) {
@@ -396,7 +411,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             OutlineDisplayMode targetMode = toggleButton.isSelected()
                     ? mode
                     : OutlineDisplayMode.MAP_VIEW;
-            setOutlineDisplayMode(targetMode, displayState.followsJumpIn());
+            setOutlineDisplayMode(targetMode, displayState.getFilter(), displayState.followsJumpIn());
         });
     }
 	private void configureJumpinToggleButton(JToggleButton toggleButton) {
@@ -405,22 +420,47 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         toggleButton.addActionListener(e -> setFollowsJumpIn(toggleButton.isSelected()));
     }
 
-	private void setFollowsJumpIn(final boolean followsJumpIn) {
-		setOutlineDisplayMode(getDisplayMode(), followsJumpIn);
+	private void configureQuickFilterToggleButton(JToggleButton toggleButton) {
+        toggleButton.setFocusable(false);
+        toggleButton.setSelected(displayState.getFilter() != null);
+        toggleButton.addActionListener(e -> setQuickFilter(toggleButton.isSelected()));
+    }
+
+	private void setQuickFilter(boolean enable) {
+		Filter filter;
+		if(enable) {
+			final ASelectableCondition condition = FilterController.getCurrentFilterController().getQuickEditor().getCondition();
+			if(condition == null) {
+				filter = null;
+				quickFilterButton.setSelected(false);
+			} else {
+				filter = Filter.createFilter(condition, true, false, false, null);
+			}
+		}
+		else
+			filter = null;
+		if(displayState.getFilter() != filter)
+			setOutlineDisplayMode(displayState.getCurrentMode(), filter, displayState.followsJumpIn());
 	}
 
-    public void setOutlineDisplayMode(OutlineDisplayMode displayMode, final boolean followsJumpIn) {
+	private void setFollowsJumpIn(final boolean followsJumpIn) {
+		setOutlineDisplayMode(displayState.getCurrentMode(), displayState.getFilter(), followsJumpIn);
+	}
+
+    public void setOutlineDisplayMode(OutlineDisplayMode displayMode, final Filter filter, final boolean followsJumpIn) {
         final OutlineDisplayMode lastMode = displayState.getCurrentMode();
         final boolean lastFollowsJumpIn = displayState.followsJumpIn();
-		if (displayMode == null || displayMode == lastMode && followsJumpIn == lastFollowsJumpIn) {
+        final Filter lastFilter = displayState.getFilter();
+		if (displayMode == null || displayMode == lastMode && followsJumpIn == lastFollowsJumpIn && filter == lastFilter) {
             syncToggleWithMode();
             return;
         }
         displayState.setCurrentMode(displayMode);
         displayState.setFollowsJumpIn(followsJumpIn);
+        displayState.setFilter(filter);
         ScrollableTreePanel panel = getTreePanel();
         if (currentMapView != null) {
-        	if (lastMode.baseMode() != displayMode.baseMode() || followsJumpIn != lastFollowsJumpIn) {
+        	if (lastMode.baseMode() != displayMode.baseMode() || followsJumpIn != lastFollowsJumpIn || filter != lastFilter) {
         		storeCurrentDisplayState(panel);
         		updateTreeFromMap(currentMapView, false);
         	}
@@ -444,6 +484,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         final boolean followsJumpIn = displayState.followsJumpIn();
 		if (jumpInToggleButton.isSelected() != followsJumpIn) {
             bookmarkModeToggleButton.setSelected(followsJumpIn);
+        }
+        final boolean filters = displayState.getFilter() != null;
+		if (quickFilterButton.isSelected() != filters) {
+			quickFilterButton.setSelected(filters);
         }
     }
 
