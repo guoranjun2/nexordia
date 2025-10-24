@@ -334,7 +334,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 				visible = true;
 			}
 			if (!visible) {
-				ensureSelectionVisibleTop();
+				ensureSelectionVisible();
 			}
 		}
 		else if (isSelectionDrivenBreadcrumbMode()) {
@@ -766,7 +766,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         visibleNodes.updateVisibleNodes();
         blockPanel.removeAll();
         blockCache.clear();
-        ensureSelectionVisibleTop();
+        ensureSelectionVisible();
     }
 
     void updateVisibleBlocksAndBreadcrumb() {
@@ -790,7 +790,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         focusManager.restoreFocusIfNeeded(prevInOutline);
     }
 
-    void ensureSelectionVisibleTop() {
+    void ensureSelectionVisible() {
         if (viewport == null) return;
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         int selectedIndex = selected != null ? visibleNodes.findNodeIndexInVisibleList(selected) : -1;
