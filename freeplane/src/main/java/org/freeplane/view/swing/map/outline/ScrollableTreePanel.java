@@ -834,11 +834,21 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             targetFirst = first;
         }
         else if(scrollMode == ScrollMode.SIBLINGS && selected.getParent() != null) {
-        	TreeNode firstSibling = selected.getParent().getChildren().get(0);
+        	List<TreeNode> children = selected.getParent().getChildren();
+			TreeNode firstSibling = children.get(0);
         	int firstIndex = visibleNodes.findNodeIndexInVisibleList(firstSibling);
 			int br = getBreadcrumbRowsForIndex(firstIndex);
             int cr = getContentRowsForBreadcrumbRows(br);
-            targetFirst = Math.max(firstIndex, selectedIndex - cr/2);
+            int siblingsCount = children.size();
+            if(siblingsCount <= cr)
+            	targetFirst = firstIndex;
+			else {
+				int endIndex = firstIndex + siblingsCount;
+				if(endIndex - selectedIndex <= cr/2)
+					targetFirst = endIndex - cr;
+				else
+					targetFirst = Math.max(firstIndex, selectedIndex - cr/2);
+			}
             TreeNode firstVisible = visibleNodes.getNodeAtVisibleIndex(targetFirst);
 			outlineSelection.setRequiredVisibleNode(firstVisible);
 			visibleNodes.setBlockPanelY(calculateBlockPanelY());
