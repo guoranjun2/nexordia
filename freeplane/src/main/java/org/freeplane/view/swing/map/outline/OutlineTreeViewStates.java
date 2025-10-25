@@ -3,17 +3,23 @@ package org.freeplane.view.swing.map.outline;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.filter.Filter;
 
 class OutlineTreeViewStates {
-    private OutlineDisplayMode currentMode;
+    static final String OUTLINE_DISPLAY_MODE_SYNC_PROPERTY = "outline.displayMode";
+	private OutlineDisplayMode currentMode;
     private boolean followsJumpIn;
     private Filter filter;
     private final EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode;
 
     OutlineTreeViewStates() {
-        this(OutlineDisplayMode.MAP_VIEW, true, null, new EnumMap<>(OutlineDisplayMode.class));
+        this(defaultMode(), true, null, new EnumMap<>(OutlineDisplayMode.class));
     }
+
+	private static OutlineDisplayMode defaultMode() {
+		return ResourceController.getResourceController().getBooleanProperty(OUTLINE_DISPLAY_MODE_SYNC_PROPERTY, false) ? OutlineDisplayMode.MAP_VIEW_SYNC : OutlineDisplayMode.MAP_VIEW;
+	}
 
     OutlineTreeViewStates(OutlineDisplayMode currentMode,  boolean followsJumpIn, Filter filter, EnumMap<OutlineDisplayMode, OutlineTreeViewState> viewStatesByMode) {
         this.followsJumpIn = followsJumpIn;
@@ -78,7 +84,6 @@ class OutlineTreeViewStates {
 
     void loadFromMap(Map<?, ?> storedStates) {
         viewStatesByMode.clear();
-        currentMode = OutlineDisplayMode.MAP_VIEW;
         if (storedStates == null) {
             return;
         }
@@ -89,19 +94,4 @@ class OutlineTreeViewStates {
         }
     }
 
-    void restoreFrom(Object storedState) {
-        viewStatesByMode.clear();
-        currentMode = OutlineDisplayMode.MAP_VIEW;
-        if (storedState instanceof OutlineTreeViewStates) {
-            loadFrom((OutlineTreeViewStates) storedState);
-            return;
-        }
-        if (storedState instanceof Map<?, ?>) {
-            loadFromMap((Map<?, ?>) storedState);
-            return;
-        }
-        if (storedState instanceof OutlineTreeViewState) {
-            viewStatesByMode.put(currentMode, (OutlineTreeViewState) storedState);
-        }
-    }
 }

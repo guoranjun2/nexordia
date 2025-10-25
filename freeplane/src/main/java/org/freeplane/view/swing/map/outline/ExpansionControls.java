@@ -2,6 +2,8 @@ package org.freeplane.view.swing.map.outline;
 
 import javax.swing.SwingUtilities;
 
+import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
+
 class ExpansionControls {
     private final ScrollableTreePanel treePanel;
 	private final OutlineSelection outlineSelection;
@@ -53,7 +55,7 @@ class ExpansionControls {
 
     private void refreshAfterExpansionChange() {
     	final boolean wasFocused = treePanel.isNodeButtonFocused();
-    	treePanel.updateVisibleNodes();
+    	treePanel.updateVisibleNodes(ScrollMode.SINGLE_ITEM);
     	SwingUtilities.invokeLater(() -> {
     		if(wasFocused)
     			treePanel.focusSelectionButtonLater(true);

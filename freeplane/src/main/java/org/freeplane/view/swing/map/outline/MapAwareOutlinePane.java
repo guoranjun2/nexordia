@@ -33,6 +33,7 @@ import org.freeplane.features.ui.FocusOutlineAction;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
 
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
 	private static final long serialVersionUID = 1L;
@@ -226,7 +227,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     		if (builder.getApplicableState() != null) {
     			panel = getTreePanel();
     			builder.getApplicableState().applyTo(panel.getRoot());
-    			panel.updateVisibleNodes();
+    			panel.updateVisibleNodes(displayMode == OutlineDisplayMode.MAP_VIEW_SYNC ? ScrollMode.SIBLINGS : ScrollMode.SINGLE_ITEM);
     		}
 
     		try {
@@ -254,7 +255,6 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         currentMapView = null;
         currentRoot = NO_MAP_AVAILABLE;
         bookmarkFilterCache.reset();
-        displayState.setCurrentMode(OutlineDisplayMode.MAP_VIEW);
         displayState.putViewState(null);
         setRootNode(OutlineDisplayMode.DEFAULT, currentRoot);
         getTreePanel().setBackgroundColorSupplier(null);
@@ -391,6 +391,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         configureModeToggleButton(bookmarkModeToggleButton, OutlineDisplayMode.BOOKMARK);
         toolbar.add(bookmarkModeToggleButton, 0);
 		syncModeToggleButton = new JToggleButton(SYNC_ICON);
+		syncModeToggleButton.setSelected(displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW_SYNC);
 		TranslatedElementFactory.createTooltip(syncModeToggleButton, "outline.followSelection");
 		configureModeToggleButton(syncModeToggleButton, OutlineDisplayMode.MAP_VIEW_SYNC);
         toolbar.add(syncModeToggleButton, 1);
@@ -408,10 +409,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	private void configureModeToggleButton(JToggleButton toggleButton, OutlineDisplayMode mode) {
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(e -> {
-            OutlineDisplayMode targetMode = toggleButton.isSelected()
+            boolean isSelected = toggleButton.isSelected();
+			OutlineDisplayMode targetMode = isSelected
                     ? mode
                     : OutlineDisplayMode.MAP_VIEW;
             setOutlineDisplayMode(targetMode, displayState.getFilter(), displayState.followsJumpIn());
+            if(mode == OutlineDisplayMode.MAP_VIEW_SYNC) {
+            	ResourceController.getResourceController().setProperty(OutlineTreeViewStates.OUTLINE_DISPLAY_MODE_SYNC_PROPERTY, isSelected);
+            }
         });
     }
 	private void configureJumpinToggleButton(JToggleButton toggleButton) {
@@ -511,8 +516,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             return null;
         }
         try {
-            Object property = mapView.getClientProperty(OUTLINE_STATE_KEY);
-            displayState.restoreFrom(property);
+            OutlineTreeViewStates property = (OutlineTreeViewStates) mapView.getClientProperty(OUTLINE_STATE_KEY);
+            displayState.loadFrom(property);
         } catch (Exception ignore) {}
         syncToggleWithMode();
         return displayState.getViewState();
