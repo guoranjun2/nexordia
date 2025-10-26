@@ -12,16 +12,11 @@ class OutlineFocusManager {
     private final ScrollableTreePanel panel;
     private final BreadcrumbPanel breadcrumbPanel;
     private final OutlineSelection outlineSelection;
-    private OutlineSelectionBridge selectionBridge;
 
     OutlineFocusManager(ScrollableTreePanel panel, BreadcrumbPanel breadcrumbPanel, OutlineSelection outlineSelection) {
         this.panel = panel;
         this.breadcrumbPanel = breadcrumbPanel;
         this.outlineSelection = outlineSelection;
-    }
-
-    void setSelectionBridge(OutlineSelectionBridge bridge) {
-        this.selectionBridge = bridge;
     }
 
     boolean isWithinOutline(Component c) {

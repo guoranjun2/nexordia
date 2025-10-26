@@ -90,7 +90,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         this.visibleBlockRenderer = new VisibleBlockRenderer(blockLayout, blockCache, blockPanel, visibleNodes,
                 navButtons, focusManager, this::getWidth,
                 this::updatePreferredSize, this::refreshUI, this::updateFirstVisibleNodeId,
-                this::isNodeInBreadcrumbArea, blockSize);
+                this::isNodeInBreadcrumbArea);
 
         this.breadcrumbLayout = new BreadcrumbLayout(breadcrumbPanel, visibleNodes, navButtons,
                 outlineSelection, this::isSelectionDrivenBreadcrumbMode, this::isNodeInBreadcrumbArea,
@@ -416,7 +416,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     void setSelectionBridge(OutlineSelectionBridge bridge) {
         this.selectionBridge = bridge;
         breadcrumbPanel.setSelectionBridge(bridge);
-        focusManager.setSelectionBridge(bridge);
         breadcrumbLayout.setSelectionBridge(bridge);
     }
 

@@ -20,7 +20,6 @@ final class VisibleBlockRenderer {
     private final Runnable refreshUI;
     private final Runnable updateFirstVisibleNodeId;
     private final Predicate<TreeNode> isInBreadcrumbArea;
-    private final int blockSize;
     private OutlineVisibleBlockRange lastVisibleRange;
 
     VisibleBlockRenderer(OutlineBlockLayout blockLayout,
@@ -33,8 +32,7 @@ final class VisibleBlockRenderer {
                          Runnable updatePreferredSize,
                          Runnable refreshUI,
                          Runnable updateFirstVisibleNodeId,
-                         Predicate<TreeNode> isInBreadcrumbArea,
-                         int blockSize) {
+                         Predicate<TreeNode> isInBreadcrumbArea) {
         this.blockLayout = blockLayout;
         this.blockCache = blockCache;
         this.blockPanel = blockPanel;
@@ -46,7 +44,6 @@ final class VisibleBlockRenderer {
         this.refreshUI = refreshUI;
         this.updateFirstVisibleNodeId = updateFirstVisibleNodeId;
         this.isInBreadcrumbArea = isInBreadcrumbArea;
-        this.blockSize = blockSize;
     }
 
     void setViewport(OutlineViewport viewport) {

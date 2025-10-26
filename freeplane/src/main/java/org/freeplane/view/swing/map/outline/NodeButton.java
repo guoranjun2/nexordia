@@ -179,7 +179,8 @@ class NodeButton extends JButton {
                 DnDConstants.ACTION_COPY | DnDConstants.ACTION_MOVE | DnDConstants.ACTION_LINK,
                 new OutlineNodeDragGestureListener(this));
 
-        new DropTarget(this,
+        @SuppressWarnings("unused")
+		DropTarget dropTarget = new DropTarget(this,
                 DnDConstants.ACTION_COPY | DnDConstants.ACTION_MOVE | DnDConstants.ACTION_LINK,
                 new OutlineNodeDropTargetListener());
     }
