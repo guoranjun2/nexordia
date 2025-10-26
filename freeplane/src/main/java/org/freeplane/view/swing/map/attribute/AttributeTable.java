@@ -242,6 +242,7 @@ class AttributeTable extends JTable implements IColumnWidthChangeListener {
 	private static final Set<String> editingActions = Stream.of((String)TransferHandler.getCopyAction().getValue(Action.NAME),
 		(String)TransferHandler.getPasteAction().getValue(Action.NAME), (String)TransferHandler.getCutAction().getValue(Action.NAME))
 			.collect(Collectors.toSet());
+	private static final int BORDER_THICKNESS = 1;
 
 	AttributeTable(final AttributeView attributeView) {
 		super();
@@ -669,8 +670,10 @@ class AttributeTable extends JTable implements IColumnWidthChangeListener {
 			final MapView map = nodeView.getMap();
 			final ModeController modeController = map.getModeController();
 			final NodeStyleController nsc = NodeStyleController.getController(modeController);
-			dimension.width = Math.min(map.getZoomed(nsc.getMaxWidth(nodeView.getNode(), nodeView.getStyleOption()).toBaseUnits()), dimension.width);
-			dimension.height = Math.min(map.getZoomed(AttributeTable.MAX_HEIGHT) - getTableHeaderHeight(), dimension.height);
+			int maxNodeWidth = map.getZoomed(nsc.getMaxWidth(nodeView.getNode(), nodeView.getStyleOption()).toBaseUnits());
+			dimension.width = Math.min(Math.max(0, maxNodeWidth - 2 * BORDER_THICKNESS), dimension.width);
+			int maxTableHeight = map.getZoomed(AttributeTable.MAX_HEIGHT) - getTableHeaderHeight();
+			dimension.height = Math.min(Math.max(0, maxTableHeight - 2 * BORDER_THICKNESS), dimension.height);
 		}
 		else{
 //			dimension.width = Math.min(MAX_WIDTH, dimension.width);
@@ -1044,7 +1047,7 @@ class AttributeTable extends JTable implements IColumnWidthChangeListener {
 		this.gridColor = gridColor;
 		if(gridColor != null) {
 			if(! gridColor.equals(getGridColor())) {
-				final Border border = BorderFactory.createLineBorder(gridColor);
+				final Border border = BorderFactory.createLineBorder(gridColor, BORDER_THICKNESS);
 				final JComponent parent = (JComponent) getParent();
 				if(parent instanceof JViewport) {
 					JScrollPane scrollPane = (JScrollPane) SwingUtilities.getAncestorOfClass(JScrollPane.class, parent);
