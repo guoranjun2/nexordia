@@ -17,34 +17,34 @@ class OutlineActions {
     private final OutlineActionTargetProvider provider;
 
     final Action navigateUp = new AbstractAction("Navigate Up") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().navigateUp(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigateUp(); }
     };
     final Action navigateDown = new AbstractAction("Navigate Down") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().navigateDown(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigateDown(); }
     };
     final Action navigatePageUp = new AbstractAction("Page Up") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().navigatePageUp(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigatePageUp(); }
     };
     final Action navigatePageDown = new AbstractAction("Page Down") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().navigatePageDown(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigatePageDown(); }
     };
     final Action goParent = new AbstractAction("Go to Parent") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().goToParent(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().goToParent(); }
     };
     final Action goChild = new AbstractAction("Go to First Child") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().goToChild(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().goToChild(); }
     };
     final Action reduceExpansion = new AbstractAction("Reduce Expansion") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().reduceSelectedExpansion(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().reduceSelectedExpansion(); }
     };
     final Action expandMore = new AbstractAction("Expand More") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().expandSelectedMore(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().expandSelectedMore(); }
     };
     final Action toggleExpand = new AbstractAction("Toggle Expand/Collapse") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().toggleExpandSelected(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().toggleExpandSelected(); }
     };
     final Action selectInMap = new AbstractAction("Select in Map") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getTarget().selectSelectedInMap(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().selectSelectedInMap(); }
     };
     final Action openPreferences = new AbstractAction("Preferences") {
         @Override public void actionPerformed(ActionEvent e) {

@@ -159,7 +159,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
     }
 
     @Override
-    public OutlineActionTarget getTarget() { return controller; }
+    public OutlineController getController() { return controller; }
 
     private void setupScrollListeners() {
         final Timer scrollDebounceTimer = new Timer(SCROLL_INACTIVITY_DELAY_MS, e2 -> treePanel.updateVisibleBlocksAndBreadcrumb());

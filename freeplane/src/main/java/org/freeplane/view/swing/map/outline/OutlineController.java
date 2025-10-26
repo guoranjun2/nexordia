@@ -64,6 +64,10 @@ class OutlineController implements OutlineActionTarget {
         return treePanel.getVisibleNodes().getHoveredNode();
     }
 
+    void resetHoveredNode() {
+        treePanel.getVisibleNodes().setHoveredNode(null);
+    }
+
     boolean isHoveredNodeContainedInBreadcrumb() {
         return treePanel.getVisibleNodes().isHoveredNodeContainedInBreadcrumb();
     }
