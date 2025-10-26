@@ -14,7 +14,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.freeplane.core.extension.IExtension;
-import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
@@ -30,7 +29,6 @@ public class MapBookmarks implements IExtension {
 		MapBookmarks bookmarks = map.getExtension(MapBookmarks.class);
 		if(bookmarks == null) {
 			bookmarks = new MapBookmarks(map);
-			bookmarks.add(map.getRootNode().getID(), new NodeBookmarkDescriptor(TextUtils.getRawText("AutomaticLayout.level.root"), true));
 			map.addExtension(bookmarks);
 		}
 		return bookmarks;
