@@ -455,14 +455,12 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     private void setQuickFilter(boolean enable) {
-        Filter filter;
+        final Filter filter;
         if(enable) {
-            final ASelectableCondition condition = FilterController.getCurrentFilterController().getQuickEditor().getCondition();
-            if(condition == null) {
-                filter = null;
+            FilterController filterController = FilterController.getCurrentFilterController();
+            filter = filterController.createQuickFilter(null);
+            if(filter == null) {
                 quickFilterButton.setSelected(false);
-            } else {
-                filter = Filter.createFilter(condition, true, false, false, null);
             }
         }
         else

@@ -457,7 +457,9 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 	    try {
 	        quickFilterAction.setSelected(isFilterActive());
 	        final ASelectableCondition selectedCondition = getSelectedCondition();
-	        final Filter filter = createFilter(selectedCondition);
+			IMapSelection selection = Controller.getCurrentController().getSelection();
+	        final Filter baseFilter = selection != null ? selection.getFilter() : null;
+	        final Filter filter = createFilter(selectedCondition, baseFilter);
 	        final ICondition condition = condition(filter);
 	        if(condition != selectedCondition && condition instanceof ASelectableCondition)
 	            getFilterConditions().setSelectedItem(condition);
@@ -573,7 +575,12 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 		}
 	}
 
-	private Filter createFilter(final ASelectableCondition selectedCondition) {
+	public Filter createQuickFilter(Filter baseFilter) {
+		ASelectableCondition condition = quickEditor.getCondition();
+		return condition == null ? null : createFilter(condition, baseFilter);
+	}
+
+	private Filter createFilter(final ASelectableCondition selectedCondition, Filter baseFilter) {
 
 		final ASelectableCondition filterCondition;
 		if (selectedCondition == null || selectedCondition.equals(NO_FILTERING)) {
@@ -585,8 +592,6 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 		else {
 			filterCondition = selectedCondition;
 		}
-		IMapSelection selection = Controller.getCurrentController().getSelection();
-        final Filter baseFilter = selection != null ? selection.getFilter() : null;
         final Filter filter = new Filter(filterCondition, hideMatchingNodes.isSelected(), showAncestors.isSelected(), showDescendants
 		    .isSelected(), applyToVisibleElementsOnly.isSelected(),
 		    filteredElement, baseFilter);
