@@ -1079,20 +1079,6 @@ public class NodeView extends JComponent implements INodeView {
 	    return NodeViewFactory.getInstance().newNodeView(newNode, map, this, index);
 	}
 
-	void onFilterResultUpdate(NodeModel node) {
-	    NodeView nodeView = map.getNodeView(node);
-	    if(nodeView != null) {
-            nodeView.revalidate();
-            nodeView.repaint();
-            if(nodeView.isSelected() && ! nodeView.isContentVisible()) {
-                map.deselect(nodeView);
-                NodeView ancestorWithVisibleContent = nodeView.getAncestorWithVisibleContent();
-                map.addSelected(ancestorWithVisibleContent, true);
-            }
-        }
-
-	}
-
 	/* fc, 25.1.2004: Refactoring necessary: should call the model. */
 	public boolean isChildOf(final NodeView myNodeView) {
 		return getParentView() == myNodeView;
@@ -1167,15 +1153,13 @@ public class NodeView extends JComponent implements INodeView {
     void updateFilterResults(NodeModel node) {
         if(! map.isSelected()) {
             Filter filter = map.getFilter();
-            filter.updateFilterResults(node, this::onFilterResultUpdate);
+            filter.updateFilterResults(node, map::onFilterResultUpdate);
             if (map.synchronizesSelectionAcrossVisibleViews())
                 map.synchronizeSelection();
         }
     }
 
     private void updateChangedNode(final NodeChangeEvent event) {
-
-
 		final Object property = event.getProperty();
 		if (property == NodeChangeType.FOLDING || property == Properties.HIDDEN_CHILDREN || property == EncryptionModel.class) {
 			if(map.isSelected() || property == EncryptionModel.class && ! isFolded()){

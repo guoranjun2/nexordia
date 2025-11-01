@@ -3425,4 +3425,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	static public boolean showsTagsOnMinimizedNodes() {
 		return showsTagsOnMinimizedNodes;
 	}
+
+	void onFilterResultUpdate(NodeModel node) {
+	    NodeView nodeView = getNodeView(node);
+	    if(nodeView != null) {
+            nodeView.revalidate();
+            nodeView.repaint();
+            if(nodeView.isSelected() && ! nodeView.isContentVisible()) {
+                deselect(nodeView);
+                NodeView ancestorWithVisibleContent = nodeView.getAncestorWithVisibleContent();
+                addSelected(ancestorWithVisibleContent, true);
+            }
+        }
+
+	}
+
 }
