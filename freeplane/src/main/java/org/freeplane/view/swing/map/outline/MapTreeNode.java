@@ -59,7 +59,7 @@ class MapTreeNode extends TreeNode implements INodeView {
     	if (event.getNode() == nodeModel) {
     		update();
     		SwingUtilities.invokeLater(() -> {
-    			outlinePane.updateNodeTitle(this);
+    			outlinePane.updateNodeTitleLater(this);
     		});
     	}
     }

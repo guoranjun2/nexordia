@@ -10,7 +10,7 @@ import org.freeplane.view.swing.map.MapView;
 
 class NodeTreeBuilder {
     private final MapView mapView;
-    private final OutlinePane pane;
+    private final MapAwareOutlinePane pane;
     private final OutlineTreeViewState saved;
 
     private NodeModel rootModel;
@@ -21,7 +21,7 @@ class NodeTreeBuilder {
     private TreeNode root;
     private OutlineTreeViewState applicableState;
 
-    NodeTreeBuilder(MapView mapView, OutlinePane pane, OutlineTreeViewState saved) {
+    NodeTreeBuilder(MapView mapView, MapAwareOutlinePane pane, OutlineTreeViewState saved) {
         this.mapView = mapView;
         this.pane = pane;
         this.saved = saved;
@@ -84,7 +84,7 @@ class NodeTreeBuilder {
 
     private void visitChildren(NodeModel model, MapTreeNode parentOut) {
         for (NodeModel child : model.getChildren()) {
-            boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisibleOrAncestor(child));
+            boolean visible = !(SummaryNode.isSummaryNode(child) || SummaryNode.isFirstGroupNode(child)) && (filter == null || filter.isVisible(child));
             MapTreeNode nextParent = parentOut;
             if (visible) {
                 MapTreeNode out = new MapTreeNode(parentOut, child);

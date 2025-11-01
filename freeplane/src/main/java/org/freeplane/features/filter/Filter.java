@@ -232,13 +232,6 @@ public class Filter implements IExtension {
 				|| accepts(node);
 	}
 
-	public boolean isVisibleOrAncestor(final NodeModel node) {
-		return filteredElement == FilteredElement.CONNECTOR && ! NodeVisibility.isHidden(node)
-				|| accepts(node, hidesMatchingElements
-                		? (options | FilterInfo.SHOW_AS_HIDDEN_ANCESTOR)
-                		: (options | FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
-	}
-
 	public boolean isVisible(final ConnectorModel connector) {
 	    return filteredElement == FilteredElement.NODE
 	            || accepts(connector.getSource())
@@ -307,9 +300,12 @@ public class Filter implements IExtension {
     public void updateFilterResults(NodeModel node, FilterUpdateListener callbackOnUpdate) {
         if(condition == null)
             return;
+        boolean wasVisible = isVisible(node);
         boolean matches = checkNode(node);
         FilterInfo filterInfo = getFilterInfo(node);
         filterInfo.set(matches ? FilterInfo.MATCHES : FilterInfo.NO_MATCH);
+        if(wasVisible != isVisible(node))
+        	callbackOnUpdate.onFilterResultUpdate(this, node);
         updateFilterResultsAndAncestors(node, callbackOnUpdate);
         updateDescendantResults(node, matches ? FilterInfo.HAS_MATCHED_ANCESTOR : FilterInfo.HAS_HIDDEN_ANCESTOR, callbackOnUpdate);
     }
@@ -339,7 +335,7 @@ public class Filter implements IExtension {
             }
             filterInfo.set(ancestorState | ownState | descendantState);
             if(wasVisible != isVisible(node))
-                callbackOnUpdate.onFilterResultUpdate(node);
+                callbackOnUpdate.onFilterResultUpdate(this, node);
         }
         if(parentNode != null)
             updateFilterResultsAndAncestors(parentNode, callbackOnUpdate);
@@ -358,7 +354,7 @@ public class Filter implements IExtension {
             boolean wasVisible = isVisible(child);
             if(childInfo.add(options))
                 if(wasVisible != isVisible(child))
-                    callbackOnUpdate.onFilterResultUpdate(child);
+                    callbackOnUpdate.onFilterResultUpdate(this, child);
                 updateDescendantResults(child, options, callbackOnUpdate);
         }
     }

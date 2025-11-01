@@ -9,5 +9,5 @@ import org.freeplane.features.map.NodeModel;
 
 @FunctionalInterface
 public interface FilterUpdateListener {
-	void onFilterResultUpdate(NodeModel node);
+	void onFilterResultUpdate(Filter filter, NodeModel node);
 }

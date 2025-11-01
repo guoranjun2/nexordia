@@ -110,11 +110,15 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
         return treePanel;
     }
 
-    void updateNodeTitle(TreeNode node) {
+    void updateNodeTitleLater(TreeNode node) {
         SwingUtilities.invokeLater(() -> {
-            treePanel.updateNodeTitle(node);
+            updateNodeTitle(node);
         });
     }
+
+	void updateNodeTitle(TreeNode node) {
+		treePanel.updateNodeTitle(node);
+	}
 
     void rebuildFromNode(TreeNode node) {
     	treePanel.rebuildFromNode(node);

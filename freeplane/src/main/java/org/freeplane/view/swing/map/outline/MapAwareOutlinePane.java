@@ -21,12 +21,17 @@ import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
+import org.freeplane.features.filter.FilterUpdateListener;
 import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
+import org.freeplane.features.map.INodeChangeListener;
 import org.freeplane.features.map.MapChangeEvent;
+import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeChangeEvent;
+import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FocusOutlineAction;
@@ -35,13 +40,13 @@ import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
 
-public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener {
-	private static final long serialVersionUID = 1L;
-	private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
-	private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
-	private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/syncJumpIn.svg?useAccentColor=true");
-	private static final Icon QUICK_FILTER_ICON = ResourceController.getResourceController().getIcon("/images/apply_quick_filter.svg?useAccentColor=true");
-	private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
+public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener, INodeChangeListener {
+    private static final long serialVersionUID = 1L;
+    private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
+    private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
+    private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/syncJumpIn.svg?useAccentColor=true");
+    private static final Icon QUICK_FILTER_ICON = ResourceController.getResourceController().getIcon("/images/apply_quick_filter.svg?useAccentColor=true");
+    private static final TreeNode NO_MAP_AVAILABLE = new TreeNode("empty", () -> TextUtils.getText("no_open_map"));
 
     private static final String OUTLINE_STATE_KEY = "freeplane.outline.state";
 
@@ -54,11 +59,11 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private JToggleButton jumpInToggleButton;
     private JToggleButton quickFilterButton;
 
-	MapView getCurrentMapView() {
-		return currentMapView;
-	}
+    MapView getCurrentMapView() {
+        return currentMapView;
+    }
 
-	private final OutlineSelectedNodeUpdater selectedNodeUpdater;
+    private final OutlineSelectedNodeUpdater selectedNodeUpdater;
     private PropertyChangeListener focusListener;
 
 
@@ -72,35 +77,36 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     }
 
     void synchronizeOutlineSelection(SelectionSynchronizationTrigger synchronizationTrigger, boolean requestFocus) {
-    	final NodeModel node = currentMapView.getSelected().getNode();
-    	final ScrollableTreePanel panel = getTreePanel();
+        final NodeModel node = currentMapView.getSelected().getNode();
+        final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findOutlineNode(node);
         if(target != null)
-        	panel.synchronizeOutlineSelection(target, synchronizationTrigger, requestFocus);
+            panel.synchronizeOutlineSelection(target, synchronizationTrigger, requestFocus);
     }
 
-	private TreeNode findOutlineNode(NodeModel node) {
-    	if(node == null)
-    		return null;
+    private TreeNode findOutlineNode(NodeModel node) {
+        if(node == null)
+            return null;
 
-    	TreeNode outlineNode = node.getViewers().stream()
-    	    	.filter(MapTreeNode.class::isInstance)
-    	    	.map(MapTreeNode.class::cast)
-    	    	.filter(mapNode -> mapNode.isContainedIn(this))
-    	    	.findAny()
-    	    	.orElse(null);
+        TreeNode outlineNode = node.getViewers().stream()
+                .filter(MapTreeNode.class::isInstance)
+                .map(MapTreeNode.class::cast)
+                .filter(mapNode -> mapNode.isContainedIn(this))
+                .findAny()
+                .orElse(null);
 
-    	if(outlineNode == null)
-    		return findOutlineNode(node.getParentNode());
-    	return outlineNode;
+        if(outlineNode == null)
+            return findOutlineNode(node.getParentNode());
+        return outlineNode;
     }
 
     public MapAwareOutlinePane() {
-    	super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);
-    	selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
-    	displayState = new OutlineTreeViewStates();
-    	bookmarkFilterCache = new FilterCache();
-    	configureToolbar(toolbar);
+        super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);
+        this.filterUpdateListener = this::onFilterResultUpdate;
+        selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
+        displayState = new OutlineTreeViewStates();
+        bookmarkFilterCache = new FilterCache();
+        configureToolbar(toolbar);
     }
 
 
@@ -126,7 +132,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     @Override
     public void removeNotify() {
-    	super.removeNotify();
+        super.removeNotify();
         Controller.getCurrentController().getMapViewManager().removeMapViewChangeListener(this);
         removeMapListeners();
         cleanupCurrentTree();
@@ -141,15 +147,17 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         if (view instanceof MapView) {
             Window myWindow = SwingUtilities.getWindowAncestor(this);
             if (SwingUtilities.getWindowAncestor(view) == myWindow) {
-		        final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
-				final boolean requestFocus = focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, this);
+                final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
+                final boolean requestFocus = focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, this);
                 updateTreeFromMap((MapView) view);
-				synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, requestFocus);
+                synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, requestFocus);
             }
         }
     }
 
     private boolean refreshScheduled;
+    private final FilterUpdateListener filterUpdateListener;
+    private boolean isFilterResultUpdateScheduled;
 
     private void refreshOutlineLater() {
         if (refreshScheduled) {
@@ -164,14 +172,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             showNoMapState();
         }
         else {
-        	updateTreeFromMap(currentMapView);
+            updateTreeFromMap(currentMapView);
         }
         refreshScheduled = false;
     }
 
 
     private void updateTreeFromMap(MapView mapView) {
-    	updateTreeFromMap(mapView, true);
+        updateTreeFromMap(mapView, true);
     }
     private void updateTreeFromMap(MapView mapView, boolean captureState) {
         try {
@@ -183,12 +191,16 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
             cleanupCurrentTree();
 
-            currentMapView = mapView;
+            if(currentMapView != mapView) {
+                detachCurrentMapView();
+                currentMapView = mapView;
+                mapView.setFilterUpdateListener(filterUpdateListener);
+            }
             OutlineTreeViewState saved = loadSavedViewState(currentMapView);
             NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, saved);
             final OutlineDisplayMode displayMode = displayState.getCurrentMode();
-			final MapModel map = mapView.getMap();
-			if (displayMode == OutlineDisplayMode.BOOKMARK) {
+            final MapModel map = mapView.getMap();
+            if (displayMode == OutlineDisplayMode.BOOKMARK) {
                 Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
                         () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
                 builder.withRootModel(map.getRootNode());
@@ -196,43 +208,43 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                     builder.withFilter(bookmarkFilter);
                 }
             } else {
-				if(! displayState.followsJumpIn())
-					builder.withRootModel(map.getRootNode());
-				final Filter filter = displayState.getFilter();
-				if(filter != null) {
-					filter.calculateFilterResults(map);
-					builder.withFilter(filter);
-				}
-			}
+                if(! displayState.followsJumpIn())
+                    builder.withRootModel(map.getRootNode());
+                final Filter filter = displayState.getFilter();
+                if(filter != null) {
+                    filter.calculateFilterResults(map);
+                    builder.withFilter(filter);
+                }
+            }
             builder.build();
             currentRoot = builder.getRoot();
 
             if(displayMode != OutlineDisplayMode.BOOKMARK) {
-            	final int minimalLevel = displayMode.getMinimalOutlineLevel();
-            	if (builder.getApplicableState() == null || currentRoot.getExpansionLevel() < minimalLevel) {
-            		final int initialLevel = displayMode.getInitialOutlineLevel();
-            		currentRoot.applyExpansionLevel(Math.max(initialLevel, minimalLevel));
-            	}
+                final int minimalLevel = displayMode.getMinimalOutlineLevel();
+                if (builder.getApplicableState() == null || currentRoot.getExpansionLevel() < minimalLevel) {
+                    final int initialLevel = displayMode.getInitialOutlineLevel();
+                    currentRoot.applyExpansionLevel(Math.max(initialLevel, minimalLevel));
+                }
             }
             else if(currentRoot.getExpansionLevel() < 10000) {
-            	currentRoot.applyExpansionLevel(10000);
+                currentRoot.applyExpansionLevel(10000);
             }
-    		setRootNode(displayMode, currentRoot);
-    		ScrollableTreePanel panel = getTreePanel();
-    		panel.setBackgroundColorSupplier(this::getBackgroundColor);
-    		panel.setSelectionBridge(new OutlineSelectionBridge(this));
-    		try {
-    			addMapChangeListeners();
-    		} catch (Exception ignore) {}
-    		if (builder.getApplicableState() != null) {
-    			panel = getTreePanel();
-    			builder.getApplicableState().applyTo(panel.getRoot());
-    			panel.updateVisibleNodes(displayMode == OutlineDisplayMode.MAP_VIEW_SYNC ? ScrollMode.SIBLINGS : ScrollMode.SINGLE_ITEM);
-    		}
+            setRootNode(displayMode, currentRoot);
+            ScrollableTreePanel panel = getTreePanel();
+            panel.setBackgroundColorSupplier(this::getBackgroundColor);
+            panel.setSelectionBridge(new OutlineSelectionBridge(this));
+            try {
+                addMapChangeListeners();
+            } catch (Exception ignore) {}
+            if (builder.getApplicableState() != null) {
+                panel = getTreePanel();
+                builder.getApplicableState().applyTo(panel.getRoot());
+                panel.updateVisibleNodes(displayMode == OutlineDisplayMode.MAP_VIEW_SYNC ? ScrollMode.SIBLINGS : ScrollMode.SINGLE_ITEM);
+            }
 
-    		try {
-    			synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
-    		} catch (Exception ignore) {}
+            try {
+                synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
+            } catch (Exception ignore) {}
 
         } catch (Exception e) {
             System.err.println("Failed to update tree from map: " + e.getMessage());
@@ -243,16 +255,18 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 
-	private void addMapChangeListeners() {
-		currentMapView.getMap().addMapChangeListener(this);
-		currentMapView.getModeController().getMapController().addNodeSelectionListener(selectedNodeUpdater);
+    private void addMapChangeListeners() {
+        currentMapView.getMap().addMapChangeListener(this);
+        MapController mapController = currentMapView.getModeController().getMapController();
+		mapController.addNodeSelectionListener(selectedNodeUpdater);
+		mapController.addNodeChangeListener(this);
         installFocusListener();
-	}
+    }
 
     private void showNoMapState() {
         cleanupCurrentTree();
         removeMapListeners();
-        currentMapView = null;
+        detachCurrentMapView();
         currentRoot = NO_MAP_AVAILABLE;
         bookmarkFilterCache.reset();
         displayState.putViewState(null);
@@ -262,15 +276,17 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 
-	private void removeMapListeners() {
-		if (currentMapView != null) {
+    private void removeMapListeners() {
+        if (currentMapView != null) {
             try {
                 currentMapView.getMap().removeMapChangeListener(this);
-                currentMapView.getModeController().getMapController().removeNodeSelectionListener(selectedNodeUpdater);
+                MapController mapController = currentMapView.getModeController().getMapController();
+				mapController.removeNodeSelectionListener(selectedNodeUpdater);
+				mapController.removeNodeChangeListener(this);
                 uninstallFocusListener();
             } catch (Exception ignore) {}
         }
-	}
+    }
 
     private void installFocusListener() {
         uninstallFocusListener();
@@ -280,7 +296,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             String action = String.valueOf(nv);
             currentMapView.putClientProperty(FocusOutlineAction.OUTLINE_FOCUS_PROPERTY, null);
             if ("back".equals(action)) {
-            	currentMapView.getSelected().getMainView().requestFocusInWindow();
+                currentMapView.getSelected().getMainView().requestFocusInWindow();
                 return;
             }
             ScrollableTreePanel panel = getTreePanel();
@@ -338,17 +354,24 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     public void afterWindowLastSelectedMapViewChanged(Window window, Component newView) {
         Window myWindow = SwingUtilities.getWindowAncestor(this);
         if (myWindow == window && newView != currentMapView && newView instanceof MapView) {
-		    updateTreeFromMap((MapView) newView);
-		    synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
-		}
+            updateTreeFromMap((MapView) newView);
+            synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
+        }
     }
 
     @Override
     public void afterWindowLastSelectedMapViewRemoved(Window window) {
         Window myWindow = SwingUtilities.getWindowAncestor(this);
         if (myWindow == window) {
-            currentMapView = null;
+            detachCurrentMapView();
             showNoMapState();
+        }
+    }
+
+    private void detachCurrentMapView() {
+        if(currentMapView != null) {
+            currentMapView.removeFilterUpdateListener(filterUpdateListener);
+            currentMapView = null;
         }
     }
 
@@ -385,15 +408,15 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
 
-	private void configureToolbar(FreeplaneToolBar toolbar) {
-		bookmarkModeToggleButton = new JToggleButton(BOOKMARK_ICON);
-		TranslatedElementFactory.createTooltip(bookmarkModeToggleButton, "outline.showBookmarks");
+    private void configureToolbar(FreeplaneToolBar toolbar) {
+        bookmarkModeToggleButton = new JToggleButton(BOOKMARK_ICON);
+        TranslatedElementFactory.createTooltip(bookmarkModeToggleButton, "outline.showBookmarks");
         configureModeToggleButton(bookmarkModeToggleButton, OutlineDisplayMode.BOOKMARK);
         toolbar.add(bookmarkModeToggleButton, 0);
-		syncModeToggleButton = new JToggleButton(SYNC_ICON);
-		syncModeToggleButton.setSelected(displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW_SYNC);
-		TranslatedElementFactory.createTooltip(syncModeToggleButton, "outline.followSelection");
-		configureModeToggleButton(syncModeToggleButton, OutlineDisplayMode.MAP_VIEW_SYNC);
+        syncModeToggleButton = new JToggleButton(SYNC_ICON);
+        syncModeToggleButton.setSelected(displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW_SYNC);
+        TranslatedElementFactory.createTooltip(syncModeToggleButton, "outline.followSelection");
+        configureModeToggleButton(syncModeToggleButton, OutlineDisplayMode.MAP_VIEW_SYNC);
         toolbar.add(syncModeToggleButton, 1);
         jumpInToggleButton = new JToggleButton(JUMPIN_ICON);
         TranslatedElementFactory.createTooltip(jumpInToggleButton, "outline.followRoot");
@@ -404,59 +427,59 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         TranslatedElementFactory.createTooltip(quickFilterButton, "outline.filter");
         configureQuickFilterToggleButton(quickFilterButton);
         toolbar.add(quickFilterButton, 3);
-	}
+    }
 
-	private void configureModeToggleButton(JToggleButton toggleButton, OutlineDisplayMode mode) {
+    private void configureModeToggleButton(JToggleButton toggleButton, OutlineDisplayMode mode) {
         toggleButton.setFocusable(false);
         toggleButton.addActionListener(e -> {
             boolean isSelected = toggleButton.isSelected();
-			OutlineDisplayMode targetMode = isSelected
+            OutlineDisplayMode targetMode = isSelected
                     ? mode
                     : OutlineDisplayMode.MAP_VIEW;
             setOutlineDisplayMode(targetMode, displayState.getFilter(), displayState.followsJumpIn());
             if(mode == OutlineDisplayMode.MAP_VIEW_SYNC) {
-            	ResourceController.getResourceController().setProperty(OutlineTreeViewStates.OUTLINE_DISPLAY_MODE_SYNC_PROPERTY, isSelected);
+                ResourceController.getResourceController().setProperty(OutlineTreeViewStates.OUTLINE_DISPLAY_MODE_SYNC_PROPERTY, isSelected);
             }
         });
     }
-	private void configureJumpinToggleButton(JToggleButton toggleButton) {
+    private void configureJumpinToggleButton(JToggleButton toggleButton) {
         toggleButton.setFocusable(false);
         toggleButton.setSelected(displayState.followsJumpIn());
         toggleButton.addActionListener(e -> setFollowsJumpIn(toggleButton.isSelected()));
     }
 
-	private void configureQuickFilterToggleButton(JToggleButton toggleButton) {
+    private void configureQuickFilterToggleButton(JToggleButton toggleButton) {
         toggleButton.setFocusable(false);
         toggleButton.setSelected(displayState.getFilter() != null);
         toggleButton.addActionListener(e -> setQuickFilter(toggleButton.isSelected()));
     }
 
-	private void setQuickFilter(boolean enable) {
-		Filter filter;
-		if(enable) {
-			final ASelectableCondition condition = FilterController.getCurrentFilterController().getQuickEditor().getCondition();
-			if(condition == null) {
-				filter = null;
-				quickFilterButton.setSelected(false);
-			} else {
-				filter = Filter.createFilter(condition, true, false, false, null);
-			}
-		}
-		else
-			filter = null;
-		if(displayState.getFilter() != filter)
-			setOutlineDisplayMode(displayState.getCurrentMode(), filter, displayState.followsJumpIn());
-	}
+    private void setQuickFilter(boolean enable) {
+        Filter filter;
+        if(enable) {
+            final ASelectableCondition condition = FilterController.getCurrentFilterController().getQuickEditor().getCondition();
+            if(condition == null) {
+                filter = null;
+                quickFilterButton.setSelected(false);
+            } else {
+                filter = Filter.createFilter(condition, true, false, false, null);
+            }
+        }
+        else
+            filter = null;
+        if(displayState.getFilter() != filter)
+            setOutlineDisplayMode(displayState.getCurrentMode(), filter, displayState.followsJumpIn());
+    }
 
-	private void setFollowsJumpIn(final boolean followsJumpIn) {
-		setOutlineDisplayMode(displayState.getCurrentMode(), displayState.getFilter(), followsJumpIn);
-	}
+    private void setFollowsJumpIn(final boolean followsJumpIn) {
+        setOutlineDisplayMode(displayState.getCurrentMode(), displayState.getFilter(), followsJumpIn);
+    }
 
     public void setOutlineDisplayMode(OutlineDisplayMode displayMode, final Filter filter, final boolean followsJumpIn) {
         final OutlineDisplayMode lastMode = displayState.getCurrentMode();
         final boolean lastFollowsJumpIn = displayState.followsJumpIn();
         final Filter lastFilter = displayState.getFilter();
-		if (displayMode == null || displayMode == lastMode && followsJumpIn == lastFollowsJumpIn && filter == lastFilter) {
+        if (displayMode == null || displayMode == lastMode && followsJumpIn == lastFollowsJumpIn && filter == lastFilter) {
             syncToggleWithMode();
             return;
         }
@@ -465,14 +488,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         displayState.setFilter(filter);
         ScrollableTreePanel panel = getTreePanel();
         if (currentMapView != null) {
-        	if (lastMode.baseMode() != displayMode.baseMode() || followsJumpIn != lastFollowsJumpIn || filter != lastFilter) {
-        		storeCurrentDisplayState(panel);
-        		updateTreeFromMap(currentMapView, false);
-        	}
-        	else
-        		panel.setDisplayMode(displayMode);
+            if (lastMode.baseMode() != displayMode.baseMode() || followsJumpIn != lastFollowsJumpIn || filter != lastFilter) {
+                storeCurrentDisplayState(panel);
+                updateTreeFromMap(currentMapView, false);
+            }
+            else
+                panel.setDisplayMode(displayMode);
 
-        	synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
+            synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
         }
         syncToggleWithMode();
     }
@@ -487,12 +510,12 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             syncModeToggleButton.setSelected(syncSelected);
         }
         final boolean followsJumpIn = displayState.followsJumpIn();
-		if (jumpInToggleButton.isSelected() != followsJumpIn) {
+        if (jumpInToggleButton.isSelected() != followsJumpIn) {
             bookmarkModeToggleButton.setSelected(followsJumpIn);
         }
         final boolean filters = displayState.getFilter() != null;
-		if (quickFilterButton.isSelected() != filters) {
-			quickFilterButton.setSelected(filters);
+        if (quickFilterButton.isSelected() != filters) {
+            quickFilterButton.setSelected(filters);
         }
     }
 
@@ -531,19 +554,70 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return mapModel != null && MapBookmarks.of(mapModel).contains(node.getID());
     }
 
-	private Color getBackgroundColor() {
-		if(currentMapView == null)
-			return null;
-		boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
-		if(useColoredOutlineItems)
-			return currentMapView.getBackground();
-		else
-			return null;
-	}
+    private Color getBackgroundColor() {
+        if(currentMapView == null)
+            return null;
+        boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+        if(useColoredOutlineItems)
+            return currentMapView.getBackground();
+        else
+            return null;
+    }
 
-	@Override
-	OutlineDisplayMode getDisplayMode() {
-		return displayState.getCurrentMode();
-	}
+    @Override
+    OutlineDisplayMode getDisplayMode() {
+        return displayState.getCurrentMode();
+    }
+
+    private void onFilterResultUpdate(Filter filter, @SuppressWarnings("unused") NodeModel node) {
+        if(! isFilterResultUpdateScheduled && (displayState.getFilter() == null || displayState.getFilter() == filter)) {
+            isFilterResultUpdateScheduled = true;
+            MapView updatedView = currentMapView;
+            SwingUtilities.invokeLater(() -> {
+                isFilterResultUpdateScheduled = false;
+                if(updatedView == currentMapView)
+                    updateTreeFromMap(currentMapView, false);
+            });
+        }
+    }
+
+    @Override
+    void updateNodeTitle(TreeNode node) {
+        if(! isFilterResultUpdateScheduled)
+            super.updateNodeTitle(node);
+    }
+
+    @Override
+    void rebuildFromNode(TreeNode node) {
+        if(! isFilterResultUpdateScheduled)
+            super.rebuildFromNode(node);
+    }
+
+    @Override
+    public void nodeChanged(NodeChangeEvent event) {
+        NodeModel node = event.getNode();
+        updateFilterResults(node);
+    }
+
+    @Override
+    public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
+        updateFilterResults(nodeDeletionEvent.parent);
+    }
+
+    @Override
+    public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
+    	updateFilterResults(child);
+    }
+
+    private void updateFilterResults(NodeModel node) {
+        if (currentMapView == null)
+            return;
+        Filter filter = displayState.getFilter();
+        if (filter == null)
+            return;
+        if (node.getMap() != currentMapView.getMap())
+            return;
+        filter.updateFilterResults(node, filterUpdateListener);
+    }
 
 }

@@ -89,6 +89,7 @@ import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
 import org.freeplane.features.edge.EdgeColorsConfigurationFactory;
 import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.filter.Filter;
+import org.freeplane.features.filter.FilterUpdateListener;
 import org.freeplane.features.highlight.NodeHighlighter;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
@@ -802,6 +803,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     public static final int SCROLL_VELOCITY_PX = (int) (UITools.FONT_SCALE_FACTOR  * 10);
     private final NodeViewFolder nodeViewFolder;
 	private final AntiAliasingConfigurator antiAliasingConfigurator;
+	private FilterUpdateListener filterUpdateListener;
 
     static {
         final ResourceController resourceController = ResourceController.getResourceController();
@@ -3426,7 +3428,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		return showsTagsOnMinimizedNodes;
 	}
 
-	void onFilterResultUpdate(NodeModel node) {
+	void onFilterResultUpdate(Filter filter, NodeModel node) {
 	    NodeView nodeView = getNodeView(node);
 	    if(nodeView != null) {
             nodeView.revalidate();
@@ -3437,7 +3439,21 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
                 addSelected(ancestorWithVisibleContent, true);
             }
         }
-
+	    if(filterUpdateListener != null) {
+	    	filterUpdateListener.onFilterResultUpdate(filter, node);
+	    }
 	}
 
+	public FilterUpdateListener getFilterUpdateListener() {
+		return filterUpdateListener;
+	}
+
+	public void setFilterUpdateListener(FilterUpdateListener filterUpdateListener) {
+		this.filterUpdateListener = filterUpdateListener;
+	}
+
+	public void removeFilterUpdateListener(FilterUpdateListener filterUpdateListener) {
+		if(this.filterUpdateListener == filterUpdateListener)
+			this.filterUpdateListener = null;
+	}
 }
