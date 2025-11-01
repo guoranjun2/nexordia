@@ -540,9 +540,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			if (selectedNode != null) {
 				removeSelectionForHooks(selectedNode);
 				selectedNode = null;
-				clearSelectedSet();
-				selectedList.clear();
 			}
+			clearSelectedSet();
+			selectedList.clear();
 		}
 
         private void clearSelectedSet() {
