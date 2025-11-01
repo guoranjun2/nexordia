@@ -51,7 +51,8 @@ class MapTreeNode extends TreeNode implements INodeView {
     }
 
     private String getNodeText() {
-        return TextController.getController().getShortPlainText(nodeModel);
+        String shortPlainText = TextController.getController().getShortPlainText(nodeModel).trim();
+		return shortPlainText.isEmpty() ? "--" : shortPlainText;
     }
 
     @Override
