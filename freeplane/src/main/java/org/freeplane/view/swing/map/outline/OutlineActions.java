@@ -29,10 +29,10 @@ class OutlineActions {
         @Override public void actionPerformed(ActionEvent e) { provider.getController().navigatePageDown(); }
     };
     final Action goParent = new AbstractAction("Go to Parent") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().goToParent(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().collapseOrGoToParent(); }
     };
     final Action goChild = new AbstractAction("Go to First Child") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().goToChild(); }
+        @Override public void actionPerformed(ActionEvent e) { provider.getController().expandOrGoToChild(); }
     };
     final Action reduceExpansion = new AbstractAction("Reduce Expansion") {
         @Override public void actionPerformed(ActionEvent e) { provider.getController().reduceSelectedExpansion(); }

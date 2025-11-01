@@ -47,8 +47,8 @@ class OutlineController implements OutlineActionTarget {
     @Override public void navigateDown() { treePanel.navigateDown(); }
     @Override public void navigatePageUp() { treePanel.navigatePageUp(); }
     @Override public void navigatePageDown() { treePanel.navigatePageDown(); }
-    @Override public void goToParent() { treePanel.goToParent(); }
-    @Override public void goToChild() { treePanel.goToChild(); }
+    @Override public void collapseOrGoToParent() { treePanel.collapseOrGoToParent(); }
+    @Override public void expandOrGoToChild() { treePanel.expandOrGoToChild(); }
     @Override public void expandSelectedMore() { treePanel.expandSelectedMore(); }
     @Override public void reduceSelectedExpansion() { treePanel.reduceSelectedExpansion(); }
 

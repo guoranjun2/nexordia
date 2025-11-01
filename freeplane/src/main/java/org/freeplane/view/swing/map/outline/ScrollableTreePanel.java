@@ -734,26 +734,32 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     @Override
-    public void goToParent() {
+    public void collapseOrGoToParent() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
-        if (node == null) return;
-        final TreeNode newSelected = node.getParent();
-		if (newSelected != null) {
-
-        	setSelectedNode(newSelected, true);
-        }
+        if (node == null)
+        	return;
+        final TreeNode parent = node.getParent();
+		if (parent == null)
+		return;
+		if (node.isExpanded() && ! isNodeInBreadcrumbArea(node)) {
+			expansionControls.collapseNode(node);
+		}
+		else {
+			setSelectedNode(parent, true);
+		}
     }
 
     @Override
-    public void goToChild() {
+    public void expandOrGoToChild() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null || node.getChildren().isEmpty()) return;
         if (!node.isExpanded()) {
             expansionControls.expandNode(node);
         }
-        TreeNode targetChild = selectionHistory.preferredChild(node);
-
-        setSelectedNode(targetChild, true);
+        else {
+        	TreeNode targetChild = selectionHistory.preferredChild(node);
+        	setSelectedNode(targetChild, true);
+        }
     }
 
     private int getContentRows() {

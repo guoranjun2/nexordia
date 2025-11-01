@@ -5,8 +5,8 @@ interface OutlineActionTarget {
     void navigateDown();
     void navigatePageUp();
     void navigatePageDown();
-    void goToParent();
-    void goToChild();
+    void collapseOrGoToParent();
+    void expandOrGoToChild();
     void expandSelectedMore();
     void reduceSelectedExpansion();
     void toggleExpandSelected();
