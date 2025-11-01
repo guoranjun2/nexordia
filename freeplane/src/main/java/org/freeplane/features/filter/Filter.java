@@ -304,7 +304,7 @@ public class Filter implements IExtension {
         }
     }
 
-    public void updateFilterResults(NodeModel node, Consumer<NodeModel> callbackOnUpdate) {
+    public void updateFilterResults(NodeModel node, FilterUpdateListener callbackOnUpdate) {
         if(condition == null)
             return;
         boolean matches = checkNode(node);
@@ -315,7 +315,7 @@ public class Filter implements IExtension {
     }
 
     private void updateFilterResultsAndAncestors(NodeModel node,
-            Consumer<NodeModel> callbackOnUpdate) {
+    		FilterUpdateListener callbackOnUpdate) {
         FilterInfo filterInfo = getFilterInfo(node);
         NodeModel parentNode = node.getParentNode();
         FilterInfo parentFilterInfo = getFilterInfo(parentNode);
@@ -339,14 +339,14 @@ public class Filter implements IExtension {
             }
             filterInfo.set(ancestorState | ownState | descendantState);
             if(wasVisible != isVisible(node))
-                callbackOnUpdate.accept(node);
+                callbackOnUpdate.onFilterResultUpdate(node);
         }
         if(parentNode != null)
             updateFilterResultsAndAncestors(parentNode, callbackOnUpdate);
 
     }
 
-    private void updateDescendantResults(NodeModel node, int options, Consumer<NodeModel> callbackOnUpdate) {
+    private void updateDescendantResults(NodeModel node, int options, FilterUpdateListener callbackOnUpdate) {
         for(NodeModel child : node.getChildren()) {
             FilterInfo childInfo = getFilterInfo(child);
             if(childInfo.matches(options))
@@ -358,7 +358,7 @@ public class Filter implements IExtension {
             boolean wasVisible = isVisible(child);
             if(childInfo.add(options))
                 if(wasVisible != isVisible(child))
-                    callbackOnUpdate.accept(child);
+                    callbackOnUpdate.onFilterResultUpdate(child);
                 updateDescendantResults(child, options, callbackOnUpdate);
         }
     }
