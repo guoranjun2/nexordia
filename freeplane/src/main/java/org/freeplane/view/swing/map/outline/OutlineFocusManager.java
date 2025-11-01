@@ -48,10 +48,12 @@ class OutlineFocusManager {
                 return;
             }
         }
+        boolean isSelectionDrivenBreadcrumbMode = panel.isSelectionDrivenBreadcrumbMode();
         TreeNode n = outlineSelection.getSelectedNode();
         while (n != null) {
+            if (!isSelectionDrivenBreadcrumbMode && focusButtonInBreadcrumbForNode(n)) return;
             if (focusButtonInBlocksForNode(n)) return;
-            if (focusButtonInBreadcrumbForNode(n)) return;
+            if (isSelectionDrivenBreadcrumbMode && focusButtonInBreadcrumbForNode(n)) return;
             n = n.getParent();
         }
     }
