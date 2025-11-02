@@ -56,8 +56,12 @@ public class TextIcon implements Icon {
         if(text != null) {
             g2d.setColor(textColor);
             g2d.setFont(fontMetrics.getFont());
-			int textX = x + paddingX + borderLineWidth;
-            int textY = y + paddingY + borderLineWidth + fontMetrics.getAscent();
+			int textX = x + paddingX;
+            int textY = y + paddingY + fontMetrics.getAscent();
+            if(borderLineWidth != 0 && borderType == BorderType.ROUND_RECTANGLE) {
+            	textX += borderLineWidth;
+            	textY += borderLineWidth;
+            }
             g2d.drawString(text, textX, textY);
         }
     }
@@ -112,12 +116,12 @@ public class TextIcon implements Icon {
 
     @Override
     public int getIconWidth() {
-        return (text == null ? 0 : fontMetrics.stringWidth(text)) +  2 * paddingX + getBorderLineWidth(2);
+        return (text == null ? 0 : fontMetrics.stringWidth(text)) +  2 * paddingX + (borderType ==  BorderType.ROUND_RECTANGLE ? getBorderLineWidth(2) : 0);
     }
 
     @Override
     public int getIconHeight() {
-        return fontMetrics.getHeight() + 2 * paddingY + getBorderLineWidth(3);
+        return fontMetrics.getHeight() + 2 * paddingY + getBorderLineWidth(borderType ==  BorderType.ROUND_RECTANGLE ? 3 : 2);
     }
 
 	private int getBorderLineWidth(int weight) {
