@@ -96,12 +96,14 @@ import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.features.nodestyle.NodeStyleController;
 import org.freeplane.features.nodestyle.NodeStyleShape;
 import org.freeplane.features.styles.LogicalStyleController.StyleOption;
+import org.freeplane.features.styles.MapStyleModel;
 import org.freeplane.features.styles.MapViewLayout;
 import org.freeplane.features.text.TextController;
 import org.freeplane.view.swing.map.attribute.AttributeView;
 import org.freeplane.view.swing.map.cloud.CloudView;
 import org.freeplane.view.swing.map.cloud.CloudViewFactory;
 import org.freeplane.view.swing.map.edge.AutomaticEdgeStyle;
+import org.freeplane.view.swing.map.edge.EdgeColorContext;
 import org.freeplane.view.swing.map.edge.EdgeView;
 import org.freeplane.view.swing.map.edge.EdgeViewFactory;
 import org.freeplane.view.swing.ui.mindmapmode.MNodeDragListener;
@@ -111,7 +113,7 @@ import org.freeplane.view.swing.ui.mindmapmode.MNodeDropListener;
  * This class represents a single Node of a MindMap (in analogy to
  * TreeCellRenderer).
  */
-public class NodeView extends JComponent implements INodeView {
+public class NodeView extends JComponent implements INodeView, EdgeColorContext {
 	private static final Quantity<LengthUnit> TAG_INDENT = new Quantity<LengthUnit>(12, LengthUnit.pt);
 	static final String DEBUG_INFO_PROPERTY = "debugInfo";
 	private static final int HIGHLIGHTED_NODE_ARC_MARGIN = 4;
@@ -2022,40 +2024,71 @@ public class NodeView extends JComponent implements INodeView {
     }
 
     public Color getEdgeColor() {
-       if(edgeColor.hasValue())
-            return edgeColor.getValue();
-        Rules rule = edgeColor.getRule();
-		if(rule == EdgeController.Rules.BY_COLUMN){
-			final Color color = new AutomaticEdgeStyle(this).getColor();
-			edgeColor.setCache(color);
-			return color;
-		}
-		final NodeModel parentNode = viewedNode.getParentNode();
-		if(rule == EdgeController.Rules.BY_BRANCH && parentNode.isRoot()
-				|| rule == EdgeController.Rules.BY_LEVEL){
-			final int index;
-			if (rule == EdgeController.Rules.BY_BRANCH)
-				index = parentNode.getIndex(viewedNode) + 1;
-			else
-				index = viewedNode.getNodeLevel(map.getFilter()) + (viewedNode.isHiddenSummary() ? 1 : 0);
-			final MapModel mapModel = map.getMap();
-			ModeController modeController = getModeController();
-			EdgeController edgeController = modeController.getExtension(EdgeController.class);
-			if(edgeController.areEdgeColorsAvailable(mapModel)){
-				Color color = edgeController.getEdgeColor(mapModel, index);
-				edgeColor.setCache(color);
-				return color;
-			}
-		}
-		else
-			if(rule == EdgeController.Rules.BY_PARENT) {
-			final NodeView parentView = getParentNodeView();
-			if (parentView != null) {
-				final Color color = parentView.getEdgeColor();
-				return color;
-			}
-		}
-		return Color.GRAY;
+		ModeController modeController = getModeController();
+		MapModel mapModel = map.getMap();
+        AutomaticEdgeStyle automaticEdgeStyle = new AutomaticEdgeStyle(modeController, mapModel, this);
+        return automaticEdgeStyle.resolve(edgeColor);
+    }
+
+    @Override
+	public int  computeColumnPaletteIndex() {
+        MapView mapView = map;
+        NodeView rootView = mapView.getRoot();
+        if(rootView == null)
+            return -1;
+        MainView rootMainView = rootView.getMainView();
+        MainView nodeMainView = getMainView();
+        if(rootMainView == null || nodeMainView == null)
+            return -1;
+        Point origin = new Point();
+        UITools.convertPointToAncestor(rootMainView, origin, rootView);
+        Point coordinate = new Point();
+        UITools.convertPointToAncestor(nodeMainView, coordinate, rootView);
+        MapModel mapModel = mapView.getMap();
+        MapStyleModel mapStyleModel = MapStyleModel.getExtension(mapModel);
+        final int distance;
+        final int nodeColumnWidth;
+        if(mapView.getLayoutType() == MapViewLayout.OUTLINE) {
+            distance = Math.max(0, coordinate.x - origin.x);
+            int horizontalGap = ResourceController.getResourceController().getLengthProperty("outline_hgap");
+            nodeColumnWidth = Math.max(1, mapView.getZoomed(horizontalGap));
+        }
+        else {
+            if(origin.x < coordinate.x)
+                distance = Math.max(0, coordinate.x - origin.x + nodeMainView.getWidth() - rootMainView.getWidth());
+            else
+                distance = origin.x - coordinate.x;
+            NodeModel defaultStyleNode = mapStyleModel.getDefaultStyleNode();
+            ModeController modeController = getModeController();
+            NodeStyleController nodeStyleController = modeController.getExtension(NodeStyleController.class);
+            int baseWidth = nodeStyleController.getMaxWidth(defaultStyleNode, StyleOption.FOR_UNSELECTED_NODE).toBaseUnitsRounded();
+            nodeColumnWidth = mapView.getZoomed(baseWidth + LocationModel.DEFAULT_HGAP_PX);
+        }
+        int paletteIndex = (int) ((float) distance / nodeColumnWidth + 0.5f);
+        if(SummaryNode.isHidden(viewedNode))
+            paletteIndex++;
+        return paletteIndex;
+    }
+
+    @Override
+	public int computeBranchPaletteIndex() {
+        NodeModel parentNode = viewedNode.getParentNode();
+        if(parentNode == null || ! parentNode.isRoot())
+            return 0;
+        return parentNode.getIndex(viewedNode) + 1;
+    }
+
+    @Override
+	public int computeLevelPaletteIndex() {
+        return viewedNode.getNodeLevel(map.getFilter()) + (viewedNode.isHiddenSummary() ? 1 : 0);
+    }
+
+    @Override
+	public Color getParentEdgeColor() {
+        NodeView parentView = getParentNodeView();
+        if(parentView == null)
+            return null;
+        return parentView.getEdgeColor();
     }
 
 	private void updateCloud() {

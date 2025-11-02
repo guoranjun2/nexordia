@@ -1,69 +1,67 @@
 package org.freeplane.view.swing.map.edge;
 
 import java.awt.Color;
-import java.awt.Point;
 
-import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.ObjectRule;
 import org.freeplane.features.edge.EdgeController;
-import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.map.SummaryNode;
+import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.ModeController;
-import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.features.nodestyle.NodeStyleController;
-import org.freeplane.features.styles.LogicalStyleController.StyleOption;
-import org.freeplane.features.styles.MapStyleModel;
-import org.freeplane.features.styles.MapViewLayout;
-import org.freeplane.view.swing.map.MainView;
-import org.freeplane.view.swing.map.MapView;
-import org.freeplane.view.swing.map.NodeView;
 
 public class AutomaticEdgeStyle {
-	private Color color;
+	private final ModeController modeController;
+	private final MapModel mapModel;
+	private final EdgeColorContext edgeColorContext;
 
-	public AutomaticEdgeStyle(NodeView node){
-		MapView map = node.getMap();
-		ModeController modeController = map.getModeController();
-		modeController.getExtension(NodeStyleController.class);
-
-		final NodeView rootView = map.getRoot();
-		Point origin = new Point();
-		final MainView rootContent = rootView.getMainView();
-		UITools.convertPointToAncestor(rootContent, origin, rootView);
-		Point coordinate = new Point();
-		final MainView nodeContent = node.getMainView();
-		UITools.convertPointToAncestor(nodeContent, coordinate, rootView);
-		final MapStyleModel mapStyleNodes = MapStyleModel.getExtension(map.getMap());
-
-		final int distance;
-		final int nodeColumnWidth;
-		if(map.getLayoutType() == MapViewLayout.OUTLINE){
-			distance = Math.max(0, coordinate.x - origin.x);
-			final int hgapProperty = ResourceController.getResourceController().getLengthProperty("outline_hgap");
-			nodeColumnWidth = Math.max(1, map.getZoomed(hgapProperty));
-		}
-		else {
-			if(origin.x < coordinate.x ){
-				distance = Math.max(0, coordinate.x  - origin.x + nodeContent.getWidth() - rootContent.getWidth());
-			}
-			else{
-				distance = origin.x - coordinate.x;
-			}
-			final NodeModel defaultStyleNode = mapStyleNodes.getDefaultStyleNode();
-			final NodeStyleController nodeStyleController = modeController.getExtension(NodeStyleController.class);
-			nodeColumnWidth = map.getZoomed(nodeStyleController.getMaxWidth(defaultStyleNode, StyleOption.FOR_UNSELECTED_NODE).toBaseUnitsRounded() + LocationModel.DEFAULT_HGAP_PX);
-		}
-		int level = (int) ((float)distance / nodeColumnWidth + 0.5);
-		if(SummaryNode.isHidden(node.getNode()))
-			level++;
-
-		EdgeController edgeController = modeController.getExtension(EdgeController.class);
-		color = edgeController.areEdgeColorsAvailable(map.getMap()) ? edgeController.getEdgeColor(map.getMap(), level) : EdgeController.STANDARD_EDGE_COLOR;
-
-
+	public AutomaticEdgeStyle(ModeController modeController, MapModel mapModel,
+			EdgeColorContext edgeColorContext) {
+		this.modeController = modeController;
+		this.mapModel = mapModel;
+		this.edgeColorContext = edgeColorContext;
 	}
 
-	public Color getColor(){
-		return color;
+	public Color resolve(ObjectRule<Color, EdgeController.Rules> edgeColorRule) {
+		if (edgeColorRule == null)
+			return EdgeController.STANDARD_EDGE_COLOR;
+		if (edgeColorRule.hasValue())
+			return edgeColorRule.getValue();
+		EdgeController.Rules rule = edgeColorRule.getRule();
+		if (rule == null)
+			return EdgeController.STANDARD_EDGE_COLOR;
+		Color color = resolve(rule);
+		if (color != null && shouldCache(rule))
+			edgeColorRule.setCache(color);
+		return color != null ? color : EdgeController.STANDARD_EDGE_COLOR;
+	}
+
+	private Color resolve(EdgeController.Rules rule) {
+		switch (rule) {
+		case BY_PARENT:
+			return edgeColorContext.getParentEdgeColor();
+		case BY_COLUMN:
+			return resolvePaletteColor(edgeColorContext.computeColumnPaletteIndex(), true);
+		case BY_BRANCH:
+			return resolvePaletteColor(edgeColorContext.computeBranchPaletteIndex(), false);
+		case BY_LEVEL:
+			return resolvePaletteColor(edgeColorContext.computeLevelPaletteIndex(), false);
+		default:
+			return null;
+		}
+	}
+
+	private boolean shouldCache(EdgeController.Rules rule) {
+		return rule != EdgeController.Rules.BY_PARENT;
+	}
+
+	private Color resolvePaletteColor(int paletteIndex, boolean useStandardColorFallback) {
+		if (modeController == null || mapModel == null)
+			return useStandardColorFallback ? EdgeController.STANDARD_EDGE_COLOR : null;
+		if (paletteIndex == -1)
+			return null;
+		EdgeController edgeController = modeController.getExtension(EdgeController.class);
+		if (edgeController == null)
+			return useStandardColorFallback ? EdgeController.STANDARD_EDGE_COLOR : null;
+		if (edgeController.areEdgeColorsAvailable(mapModel))
+			return edgeController.getEdgeColor(mapModel, paletteIndex);
+		return useStandardColorFallback ? EdgeController.STANDARD_EDGE_COLOR : null;
 	}
 }
