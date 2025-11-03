@@ -1,8 +1,10 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,7 +24,8 @@ import org.freeplane.core.ui.components.UITools;
 
 @SuppressWarnings("serial")
 class BreadcrumbPanel extends JPanel {
-    public static final int BREADCRUMB_BOTTOM_MARGIN = 2;
+    public static final int BREADCRUMB_BOTTOM_MARGIN = (int) (UITools.FONT_SCALE_FACTOR * 4);
+    private static final BasicStroke BOTTOM_LINE_STROKE = new BasicStroke(BREADCRUMB_BOTTOM_MARGIN, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 1f, new float[] {BREADCRUMB_BOTTOM_MARGIN, 2*BREADCRUMB_BOTTOM_MARGIN}, 0f);
 	private OutlineController controller;
     private OutlineSelection selection;
     private int preferredBreadcrumbHeight = 0;
@@ -171,7 +174,9 @@ class BreadcrumbPanel extends JPanel {
         super.paintComponent(g);
         if (preferredBreadcrumbHeight > 0) {
             g.setColor(UITools.getDisabledTextColorForBackground(getBackground()));
-            g.drawLine(0, preferredBreadcrumbHeight - 1, getWidth(), preferredBreadcrumbHeight - 1);
+            int y = preferredBreadcrumbHeight - BREADCRUMB_BOTTOM_MARGIN/2;
+            ((Graphics2D)g).setStroke(BOTTOM_LINE_STROKE);
+			g.drawLine(0, y, getWidth(), y);
         }
     }
 
