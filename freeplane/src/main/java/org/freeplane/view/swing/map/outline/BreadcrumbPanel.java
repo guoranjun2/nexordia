@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -175,8 +176,11 @@ class BreadcrumbPanel extends JPanel {
         if (preferredBreadcrumbHeight > 0) {
             g.setColor(UITools.getDisabledTextColorForBackground(getBackground()));
             int y = preferredBreadcrumbHeight - BREADCRUMB_BOTTOM_MARGIN/2;
-            ((Graphics2D)g).setStroke(BOTTOM_LINE_STROKE);
+            Graphics2D g2 = (Graphics2D)g;
+            Stroke stroke = g2.getStroke();
+			g2.setStroke(BOTTOM_LINE_STROKE);
 			g.drawLine(0, y, getWidth(), y);
+			g2.setStroke(stroke);
         }
     }
 
