@@ -111,7 +111,8 @@ public class MapModel {
 	}
 
 	public void fireMapChangeEvent(final MapChangeEvent event) {
-		for (final IMapChangeListener listener : listeners) {
+		final IMapChangeListener[] list = listeners.toArray(new IMapChangeListener[]{});
+		for (final IMapChangeListener listener : list) {
 			listener.mapChanged(event);
 		}
 	}
