@@ -22,7 +22,6 @@ import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.filter.FilterUpdateListener;
-import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
@@ -332,9 +331,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     public void mapChanged(MapChangeEvent event) {
         if (currentMapView == null)
             return;
+        final Object property = event.getProperty();
+        if(MapView.class.equals(property) && event.getSource() == currentMapView) {
+        	event.getMap().removeMapChangeListener(this);
+        	updateTreeFromMap(currentMapView);
+        	return;
+        }
         if (event.getMap() != currentMapView.getMap())
             return;
-        final Object property = event.getProperty();
         if (MapBookmarks.class.equals(property)) {
             if (displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK) {
                 bookmarkFilterCache.refresh(currentMapView);
@@ -346,6 +350,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 || IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT.equals(property))
                 && displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW) {
             refreshOutlineLater();
+            return;
         }
     }
 
