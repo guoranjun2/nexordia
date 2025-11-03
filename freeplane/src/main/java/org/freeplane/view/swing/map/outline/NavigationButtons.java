@@ -121,7 +121,6 @@ class NavigationButtons {
             currentParent.revalidate();
             currentParent.repaint();
         }
-        NavigationButtonHider.INSTANCE.disable();
     }
 
     private void showButtons(int baseX, int y, int level) {

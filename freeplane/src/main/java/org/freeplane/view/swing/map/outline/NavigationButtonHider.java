@@ -28,8 +28,10 @@ class NavigationButtonHider {
 		            MouseEvent mouseEvent = (MouseEvent) event;
 		            Point eventPoint = new Point (mouseEvent.getXOnScreen(),mouseEvent.getYOnScreen());
 		            SwingUtilities.convertPointFromScreen(eventPoint, outlinePane);
-		            if(eventPoint.x < 0 || eventPoint.y < 0 || eventPoint.x >= outlinePane.getWidth() || eventPoint.y >= outlinePane.getHeight())
-		            	navigationButtons.hideNavigationButtons();
+		            if(eventPoint.x < 0 || eventPoint.y < 0 || eventPoint.x >= outlinePane.getWidth() || eventPoint.y >= outlinePane.getHeight()) {
+						navigationButtons.hideNavigationButtons();
+						disable();
+					}
 		        }
 		    }
 		};
