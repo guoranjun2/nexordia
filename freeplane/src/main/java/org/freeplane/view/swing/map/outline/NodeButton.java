@@ -14,6 +14,9 @@ import java.awt.dnd.DropTarget;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.util.Collections;
 
 import javax.swing.AbstractAction;
@@ -26,12 +29,14 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.plaf.ButtonUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 import org.freeplane.core.ui.AntiAliasingConfigurator;
+import org.freeplane.core.ui.components.DoubleTextIcon;
 import org.freeplane.core.ui.components.TextIcon;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.features.bookmarks.mindmapmode.NodeNavigator;
@@ -319,4 +324,49 @@ class NodeButton extends JButton {
 			setText(buttonText);
 		}
 	}
+
+    boolean isLeftIconClick(MouseEvent event) {
+        if(event == null || event.getSource() != this) {
+            return false;
+        }
+        Icon icon = getIcon();
+        if(!(icon instanceof DoubleTextIcon)) {
+            return false;
+        }
+        Rectangle iconArea = calculateIconRect(icon);
+        if(iconArea == null || !iconArea.contains(event.getX(), event.getY())) {
+            return false;
+        }
+        int relativeX = event.getX() - iconArea.x;
+        return relativeX < ((DoubleTextIcon) icon).getRightIconX();
+    }
+
+    private Rectangle calculateIconRect(Icon icon) {
+        if(icon == null) {
+            return null;
+        }
+        Rectangle iconRect = new Rectangle();
+        Rectangle textRect = new Rectangle();
+        Rectangle viewRect = new Rectangle();
+        Insets insets = getInsets();
+        viewRect.x = insets.left;
+        viewRect.y = insets.top;
+        viewRect.width = getWidth() - (insets.left + insets.right);
+        viewRect.height = getHeight() - (insets.top + insets.bottom);
+        SwingUtilities.layoutCompoundLabel(
+            this,
+            getFontMetrics(getFont()),
+            getText(),
+            icon,
+            getVerticalAlignment(),
+            getHorizontalAlignment(),
+            getVerticalTextPosition(),
+            getHorizontalTextPosition(),
+            viewRect,
+            iconRect,
+            textRect,
+            getIconTextGap()
+        );
+        return iconRect.width > 0 ? iconRect : null;
+    }
 }

@@ -1,7 +1,9 @@
 
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.AWTEvent;
 import java.awt.Container;
+import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -66,6 +68,14 @@ class BlockPanel extends JPanel {
         final AbstractAction selectAction = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                AWTEvent currentEvent = EventQueue.getCurrentEvent();
+                if(currentEvent instanceof MouseEvent) {
+                    MouseEvent mouseEvent = (MouseEvent) currentEvent;
+                    if(button.isLeftIconClick(mouseEvent)) {
+                        parentPanel.toggleNodeExpansion(node);
+                        return;
+                    }
+                }
                 parentPanel.setSelectedNode(node, true);
                 parentPanel.selectMapNodeById(node.getId());
             }
