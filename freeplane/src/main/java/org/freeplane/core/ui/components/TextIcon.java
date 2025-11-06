@@ -12,9 +12,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 
-import javax.swing.Icon;
-
-public class TextIcon implements Icon {
+public class TextIcon implements StyledIcon {
 	public enum BorderType {UNDERLINE, ROUND_RECTANGLE}
 	public static final BasicStroke DEFAULT_STROKE = new BasicStroke(1);
     private final String text;
@@ -66,19 +64,23 @@ public class TextIcon implements Icon {
         }
     }
 
+    @Override
     public Color getIconTextColor() {
         return iconTextColor;
     }
 
+    @Override
     public TextIcon setIconTextColor(Color iconTextColor) {
         this.iconTextColor = iconTextColor;
         return this;
     }
 
+    @Override
     public Color getIconBackgroundColor() {
         return iconBackgroundColor;
     }
 
+    @Override
     public TextIcon setIconBackgroundColor(Color iconBackgroundColor) {
         this.iconBackgroundColor = iconBackgroundColor;
         if(iconTextColor == null)
@@ -86,10 +88,12 @@ public class TextIcon implements Icon {
         return this;
     }
 
+    @Override
     public Color getIconBorderColor() {
         return iconBorderColor;
     }
 
+    @Override
     public TextIcon setIconBorderColor(Color iconBorderColor) {
         this.iconBorderColor = iconBorderColor;
         if(iconBorderColor != null && borderStroke == null)
@@ -105,10 +109,12 @@ public class TextIcon implements Icon {
 		this.borderType = borderType;
 	}
 
-	public BasicStroke getBorderStroke() {
+	@Override
+    public BasicStroke getBorderStroke() {
         return borderStroke;
     }
 
+    @Override
     public TextIcon setBorderStroke(BasicStroke borderStroke) {
         this.borderStroke = borderStroke;
         return this;
@@ -128,23 +134,28 @@ public class TextIcon implements Icon {
 		return borderStroke != null ? (int) (borderStroke.getLineWidth() * weight) : 0;
 	}
 
+    @Override
     public int getPaddingX() {
 		return paddingX;
 	}
 
+    @Override
     public void setPaddingX(int paddingX) {
 		this.paddingX = paddingX;
 	}
 
+    @Override
     public int getPaddingY() {
 		return paddingY;
 	}
 
+    @Override
     public void setPaddingY(int paddingY) {
 		this.paddingY = paddingY;
 	}
 
-	void setPadding(int padding) {
+	@Override
+    public void setPadding(int padding) {
 		setPaddingX(padding);
 		setPaddingY(padding);
     }

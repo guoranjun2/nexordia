@@ -2,11 +2,14 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
+import java.awt.FontMetrics;
 
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.ui.components.DoubleTextIcon;
+import org.freeplane.core.ui.components.StyledIcon;
 import org.freeplane.core.ui.components.TextIcon;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.TextIcon.BorderType;
@@ -171,10 +174,22 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
     }
 
 	public Icon createIcon(JComponent component, boolean usesColoredOutlineItems) {
-		final TextIcon textIcon = new TextIcon(getTitle(), component.getFontMetrics(component.getFont()));
-		textIcon.setPaddingX((int) (3 * UITools.FONT_SCALE_FACTOR));
-		textIcon.setBorderType(BorderType.UNDERLINE);
-		textIcon.setBorderStroke(TextIcon.DEFAULT_STROKE);
+		String text = getTitle();
+		FontMetrics fontMetrics = component.getFontMetrics(component.getFont());
+		final StyledIcon icon;
+		if(nodeModel.hasChildren()) {
+			String childrenHint = isExpanded() ? "- " : "+ ";
+			DoubleTextIcon doubleTextIcon = new DoubleTextIcon(childrenHint, text, fontMetrics);
+			doubleTextIcon.setUnderlinePosition(DoubleTextIcon.UnderlinePosition.RIGHT);
+			icon = doubleTextIcon;
+		}
+		else {
+			TextIcon textIcon = new TextIcon(text, fontMetrics);
+			textIcon.setBorderType(BorderType.UNDERLINE);
+			icon = textIcon;
+		}
+		icon.setPaddingX((int) (3 * UITools.FONT_SCALE_FACTOR));
+		icon.setBorderStroke(TextIcon.DEFAULT_STROKE);
 		if(usesColoredOutlineItems) {
 			Color color = styleController.getColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
 			Color backgroundColor = styleController.getBackgroundColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
@@ -185,12 +200,12 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
 			}
 			else
 				backgroundColor = mapBackground;
-			textIcon.setIconTextColor(color);
-			textIcon.setIconBackgroundColor(backgroundColor);
-			if(textIcon.getBorderStroke() != null)
-				textIcon.setIconBorderColor(determineBorderColor());
+			icon.setIconTextColor(color);
+			icon.setIconBackgroundColor(backgroundColor);
+			if(icon.getBorderStroke() != null)
+				icon.setIconBorderColor(determineBorderColor());
 		}
-		return textIcon;
+		return icon;
 	}
 
 	private Color determineBorderColor() {
