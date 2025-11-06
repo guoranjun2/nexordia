@@ -16,7 +16,7 @@ import javax.swing.Icon;
 
 public class TextIcon implements Icon {
 	public enum BorderType {UNDERLINE, ROUND_RECTANGLE}
-	private final BasicStroke DEFAULT_STROKE = new BasicStroke(1);
+	public static final BasicStroke DEFAULT_STROKE = new BasicStroke(1);
     private final String text;
     private final FontMetrics fontMetrics;
     private Color iconTextColor;

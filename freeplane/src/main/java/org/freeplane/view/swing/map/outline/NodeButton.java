@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
@@ -19,6 +20,7 @@ import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -30,6 +32,7 @@ import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 
 import org.freeplane.core.ui.AntiAliasingConfigurator;
+import org.freeplane.core.ui.components.TextIcon;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.features.bookmarks.mindmapmode.NodeNavigator;
 import org.freeplane.features.map.NodeModel;
@@ -83,6 +86,7 @@ class NodeButton extends JButton {
 
     private final TreeNode node;
     private boolean dropFeedbackVisible;
+	private final boolean usesColoredOutlineItems;
 
     NodeButton(TreeNode node, boolean usesColoredOutlineItems) {
     	this(node, usesColoredOutlineItems, Font.PLAIN);
@@ -91,11 +95,12 @@ class NodeButton extends JButton {
     NodeButton(TreeNode node, boolean usesColoredOutlineItems, int fontStyle) {
         super();
         this.node = node;
+		this.usesColoredOutlineItems = usesColoredOutlineItems;
         final float itemFontSize = OutlineGeometry.getInstance().getItemFontSize();
         final Font font = getFont().deriveFont(fontStyle, itemFontSize);
         setFont(font);
         setHorizontalAlignment(SwingConstants.LEADING);
-        updateLabel(usesColoredOutlineItems);
+        updateLabel();
         installNodePopupMenu();
         installDragAndDrop();
         installClipboardActions();
@@ -268,19 +273,30 @@ class NodeButton extends JButton {
 
     @Override
     protected void paintComponent(Graphics graphics) {
-    	if(getIcon() != null) {
+    	Icon icon = getIcon();
+		if(icon != null) {
     		Graphics2D g2 = (Graphics2D)graphics.create();
             AntiAliasingConfigurator.setAntialiasing(g2);
+            if(!usesColoredOutlineItems && icon instanceof TextIcon) {
+            	TextIcon textIcon = (TextIcon) icon;
+            	Color foreground = getForeground();
+            	textIcon.setIconTextColor(foreground);
+            	if(textIcon.getBorderStroke() != null)
+            		textIcon.setIconBorderColor(foreground);
+            }
             super.paintComponent(g2);
             g2.dispose();
 
     	}
     	else
     		super.paintComponent(graphics);
-        if (!dropFeedbackVisible) {
-            return;
+        if (dropFeedbackVisible) {
+        	paintDropFeedback(graphics);
         }
-        Graphics2D graphics2D = (Graphics2D) graphics.create();
+    }
+
+	private void paintDropFeedback(Graphics graphics) {
+		Graphics2D graphics2D = (Graphics2D) graphics.create();
         try {
             graphics2D.setColor(getForeground());
             graphics2D.setStroke(new BasicStroke(2f));
@@ -292,15 +308,11 @@ class NodeButton extends JButton {
         finally {
             graphics2D.dispose();
         }
-    }
-
-	void updateLabel() {
-		updateLabel(getIcon() != null);
 	}
 
-	private void updateLabel(boolean usesColoredOutlineItems) {
-		if(usesColoredOutlineItems && node instanceof MapTreeNode) {
-			setIcon(((MapTreeNode)node).getIcon(this));
+	void updateLabel() {
+		if(node instanceof MapTreeNode) {
+			setIcon(((MapTreeNode)node).createIcon(this, usesColoredOutlineItems));
 		}
 		else {
 			String buttonText = node.getTitle();

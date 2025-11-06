@@ -170,22 +170,26 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
     	return pane== outlinePane;
     }
 
-	public Icon getIcon(JComponent component) {
-		Color color = styleController.getColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
-		Color backgroundColor = styleController.getBackgroundColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
-        if (backgroundColor != null) {
-            if (backgroundColor.getAlpha() < 255) {
-            	backgroundColor = ColorUtils.blendColors(backgroundColor, mapBackground);
-            }
-        }
-        else
-        	backgroundColor = mapBackground;
+	public Icon createIcon(JComponent component, boolean usesColoredOutlineItems) {
 		final TextIcon textIcon = new TextIcon(getTitle(), component.getFontMetrics(component.getFont()));
-		textIcon.setIconTextColor(color);
-		textIcon.setIconBackgroundColor(backgroundColor);
-		textIcon.setIconBorderColor(determineBorderColor());
 		textIcon.setPaddingX((int) (3 * UITools.FONT_SCALE_FACTOR));
 		textIcon.setBorderType(BorderType.UNDERLINE);
+		textIcon.setBorderStroke(TextIcon.DEFAULT_STROKE);
+		if(usesColoredOutlineItems) {
+			Color color = styleController.getColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
+			Color backgroundColor = styleController.getBackgroundColor(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
+			if (backgroundColor != null) {
+				if (backgroundColor.getAlpha() < 255) {
+					backgroundColor = ColorUtils.blendColors(backgroundColor, mapBackground);
+				}
+			}
+			else
+				backgroundColor = mapBackground;
+			textIcon.setIconTextColor(color);
+			textIcon.setIconBackgroundColor(backgroundColor);
+			if(textIcon.getBorderStroke() != null)
+				textIcon.setIconBorderColor(determineBorderColor());
+		}
 		return textIcon;
 	}
 
