@@ -11,8 +11,6 @@ import javax.swing.JPanel;
 import org.freeplane.core.resources.ResourceController;
 
 class NavigationButtons {
-    final JButton expandBtn;
-    final JButton collapseBtn;
     final JButton expandMoreBtn;
     final JButton reduceBtn;
 
@@ -27,8 +25,6 @@ class NavigationButtons {
         this.expansionControls = expansionControls;
 		this.displayMode = displayMode;
 
-        expandBtn = new JButton("▶");
-        collapseBtn = new JButton("◀");
         expandMoreBtn = new JButton("▼");
         reduceBtn = new JButton("▲");
 
@@ -36,13 +32,7 @@ class NavigationButtons {
     }
 
     private void configureNavigationButtons() {
-        configureNavButton(expandBtn, e -> {
-            expansionControls.expandNode(node);
-        });
-        configureNavButton(collapseBtn, e -> {
-            expansionControls.collapseNode(node);
-        });
-        configureNavButton(expandMoreBtn, e -> {
+         configureNavButton(expandMoreBtn, e -> {
             expansionControls.expandNodeMore(node);
         });
         configureNavButton(reduceBtn, e -> {
@@ -72,8 +62,6 @@ class NavigationButtons {
 		final boolean showFoldingButtons = ResourceController.getResourceController().getBooleanProperty("showOutlineFoldingButtons", true);
 		if(showFoldingButtons) {
 
-            targetPanel.add(expandBtn);
-            targetPanel.add(collapseBtn);
             targetPanel.add(expandMoreBtn);
             targetPanel.add(reduceBtn);
 
@@ -101,17 +89,9 @@ class NavigationButtons {
 
 
     void hideNavigationButtons() {
-        expandBtn.setVisible(false);
-        collapseBtn.setVisible(false);
         expandMoreBtn.setVisible(false);
         reduceBtn.setVisible(false);
         if (currentParent != null) {
-            if (expandBtn.getParent() == currentParent) {
-                currentParent.remove(expandBtn);
-            }
-            if (collapseBtn.getParent() == currentParent) {
-                currentParent.remove(collapseBtn);
-            }
             if (expandMoreBtn.getParent() == currentParent) {
                 currentParent.remove(expandMoreBtn);
             }
@@ -126,21 +106,15 @@ class NavigationButtons {
     private void showButtons(int baseX, int y, int level) {
     	if(displayMode == OutlineDisplayMode.BOOKMARK)
     		return;
-		final int minimalLevel = displayMode.getMinimalOutlineLevel();
 		final int buttonY = y + 2;
         final int buttonHeight = geometry.rowHeight - 4;
-		if (level >= minimalLevel) {
-        	final JButton toggleButton = node.isExpanded() ? collapseBtn : expandBtn;
-        	toggleButton.setBounds(baseX, buttonY, geometry.navButtonWidth, buttonHeight);
-        	toggleButton.setVisible(true);
-        }
 
-        int expandX = baseX + geometry.navButtonWidth;
+        int reduceX = baseX;
+        int expandX = reduceX + geometry.navButtonWidth;
         expandMoreBtn.setBounds(expandX, buttonY, geometry.navButtonWidth, buttonHeight);
         expandMoreBtn.setVisible(true);
 
         if(node.isExpanded() && (level > 0  || node.getMaxExpansionLevel() > 1) ) {
-        	int reduceX = expandX + geometry.navButtonWidth;
         	reduceBtn.setBounds(reduceX, buttonY, geometry.navButtonWidth, buttonHeight);
         	reduceBtn.setVisible(true);
         }
@@ -148,8 +122,6 @@ class NavigationButtons {
 
     void updateGeometry(OutlineGeometry geometry) {
         this.geometry = geometry;
-        applyButtonFont(expandBtn);
-        applyButtonFont(collapseBtn);
         applyButtonFont(expandMoreBtn);
         applyButtonFont(reduceBtn);
     }

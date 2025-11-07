@@ -78,7 +78,7 @@ class OutlineGeometry {
 		final ResourceController resourceController = ResourceController.getResourceController();
 		final float configuredItemFontSize = UITools.FONT_SCALE_FACTOR * (float) resourceController.getDoubleProperty("outlineItemFontSize", 8f);
 
-		JButton sampleButton = new JButton("▶");
+		JButton sampleButton = new JButton("▼");
 		sampleButton.setMargin(new Insets(0, 0, 0, 0));
 		sampleButton.setFont(sampleButton.getFont().deriveFont(configuredItemFontSize * 5 / 4));
 		sampleButton.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -108,11 +108,11 @@ class OutlineGeometry {
     	if(!showNavigationButtons  || navButtonWidth == 0)
     		return level * indent;
     	else
-    		return level == 0 ? 2 * navButtonWidth : (level - 1) * indent + 3 * navButtonWidth;
+    		return level * indent + 2 * navButtonWidth;
     }
 
 	int calculateNavigationButtonX(final int level) {
-		final int baseX = level == 0 ? -navButtonWidth : (level - 1) * indent;
+		final int baseX = level * indent;
 		return baseX;
 	}
 }
