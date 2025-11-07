@@ -113,7 +113,8 @@ class BreadcrumbPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                 	if(nodeToSelect.getParent()  != null || nodeToSelect.getLevel() == 0)
                 		controller.selectNode(nodeToSelect, true);
-                    selectionBridge.selectMapNodeById(nodeToSelect.getId());
+                	if(selectionBridge != null)
+                		selectionBridge.selectMapNodeById(nodeToSelect.getId());
                 }
             };
             breadcrumbButton.addActionListener(selectAction);
