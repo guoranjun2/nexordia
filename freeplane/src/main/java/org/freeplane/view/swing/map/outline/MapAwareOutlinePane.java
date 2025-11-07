@@ -35,6 +35,7 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.NodeMoveEvent;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FocusOutlineAction;
 import org.freeplane.features.ui.IMapViewChangeListener;
@@ -202,21 +203,12 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, saved);
             final OutlineDisplayMode displayMode = displayState.getCurrentMode();
             final MapModel map = mapView.getMap();
-            if (displayMode == OutlineDisplayMode.BOOKMARK) {
-                Filter bookmarkFilter = bookmarkFilterCache.prepare(mapView,
-                        () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
+            if (displayMode == OutlineDisplayMode.BOOKMARK || !displayState.followsJumpIn()) {
                 builder.withRootModel(map.getRootNode());
-                if (bookmarkFilter != null) {
-                    builder.withFilter(bookmarkFilter);
-                }
-            } else {
-                if(! displayState.followsJumpIn())
-                    builder.withRootModel(map.getRootNode());
-                final Filter filter = displayState.getFilter();
-                if(filter != null) {
-                    filter.calculateFilterResults(map);
-                    builder.withFilter(filter);
-                }
+            }
+            Filter effectiveFilter = resolveEffectiveFilter(mapView);
+            if (effectiveFilter != null) {
+                builder.withFilter(effectiveFilter);
             }
             builder.build();
             currentRoot = builder.getRoot();
@@ -575,6 +567,22 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return displayState.getCurrentMode();
     }
 
+    private Filter resolveEffectiveFilter(MapView mapView) {
+        if (mapView == null) {
+            return null;
+        }
+        OutlineDisplayMode mode = displayState.getCurrentMode();
+        if (mode == OutlineDisplayMode.BOOKMARK) {
+            return bookmarkFilterCache.prepare(mapView,
+                    () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
+        }
+        Filter filter = displayState.getFilter();
+        if (filter != null) {
+            filter.calculateFilterResults(mapView.getMap());
+        }
+        return filter;
+    }
+
     private void onFilterResultUpdate(Filter filter, @SuppressWarnings("unused") NodeModel node) {
         if(! isFilterResultUpdateScheduled && (displayState.getFilter() == null || displayState.getFilter() == filter)) {
             isFilterResultUpdateScheduled = true;
@@ -595,8 +603,22 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
     @Override
     void rebuildFromNode(TreeNode node) {
-        if(! isFilterResultUpdateScheduled)
-            super.rebuildFromNode(node);
+        if(! isFilterResultUpdateScheduled && node instanceof MapTreeNode) {
+            MapTreeNode existingSubtreeRoot = (MapTreeNode) node;
+            MapView mapView = getCurrentMapView();
+            if (mapView != null && existingSubtreeRoot.isContainedIn(this)) {
+                OutlineTreeViewState state = displayState.getViewState();
+                NodeTreeBuilder builder = new NodeTreeBuilder(mapView, this, state);
+                Filter effectiveFilter = resolveEffectiveFilter(mapView);
+                if (effectiveFilter != null) {
+                    builder.withFilter(effectiveFilter);
+                }
+                builder.rebuildSubtree(existingSubtreeRoot);
+            }
+        }
+        if(! isFilterResultUpdateScheduled) {
+			super.rebuildFromNode(node);
+		}
     }
 
     @Override
@@ -608,11 +630,41 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     @Override
     public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
         updateFilterResults(nodeDeletionEvent.parent);
+        if(! isFilterResultUpdateScheduled) {
+        	TreeNode outlineNode = findOutlineNode(nodeDeletionEvent.parent);
+        	rebuildFromNode(outlineNode);
+        }
     }
 
+
+
     @Override
+	public void onNodeMoved(NodeMoveEvent nodeMoveEvent) {
+        NodeModel oldParent = nodeMoveEvent.oldParent;
+        NodeModel newParent = nodeMoveEvent.newParent;
+
+        boolean rebuildsOldParentSubtree = ! oldParent.isDescendantOf(newParent);
+        boolean rebuildsNewParentSubtree = newParent != oldParent && ! newParent.isDescendantOf(oldParent);
+		if(rebuildsOldParentSubtree)
+        	updateFilterResults(oldParent);
+		if(rebuildsNewParentSubtree)
+			updateFilterResults(newParent);
+        if(! isFilterResultUpdateScheduled) {
+    		if(rebuildsOldParentSubtree)
+            	rebuildFromNode(findOutlineNode(oldParent));
+    		if(rebuildsNewParentSubtree)
+            	rebuildFromNode(findOutlineNode(newParent));
+        }
+
+	}
+
+	@Override
     public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
     	updateFilterResults(child);
+        if(! isFilterResultUpdateScheduled) {
+        	TreeNode outlineNode = findOutlineNode(parent);
+        	rebuildFromNode(outlineNode);
+        }
     }
 
     private void updateFilterResults(NodeModel node) {
@@ -634,7 +686,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         	return Collections.emptyList();
         final NodeModel selected = mv.getSelected().getNode();
         final NodeModel ancestorNode = ((MapTreeNode) ancestor).getNodeModel();
-        if (!selected.isDescendantOf(ancestorNode))
+        if (! selected.isDescendantOf(ancestorNode))
         	return Collections.emptyList();
         Filter filter = displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK ? bookmarkFilterCache.current() : displayState.getFilter();
         final LinkedList<MapTreeNode> nodes = new LinkedList<MapTreeNode>();

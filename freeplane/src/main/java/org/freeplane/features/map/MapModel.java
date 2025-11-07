@@ -129,6 +129,12 @@ public class MapModel {
 		}
 	}
 
+	public void fireNodeMovedEvent(NodeMoveEvent nodeMovedEvent) {
+		for (final IMapChangeListener listener : listeners) {
+			listener.onNodeMoved(nodeMovedEvent);
+		}
+	}
+
 	public String generateNodeID(final String proposedID) {
 		if (proposedID != null && !"".equals(proposedID) && getNodeForID(proposedID) == null) {
 			return proposedID;
@@ -334,6 +340,4 @@ public class MapModel {
     public INodeDuplicator getNodeDuplicator() {
         return nodeDuplicator;
     }
-
-
 }

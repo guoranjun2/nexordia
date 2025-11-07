@@ -78,68 +78,6 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
     }
 
     @Override
-    public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
-        if (parent == nodeModel) {
-
-            MapTreeNode childTreeNode = createMapTreeNodeRecursively(child);
-
-            add(childTreeNode, newIndex);
-            childTreeNode.setParent(this);
-
-            SwingUtilities.invokeLater(() -> {
-            	outlinePane.rebuildFromNode(this);
-            });
-        }
-    }
-
-    private MapTreeNode createMapTreeNodeRecursively(NodeModel nodeModel) {
-        MapTreeNode treeNode = new MapTreeNode(nodeModel, outlinePane, styleController, mapBackground);
-        nodeModel.addViewer(treeNode);
-
-        for (NodeModel childNode : nodeModel.getChildren()) {
-            MapTreeNode childTreeNode = createMapTreeNodeRecursively(childNode);
-            treeNode.addChild(childTreeNode);
-        }
-
-        return treeNode;
-    }
-
-    @Override
-    public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
-        NodeModel deletedNode = nodeDeletionEvent.node;
-
-
-        MapTreeNode toRemove = null;
-        for (TreeNode child : getChildren()) {
-            if (child instanceof MapTreeNode) {
-                MapTreeNode mapChild = (MapTreeNode) child;
-                if (mapChild.nodeModel == deletedNode) {
-                    toRemove = mapChild;
-                    break;
-                }
-            }
-        }
-
-        if (toRemove != null) {
-        	if(outlinePane.isSelected(toRemove))
-        		outlinePane.setSelected(toRemove.getParent());
-            deletedNode.removeViewer(toRemove);
-
-
-            remove(toRemove);
-            toRemove.setParent(null);
-
-
-            toRemove.cleanupListeners();
-
-
-            SwingUtilities.invokeLater(() -> {
-            	outlinePane.rebuildFromNode(this);
-            });
-        }
-    }
-
-    @Override
 	public
     boolean hasStandardLayoutWithRootNode(NodeModel root) {
         return false;

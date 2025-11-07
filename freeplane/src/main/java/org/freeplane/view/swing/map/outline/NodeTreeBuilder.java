@@ -1,5 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.features.filter.Filter;
@@ -47,7 +49,7 @@ class NodeTreeBuilder {
         rootModel.addViewer(outRoot);
         this.root = outRoot;
 
-        visitChildren(rootModel, outRoot);
+        rebuildDescendants(outRoot, rootModel);
 
         return this;
     }
@@ -59,6 +61,22 @@ class NodeTreeBuilder {
 
     NodeTreeBuilder withFilter(Filter filter) {
         this.overrideFilter = filter;
+        return this;
+    }
+
+    NodeTreeBuilder rebuildSubtree(MapTreeNode existingSubtreeRoot) {
+        if (existingSubtreeRoot == null) {
+            return this;
+        }
+        NodeModel subtreeRootModel = existingSubtreeRoot.getNodeModel();
+        if (subtreeRootModel == null) {
+            return this;
+        }
+        this.rootModel = subtreeRootModel;
+        initializeFilter();
+        rebuildDescendants(existingSubtreeRoot, subtreeRootModel);
+        this.root = existingSubtreeRoot;
+        this.applicableState = null;
         return this;
     }
 
@@ -79,6 +97,23 @@ class NodeTreeBuilder {
             filter = mapView.getFilter();
         } else {
             filter = null;
+        }
+    }
+
+    private void rebuildDescendants(MapTreeNode parentOut, NodeModel parentModel) {
+        clearOutlineChildren(parentOut);
+        visitChildren(parentModel, parentOut);
+    }
+
+    private void clearOutlineChildren(MapTreeNode parentOut) {
+        List<TreeNode> currentChildren = new ArrayList<>(parentOut.getChildren());
+        for (TreeNode child : currentChildren) {
+            if (child instanceof MapTreeNode) {
+                MapTreeNode mapChild = (MapTreeNode) child;
+                parentOut.remove(mapChild);
+                mapChild.setParent(null);
+                mapChild.cleanupListeners();
+            }
         }
     }
 
