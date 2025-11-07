@@ -937,11 +937,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return crumbs != null && crumbs.contains(node);
     }
 
-    boolean areNavButtonsVisible() {
-        return navButtons.expandBtn.isVisible() || navButtons.collapseBtn.isVisible()
-                || navButtons.expandMoreBtn.isVisible() || navButtons.reduceBtn.isVisible();
-    }
-
     Collection<BlockPanel> getBlockPanels() { return blockCache.values(); }
 
 	OutlineDisplayMode getDisplayMode() {

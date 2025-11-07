@@ -71,8 +71,4 @@ class OutlineController implements OutlineActionTarget {
     boolean isHoveredNodeContainedInBreadcrumb() {
         return treePanel.getVisibleNodes().isHoveredNodeContainedInBreadcrumb();
     }
-
-    boolean areNavButtonsVisible() {
-        return treePanel.areNavButtonsVisible();
-    }
 }
