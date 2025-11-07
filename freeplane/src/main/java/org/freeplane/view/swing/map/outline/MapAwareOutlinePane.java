@@ -6,7 +6,10 @@ import java.awt.Component;
 import java.awt.Window;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import javax.swing.FocusManager;
@@ -623,4 +626,25 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         filter.updateFilterResults(node, filterUpdateListener);
     }
 
+    Collection<? extends TreeNode> collectNodesToSelection(TreeNode ancestor) {
+		if(! (ancestor instanceof MapTreeNode))
+				return Collections.emptyList();
+        final MapView mv = getCurrentMapView();
+        if (mv == null)
+        	return Collections.emptyList();
+        final NodeModel selected = mv.getSelected().getNode();
+        final NodeModel ancestorNode = ((MapTreeNode) ancestor).getNodeModel();
+        if (!selected.isDescendantOf(ancestorNode))
+        	return Collections.emptyList();
+        Filter filter = displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK ? bookmarkFilterCache.current() : displayState.getFilter();
+        final LinkedList<MapTreeNode> nodes = new LinkedList<MapTreeNode>();
+        for(NodeModel node = selected; node != ancestorNode; node = node.getParentNode()) {
+        	if(filter == null || filter.isVisible(node))
+        		nodes.addFirst(((MapTreeNode) ancestor).createNode(node));
+        }
+        int level = ancestor.getLevel();
+        for(MapTreeNode node : nodes)
+        	node.setLevel(++level);
+        return nodes;
+	}
 }
