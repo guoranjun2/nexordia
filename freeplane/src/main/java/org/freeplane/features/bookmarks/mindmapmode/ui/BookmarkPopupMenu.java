@@ -15,7 +15,6 @@ import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
 import org.freeplane.features.bookmarks.mindmapmode.NodeBookmark;
 import org.freeplane.features.bookmarks.mindmapmode.NodeBookmarkDescriptor;
-import org.freeplane.features.map.NodeModel;
 
 class BookmarkPopupMenu extends JPopupMenu {
 	private static final int RENAME_TEXTFIELD_WIDTH = 40;
@@ -31,8 +30,6 @@ class BookmarkPopupMenu extends JPopupMenu {
 		addGotoNodeMenuItem(bookmark);
 		addOpenAsRootDirectMenuItem(bookmark);
 		addOpenAsNewViewRootMenuItem(bookmark);
-		addSeparator();
-		addRemoveNodeMenuItem(bookmark);
 		addSeparator();
 		addRemoveMenuItem(bookmark);
 		addRenameMenuItem(bookmark);
@@ -62,15 +59,6 @@ class BookmarkPopupMenu extends JPopupMenu {
 		JMenuItem removeItem = TranslatedElementFactory.createMenuItem("bookmark.delete");
 		removeItem.addActionListener(e -> bookmarksController.removeBookmark(bookmark.getNode()));
 		add(removeItem);
-	}
-
-	private void addRemoveNodeMenuItem(NodeBookmark bookmark) {
-		final NodeModel node = bookmark.getNode();
-		if(! node.isRoot()) {
-			JMenuItem removeItem = TranslatedElementFactory.createMenuItem("DeleteAction.text");
-			removeItem.addActionListener(e -> bookmarksController.deleteNode(node));
-			add(removeItem);
-		}
 	}
 
 	private void addRenameMenuItem(NodeBookmark bookmark) {
