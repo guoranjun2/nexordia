@@ -161,7 +161,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         }
         if (view instanceof MapView) {
             Window myWindow = SwingUtilities.getWindowAncestor(this);
-            if (SwingUtilities.getWindowAncestor(view) == myWindow) {
+            if (SwingUtilities.getWindowAncestor(view) == myWindow && displayState.getFilter() == null && displayState.getCurrentMode() != OutlineDisplayMode.BOOKMARK) {
                 final Component focusOwner = FocusManager.getCurrentManager().getFocusOwner();
                 final boolean requestFocus = focusOwner != null && SwingUtilities.isDescendingFrom(focusOwner, this);
                 updateTreeFromMap((MapView) view);
