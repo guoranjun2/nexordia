@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import javax.swing.Icon;
 import org.freeplane.core.ui.components.IconListComponent;
 import org.freeplane.core.ui.components.IconRow;
+import org.freeplane.core.ui.components.MultipleImageIcon;
 import org.freeplane.core.ui.components.ObjectIcon;
 import org.freeplane.core.ui.components.TextIcon;
 import org.freeplane.core.ui.components.UITools;
@@ -154,6 +155,13 @@ public abstract class ASelectableCondition  implements ICondition{
 	    IconListComponent renderer = createGraphicComponent(fontMetrics);
 		renderer.setToolTipText(toString());
 		return renderer;
+	}
+
+	public MultipleImageIcon createIcon(FontMetrics fontMetrics) {
+		MultipleImageIcon multipleImageIcon = new MultipleImageIcon();
+		List<Icon> icons = createRenderedIcons(fontMetrics);
+		icons.forEach(multipleImageIcon::addIcon);
+		return multipleImageIcon;
 	}
 
 	protected IconListComponent createGraphicComponent(FontMetrics fontMetrics) {

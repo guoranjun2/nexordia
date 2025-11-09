@@ -1,8 +1,11 @@
-
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
 import java.awt.Window;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
@@ -15,6 +18,7 @@ import java.util.Map;
 import javax.swing.FocusManager;
 import javax.swing.Icon;
 import javax.swing.JToggleButton;
+import javax.swing.JToolTip;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.ResourceController;
@@ -44,7 +48,8 @@ import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
 
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener, INodeChangeListener {
-    private static final long serialVersionUID = 1L;
+    private static final String FILTER_ICON = "filter_icon";
+	private static final long serialVersionUID = 1L;
     private static final Icon BOOKMARK_ICON = IconStoreFactory.ICON_STORE.getUIIcon("node-bookmark.svg").getIcon();
     private static final Icon SYNC_ICON = ResourceController.getResourceController().getIcon("/images/sync.svg?useAccentColor=true");
     private static final Icon JUMPIN_ICON = ResourceController.getResourceController().getIcon("/images/syncJumpIn.svg?useAccentColor=true");
@@ -423,7 +428,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         configureJumpinToggleButton(jumpInToggleButton);
         toolbar.add(jumpInToggleButton, 2);
 
-        quickFilterButton = new JToggleButton(QUICK_FILTER_ICON);
+        quickFilterButton = new JToggleButton(QUICK_FILTER_ICON) {
+            @Override
+            public JToolTip createToolTip() {
+                JToolTip quickFilterToolTip = new QuickFilterToolTip(this);
+                quickFilterToolTip.setComponent(this);
+                return quickFilterToolTip;
+            }
+        };
         TranslatedElementFactory.createTooltip(quickFilterButton, "outline.filter");
         configureQuickFilterToggleButton(quickFilterButton);
         toolbar.add(quickFilterButton, 3);
@@ -461,10 +473,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             filter = filterController.createQuickFilter(null);
             if(filter == null) {
                 quickFilterButton.setSelected(false);
-            }
-        }
-        else
-            filter = null;
+                quickFilterButton.putClientProperty(FILTER_ICON, null);
+            } else {
+            	quickFilterButton.putClientProperty(FILTER_ICON, filter.createIcon(quickFilterButton.getFontMetrics(quickFilterButton.getFont())));
+			}
+        } else {
+			filter = null;
+			quickFilterButton.putClientProperty(FILTER_ICON, null);
+		}
         if(displayState.getFilter() != filter)
             setOutlineDisplayMode(displayState.getCurrentMode(), filter, displayState.followsJumpIn());
     }
@@ -699,4 +715,61 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         	node.setLevel(++level);
         return nodes;
 	}
+
+    private static final class QuickFilterToolTip extends JToolTip {
+        private static final long serialVersionUID = 1L;
+        private final JToggleButton sourceButton;
+        private boolean suppressDefaultText;
+
+        private QuickFilterToolTip(JToggleButton sourceButton) {
+            this.sourceButton = sourceButton;
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Icon filterIcon = getFilterIcon();
+            String tooltipText = super.getTipText();
+            if (filterIcon == null || tooltipText == null || tooltipText.isEmpty()) {
+                return super.getPreferredSize();
+            }
+            Insets insets = getInsets();
+            FontMetrics fontMetrics = getFontMetrics(getFont());
+            int textHeight = fontMetrics != null ? fontMetrics.getHeight() : filterIcon.getIconHeight();
+            int requiredHeight = Math.max(textHeight, filterIcon.getIconHeight()) + insets.top + insets.bottom;
+            int requiredWidth = filterIcon.getIconWidth() + insets.left + insets.right;
+            return new Dimension(requiredWidth, requiredHeight);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Icon filterIcon = getFilterIcon();
+            String tooltipText = super.getTipText();
+            if (filterIcon == null || tooltipText == null || tooltipText.isEmpty()) {
+                suppressDefaultText = false;
+                super.paintComponent(graphics);
+                return;
+            }
+            suppressDefaultText = true;
+            super.paintComponent(graphics);
+            suppressDefaultText = false;
+
+            Insets insets = getInsets();
+            int iconYPosition = insets.top + (getHeight() - insets.top - insets.bottom - filterIcon.getIconHeight()) / 2;
+            int iconXPosition = insets.left;
+            filterIcon.paintIcon(this, graphics, iconXPosition, iconYPosition);
+        }
+
+        @Override
+        public String getTipText() {
+            if (suppressDefaultText) {
+                return "";
+            }
+            return super.getTipText();
+        }
+
+        private Icon getFilterIcon() {
+            Object clientProperty = sourceButton.getClientProperty(FILTER_ICON);
+            return clientProperty instanceof Icon ? (Icon) clientProperty : null;
+        }
+    }
 }

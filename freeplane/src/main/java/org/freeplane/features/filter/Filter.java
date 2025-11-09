@@ -19,6 +19,7 @@
  */
 package org.freeplane.features.filter;
 
+import java.awt.FontMetrics;
 import java.util.List;
 import java.util.Objects;
 import java.util.WeakHashMap;
@@ -28,6 +29,9 @@ import javax.swing.Icon;
 
 import org.freeplane.core.extension.IExtension;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.MultipleImageIcon;
+import org.freeplane.core.ui.components.TextIcon;
+import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.filter.condition.ICondition;
 import org.freeplane.features.filter.hidden.NodeVisibility;
 import org.freeplane.features.link.ConnectorModel;
@@ -390,5 +394,26 @@ public class Filter implements IExtension {
                 && this.filteredElement == other.filteredElement
                 && Objects.equals(this.condition, other.condition)
                 && Objects.equals(this.baseFilter, other.baseFilter);
+    }
+
+    public MultipleImageIcon createIcon(FontMetrics fontMetrics) {
+    	MultipleImageIcon icon;
+    	if (condition instanceof ASelectableCondition) {
+    		icon = ((ASelectableCondition)condition).createIcon(fontMetrics);
+    	} else {
+			icon = new MultipleImageIcon();
+			TextIcon textIcon = new TextIcon(condition != null ? condition.toString() : "--", fontMetrics);
+			icon.addIcon(textIcon);
+		}
+		if(!areAncestorsShown() && !areDescendantsShown() && !areMatchingElementsHidden())
+			return icon;
+		icon.addIcon(new TextIcon(" : ", fontMetrics));
+		if(areAncestorsShown())
+			icon.addIcon(ResourceController.getResourceController().getIcon("ShowAncestorsAction.icon"));
+		if(areDescendantsShown())
+			icon.addIcon(ResourceController.getResourceController().getIcon("ShowDescendantsAction.icon"));
+		if(areMatchingElementsHidden())
+			icon.addIcon(ResourceController.getResourceController().getIcon("HideMatchingNodesAction.icon"));
+		return icon;
     }
 }
