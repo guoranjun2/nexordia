@@ -248,9 +248,10 @@ public class Filter implements IExtension {
 
     public boolean isFoldable(final NodeModel node) {
         return  filteredElement == FilteredElement.CONNECTOR ||
-                accepts(node, hidesMatchingElements
-                		? (options & FilterInfo.SHOW_AS_HIDDEN_DESCENDANT | FilterInfo.SHOW_AS_HIDDEN_ANCESTOR)
-                		: (options & FilterInfo.SHOW_AS_MATCHED_DESCENDANT | FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
+        		(areDescendantsShown() ?
+        				accepts(node)
+        				: accepts(node,
+        						hidesMatchingElements ? FilterInfo.SHOW_AS_HIDDEN_ANCESTOR : FilterInfo.SHOW_AS_MATCHED_ANCESTOR));
     }
 
     private boolean accepts(final NodeModel node, int options) {
