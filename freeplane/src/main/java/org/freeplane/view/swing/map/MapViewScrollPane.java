@@ -235,6 +235,8 @@ public class MapViewScrollPane extends JScrollPane implements IFreeplaneProperty
 			this.scrollsRectangleToVisible = true;
 			try {
 				super.scrollRectToVisible(contentRectangle);
+				if(targetViewPosition == null)
+					scrollingDelay = 0;
 			}
 			finally {
 				this.scrollsRectangleToVisible =scrollsRectangleToVisible;
