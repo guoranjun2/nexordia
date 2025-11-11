@@ -24,15 +24,15 @@ class AncestorsHider {
         boolean isAnyLeafDescendantSelected = NodeStream.of(node)
         .filter(n -> n.isLeaf() && filter.accepts(n) && selection.isSelected(n))
         .findAny().isPresent();
+        Filter leafFilter = new Filter(filter.getCondition(), false, false, filter.areDescendantsShown(), false,
+                filter.getFilteredElement(), null);
+        filterController.applyFilter(node.getMap(), false, leafFilter);
         if (! isAnyLeafDescendantSelected) {
             NodeStream.of(node)
             .filter(n -> n.isLeaf() && filter.accepts(n))
             .findFirst()
-            .ifPresent(n -> selection.toggleSelected(n));
+            .ifPresent(n -> selection.selectAsTheOnlyOneSelected(n));
         }
-        Filter leafFilter = new Filter(filter.getCondition(), false, false, filter.areDescendantsShown(), false,
-                filter.getFilteredElement(), null);
-        filterController.applyFilter(node.getMap(), false, leafFilter);
     }
 
 }
