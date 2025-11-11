@@ -908,8 +908,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         iconLocation = mapStyle.iconLocation(viewedMap);
         rootsHistory.clear();
         filter = Filter.createTransparentFilter();
-        if(lastViewedMap != viewedMap)
-        	modeController.getMapController().fireMapChanged(new MapChangeEvent(this, viewedMap, MapView.class, null, this, false));
+        if(lastViewedMap != viewedMap) {
+            selectAsTheOnlyOneSelected(getRoot());
+			modeController.getMapController().fireMapChanged(new MapChangeEvent(this, viewedMap, MapView.class, null, this, false));
+		}
 
         viewedMap.addMapChangeListener(this);
 

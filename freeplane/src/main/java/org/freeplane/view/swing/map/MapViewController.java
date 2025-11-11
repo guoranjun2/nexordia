@@ -1138,7 +1138,6 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
            return;
        mapViewChangeListeners.beforeMapChange(oldMap, newMap);
        mapView.setMap(newMap);
-       mapView.selectAsTheOnlyOneSelected(mapView.getRoot());
        mapViewChangeListeners.afterMapChange(oldMap, newMap);
     }
 
