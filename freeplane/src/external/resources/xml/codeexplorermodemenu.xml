@@ -174,6 +174,7 @@
 				<Entry name="ShowFilterToolbarAction" accelerator="control F" />
 				<Entry name="ToggleScrollbarsAction" />
 				<Entry name="ToggleMapOverviewAction" />
+				<Entry name="ToggleOutlineAction" />
 				<Entry name="SetBooleanPropertyAction.spotlight" />
 			</Entry>
 			<Entry name="menu_viewmode">
@@ -334,6 +335,7 @@
 		<Entry name="ShowFilterToolbarAction" />
 		<Entry name="ToggleScrollbarsAction" />
 		<Entry name="ToggleMapOverviewAction" />
+		<Entry name="ToggleOutlineAction" />
 		<Entry accelerator="ESCAPE" name="MoveToRootAction" />
 	</Entry>
 	<Entry name="node_popup" builder="node_popup">
