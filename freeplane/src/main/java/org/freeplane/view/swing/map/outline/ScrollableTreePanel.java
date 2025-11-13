@@ -110,14 +110,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		if (!isSelectionDrivenBreadcrumbMode())
 			return BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN;
 		final TreeNode requiredNode = outlineSelection.getRequiredVisibleNode();
-		final int visibleIndex = visibleNodes.findNodeIndexInVisibleList(requiredNode);
+		int visibleLevel = requiredNode.getLevel();
 		final int breadcrumbNodeCount = breadcrumbPanel.getCurrentBreadcrumbNodeCount();
 		return BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN +
-				(visibleIndex <= breadcrumbNodeCount
-				 ? OutlineGeometry.getInstance().rowHeight * (requiredNode.getLevel() > 0
-						? breadcrumbNodeCount + 1 - visibleIndex
-						:1)
-				: 0);
+				OutlineGeometry.getInstance().rowHeight * (Math.max(0, breadcrumbNodeCount - visibleLevel));
 	}
 
 	@Override
