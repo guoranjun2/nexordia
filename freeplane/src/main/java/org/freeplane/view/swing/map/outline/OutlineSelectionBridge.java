@@ -9,6 +9,7 @@ import java.util.Collection;
 import javax.swing.SwingUtilities;
 
 import org.freeplane.features.map.IMapSelection;
+import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.view.swing.map.MapView;
@@ -34,9 +35,11 @@ class OutlineSelectionBridge {
         NodeModel target = mv.getMap().getNodeForID(nodeId);
         if (target == null) return;
 
-        mv.getModeController().getMapController().displayNode(target);
+        MapController mapController = mv.getModeController().getMapController();
+		mapController.displayNode(target);
         final NodeView nodeView = mv.getNodeView(target);
         mv.selectAsTheOnlyOneSelected(nodeView, false);
+        mapController.scrollNodeTreeAfterSelect(nodeView.getNode());
         SwingUtilities.invokeLater(this::focusMapNode);
     }
 
