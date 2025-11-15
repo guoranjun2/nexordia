@@ -107,7 +107,7 @@ public class MMapViewController extends MapViewController implements IEditBaseCr
                 editNodeWYSIWYG.setFont(map.getDetailFont());
                 editNodeWYSIWYG.setTextColor(map.getDetailForeground());
     			final Color detailBackground = map.getDetailBackground();
-                editNodeWYSIWYG.setBackground (detailBackground != null ? detailBackground : nodeView.getTextBackground(StyleOption.FOR_UNSELECTED_NODE));
+                editNodeWYSIWYG.setBackground (detailBackground != null ? detailBackground : nodeView.getBlendedBackgroundColor());
                 editNodeWYSIWYG.setTextAlignment(map.getDetailHorizontalAlignment());
                 editNodeWYSIWYG.setComponentOrientation(componentOrientation);
                 editNodeWYSIWYG.setCustomStyleSheet(map.getDetailCss().getStyleSheet());
@@ -161,7 +161,7 @@ public class MMapViewController extends MapViewController implements IEditBaseCr
 			textField.setBackground (nodeView.getTextBackground(StyleOption.FOR_UNSELECTED_NODE));
 		else if(EditedComponent.DETAIL.equals(parent)) {
 			final Color detailBackground = nodeView.getMap().getDetailBackground();
-			textField.setBackground (detailBackground != null ? detailBackground : nodeView.getTextBackground(StyleOption.FOR_UNSELECTED_NODE));
+			textField.setBackground (detailBackground != null ? detailBackground : nodeView.getBlendedBackgroundColor());
 		}
 		return textField;
 	}
