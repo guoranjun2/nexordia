@@ -276,10 +276,11 @@ public class EditNodeWYSIWYG extends EditNodeBase {
 			final SHTMLPanel htmlEditorPanel = (htmlEditorWindow).getHtmlEditorPanel();
 			final StringBuilder ruleBuilder = new StringBuilder(100);
 			ruleBuilder.append("body {");
+			Color backgroundColor = getBackground();
 			ruleBuilder.append(new CssRuleBuilder()
 					.withCSSFont(font, UITools.FONT_SCALE_FACTOR)
 					.withColor(textColor)
-					.withBackground(getBackground())
+					.withBackground(backgroundColor)
 					.withAlignment(horizontalAlignment));
 			ruleBuilder.append("}\n");
 			if(getEditControl().getEditType() != EditedComponent.NOTE
@@ -293,6 +294,8 @@ public class EditNodeWYSIWYG extends EditNodeBase {
 				editorPane.setForeground(textColor);
 				editorPane.setCaretColor(textColor);
 			}
+			if(backgroundColor != null)
+				editorPane.setBackground(backgroundColor);
 			htmlEditorWindow.updateStyleSheet(ruleBuilder.toString(), customStyleSheet);
 			final URL url = node.getMap().getURL();
 			if (url != null) {
