@@ -1,6 +1,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -103,8 +104,11 @@ final class BreadcrumbLayout {
         }
         List<TreeNode> nodes = collectBreadcrumbNodes(selected);
         nodes.add(selected);
-        if (selectionBridge != null) {
-            nodes.addAll(selectionBridge.collectNodesToSelection(selected));
+        if (selectionBridge != null && outlineSelection.showsExtendedBreadcrumb()) {
+            Collection<? extends TreeNode> extraNodes = selectionBridge.collectNodesToSelection(selected);
+            if(extraNodes.isEmpty())
+            	outlineSelection.setShowsExtendedBreadcrumb(false);
+			nodes.addAll(extraNodes);
         }
         return nodes;
     }

@@ -204,10 +204,6 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 		return treePanel.getOutlineSelection().isSelected(node);
 	}
 
-	public void setSelected(TreeNode node) {
-		treePanel.getOutlineSelection().selectNode(node);
-	}
-
 	OutlineDisplayMode getDisplayMode() {
 		return OutlineDisplayMode.DEFAULT;
 	}

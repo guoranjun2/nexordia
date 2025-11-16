@@ -3,6 +3,7 @@ package org.freeplane.view.swing.map.outline;
 class OutlineSelection {
     private TreeNode selectedNode;
     private TreeNode requiredVisibleNode;
+    private boolean showsExtendedBreadcrumb;
 
     OutlineSelection(TreeNode root) {
         this.selectedNode = root;
@@ -32,6 +33,14 @@ class OutlineSelection {
 
 	void setRequiredVisibleNode(TreeNode requiredVisibleNode) {
 		this.requiredVisibleNode = requiredVisibleNode;
+	}
+
+	public boolean showsExtendedBreadcrumb() {
+		return showsExtendedBreadcrumb;
+	}
+
+	public void setShowsExtendedBreadcrumb(boolean showsExtendedBreadcrumb) {
+		this.showsExtendedBreadcrumb = showsExtendedBreadcrumb;
 	}
 
 
