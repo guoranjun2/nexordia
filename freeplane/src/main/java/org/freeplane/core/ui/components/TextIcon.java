@@ -11,6 +11,7 @@ import java.awt.Component;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 
 public class TextIcon implements StyledIcon {
 	public enum BorderType {UNDERLINE, ROUND_RECTANGLE}
@@ -60,7 +61,15 @@ public class TextIcon implements StyledIcon {
             	textX += borderLineWidth;
             	textY += borderLineWidth;
             }
-            g2d.drawString(text, textX, textY);
+            Object textHint = g2d.getRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING);
+            if(! RenderingHints.VALUE_TEXT_ANTIALIAS_ON.equals(textHint)) {
+				g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+				g2d.drawString(text, textX, textY);
+				g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, textHint);
+			}
+            else
+				g2d.drawString(text, textX, textY);
+
         }
     }
 

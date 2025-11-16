@@ -294,7 +294,7 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 	private JComboBox activeFilterConditionComboBox;
 	private final FilterConditionEditor quickEditor;
 
-	static final int USER_DEFINED_CONDITION_START_INDEX = 3;
+	public static final int USER_DEFINED_CONDITION_START_INDEX = 3;
 	final private QuickFilterAction quickFilterAction;
 	private int mapChangeCounter;
     private boolean applyFilterRunning;
@@ -580,7 +580,7 @@ public class FilterController implements IExtension, IMapViewChangeListener {
 		return condition == null ? null : createFilter(condition, baseFilter);
 	}
 
-	private Filter createFilter(final ASelectableCondition selectedCondition, Filter baseFilter) {
+	public Filter createFilter(final ASelectableCondition selectedCondition, Filter baseFilter) {
 
 		final ASelectableCondition filterCondition;
 		if (selectedCondition == null || selectedCondition.equals(NO_FILTERING)) {

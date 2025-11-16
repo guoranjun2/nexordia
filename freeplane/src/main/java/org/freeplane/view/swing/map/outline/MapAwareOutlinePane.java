@@ -1,5 +1,6 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -15,13 +16,19 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.FocusManager;
 import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.JToolTip;
+import javax.swing.SwingConstants;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicMenuItemUI;
+import javax.swing.plaf.basic.BasicPopupMenuUI;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
@@ -31,6 +38,7 @@ import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.filter.FilterUpdateListener;
+import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.IMapSelection;
@@ -70,7 +78,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     private JToggleButton syncModeToggleButton;
     private JToggleButton jumpInToggleButton;
     private static final String QUICK_FILTER_HISTORY_SIZE_KEY = "outlineFilterHistorySize";
-    private final LinkedList<QuickFilterHistoryEntry> quickFilterHistory = new LinkedList<>();
+    private final LinkedList<FilterEntry> quickFilterHistory = new LinkedList<>();
     private final JPopupMenu quickFilterPopupMenu = new JPopupMenu();
     private JToggleButton quickFilterButton;
 
@@ -495,26 +503,38 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         addFilter.setIcon(QUICK_FILTER_ICON);
         quickFilterPopupMenu.add(addFilter);
         if (!quickFilterHistory.isEmpty()) {
-            quickFilterPopupMenu.addSeparator();
-            addHistoryMenuItems(quickFilterPopupMenu);
+            JMenu recentFiltersMenu = TranslatedElementFactory.createMenu("outline.recentFilters");
+            quickFilterPopupMenu.add(recentFiltersMenu);
+            addHistoryMenuItems(recentFiltersMenu);
+        }
+        FilterController filterController = FilterController.getCurrentFilterController();
+        DefaultComboBoxModel filterConditions = filterController.getFilterConditions();
+        if(filterConditions.getSize() > FilterController.USER_DEFINED_CONDITION_START_INDEX) {
+                JMenu predefinedConditionsMenu = TranslatedElementFactory.createMenu("outline.predefinedFilters");
+                quickFilterPopupMenu.add(predefinedConditionsMenu);
+                for(int conditionIndex = FilterController.USER_DEFINED_CONDITION_START_INDEX;
+                    conditionIndex < filterConditions.getSize();
+                    conditionIndex++) {
+                ASelectableCondition condition = (ASelectableCondition) filterConditions.getElementAt(conditionIndex);
+                Filter filter = filterController.createFilter(condition, null);
+                Icon icon = filter.createIcon(quickFilterButton.getFontMetrics(quickFilterButton.getFont()));
+                JMenuItem menuItem = new FilterEntry(filter, icon).createMenuItem(this);
+                predefinedConditionsMenu.add(menuItem);
+            }
         }
         if (quickFilterPopupMenu.getComponentCount() > 0) {
             quickFilterPopupMenu.show(invoker, 0, invoker.getHeight());
         }
     }
 
-    private void addHistoryMenuItems(JPopupMenu menu) {
-        for (QuickFilterHistoryEntry entry : quickFilterHistory) {
-            JMenuItem historyItem = new JMenuItem();
-            historyItem.setIcon(entry.icon);
-            historyItem.setText(null);
-            TranslatedElementFactory.createTooltip(historyItem, "outline.filter");
-            historyItem.addActionListener(e -> applyQuickFilterFromHistory(entry));
-            menu.add(historyItem);
+    private void addHistoryMenuItems(JMenu menu) {
+        for (FilterEntry entry : quickFilterHistory) {
+            JMenuItem historyItem = entry.createMenuItem(this);
+			menu.add(historyItem);
         }
     }
 
-    private void setQuickFilter(boolean enable) {
+	private void setQuickFilter(boolean enable) {
         final Filter filter;
         if(enable) {
             FilterController filterController = FilterController.getCurrentFilterController();
@@ -547,13 +567,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         quickFilterButton.putClientProperty(FILTER_ICON, icon);
         quickFilterButton.repaint();
         quickFilterHistory.removeIf(entry -> entry.filter == filter);
-        quickFilterHistory.addFirst(new QuickFilterHistoryEntry(filter, icon));
+        quickFilterHistory.addFirst(new FilterEntry(filter, icon));
         while(quickFilterHistory.size() > ResourceController.getResourceController().getIntProperty(QUICK_FILTER_HISTORY_SIZE_KEY, 10)) {
             quickFilterHistory.removeLast();
         }
     }
 
-    private void applyQuickFilterFromHistory(QuickFilterHistoryEntry entry) {
+    private void applyQuickFilter(FilterEntry entry) {
         if(entry == null) {
             return;
         }
@@ -793,14 +813,33 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return nodes;
     }
 
-    private static final class QuickFilterHistoryEntry {
+    static final class FilterEntry {
         private final Filter filter;
         private final Icon icon;
 
-        private QuickFilterHistoryEntry(Filter filter, Icon icon) {
+        private FilterEntry(Filter filter, Icon icon) {
             this.filter = filter;
             this.icon = icon;
         }
+
+		private JMenuItem createMenuItem(MapAwareOutlinePane mapAwareOutlinePane) {
+			JMenuItem filterActionItem = new JMenuItem() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public void updateUI() {
+					setUI(new BasicMenuItemUI());
+				}
+
+			};
+			filterActionItem.setIcon(icon);
+			filterActionItem.setText(null);
+			TranslatedElementFactory.createTooltip(filterActionItem, "outline.filter");
+			filterActionItem.addActionListener(e -> mapAwareOutlinePane.applyQuickFilter(this));
+			filterActionItem.setMaximumSize(filterActionItem.getPreferredSize());
+			filterActionItem.setAlignmentX(LEFT_ALIGNMENT);
+			return filterActionItem;
+		}
     }
 
     private static final class QuickFilterToolTip extends JToolTip {
