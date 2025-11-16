@@ -19,9 +19,9 @@ class OutlineViewport {
         scrollPane.getViewport().setViewPosition(position);
     }
 
-    void setViewPosition(int startFromNodeIndex, int breadcrumbHeight) {
+    void setViewPosition(int startFromNodeIndex, int blockBreadcrumbOverlap) {
     	int rowHeight = OutlineGeometry.getInstance().rowHeight;
-    	int targetY = (startFromNodeIndex * rowHeight) - breadcrumbHeight;
+    	int targetY = (startFromNodeIndex * rowHeight) - blockBreadcrumbOverlap;
     	targetY = Math.max(0, targetY);
     	Point viewPosition = new Point(0, targetY);
     	setViewPosition(viewPosition);

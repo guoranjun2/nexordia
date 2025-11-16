@@ -619,7 +619,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		int breadcrumbNodeCountAfter = breadcrumbPanel.getCurrentBreadcrumbNodeCount();
 		if(breadcrumbNodeCountBefore != breadcrumbNodeCountAfter) {
 			int newFirstVisibleNodeIndex = Math.max(0, firstVisibleNodeIndex + breadcrumbNodeCountAfter - breadcrumbNodeCountBefore);
-			viewport.setViewPosition(newFirstVisibleNodeIndex, BreadcrumbPanel.BREADCRUMB_BOTTOM_MARGIN);
+			viewport.setViewPosition(newFirstVisibleNodeIndex, 0);
 		}
 		revalidate();
 	}
