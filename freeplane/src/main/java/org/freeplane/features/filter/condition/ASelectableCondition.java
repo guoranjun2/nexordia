@@ -159,7 +159,7 @@ public abstract class ASelectableCondition  implements ICondition{
 
 	public MultipleImageIcon createIcon(FontMetrics fontMetrics) {
 		MultipleImageIcon multipleImageIcon = new MultipleImageIcon();
-		List<Icon> icons = createRenderedIcons(fontMetrics);
+		List<Icon> icons = createSmallRendererIcons(fontMetrics);
 		icons.forEach(multipleImageIcon::addIcon);
 		return multipleImageIcon;
 	}
