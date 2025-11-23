@@ -92,15 +92,17 @@ class NodeButton extends JButton {
     private final TreeNode node;
     private boolean dropFeedbackVisible;
 	private final boolean usesColoredOutlineItems;
+	private final boolean showsFoldingStatus;
 
     NodeButton(TreeNode node, boolean usesColoredOutlineItems) {
-    	this(node, usesColoredOutlineItems, Font.PLAIN);
+    	this(node, usesColoredOutlineItems, true, Font.PLAIN);
     }
 
-    NodeButton(TreeNode node, boolean usesColoredOutlineItems, int fontStyle) {
+    NodeButton(TreeNode node, boolean usesColoredOutlineItems, boolean showsFoldingStatus, int fontStyle) {
         super();
         this.node = node;
 		this.usesColoredOutlineItems = usesColoredOutlineItems;
+		this.showsFoldingStatus = showsFoldingStatus;
         final float itemFontSize = OutlineGeometry.getInstance().getItemFontSize();
         final Font font = getFont().deriveFont(fontStyle, itemFontSize);
         setFont(font);
@@ -317,7 +319,7 @@ class NodeButton extends JButton {
 
 	void updateLabel() {
 		if(node instanceof MapTreeNode) {
-			setIcon(((MapTreeNode)node).createIcon(this, usesColoredOutlineItems));
+			setIcon(((MapTreeNode)node).createIcon(this, usesColoredOutlineItems, showsFoldingStatus));
 		}
 		else {
 			String buttonText = node.getTitle();

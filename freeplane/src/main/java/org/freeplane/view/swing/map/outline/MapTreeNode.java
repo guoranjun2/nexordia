@@ -109,11 +109,11 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
     	return pane== outlinePane;
     }
 
-	public Icon createIcon(JComponent component, boolean usesColoredOutlineItems) {
+	public Icon createIcon(JComponent component, boolean usesColoredOutlineItems, boolean showsFoldingStatus) {
 		String text = getTitle();
 		FontMetrics fontMetrics = component.getFontMetrics(component.getFont());
 		final StyledIcon icon;
-		if(nodeModel.hasChildren()) {
+		if(showsFoldingStatus && nodeModel.hasChildren()) {
 			String childrenHint = isExpanded() ? "- " : "+ ";
 			DoubleTextIcon doubleTextIcon = new DoubleTextIcon(childrenHint, text, fontMetrics);
 			doubleTextIcon.setUnderlinePosition(DoubleTextIcon.UnderlinePosition.RIGHT);

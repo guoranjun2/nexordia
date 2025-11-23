@@ -102,7 +102,7 @@ class BreadcrumbPanel extends JPanel {
 
             int x = controller.calcTextButtonX(i);
 
-			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, Font.BOLD | Font.ITALIC);
+			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, false, Font.BOLD | Font.ITALIC);
             breadcrumbButton.setBounds(x, y, breadcrumbButton.getPreferredSize().width, rowHeight);
 
             final TreeNode nodeToSelect = node;

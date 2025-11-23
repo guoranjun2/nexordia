@@ -111,8 +111,8 @@ class OutlineGeometry {
     		return level * indent + 2 * navButtonWidth;
     }
 
-	int calculateNavigationButtonX(final int level) {
-		final int baseX = level * indent;
+	int calculateNavigationButtonX(final int rowIndent) {
+		final int baseX = rowIndent * indent;
 		return baseX;
 	}
 }

@@ -107,7 +107,7 @@ final class VisibleBlockRenderer {
         }
         boolean inBreadcrumb = visibleNodes.isHoveredNodeContainedInBreadcrumb() && isInBreadcrumbArea.test(hoveredNode);
         if (!inBreadcrumb) {
-            navigationButtons.attachToNode(hoveredNode, blockPanel, visibleNodes.findNodeIndexInVisibleList(hoveredNode));
+            navigationButtons.attachToNode(hoveredNode, blockPanel, visibleNodes.findNodeIndexInVisibleList(hoveredNode), hoveredNode.getLevel());
         }
     }
 }

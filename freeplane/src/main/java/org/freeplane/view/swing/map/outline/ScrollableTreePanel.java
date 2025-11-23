@@ -551,14 +551,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
             visibleNodes.setHoveredNode(node, false);
             int nodeIndex = visibleNodes.findNodeIndexInVisibleList(node);
-			navButtons.attachToNode(node, blockPanel, nodeIndex);
+			navButtons.attachToNode(node, blockPanel, nodeIndex, node.getLevel());
             repaint();
         }
     }
 
 	void showNavigationButtonsForBreadcrumb(TreeNode node, int rowIndex) {
 		visibleNodes.setHoveredNode(node, true);
-		navButtons.attachToNode(node, breadcrumbPanel, rowIndex);
+		navButtons.attachToNode(node, breadcrumbPanel, rowIndex, rowIndex);
 	}
 
 

@@ -84,13 +84,13 @@ final class BreadcrumbLayout {
             List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
             int rowIndex = breadcrumbNodes.indexOf(hoveredNode);
             if (rowIndex >= 0) {
-                navigationButtons.attachToNode(hoveredNode, breadcrumbPanel, rowIndex);
+                navigationButtons.attachToNode(hoveredNode, breadcrumbPanel, rowIndex, rowIndex);
             }
             return;
         }
 
         int nodeIndex = visibleNodes.findNodeIndexInVisibleList(hoveredNode);
-		navigationButtons.attachToNode(hoveredNode, blockPanel, nodeIndex);
+		navigationButtons.attachToNode(hoveredNode, blockPanel, nodeIndex, hoveredNode.getLevel());
     }
 
     private List<TreeNode> calculateStateForIndex(int firstVisibleNodeIndex) {
