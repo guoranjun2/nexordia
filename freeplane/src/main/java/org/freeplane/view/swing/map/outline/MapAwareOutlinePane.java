@@ -213,9 +213,15 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         try {
             removeMapListeners();
             ScrollableTreePanel oldPanel = getTreePanel();
-            if (captureState && oldPanel != null) {
-                storeCurrentDisplayState(oldPanel);
-            }
+            boolean showsExtendedBreadcrumb;
+            if (oldPanel != null) {
+				if (captureState) {
+				    storeCurrentDisplayState(oldPanel);
+				}
+				showsExtendedBreadcrumb = oldPanel.getOutlineSelection().showsExtendedBreadcrumb();
+			}
+            else
+            	showsExtendedBreadcrumb = false;
 
             cleanupCurrentTree();
 
@@ -252,6 +258,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             ScrollableTreePanel panel = getTreePanel();
             panel.setBackgroundColorSupplier(this::getBackgroundColor);
             panel.setSelectionBridge(new OutlineSelectionBridge(this));
+            panel.getOutlineSelection().setShowsExtendedBreadcrumb(showsExtendedBreadcrumb);
             try {
                 addMapChangeListeners();
             } catch (Exception ignore) {}
