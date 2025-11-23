@@ -2,12 +2,16 @@ package org.freeplane.view.swing.map.outline;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.swing.JPanel;
+
+import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.SummaryNode;
 
 final class BreadcrumbLayout {
     private final BreadcrumbPanel breadcrumbPanel;
@@ -100,9 +104,13 @@ final class BreadcrumbLayout {
     private List<TreeNode> calculateStateForSelection() {
         TreeNode selected = outlineSelection.getSelectedNode();
         if (selected == null) {
-            return null;
+        	return null;
         }
-        List<TreeNode> nodes = collectBreadcrumbNodes(selected);
+        List<TreeNode> nodes;
+        if(selected instanceof MapTreeNode)
+        	nodes = collectBreadcrumbNodes((MapTreeNode)selected);
+        else
+        	nodes = collectBreadcrumbNodes(selected);
         nodes.add(selected);
         if (selectionBridge != null && outlineSelection.showsExtendedBreadcrumb()) {
             Collection<? extends TreeNode> extraNodes = selectionBridge.collectNodesToSelection(selected);
@@ -120,7 +128,27 @@ final class BreadcrumbLayout {
             breadcrumbNodes.add(current);
             current = current.getParent();
         }
-        java.util.Collections.reverse(breadcrumbNodes);
+        Collections.reverse(breadcrumbNodes);
+        return breadcrumbNodes;
+    }
+
+    private List<TreeNode> collectBreadcrumbNodes(MapTreeNode fromNode) {
+        List<TreeNode> breadcrumbNodes = new ArrayList<>();
+        MapTreeNode child = fromNode;
+        MapTreeNode current = (MapTreeNode) child.getParent();
+        while (current != null) {
+        	while(child.getNodeModel().getParentNode() != current.getNodeModel()) {
+        		NodeModel parentNode = child.getNodeModel().getParentNode();
+				child = child.createNode(parentNode);
+				if(! SummaryNode.isHidden(parentNode)) {
+					breadcrumbNodes.add(child);
+				}
+        	}
+            breadcrumbNodes.add(current);
+            child = current;
+            current = (MapTreeNode) current.getParent();
+        }
+        Collections.reverse(breadcrumbNodes);
         return breadcrumbNodes;
     }
 }

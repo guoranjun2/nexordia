@@ -801,11 +801,9 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         final NodeModel ancestorNode = ((MapTreeNode) ancestor).getNodeModel();
         if (! selected.isDescendantOf(ancestorNode))
             return Collections.emptyList();
-        Filter filter = displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK ? bookmarkFilterCache.current() : displayState.getFilter();
         final LinkedList<MapTreeNode> nodes = new LinkedList<MapTreeNode>();
         for(NodeModel node = selected; node != ancestorNode; node = node.getParentNode()) {
-            if(filter == null || filter.isVisible(node))
-                nodes.addFirst(((MapTreeNode) ancestor).createNode(node));
+        	nodes.addFirst(((MapTreeNode) ancestor).createNode(node));
         }
         int level = ancestor.getLevel();
         for(MapTreeNode node : nodes)

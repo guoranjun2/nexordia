@@ -98,10 +98,9 @@ class BreadcrumbPanel extends JPanel {
         final int rowHeight = controller.getRowHeight();
         for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
-            int level = node.getLevel();
 			int y = i * rowHeight;
 
-            int x = controller.calcTextButtonX(level);
+            int x = controller.calcTextButtonX(i);
 
 			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, Font.BOLD | Font.ITALIC);
             breadcrumbButton.setBounds(x, y, breadcrumbButton.getPreferredSize().width, rowHeight);
