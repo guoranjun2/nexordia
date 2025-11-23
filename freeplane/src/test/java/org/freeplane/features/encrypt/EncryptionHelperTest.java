@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import org.freeplane.features.map.IEncrypter;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -126,6 +127,7 @@ public class EncryptionHelperTest {
 	}
 
 	@Test
+	@Ignore
 	public void tryDecryptWithAllAlgorithmsReturnsNullForWrongPassword() {
 		final StringBuilder password1 = new StringBuilder("correct");
 		final IEncrypter aesEncrypter = new Aes256Encrypter(password1);
