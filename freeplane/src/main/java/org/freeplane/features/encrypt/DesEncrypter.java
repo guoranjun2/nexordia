@@ -21,7 +21,6 @@ package org.freeplane.features.encrypt;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
@@ -89,11 +88,13 @@ public class DesEncrypter implements IEncrypter {
 				return null;
 			}
 			final byte[] utf8 = dcipher.doFinal(dec);
-			return new String(utf8, StandardCharsets.UTF_8);
+			return new String(utf8, "UTF8");
 		}
 		catch (final javax.crypto.BadPaddingException e) {
 		}
 		catch (final IllegalBlockSizeException e) {
+		}
+		catch (final UnsupportedEncodingException e) {
 		}
 		catch (final IllegalArgumentException e) {
 		}
@@ -105,15 +106,15 @@ public class DesEncrypter implements IEncrypter {
 			initWithNewSalt();
 			if(ecipher == null)
 				return null;
-			final byte[] utf8 = str.getBytes(StandardCharsets.UTF_8);
+			final byte[] utf8 = str.getBytes("UTF8");
 			final byte[] enc = ecipher.doFinal(utf8);
 			return DesEncrypter.toBase64(mSalt) + DesEncrypter.SALT_PRESENT_INDICATOR + DesEncrypter.toBase64(enc);
 		}
 		catch (final javax.crypto.BadPaddingException e) {
-			LogUtils.severe("DES Encryption failed: bad padding", e);
 		}
 		catch (final IllegalBlockSizeException e) {
-			LogUtils.severe("DES Encryption failed: illegal block size", e);
+		}
+		catch (final UnsupportedEncodingException e) {
 		}
 		return null;
 	}
@@ -126,6 +127,8 @@ public class DesEncrypter implements IEncrypter {
 	    init(newSalt);
     }
 
+	/**
+	 */
 	private void init(final byte[] salt) {
 		if (ecipher != null && mSalt != null && !Arrays.equals(mSalt, salt)) {
 			ecipher = null;
@@ -173,19 +176,5 @@ public class DesEncrypter implements IEncrypter {
 				LogUtils.severe(e);
 			}
 		}
-	}
-	
-	@Override
-	public void destroy() {
-		if (passPhrase != null) {
-			Arrays.fill(passPhrase, '\0');
-			passPhrase = null;
-		}
-		if (mSalt != null) {
-			Arrays.fill(mSalt, (byte) 0);
-			mSalt = null;
-		}
-		ecipher = null;
-		dcipher = null;
 	}
 }
