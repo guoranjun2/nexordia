@@ -1,6 +1,8 @@
 /*
  *  Freeplane - mind map editor
- *  Copyright (C) 2025 Freeplane team
+ *  Copyright (C) 2008 Dimitry Polivaev
+ *
+ *  This file author is Dimitry Polivaev
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,16 +19,12 @@
  */
 package org.freeplane.features.encrypt;
 
-public class EncryptionHeader {
-	public static final String PREFIX_AES256 = "FP-AES256-V1:";
-	
-	public static String stripPrefix(String encryptedString) {
-		if (encryptedString == null) {
-			return null;
-		}
-		if (encryptedString.startsWith(PREFIX_AES256)) {
-			return encryptedString.substring(PREFIX_AES256.length());
-		}
-		return null;
+/**
+ * @author Dimitry Polivaev
+ * 29.12.2008
+ */
+public class TripleDesEncrypter extends DesEncrypter {
+	public TripleDesEncrypter(final StringBuilder pPassPhrase) {
+		super(pPassPhrase, "PBEWithMD5AndTripleDES");
 	}
 }
