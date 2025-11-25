@@ -717,22 +717,18 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     @Override
     public void toggleExpandSelected() {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
-        if (node == null || node.childCount() == 0 || node.getLevel() == 0) return;
-        if (node.isExpanded()) {
-            expansionControls.collapseNode(node);
-        } else {
-            expansionControls.expandNode(node);
-        }
+        toggleNodeExpansion(node);
     }
 
     public void toggleNodeExpansion(TreeNode node) {
-        if(node == null || node.childCount() == 0) {
+        if(node == null || node.childCount() == 0 || node.getLevel() == 0) {
             return;
         }
-        if(node.isExpanded()) {
-            expansionControls.collapseNode(node);
-        }
-        else {
+        if (node.isExpanded()) {
+    		final int minimalLevel = getDisplayMode().getMinimalOutlineLevel();
+    		if (node.getLevel() >= minimalLevel)
+    			expansionControls.collapseNode(node);
+        } else {
             expansionControls.expandNode(node);
         }
     }
@@ -756,13 +752,11 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null)
         	return;
-        final TreeNode parent = node.getParent();
-		if (parent == null)
-		return;
-		if (node.isExpanded() && ! isNodeInBreadcrumbArea(node)) {
+		if (node.isExpanded()) {
 			expansionControls.collapseNode(node);
 		}
 		else {
+			final TreeNode parent = node.getParent();
 			setSelectedNode(parent, true);
 		}
     }

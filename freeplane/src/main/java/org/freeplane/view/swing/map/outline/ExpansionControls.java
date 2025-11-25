@@ -28,6 +28,10 @@ class ExpansionControls {
     			selectParentIfNeeded();
     			refreshAfterExpansionChange();
     		}
+    		else {
+    			for (TreeNode child : node.getChildren())
+    				collapseNode(child);
+    		}
     	}
     }
 
