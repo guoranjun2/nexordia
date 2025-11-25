@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.DefaultComboBoxModel;
@@ -798,7 +799,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         filter.updateFilterResults(node, filterUpdateListener);
     }
 
-    Collection<? extends TreeNode> collectNodesToSelection(TreeNode ancestor) {
+    List<TreeNode> collectNodesToSelection(TreeNode ancestor) {
         if(! (ancestor instanceof MapTreeNode))
             return Collections.emptyList();
         final MapView mv = getCurrentMapView();
@@ -808,13 +809,12 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         final NodeModel ancestorNode = ((MapTreeNode) ancestor).getNodeModel();
         if (! selected.isDescendantOf(ancestorNode))
             return Collections.emptyList();
-        final LinkedList<MapTreeNode> nodes = new LinkedList<MapTreeNode>();
+        final LinkedList<TreeNode> nodes = new LinkedList<>();
         for(NodeModel node = selected; node != ancestorNode; node = node.getParentNode()) {
         	nodes.addFirst(((MapTreeNode) ancestor).createNode(node));
         }
-        int level = ancestor.getLevel();
-        for(MapTreeNode node : nodes)
-            node.setLevel(++level);
+        for(TreeNode node : nodes)
+            node.setLevel(TreeNode.UNKNOWN_LEVEL);
         return nodes;
     }
 

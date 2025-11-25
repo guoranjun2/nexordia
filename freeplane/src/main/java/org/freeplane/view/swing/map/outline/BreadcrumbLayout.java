@@ -113,9 +113,14 @@ final class BreadcrumbLayout {
         	nodes = collectBreadcrumbNodes(selected);
         nodes.add(selected);
         if (selectionBridge != null && outlineSelection.showsExtendedBreadcrumb()) {
-            Collection<? extends TreeNode> extraNodes = selectionBridge.collectNodesToSelection(selected);
+        	List<TreeNode> extraNodes = selectionBridge.collectNodesToSelection(selected);
             if(extraNodes.isEmpty())
             	outlineSelection.setShowsExtendedBreadcrumb(false);
+            for(int i = 0; i < extraNodes.size(); i++) {
+            	int existingNodeIndex = visibleNodes.findNodeIndexById(extraNodes.get(i).getId());
+            	if(existingNodeIndex >= 0)
+            		extraNodes.set(i, visibleNodes.getNodeAtVisibleIndex(existingNodeIndex));
+            }
 			nodes.addAll(extraNodes);
         }
         return nodes;
@@ -141,6 +146,7 @@ final class BreadcrumbLayout {
         		NodeModel parentNode = child.getNodeModel().getParentNode();
 				child = child.createNode(parentNode);
 				if(! SummaryNode.isHidden(parentNode)) {
+					child.setLevel(TreeNode.UNKNOWN_LEVEL);
 					breadcrumbNodes.add(child);
 				}
         	}

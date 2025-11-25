@@ -6,6 +6,8 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.util.Collection;
+import java.util.List;
+
 import javax.swing.SwingUtilities;
 
 import org.freeplane.features.map.IMapSelection;
@@ -53,7 +55,7 @@ class OutlineSelectionBridge {
         mv.getSelected().getMainView().requestFocusInWindow();
 	}
 
-	Collection<? extends TreeNode> collectNodesToSelection(TreeNode ancestor) {
+	List<TreeNode> collectNodesToSelection(TreeNode ancestor) {
 		return outlinePane.collectNodesToSelection(ancestor);
 	}
 

@@ -31,6 +31,8 @@ class TreeNode {
 		abstract boolean canApply(int newLevel, int currentLevel);
 	}
 
+	static final int UNKNOWN_LEVEL = -1;
+
     private Supplier<String> titleSupplier;
     private String title;
 

@@ -134,7 +134,8 @@ class BreadcrumbPanel extends JPanel {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     showNavigationButtonsForBreadcrumb(nodeToSelect, rowIndex);
-                    TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
+					if(node.getLevel() != TreeNode.UNKNOWN_LEVEL)
+						TimeDelayedOutlineSelection.outlineSelector.handleMouseEvent(e);
                 }
             });
 
