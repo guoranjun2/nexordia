@@ -340,7 +340,7 @@ class NodeButton extends JButton {
             return false;
         }
         int relativeX = event.getX() - iconArea.x;
-        return relativeX < ((DoubleTextIcon) icon).getRightIconX();
+        return relativeX < ((DoubleTextIcon) icon).getRightIconX(this);
     }
 
     private Rectangle calculateIconRect(Icon icon) {

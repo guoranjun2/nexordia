@@ -3,12 +3,13 @@ package org.freeplane.core.ui.components;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.ComponentOrientation;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 
 public class DoubleTextIcon implements StyledIcon {
-    private final TextIcon leftIcon;
-    private final TextIcon rightIcon;
+    private final TextIcon firstIcon;
+    private final TextIcon secondIcon;
     private int paddingX;
     private int paddingY;
     private Color iconBackgroundColor;
@@ -17,14 +18,14 @@ public class DoubleTextIcon implements StyledIcon {
     private UnderlinePosition underlinePosition = UnderlinePosition.NONE;
 
     public DoubleTextIcon(String leftText, String rightText, FontMetrics fontMetrics) {
-        this.leftIcon = new TextIcon(leftText, fontMetrics);
-        this.rightIcon = new TextIcon(rightText, fontMetrics);
-        this.leftIcon.setPaddingX(0);
-        this.rightIcon.setPaddingX(0);
-        this.leftIcon.setPaddingY(0);
-        this.rightIcon.setPaddingY(0);
-        this.leftIcon.setBorderType(TextIcon.BorderType.UNDERLINE);
-        this.rightIcon.setBorderType(TextIcon.BorderType.UNDERLINE);
+        this.firstIcon = new TextIcon(leftText, fontMetrics);
+        this.secondIcon = new TextIcon(rightText, fontMetrics);
+        this.firstIcon.setPaddingX(0);
+        this.secondIcon.setPaddingX(0);
+        this.firstIcon.setPaddingY(0);
+        this.secondIcon.setPaddingY(0);
+        this.firstIcon.setBorderType(TextIcon.BorderType.UNDERLINE);
+        this.secondIcon.setBorderType(TextIcon.BorderType.UNDERLINE);
         updateUnderlineState();
     }
 
@@ -40,6 +41,10 @@ public class DoubleTextIcon implements StyledIcon {
         }
         int contentX = x + paddingX;
         int contentY = y + paddingY;
+        ComponentOrientation orientation = component != null ? component.getComponentOrientation() : null;
+        boolean paintRightToLeft = orientation != null && orientation.isHorizontal() && !orientation.isLeftToRight();
+        TextIcon leftIcon = paintRightToLeft ? secondIcon : firstIcon;
+        TextIcon rightIcon = paintRightToLeft ? firstIcon : secondIcon;
         leftIcon.paintIcon(component, graphics, contentX, contentY);
         int rightIconX = contentX + leftIcon.getIconWidth();
         rightIcon.paintIcon(component, graphics, rightIconX, contentY);
@@ -47,24 +52,24 @@ public class DoubleTextIcon implements StyledIcon {
 
     @Override
     public int getIconWidth() {
-        return paddingX * 2 + leftIcon.getIconWidth() + rightIcon.getIconWidth();
+        return paddingX * 2 + firstIcon.getIconWidth() + secondIcon.getIconWidth();
     }
 
     @Override
     public int getIconHeight() {
-        int baseHeight = Math.max(leftIcon.getIconHeight(), rightIcon.getIconHeight());
+        int baseHeight = Math.max(firstIcon.getIconHeight(), secondIcon.getIconHeight());
         return paddingY * 2 + baseHeight;
     }
 
     @Override
     public Color getIconTextColor() {
-        return leftIcon.getIconTextColor();
+        return firstIcon.getIconTextColor();
     }
 
     @Override
     public DoubleTextIcon setIconTextColor(Color iconTextColor) {
-        leftIcon.setIconTextColor(iconTextColor);
-        rightIcon.setIconTextColor(iconTextColor);
+        firstIcon.setIconTextColor(iconTextColor);
+        secondIcon.setIconTextColor(iconTextColor);
         return this;
     }
 
@@ -77,11 +82,11 @@ public class DoubleTextIcon implements StyledIcon {
     public DoubleTextIcon setIconBackgroundColor(Color iconBackgroundColor) {
         this.iconBackgroundColor = iconBackgroundColor;
         if(iconBackgroundColor != null) {
-            leftIcon.setIconBackgroundColor(iconBackgroundColor);
-            rightIcon.setIconBackgroundColor(iconBackgroundColor);
+            firstIcon.setIconBackgroundColor(iconBackgroundColor);
+            secondIcon.setIconBackgroundColor(iconBackgroundColor);
         }
-        leftIcon.setIconBackgroundColor(null);
-        rightIcon.setIconBackgroundColor(null);
+        firstIcon.setIconBackgroundColor(null);
+        secondIcon.setIconBackgroundColor(null);
         return this;
     }
 
@@ -152,30 +157,33 @@ public class DoubleTextIcon implements StyledIcon {
         return this;
     }
 
-    public String getLeftText() {
-        return leftIcon.getText();
+    public String getFirstText() {
+        return firstIcon.getText();
     }
 
-    public String getRightText() {
-        return rightIcon.getText();
+    public String getSecondText() {
+        return secondIcon.getText();
     }
 
-    public int getRightIconX() {
-        return paddingX + leftIcon.getIconWidth();
+    public int getRightIconX(Component component) {
+        ComponentOrientation orientation = component != null ? component.getComponentOrientation() : null;
+        boolean paintRightToLeft = orientation != null && orientation.isHorizontal() && !orientation.isLeftToRight();
+        int leftIconWidth = paintRightToLeft ? secondIcon.getIconWidth() : firstIcon.getIconWidth();
+        return paddingX + leftIconWidth;
     }
 
     private void updateUnderlineState() {
-        leftIcon.setIconBorderColor(underlineColor);
-        rightIcon.setIconBorderColor(underlineColor);
-        leftIcon.setBorderStroke(shouldPaintUnderlineLeft() ? underlineStroke : null);
-        rightIcon.setBorderStroke(shouldPaintUnderlineRight() ? underlineStroke : null);
+        firstIcon.setIconBorderColor(underlineColor);
+        secondIcon.setIconBorderColor(underlineColor);
+        firstIcon.setBorderStroke(shouldPaintUnderlineFirst() ? underlineStroke : null);
+        secondIcon.setBorderStroke(shouldPaintUnderlineSecond() ? underlineStroke : null);
     }
 
-    private boolean shouldPaintUnderlineLeft() {
+    private boolean shouldPaintUnderlineFirst() {
         return underlinePosition == UnderlinePosition.LEFT || underlinePosition == UnderlinePosition.BOTH;
     }
 
-    private boolean shouldPaintUnderlineRight() {
+    private boolean shouldPaintUnderlineSecond() {
         return underlinePosition == UnderlinePosition.RIGHT || underlinePosition == UnderlinePosition.BOTH;
     }
 
