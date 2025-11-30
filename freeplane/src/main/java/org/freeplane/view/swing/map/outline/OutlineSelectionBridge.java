@@ -5,7 +5,6 @@
  */
 package org.freeplane.view.swing.map.outline;
 
-import java.util.Collection;
 import java.util.List;
 
 import javax.swing.SwingUtilities;

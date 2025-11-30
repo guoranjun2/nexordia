@@ -2,7 +2,6 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.ComponentOrientation;
 
 class RightToLeftLayout {
 	private RightToLeftLayout() {

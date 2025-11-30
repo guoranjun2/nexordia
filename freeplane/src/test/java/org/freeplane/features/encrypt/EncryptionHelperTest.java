@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import org.freeplane.features.map.IEncrypter;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

@@ -36,7 +36,6 @@ import javax.swing.plaf.ButtonUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 
-import org.freeplane.api.TextWritingDirection;
 import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.components.DoubleTextIcon;
 import org.freeplane.core.ui.components.TextIcon;

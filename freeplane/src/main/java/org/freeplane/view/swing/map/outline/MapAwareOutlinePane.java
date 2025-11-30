@@ -1,6 +1,5 @@
 package org.freeplane.view.swing.map.outline;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -10,7 +9,6 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,16 +18,13 @@ import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.FocusManager;
 import javax.swing.Icon;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.JToolTip;
-import javax.swing.SwingConstants;
-import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.basic.BasicMenuItemUI;
-import javax.swing.plaf.basic.BasicPopupMenuUI;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneToolBar;

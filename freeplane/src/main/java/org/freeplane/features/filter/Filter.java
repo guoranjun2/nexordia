@@ -23,8 +23,6 @@ import java.awt.FontMetrics;
 import java.util.List;
 import java.util.Objects;
 import java.util.WeakHashMap;
-import java.util.function.Consumer;
-
 import javax.swing.Icon;
 
 import org.freeplane.core.extension.IExtension;
