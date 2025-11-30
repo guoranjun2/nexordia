@@ -172,6 +172,7 @@
 				<number name="initiallyExpandedOutlineLevel" min="1" />
 				<number name="minimalFoldableOutlineLevel" min="1" />
 				<number name="outlineFilterHistorySize" min="1" max = "100"/>
+				<radiobuttons name="outlineTextWritingDirection" enum="org.freeplane.api.TextWritingDirection"/>
 			</separator>
 			<separator name="icon_properties">
 				<boolean name="structured_icon_toolbar" />

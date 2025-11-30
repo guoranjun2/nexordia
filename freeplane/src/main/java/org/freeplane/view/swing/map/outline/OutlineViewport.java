@@ -1,9 +1,11 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.Component;
 import java.awt.Point;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 
 class OutlineViewport {
     private final JScrollPane scrollPane;
@@ -20,10 +22,11 @@ class OutlineViewport {
     }
 
     void setViewPosition(int startFromNodeIndex, int blockBreadcrumbOverlap) {
-    	int rowHeight = OutlineGeometry.getInstance().rowHeight;
+    	OutlineGeometry instance = OutlineGeometry.getInstance();
+		int rowHeight = instance.rowHeight;
     	int targetY = (startFromNodeIndex * rowHeight) - blockBreadcrumbOverlap;
     	targetY = Math.max(0, targetY);
-    	Point viewPosition = new Point(0, targetY);
+    	Point viewPosition = new Point(-scrollPane.getViewport().getView().getX(), targetY);
     	setViewPosition(viewPosition);
     }
 
@@ -50,7 +53,8 @@ class OutlineViewport {
     }
 
     OutlineVisibleBlockRange calculateVisibleBlockRange() {
-        int blockHeight = blockSize * OutlineGeometry.getInstance().rowHeight;
+        OutlineGeometry geometry = OutlineGeometry.getInstance();
+		int blockHeight = blockSize * geometry.rowHeight;
         int visibleNodeCount = visibleState.getVisibleNodeCount();
         int totalBlocks = (visibleNodeCount + blockSize - 1) / blockSize;
 
@@ -65,4 +69,13 @@ class OutlineViewport {
         int viewportWidth = getViewportWidth();
         return new OutlineVisibleBlockRange(firstBlock, lastBlock, breadcrumbHeight, viewportWidth, visibleNodeCount);
     }
+
+	void scrollToLeadingEdge() {
+		OutlineGeometry geometry = OutlineGeometry.getInstance();
+    	JViewport viewport = scrollPane.getViewport();
+		Component view = viewport.getView();
+		Point viewPosition = new Point(geometry.isRightToLeft() ? viewport.getWidth() - view.getWidth() : 0, -view.getY());
+    	setViewPosition(viewPosition);
+
+	}
 }

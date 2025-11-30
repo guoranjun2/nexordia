@@ -1,5 +1,6 @@
 package org.freeplane.view.swing.map.outline;
 
+import java.awt.ComponentOrientation;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionListener;
@@ -111,11 +112,16 @@ class NavigationButtons {
         int reduceX = baseX;
         int expandX = reduceX + geometry.navButtonWidth;
         expandMoreBtn.setBounds(expandX, buttonY, geometry.navButtonWidth, buttonHeight);
+        RightToLeftLayout.applyToSingleComponent(expandMoreBtn);
+        ComponentOrientation componentOrientation = geometry.outlineTextOrientation;
+		expandMoreBtn.setComponentOrientation(componentOrientation);
         expandMoreBtn.setVisible(true);
 
         if(node.isExpanded() && (level > 0  || node.getMaxExpansionLevel() > 1) ) {
         	reduceBtn.setBounds(reduceX, buttonY, geometry.navButtonWidth, buttonHeight);
         	reduceBtn.setVisible(true);
+        	reduceBtn.setComponentOrientation(componentOrientation);
+        	RightToLeftLayout.applyToSingleComponent(reduceBtn);
         }
     }
 

@@ -60,7 +60,7 @@ class OutlineBlockLayout {
         Dimension preferredSize = new Dimension(cachedMaxWidth, height);
         owner.setPreferredSize(preferredSize);
 
-        for (BlockPanel panel : blockCache.values()) {
+        for (BlockPanel panel : blockCache.blockPanels()) {
             panel.setSize(cachedMaxWidth, panel.getHeight());
         }
     }
@@ -74,14 +74,16 @@ class OutlineBlockLayout {
             TreeNode n = visibleState.getNodeAtVisibleIndex(i);
             if (n != null) blockNodes.add(n);
         }
-        BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, treePanel, treePanel.getOutlineSelection());
+        BlockPanel bp = new BlockPanel(blockNodes, geometry.rowHeight, geometry.outlineTextOrientation, treePanel, treePanel.getOutlineSelection());
+        bp.setComponentOrientation(geometry.outlineTextOrientation);
         Rectangle bounds = calculateBlockBounds(blockIndex, blockSize, panelWidth);
         bp.setBounds(bounds);
         owner.add(bp);
         blockCache.put(blockIndex, bp);
+        boolean rightToLeft = geometry.isRightToLeft();
         for (Component comp : bp.getComponents()) {
             if (comp instanceof JButton) {
-                int rightEdge = comp.getX() + comp.getWidth();
+                int rightEdge = rightToLeft ? panelWidth - comp.getX()  : comp.getX() + comp.getWidth();
                 if (rightEdge > cachedMaxWidth) cachedMaxWidth = rightEdge;
             }
         }
@@ -109,22 +111,8 @@ class OutlineBlockLayout {
         cachedMaxWidth = 0;
     }
 
-    void recomputeCachedMaxWidth() {
-        resetCachedMaxWidth();
-        for (BlockPanel panel : blockCache.values()) {
-            for (Component comp : panel.getComponents()) {
-                if (comp instanceof JButton) {
-                    int rightEdge = comp.getX() + comp.getWidth();
-                    if (rightEdge > cachedMaxWidth) {
-                        cachedMaxWidth = rightEdge;
-                    }
-                }
-            }
-        }
-    }
-
     void removeBlocksOutsideRange(JPanel owner, OutlineVisibleBlockRange range) {
-        java.util.List<Integer> toRemove = new java.util.ArrayList<>();
+        List<Integer> toRemove = new ArrayList<>();
         for (int idx : blockCache.keySet()) {
             if (idx < range.getFirstBlock() || idx > range.getLastBlock()) {
                 BlockPanel p = blockCache.get(idx);

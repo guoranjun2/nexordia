@@ -3,6 +3,7 @@ package org.freeplane.view.swing.map.outline;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -35,6 +36,7 @@ import javax.swing.plaf.ButtonUI;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicButtonUI;
 
+import org.freeplane.api.TextWritingDirection;
 import org.freeplane.core.ui.AntiAliasingConfigurator;
 import org.freeplane.core.ui.components.DoubleTextIcon;
 import org.freeplane.core.ui.components.TextIcon;
@@ -94,11 +96,11 @@ class NodeButton extends JButton {
 	private final boolean usesColoredOutlineItems;
 	private final boolean showsFoldingStatus;
 
-    NodeButton(TreeNode node, boolean usesColoredOutlineItems) {
-    	this(node, usesColoredOutlineItems, true, Font.PLAIN);
+    NodeButton(TreeNode node, boolean usesColoredOutlineItems, ComponentOrientation componentOrientation) {
+    	this(node, usesColoredOutlineItems, true, Font.PLAIN, componentOrientation);
     }
 
-    NodeButton(TreeNode node, boolean usesColoredOutlineItems, boolean showsFoldingStatus, int fontStyle) {
+    NodeButton(TreeNode node, boolean usesColoredOutlineItems, boolean showsFoldingStatus, int fontStyle, ComponentOrientation componentOrientation) {
         super();
         this.node = node;
 		this.usesColoredOutlineItems = usesColoredOutlineItems;
@@ -111,6 +113,7 @@ class NodeButton extends JButton {
         installNodePopupMenu();
         installDragAndDrop();
         installClipboardActions();
+		setComponentOrientation(componentOrientation);
     }
 
 	@Override
@@ -327,7 +330,7 @@ class NodeButton extends JButton {
 		}
 	}
 
-    boolean isLeftIconClick(MouseEvent event) {
+    boolean isFirstIconClick(MouseEvent event) {
         if(event == null || event.getSource() != this) {
             return false;
         }
@@ -340,7 +343,12 @@ class NodeButton extends JButton {
             return false;
         }
         int relativeX = event.getX() - iconArea.x;
-        return relativeX < ((DoubleTextIcon) icon).getRightIconX(this);
+        int rightIconX = ((DoubleTextIcon) icon).getRightIconX(this);
+        ComponentOrientation componentOrientation = getComponentOrientation();
+		if(componentOrientation.isHorizontal() && ! componentOrientation.isLeftToRight())
+			return relativeX > rightIconX;
+		else
+			return relativeX < rightIconX;
     }
 
     private Rectangle calculateIconRect(Icon icon) {

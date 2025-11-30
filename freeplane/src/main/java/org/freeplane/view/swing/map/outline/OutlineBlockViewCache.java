@@ -16,6 +16,9 @@ class OutlineBlockViewCache {
     void clear() { blocks.clear(); }
     boolean isEmpty() { return blocks.isEmpty(); }
     Set<Integer> keySet() { return Collections.unmodifiableSet(blocks.keySet()); }
-    Collection<BlockPanel> values() { return Collections.unmodifiableCollection(blocks.values()); }
+    Collection<BlockPanel> blockPanels() { return Collections.unmodifiableCollection(blocks.values()); }
+    void setBlockWidhts(int width) {
+    	blocks.values().forEach(block -> block.setSize(width, block.getHeight()));
+    }
 }
 

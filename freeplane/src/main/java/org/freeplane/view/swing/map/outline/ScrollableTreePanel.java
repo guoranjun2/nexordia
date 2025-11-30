@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
@@ -103,7 +104,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		int blockPanelY = visibleNodes.getBlockPanelY();
 		int width = getWidth();
 		int height = Math.max(0, getHeight() - blockPanelY);
+
+		int oldBlockWidth = blockPanel.getWidth();
 		blockPanel.setBounds(0, blockPanelY, width, height);
+		blockCache.setBlockWidhts(width);
+		if(oldBlockWidth != width) {
+			SwingUtilities.invokeLater(viewport::scrollToLeadingEdge);
+		}
 	}
 
 	private int calculateBlockPanelY() {
@@ -160,12 +167,14 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         List<TreeNode> breadcrumbNodes = breadcrumbPanel.getCurrentBreadcrumbNodes();
 
         blockPanel.removeAll();
+        blockPanel.setComponentOrientation(geometry.outlineTextOrientation);
         blockCache.clear();
         blockLayout.resetCachedMaxWidth();
         resetBlockCache();
 
         visibleNodes.setHoveredNode(hoveredNode);
 
+        breadcrumbPanel.setComponentOrientation(geometry.outlineTextOrientation);
         breadcrumbPanel.update(breadcrumbNodes, true);
 
         int visibleCount = visibleNodes.getVisibleNodeCount();
@@ -189,12 +198,9 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     private void refreshColoredOutlineItems() {
-        for (BlockPanel panel : blockCache.values()) {
+        for (BlockPanel panel : blockCache.blockPanels()) {
             panel.rebuildNodeButtons();
         }
-        blockLayout.recomputeCachedMaxWidth();
-        updatePreferredSize();
-
         breadcrumbPanel.updateNodeButtons();
 
         breadcrumbLayout.reattachNavigationButtons();
@@ -427,9 +433,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                     int level = node.getLevel();
                     if (level >= 0) {
                         int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
-                        btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
-                        int rightEdge = btn.getX() + btn.getWidth();
+                        int rightEdge = x + btn.getWidth();
                         blockLayout.recordButtonRightEdge(rightEdge);
+                        btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
+                        RightToLeftLayout.applyToSingleComponent(btn);
                     }
                     breadcrumbPanel.revalidate();
                     breadcrumbPanel.repaint();
@@ -449,9 +456,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
                         int level = node.getLevel();
                         if (level >= 0) {
                             int x = OutlineGeometry.getInstance().calculateNodeButtonX(displayMode.showsNavigationButtons(), level);
-                            btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
-                            int rightEdge = btn.getX() + btn.getWidth();
+                            int rightEdge = x + btn.getWidth();
                             blockLayout.recordButtonRightEdge(rightEdge);
+                            btn.setBounds(x, btn.getY(), btn.getPreferredSize().width, OutlineGeometry.getInstance().rowHeight);
+                            RightToLeftLayout.applyToSingleComponent(btn);
                         }
                         panel.revalidate();
                         panel.repaint();
@@ -935,7 +943,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         return crumbs != null && crumbs.contains(node);
     }
 
-    Collection<BlockPanel> getBlockPanels() { return blockCache.values(); }
+    Collection<BlockPanel> getBlockPanels() { return blockCache.blockPanels(); }
 
 	OutlineDisplayMode getDisplayMode() {
 		return displayMode;

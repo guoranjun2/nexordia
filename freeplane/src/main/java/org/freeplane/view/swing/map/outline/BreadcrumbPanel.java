@@ -45,8 +45,6 @@ class BreadcrumbPanel extends JPanel {
 		});
     }
 
-
-
     @Override
 	public Color getBackground() {
 		 if (backgroundColorSupplier != null) {
@@ -55,6 +53,13 @@ class BreadcrumbPanel extends JPanel {
 				return suppliedColor;
 		 }
 		 return super.getBackground();
+	}
+
+	@Override
+	public void setBounds(int x, int y, int width, int height) {
+		int oldWidth = getWidth();
+		RightToLeftLayout.onContainerWidthChange(this, oldWidth, width);
+		super.setBounds(x, y, width, height);
 	}
 
 	void setBackgroundColorSupplier(Supplier<Color> backgroundColorSupplier) {
@@ -94,7 +99,8 @@ class BreadcrumbPanel extends JPanel {
 
     void updateNodeButtons() {
         removeAll();
-        final boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+        ResourceController resourceController = ResourceController.getResourceController();
+		final boolean useColoredOutlineItems = resourceController.getBooleanProperty("useColoredOutlineItems", false);
         final int rowHeight = controller.getRowHeight();
         for (int i = 0; i < currentBreadcrumbNodes.size(); i++) {
             TreeNode node = currentBreadcrumbNodes.get(i);
@@ -102,7 +108,7 @@ class BreadcrumbPanel extends JPanel {
 
             int x = controller.calcTextButtonX(i);
 
-			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, false, Font.BOLD | Font.ITALIC);
+			NodeButton breadcrumbButton = new NodeButton(node, useColoredOutlineItems, false, Font.BOLD | Font.ITALIC, OutlineGeometry.getInstance().outlineTextOrientation);
             breadcrumbButton.setBounds(x, y, breadcrumbButton.getPreferredSize().width, rowHeight);
 
             final TreeNode nodeToSelect = node;
@@ -142,7 +148,7 @@ class BreadcrumbPanel extends JPanel {
             add(breadcrumbButton);
 
         }
-
+        RightToLeftLayout.applyToContainer(this);
         revalidate();
         repaint();
 	}

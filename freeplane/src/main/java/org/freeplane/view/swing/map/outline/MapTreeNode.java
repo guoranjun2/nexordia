@@ -2,6 +2,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
+import java.awt.ComponentOrientation;
 import java.awt.FontMetrics;
 
 import javax.swing.Icon;
@@ -114,7 +115,15 @@ class MapTreeNode extends TreeNode implements INodeView, EdgeColorContext {
 		FontMetrics fontMetrics = component.getFontMetrics(component.getFont());
 		final StyledIcon icon;
 		if(showsFoldingStatus && nodeModel.hasChildren()) {
-			String childrenHint = isExpanded() ? "- " : "+ ";
+			String childrenHint;
+			ComponentOrientation componentOrientation = component.getComponentOrientation();
+			if(componentOrientation.isHorizontal() && ! componentOrientation.isLeftToRight()) {
+				childrenHint = isExpanded() ? "- " : "+ ";
+			}
+			else {
+				childrenHint = isExpanded() ? " -" : " +";
+			}
+
 			DoubleTextIcon doubleTextIcon = new DoubleTextIcon(childrenHint, text, fontMetrics);
 			doubleTextIcon.setUnderlinePosition(DoubleTextIcon.UnderlinePosition.RIGHT);
 			icon = doubleTextIcon;

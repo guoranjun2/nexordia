@@ -2,7 +2,7 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.AWTEvent;
-import java.awt.Container;
+import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
@@ -30,32 +30,34 @@ class BlockPanel extends JPanel {
     private final int rowHeight;
     private final ScrollableTreePanel parentPanel;
 
-    BlockPanel(List<TreeNode> nodes, int rowHeight, ScrollableTreePanel parentPanel, OutlineSelection selection) {
+    BlockPanel(List<TreeNode> nodes, int rowHeight, ComponentOrientation outlineTextOrientation, ScrollableTreePanel parentPanel, OutlineSelection selection) {
         setLayout(null);
         setOpaque(false);
         this.selection = selection;
         this.nodes = new ArrayList<>(nodes);
         this.rowHeight = rowHeight;
         this.parentPanel = parentPanel;
-
+        setComponentOrientation(outlineTextOrientation);
         rebuildNodeButtons();
     }
 
     void rebuildNodeButtons() {
         removeAll();
         int visibleButtonIndex = 0;
-        final boolean useColoredOutlineItems = ResourceController.getResourceController().getBooleanProperty("useColoredOutlineItems", false);
+        ResourceController resourceController = ResourceController.getResourceController();
+		final boolean useColoredOutlineItems = resourceController.getBooleanProperty("useColoredOutlineItems", false);
         for (TreeNode node : nodes) {
             int y = visibleButtonIndex * rowHeight;
             createNodeButton(node, y, rowHeight, useColoredOutlineItems, parentPanel);
             visibleButtonIndex++;
         }
+        RightToLeftLayout.applyToContainer(this);
         revalidate();
         repaint();
     }
 
     private void createNodeButton(TreeNode node, int y, int rowHeight, boolean useColoredOutlineItems, ScrollableTreePanel parentPanel) {
-		NodeButton button = new NodeButton(node, useColoredOutlineItems);
+		NodeButton button = new NodeButton(node, useColoredOutlineItems, getComponentOrientation());
         if(DEBUG && useColoredOutlineItems)
         	button.setText("" + getComponentCount());
 
@@ -71,7 +73,7 @@ class BlockPanel extends JPanel {
                 AWTEvent currentEvent = EventQueue.getCurrentEvent();
                 if(currentEvent instanceof MouseEvent) {
                     MouseEvent mouseEvent = (MouseEvent) currentEvent;
-                    if(button.isLeftIconClick(mouseEvent)) {
+                    if(button.isFirstIconClick(mouseEvent)) {
                         parentPanel.toggleNodeExpansion(node);
                         return;
                     }
@@ -107,11 +109,11 @@ class BlockPanel extends JPanel {
         add(button);
     }
 
-
-    @Override
-	public int getWidth() {
-    	final Container parent = getParent();
-    	return parent != null ? parent.getWidth() : 0;
+	@Override
+	public void setBounds(int x, int y, int width, int height) {
+		int oldWidth = getWidth();
+		RightToLeftLayout.onContainerWidthChange(this, oldWidth, width);
+		super.setBounds(x, y, width, height);
 	}
 
 	@Override
