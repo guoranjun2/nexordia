@@ -6,6 +6,7 @@ import java.awt.Point;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
+import javax.swing.SwingUtilities;
 
 class OutlineViewport {
     private final JScrollPane scrollPane;
@@ -71,10 +72,14 @@ class OutlineViewport {
     }
 
 	void scrollToLeadingEdge() {
+		JViewport viewport = scrollPane.getViewport();
+		if(! viewport.isValid()) {
+			SwingUtilities.invokeLater(this::scrollToLeadingEdge);
+			return;
+		}
 		OutlineGeometry geometry = OutlineGeometry.getInstance();
-    	JViewport viewport = scrollPane.getViewport();
 		Component view = viewport.getView();
-		Point viewPosition = new Point(geometry.isRightToLeft() ? viewport.getWidth() - view.getWidth() : 0, -view.getY());
+		Point viewPosition = new Point(geometry.isRightToLeft() ? view.getWidth() - viewport.getWidth() : 0, -view.getY());
     	setViewPosition(viewPosition);
 
 	}
