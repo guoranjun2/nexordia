@@ -104,13 +104,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		int blockPanelY = visibleNodes.getBlockPanelY();
 		int width = getWidth();
 		int height = Math.max(0, getHeight() - blockPanelY);
-
-		int oldBlockWidth = blockPanel.getWidth();
 		blockPanel.setBounds(0, blockPanelY, width, height);
 		blockCache.setBlockWidhts(width);
-		if(oldBlockWidth != width) {
-			SwingUtilities.invokeLater(viewport::scrollToLeadingEdge);
-		}
 	}
 
 	private int calculateBlockPanelY() {
@@ -1002,4 +997,8 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 		this.displayMode = displayMode;
 	}
 
+	@Override
+	public void invalidate() {
+		 super.invalidate();
+	}
 }

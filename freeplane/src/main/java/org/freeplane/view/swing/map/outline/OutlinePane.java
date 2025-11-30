@@ -2,8 +2,10 @@
 package org.freeplane.view.swing.map.outline;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -13,6 +15,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -57,6 +60,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 
             @Override
             public void layoutContainer(Container parent) {
+            	int oldScrollPaneWidth = treeScrollPane.getWidth();
                 super.layoutContainer(parent);
                 treeScrollPane.validate();
                 Rectangle r = new Rectangle();
@@ -79,6 +83,14 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
                     lastBreadcrumbBounds = new Rectangle(r);
                 }
                 breadcrumbPanel.setBounds(r);
+                if(oldScrollPaneWidth != treeScrollPane.getWidth()) {
+                	JViewport viewport = treeScrollPane.getViewport();
+                	OutlineGeometry geometry = OutlineGeometry.getInstance();
+                	Component view = viewport.getView();
+                	Point viewPosition = new Point(geometry.isRightToLeft() ? view.getWidth() - viewport.getWidth() : 0, -view.getY());
+                	viewport.setViewPosition(viewPosition);
+                }
+
             }
         });
 
