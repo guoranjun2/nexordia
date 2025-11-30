@@ -98,7 +98,6 @@ class NavigationButtons {
             if (reduceBtn.getParent() == currentParent) {
                 currentParent.remove(reduceBtn);
             }
-            currentParent.repaint();
         }
     }
 
