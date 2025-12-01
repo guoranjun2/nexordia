@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
@@ -598,7 +597,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         int currentFirstVisibleIndex = calculateFirstVisibleNodeIndex();
 		int currentBreadcrumbRowCount = getBreadcrumbRowsForIndex(currentFirstVisibleIndex);
 		int nextBreadcrumbRowCount = getBreadcrumbRowsForIndex(Math.min(currentFirstVisibleIndex + 1, size - 1));
-        int breadcrumbRowDelta = nextBreadcrumbRowCount - currentBreadcrumbRowCount; // изменение высоты крошек при продвижении верхнего на 1
+        int breadcrumbRowDelta = nextBreadcrumbRowCount - currentBreadcrumbRowCount;
         int minimalScrollRows = Math.max(0, 1 + breadcrumbRowDelta);
 
         int tentativeFirstIndex = Math.min(currentFirstVisibleIndex + minimalScrollRows, size - 1);
@@ -729,8 +728,11 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         }
         if (node.isExpanded()) {
     		final int minimalLevel = getDisplayMode().getMinimalOutlineLevel();
-    		if (node.getLevel() >= minimalLevel)
-    			expansionControls.collapseNode(node);
+    		if (node.getLevel() >= minimalLevel) {
+    			if(! isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(node))
+    				updateVisibleBlocksAndBreadcrumb(visibleNodes.findNodeIndexById(node.getId()));
+				expansionControls.collapseNode(node);
+			}
         } else {
             expansionControls.expandNode(node);
         }
@@ -755,7 +757,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
         TreeNode node = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         if (node == null)
         	return;
-		if (node.isExpanded()) {
+		if (node.isExpanded() && (isSelectionDrivenBreadcrumbMode() || ! isNodeInBreadcrumbArea(node))) {
 			expansionControls.collapseNode(node);
 		}
 		else {
@@ -807,9 +809,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     void updateVisibleBlocksAndBreadcrumb() {
-        Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+    	int firstFullyVisibleNodeIndex = calculateFirstVisibleNodeIndex();
+        updateVisibleBlocksAndBreadcrumb(firstFullyVisibleNodeIndex);
+    }
+
+	private void updateVisibleBlocksAndBreadcrumb(int firstFullyVisibleNodeIndex) {
+		Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
-		int firstFullyVisibleNodeIndex = calculateFirstVisibleNodeIndex();
 		List<TreeNode> state = breadcrumbLayout.calculateState(firstFullyVisibleNodeIndex);
 		if (state != null) {
 			int oldBreadcrumbHeight = visibleNodes.getBreadcrumbHeight();
@@ -825,11 +831,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             updateVisibleBlocks();
         }
         focusManager.restoreFocusIfNeeded(prevInOutline);
-    }
+	}
 
     void ensureSelectionVisible(ScrollMode scrollMode) {
         if (viewport == null) return;
-        outlineSelection.setRequiredVisibleNode(null);
         TreeNode selected = outlineSelection != null ? outlineSelection.getSelectedNode() : null;
         int selectedIndex = selected != null ? visibleNodes.findNodeIndexInVisibleList(selected) : -1;
 
@@ -877,8 +882,6 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 				int balancedStartIndex = selectedIndex - extraRowCapacity / 2;
 				targetFirst = Math.max(blockStartIndex, Math.min(balancedStartIndex, maxStartIndex));
 			}
-            TreeNode firstVisible = visibleNodes.getNodeAtVisibleIndex(targetFirst);
-			outlineSelection.setRequiredVisibleNode(firstVisible);
 			visibleNodes.setBlockPanelY(calculateBlockPanelY());
         }
 		else if (!isSelectionDrivenBreadcrumbMode() && isNodeInBreadcrumbArea(selected)) {
