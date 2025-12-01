@@ -2,7 +2,6 @@ package org.freeplane.view.swing.map.outline;
 
 class OutlineSelection {
     private TreeNode selectedNode;
-    private TreeNode requiredVisibleNode;
     private boolean showsExtendedBreadcrumb;
 
     OutlineSelection(TreeNode root) {
@@ -27,15 +26,7 @@ class OutlineSelection {
         return node != null && isSelected(node.getId());
     }
 
-	TreeNode getRequiredVisibleNode() {
-		return requiredVisibleNode != null ? requiredVisibleNode : selectedNode;
-	}
-
-	void setRequiredVisibleNode(TreeNode requiredVisibleNode) {
-		this.requiredVisibleNode = requiredVisibleNode;
-	}
-
-	public boolean showsExtendedBreadcrumb() {
+    public boolean showsExtendedBreadcrumb() {
 		return showsExtendedBreadcrumb;
 	}
 
