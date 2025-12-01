@@ -15,36 +15,64 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 
 class OutlineActions {
     private final OutlineActionTargetProvider provider;
+	private OutlineActionTarget controller() {
+		return provider.getController();
+	}
+
+	private boolean isRightToLeft() {
+		return OutlineGeometry.getInstance().isRightToLeft();
+	}
 
     final Action navigateUp = new AbstractAction("Navigate Up") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigateUp(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().navigateUp(); }
+
     };
     final Action navigateDown = new AbstractAction("Navigate Down") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigateDown(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().navigateDown(); }
     };
     final Action navigatePageUp = new AbstractAction("Page Up") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigatePageUp(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().navigatePageUp(); }
     };
     final Action navigatePageDown = new AbstractAction("Page Down") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().navigatePageDown(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().navigatePageDown(); }
     };
-    final Action goParent = new AbstractAction("Go to Parent") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().collapseOrGoToParent(); }
+    final Action goLeft = new AbstractAction("Go left") {
+        @Override public void actionPerformed(ActionEvent e) {
+        	if(isRightToLeft())
+        		controller().expandOrGoToChild();
+        	else
+        		controller().collapseOrGoToParent();
+        	}
     };
-    final Action goChild = new AbstractAction("Go to First Child") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().expandOrGoToChild(); }
+    final Action goRight = new AbstractAction("Go right") {
+        @Override public void actionPerformed(ActionEvent e) {
+        	if(isRightToLeft())
+        		controller().collapseOrGoToParent();
+        	else
+        		controller().expandOrGoToChild();
+        	}
     };
-    final Action reduceExpansion = new AbstractAction("Reduce Expansion") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().reduceSelectedExpansion(); }
+    final Action expandLeft = new AbstractAction("Expand left") {
+        @Override public void actionPerformed(ActionEvent e) {
+        	if(isRightToLeft())
+        		controller().expandSelectedMore();
+        	else
+        		controller().reduceSelectedExpansion();
+        	}
     };
-    final Action expandMore = new AbstractAction("Expand More") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().expandSelectedMore(); }
+    final Action expandRight = new AbstractAction("Expand right") {
+    	@Override public void actionPerformed(ActionEvent e) {
+    		if(isRightToLeft())
+    			controller().reduceSelectedExpansion();
+    		else
+    			controller().expandSelectedMore();
+    	}
     };
     final Action toggleExpand = new AbstractAction("Toggle Expand/Collapse") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().toggleExpandSelected(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().toggleExpandSelected(); }
     };
     final Action selectInMap = new AbstractAction("Select in Map") {
-        @Override public void actionPerformed(ActionEvent e) { provider.getController().selectSelectedInMap(); }
+        @Override public void actionPerformed(ActionEvent e) { controller().selectSelectedInMap(); }
     };
     final Action openPreferences = new AbstractAction("Preferences") {
         @Override public void actionPerformed(ActionEvent e) {
@@ -60,10 +88,10 @@ class OutlineActions {
         navigateDown.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("DOWN"));
         navigatePageUp.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("PAGE_UP"));
         navigatePageDown.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("PAGE_DOWN"));
-        goParent.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("LEFT"));
-        goChild.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("RIGHT"));
-        reduceExpansion.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control LEFT"));
-        expandMore.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control RIGHT"));
+        goLeft.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("LEFT"));
+        goRight.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("RIGHT"));
+        expandLeft.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control LEFT"));
+        expandRight.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("control RIGHT"));
         toggleExpand.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("SPACE"));
         selectInMap.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke("ENTER"));
     }
@@ -85,16 +113,16 @@ class OutlineActions {
         actionMap.put("navigatePageDown", navigatePageDown);
 
         inputMap.put(KeyStroke.getKeyStroke("LEFT"), "goParent");
-        actionMap.put("goParent", goParent);
+        actionMap.put("goParent", goLeft);
 
         inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "goChild");
-        actionMap.put("goChild", goChild);
+        actionMap.put("goChild", goRight);
 
         inputMap.put(KeyStroke.getKeyStroke("control LEFT"), "reduceExpansion");
-        actionMap.put("reduceExpansion", reduceExpansion);
+        actionMap.put("reduceExpansion", expandLeft);
 
         inputMap.put(KeyStroke.getKeyStroke("control RIGHT"), "expandMore");
-        actionMap.put("expandMore", expandMore);
+        actionMap.put("expandMore", expandRight);
     }
 
     JPopupMenu buildMenuLocalized() {
@@ -106,11 +134,11 @@ class OutlineActions {
         menu.add(TranslatedElementFactory.createMenuItem(navigatePageUp, "outline.page.up"));
         menu.add(TranslatedElementFactory.createMenuItem(navigatePageDown, "outline.page.down"));
         menu.addSeparator();
-        menu.add(TranslatedElementFactory.createMenuItem(goParent, "outline.go.parent"));
-        menu.add(TranslatedElementFactory.createMenuItem(goChild, "outline.go.child"));
+        menu.add(TranslatedElementFactory.createMenuItem(goLeft, "outline.go.parent"));
+        menu.add(TranslatedElementFactory.createMenuItem(goRight, "outline.go.child"));
         menu.addSeparator();
-        menu.add(TranslatedElementFactory.createMenuItem(expandMore, "outline.expand.more"));
-        menu.add(TranslatedElementFactory.createMenuItem(reduceExpansion, "outline.reduce.expansion"));
+        menu.add(TranslatedElementFactory.createMenuItem(expandRight, "outline.expand.more"));
+        menu.add(TranslatedElementFactory.createMenuItem(expandLeft, "outline.reduce.expansion"));
         menu.add(TranslatedElementFactory.createMenuItem(toggleExpand, "outline.toggle.expand"));
         menu.addSeparator();
         menu.add(TranslatedElementFactory.createMenuItem(openPreferences, "preferences"));
