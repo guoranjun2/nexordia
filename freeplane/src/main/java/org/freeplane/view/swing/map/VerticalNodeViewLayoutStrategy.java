@@ -619,9 +619,17 @@ class VerticalNodeViewLayoutStrategy {
     }
 
     private void handleNegativeDeltaY(int index, int itemLevel, int deltaY) {
-        if (childNodesAlignment == ChildNodesAlignment.FLOW) {
+        final Placement placement = childNodesAlignment.placement();
+        if (placement == Placement.CENTER) {
             totalSideShiftY += 2 * deltaY;
         }
+        else if (placement == Placement.BOTTOM) {
+            totalSideShiftY += deltaY;
+        }
+        else if (placement == Placement.TOP) {
+            totalSideShiftY += deltaY;
+        }
+
         y -= deltaY;
         bottomBoundary = groupStartBoundaries[itemLevel];
 
