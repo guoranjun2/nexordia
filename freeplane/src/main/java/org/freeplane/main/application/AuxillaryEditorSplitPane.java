@@ -20,7 +20,7 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.ViewController;
 
-class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyListener {
+public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyListener {
 	private static final long serialVersionUID = 1L;
 	private JComponent auxillaryComponent;
 	private Component mainComponent;
@@ -34,10 +34,6 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 	// Optional binding to a visibility property (e.g., "outlineVisible")
 	private String auxVisibilityBaseKey; // e.g., "outlineVisible"
 	private boolean auxVisibilityBound;
-
-	public AuxillaryEditorSplitPane(Component mainComponent) {
-		this(mainComponent, new AuxiliarySplitPaneController("aux_split_pane_last_position", "note_location", "bottom"));
-	}
 
 	public AuxillaryEditorSplitPane(Component mainComponent, AuxiliarySplitPaneController controller) {
 		this.controller = controller;
@@ -205,7 +201,7 @@ class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePropertyL
 		}
 	}
 
-	public void changeNoteWindowLocation(String location) {
+	public void changeAuxComponentSide(String location) {
 		if(location == null || location.equals(currentLocation))
 			return;
 

@@ -50,6 +50,7 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FocusOutlineAction;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
+import org.freeplane.main.application.AuxillaryEditorSplitPane;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
 
@@ -124,13 +125,14 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return outlineNode;
     }
 
-    public MapAwareOutlinePane() {
+    public MapAwareOutlinePane(AuxillaryEditorSplitPane pane) {
         super(OutlineDisplayMode.DEFAULT, NO_MAP_AVAILABLE);
         this.filterUpdateListener = this::onFilterResultUpdate;
         selectedNodeUpdater = new OutlineSelectedNodeUpdater(this);
         displayState = new OutlineTreeViewStates();
         bookmarkFilterCache = new FilterCache();
         configureToolbar(toolbar);
+        pane.changeAuxComponentSide(OutlineGeometry.getInstance().isRightToLeft() ? "right" : "left");
     }
 
 

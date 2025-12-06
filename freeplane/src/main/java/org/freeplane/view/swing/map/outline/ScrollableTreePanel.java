@@ -2,6 +2,7 @@ package org.freeplane.view.swing.map.outline;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.MouseAdapter;
@@ -13,9 +14,11 @@ import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.main.application.AuxillaryEditorSplitPane;
 
 class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
 
@@ -179,6 +182,10 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             revalidate();
             repaint();
         }
+
+        AuxillaryEditorSplitPane pane = (AuxillaryEditorSplitPane) SwingUtilities.getAncestorOfClass(AuxillaryEditorSplitPane.class, this);
+        if(pane != null)
+        	pane.changeAuxComponentSide(OutlineGeometry.getInstance().isRightToLeft() ? "right" : "left");
     }
 
     @SuppressWarnings("unused")

@@ -12,14 +12,14 @@ import javax.swing.JComponent;
 import org.freeplane.view.swing.map.outline.MapAwareOutlinePane;
 
 /**
- * Manager for N-level nested auxiliary split panes. Creates and manages 
+ * Manager for N-level nested auxiliary split panes. Creates and manages
  * a configurable number of nested AuxillaryEditorSplitPane instances.
- * 
+ *
  * Structure for N levels:
  *   User Content
  *     ↓ main component of
  *   Level 0 AuxillaryEditorSplitPane (innermost - for notes)
- *     ↓ main component of  
+ *     ↓ main component of
  *   Level 1 AuxillaryEditorSplitPane
  *     ↓ main component of
  *   ...
@@ -27,23 +27,23 @@ import org.freeplane.view.swing.map.outline.MapAwareOutlinePane;
  *   Level N-1 AuxillaryEditorSplitPane (outermost)
  */
 class AuxiliarySplitPanes {
-    
+
     private final List<AuxillaryEditorSplitPane> panes;
     private final int numLevels;
-    
+
     /**
      * Creates nested auxiliary split panes with the given user content as the base.
      * Uses default 2 levels for backward compatibility.
-     * 
+     *
      * @param userContent the main user content (e.g., BookmarkToolbarPane)
      */
     public AuxiliarySplitPanes(Component userContent) {
         this(userContent, 2);
     }
-    
+
     /**
      * Creates nested auxiliary split panes with the specified number of levels.
-     * 
+     *
      * @param userContent the main user content (e.g., BookmarkToolbarPane)
      * @param numLevels number of split pane levels (must be >= 1)
      */
@@ -51,10 +51,10 @@ class AuxiliarySplitPanes {
         if (numLevels < 1) {
             throw new IllegalArgumentException("Number of levels must be at least 1, got: " + numLevels);
         }
-        
+
         this.numLevels = numLevels;
         this.panes = new ArrayList<>(numLevels);
-        
+
         // Create controllers and panes for each level
         Component currentMain = userContent;
         for (int level = 0; level < numLevels; level++) {
@@ -62,24 +62,20 @@ class AuxiliarySplitPanes {
             AuxillaryEditorSplitPane pane = new AuxillaryEditorSplitPane(currentMain, controller);
             pane.setManager(this);
             panes.add(pane);
-            
+
             // Next level uses this pane as its main component
             currentMain = pane;
         }
-        
+
         // Initialize level 1 with MapAwareOutlinePane on the left (if it exists)
         if (numLevels >= 2) {
-            // First set the location to left for level 1
-            changeNoteWindowLocation(1, "left");
-            
-            // Create MapAwareOutlinePane which will automatically handle map changes
-            MapAwareOutlinePane outlinePane = new MapAwareOutlinePane();
+        	AuxillaryEditorSplitPane pane = getPane(1);
+            MapAwareOutlinePane outlinePane = new MapAwareOutlinePane(pane);
             insertComponentIntoSplitPane(1, outlinePane, "outline");
-            // Bind visibility to outlineVisible property
-            getPane(1).bindAuxiliaryVisibilityToProperty("outlineVisible");
+			pane.bindAuxiliaryVisibilityToProperty("outlineVisible");
         }
     }
-    
+
     /**
      * Creates a controller for the specified level with appropriate property keys.
      * Level 0 uses original keys for backward compatibility with notes.
@@ -88,38 +84,37 @@ class AuxiliarySplitPanes {
         if (level == 0) {
             // Level 0 (innermost) uses original property keys for backward compatibility
             return new AuxiliarySplitPaneController(
-                "aux_split_pane_last_position", "note_location", "bottom");
+                "aux_split_pane_last_position", "bottom");
         } else {
             // Other levels use generated property keys
             String positionKey = "aux_split_pane_level_" + level + "_position";
-            String locationKey = "aux_split_pane_level_" + level + "_location";
             String defaultLocation = level == 1 ? "right" : "bottom";
-            return new AuxiliarySplitPaneController(positionKey, locationKey, defaultLocation);
+            return new AuxiliarySplitPaneController(positionKey, defaultLocation);
         }
     }
-    
+
     /**
      * Gets the root pane for UI layout. This is the outermost split pane
      * that should be added to the container.
-     * 
+     *
      * @return the outermost split pane for UI layout
      */
     public AuxillaryEditorSplitPane getRootPane() {
         return panes.get(numLevels - 1); // Last pane is outermost
     }
-    
+
     /**
      * Gets the number of levels in this nested structure.
-     * 
+     *
      * @return number of split pane levels
      */
     public int getNumLevels() {
         return numLevels;
     }
-    
+
     /**
      * Inserts a component into the specified level.
-     * 
+     *
      * @param level which level to use (0 = innermost for notes, higher = outer levels)
      * @param component the component to insert
      * @param mode the mode string
@@ -129,22 +124,22 @@ class AuxiliarySplitPanes {
         validateLevel(level);
         panes.get(level).insertComponentIntoSplitPane(component, mode);
     }
-    
+
     /**
      * Changes the window location for the specified level.
-     * 
+     *
      * @param level which level to change (0 = innermost, higher = outer levels)
      * @param location the new location ("top", "bottom", "left", "right")
      * @throws IndexOutOfBoundsException if level is invalid
      */
-    public void changeNoteWindowLocation(int level, String location) {
+    public void changeAuxComponentSide(int level, String location) {
         validateLevel(level);
-        panes.get(level).changeNoteWindowLocation(location);
+        panes.get(level).changeAuxComponentSide(location);
     }
-    
+
     /**
      * Removes the auxiliary component from the specified level.
-     * 
+     *
      * @param level which level to remove from (0 = innermost, higher = outer levels)
      * @throws IndexOutOfBoundsException if level is invalid
      */
@@ -152,10 +147,10 @@ class AuxiliarySplitPanes {
         validateLevel(level);
         panes.get(level).removeAuxiliaryComponent();
     }
-    
+
     /**
      * Gets the auxiliary component from the specified level.
-     * 
+     *
      * @param level which level to get from (0 = innermost, higher = outer levels)
      * @return the auxiliary component or null if none
      * @throws IndexOutOfBoundsException if level is invalid
@@ -164,10 +159,10 @@ class AuxiliarySplitPanes {
         validateLevel(level);
         return panes.get(level).getAuxiliaryComponent();
     }
-    
+
     /**
      * Gets the split pane for the specified level.
-     * 
+     *
      * @param level which level (0 = innermost, higher = outer levels)
      * @return the split pane at that level
      * @throws IndexOutOfBoundsException if level is invalid
@@ -195,10 +190,10 @@ class AuxiliarySplitPanes {
         AuxillaryEditorSplitPane toPane = target.getPane(0);
         fromPane.moveAuxillaryComponentTo(toPane, mode);
     }
-    
+
     /**
      * Validates that the level is within valid range.
-     * 
+     *
      * @param level the level to validate
      * @throws IndexOutOfBoundsException if level is invalid
      */

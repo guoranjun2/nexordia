@@ -92,7 +92,7 @@ class ApplicationViewController extends FrameController {
 		resourceController.setProperty("note_location", location);
 		final AuxiliarySplitPanes splitPanes = getSplitPanes();
 		if (splitPanes != null) {
-			splitPanes.changeNoteWindowLocation(0, location);
+			splitPanes.changeAuxComponentSide(0, location);
 		}
 	}
 
