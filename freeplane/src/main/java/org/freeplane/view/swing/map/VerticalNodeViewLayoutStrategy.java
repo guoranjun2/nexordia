@@ -304,10 +304,13 @@ class VerticalNodeViewLayoutStrategy {
                 }
             }
         }
+        int regularChildAnchor = 0;
+        if(lastRegularChild != null && !(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)) {
+            regularChildAnchor = lastRegularChild.getHeight() - spaceAround - lastRegularChild.getBottomOverlap()
+                    - lastRegularChild.getContentY() - lastRegularChild.getContentHeight();
+        }
         if(childNodesAlignment.placement() != Placement.TOP) {
-			totalSideShiftY += contentSize.height;
-	        if(lastRegularChild != null && !(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO))
-	            totalSideShiftY += lastRegularChild.getHeight() - spaceAround - lastRegularChild.getBottomOverlap() - lastRegularChild.getContentY() - lastRegularChild.getContentHeight();
+			totalSideShiftY += contentSize.height + regularChildAnchor;
 		}
         if(childNodesAlignment.placement() == Placement.CENTER)
             totalSideShiftY /= 2;
