@@ -91,6 +91,7 @@ class VerticalNodeViewLayoutStrategy {
 
 
 
+
     public VerticalNodeViewLayoutStrategy(NodeView view) {
         NodeViewLayoutHelper layoutHelper = view.getLayoutHelper();
         this.view = layoutHelper;
@@ -244,7 +245,7 @@ class VerticalNodeViewLayoutStrategy {
         this.xCoordinates[index] = x;
     }
 
-    private void calculateLayoutY(final boolean laysOutLeftSide) {
+	private void calculateLayoutY(final boolean laysOutLeftSide) {
         currentSideLeft = laysOutLeftSide;
         totalSideShiftY = 0;
         level = viewLevels.highestSummaryLevel + 1;
@@ -257,13 +258,13 @@ class VerticalNodeViewLayoutStrategy {
         lastMinimumDistanceConsideringHandles = 0;
         childCloudHeight = 0;
         visibleLaidOutChildCounter = 0;
-        int lastRegularChildAvailableSpace = 0;
+        NodeViewLayoutHelper lastRegularChild = null;
+        int lastRegularChildSavedSpace = 0;
         groupStartIndex = new int[level];
         groupStartBoundaries = new StepFunction[level];
         groupUpperYCoordinate = new int[level];
         groupLowerYCoordinate = new int[level];
 
-        NodeViewLayoutHelper lastRegularChild = null;
         for (int index = 0; index < childViewCount; index++) {
             NodeViewLayoutHelper child = view.getComponent(index);
             if (child.isLeft() == currentSideLeft) {
@@ -291,7 +292,7 @@ class VerticalNodeViewLayoutStrategy {
                 			int savedSpace = layoutRegularChildAndReturnSavedSpace(index, child, childRegularHeight, childShiftY);
                 			visibleLaidOutChildCounter++;
                 			lastRegularChild = child;
-                			lastRegularChildAvailableSpace = savedSpace;
+                			lastRegularChildSavedSpace = savedSpace;
                 		}
                 		else {
                 		   	yCoordinates[index] = calculateInitialYPosition(childShiftY);
@@ -306,11 +307,9 @@ class VerticalNodeViewLayoutStrategy {
                 }
             }
         }
-        int regularChildAnchor = 0;
-        if(lastRegularChild != null && !(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)) {
-            regularChildAnchor = Math.max(0, lastRegularChild.getHeight() - spaceAround - lastRegularChild.getBottomOverlap()
-                    - lastRegularChild.getContentY() - lastRegularChild.getContentHeight() - lastRegularChildAvailableSpace);
-        }
+        int regularChildAnchor = (childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)
+                ? 0
+                : subtreeHeightBelowContent(lastRegularChild, lastRegularChildSavedSpace);
         if(childNodesAlignment.placement() != Placement.TOP) {
 			totalSideShiftY += contentSize.height + regularChildAnchor;
 		}
@@ -322,6 +321,14 @@ class VerticalNodeViewLayoutStrategy {
             totalSideShiftY -= calculateAddedDistanceFromParentToChildren(minimalGapBetweenChildren, contentSize) + childCloudHeight/2;;
         }
         calculateRelativeCoordinatesForContentAndBothSides(laysOutLeftSide);
+    }
+
+    private int subtreeHeightBelowContent(NodeViewLayoutHelper child, int savedSpace) {
+        if(child == null)
+            return 0;
+        int heightBelowContent = child.getHeight() - spaceAround - child.getBottomOverlap()
+                - child.getContentY() - child.getContentHeight() - savedSpace;
+        return Math.max(0, heightBelowContent);
     }
 
     private void initializeSummaryGroupStart(int childIndex,
