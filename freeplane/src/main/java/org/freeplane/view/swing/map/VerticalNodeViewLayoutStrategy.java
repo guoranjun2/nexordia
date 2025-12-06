@@ -257,6 +257,7 @@ class VerticalNodeViewLayoutStrategy {
         lastMinimumDistanceConsideringHandles = 0;
         childCloudHeight = 0;
         visibleLaidOutChildCounter = 0;
+        int lastRegularChildAvailableSpace = 0;
         groupStartIndex = new int[level];
         groupStartBoundaries = new StepFunction[level];
         groupUpperYCoordinate = new int[level];
@@ -287,9 +288,10 @@ class VerticalNodeViewLayoutStrategy {
                 		assignFreeChildVerticalPosition(index, childShiftY, child);
                 	} else {
                 		if (childRegularHeight != 0) {
-                			assignRegularChildVerticalPosition(index, child, childRegularHeight, childShiftY);
+                			int savedSpace = layoutRegularChildAndReturnSavedSpace(index, child, childRegularHeight, childShiftY);
                 			visibleLaidOutChildCounter++;
                 			lastRegularChild = child;
+                			lastRegularChildAvailableSpace = savedSpace;
                 		}
                 		else {
                 		   	yCoordinates[index] = calculateInitialYPosition(childShiftY);
@@ -306,8 +308,8 @@ class VerticalNodeViewLayoutStrategy {
         }
         int regularChildAnchor = 0;
         if(lastRegularChild != null && !(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)) {
-            regularChildAnchor = lastRegularChild.getHeight() - spaceAround - lastRegularChild.getBottomOverlap()
-                    - lastRegularChild.getContentY() - lastRegularChild.getContentHeight();
+            regularChildAnchor = Math.max(0, lastRegularChild.getHeight() - spaceAround - lastRegularChild.getBottomOverlap()
+                    - lastRegularChild.getContentY() - lastRegularChild.getContentHeight() - lastRegularChildAvailableSpace);
         }
         if(childNodesAlignment.placement() != Placement.TOP) {
 			totalSideShiftY += contentSize.height + regularChildAnchor;
@@ -410,7 +412,7 @@ class VerticalNodeViewLayoutStrategy {
     }
 
 
-    private void assignRegularChildVerticalPosition(int index,
+    private int layoutRegularChildAndReturnSavedSpace(int index,
     		NodeViewLayoutHelper child,
     		int childRegularHeight,
     		int childShiftY) {
@@ -451,6 +453,7 @@ class VerticalNodeViewLayoutStrategy {
 
     	adjustTotalShiftForAlignment(child, childShiftY, yBegin, childRegularHeight, availableSpace, y0);
     	updateGapsAndBoundaries(index, child, childRegularHeight);
+    	return availableSpace;
     }
 
     private int calculateAvailableSpaceForCompactLayout(NodeViewLayoutHelper child, int index, int y, int spaceForClouds) {
