@@ -375,6 +375,7 @@ public class FormatTranslation extends Task {
 
 	private void putFormattedUnicodeRepresentation(final char[] input, int inputOffset, final char[] target,
 			int targetOffset) {
+		target[targetOffset] = '\\';
 		target[targetOffset+1] = 'u';
 		for(int i = 2; i < 6; i++){
 			target[targetOffset+i] = Character.toUpperCase(input[inputOffset+i]);

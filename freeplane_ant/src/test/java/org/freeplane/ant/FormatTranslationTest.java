@@ -184,4 +184,11 @@ public class FormatTranslationTest {
 		assertThat(formatTranslation.convertUnicodeCharacterRepresentation("ä1"),
 		    CoreMatchers.equalTo("\\u00E41"));
 	}
+
+	@Test
+	public void convertsMixedEscapedAndRawCharacters() {
+		final FormatTranslation uut = new FormatTranslation();
+		final String input = "ä = \\u00fc";
+		assertThat(uut.convertUnicodeCharacterRepresentation(input), CoreMatchers.equalTo("\\u00E4 = \\u00FC"));
+	}
 }
