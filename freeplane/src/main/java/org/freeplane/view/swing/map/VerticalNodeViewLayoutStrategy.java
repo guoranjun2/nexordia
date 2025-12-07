@@ -512,14 +512,7 @@ class VerticalNodeViewLayoutStrategy {
         final int contentTop = getContentTop(child);
 		if (childNodesAlignment == ChildNodesAlignment.FLOW ||
             childNodesAlignment == ChildNodesAlignment.AUTO) {
-            int yContentBegin = contentTop + yBegin;
-
-            final int deltaShift = yContentBegin
-            		- (Math.max(yBottom, y0 - Math.max(availableSpace, 0)) + vGap)
-            		-  (childShiftY > 0 || !isFirstVisibleLaidOutChild() ? childShiftY : 0);
-            if(deltaShift > 0)
-                totalSideShiftY -= 2 * deltaShift;
-            totalSideShiftY -= child.getContentHeight() + vGap;
+            applyFlowAlignmentShift(child, childShiftY, yBegin, availableSpace, y0, contentTop);
         } else {
 			if (isFirstVisibleLaidOutChild() && (placement == Placement.TOP || placement == Placement.CENTER)) {
 				totalSideShiftY -= contentTop;
@@ -537,6 +530,16 @@ class VerticalNodeViewLayoutStrategy {
 	private int getContentTop(NodeViewLayoutHelper child) {
 		return child.getContentY() - child.getTopOverlap() - spaceAround;
 	}
+
+    private void applyFlowAlignmentShift(NodeViewLayoutHelper child, int childShiftY, int yBegin, int availableSpace, int y0, int contentTop) {
+        final int yContentStart = contentTop + yBegin;
+        final int referenceY = Math.max(yBottom, y0 - Math.max(availableSpace, 0)) + vGap;
+        final int childShift = (childShiftY > 0 || !isFirstVisibleLaidOutChild()) ? childShiftY : 0;
+        final int excessAboveReference = yContentStart - referenceY - childShift;
+        if(excessAboveReference > 0)
+            totalSideShiftY -= 2 * excessAboveReference;
+        totalSideShiftY -= child.getContentHeight() + vGap;
+    }
 
     private void updateGapsAndBoundaries(int index, NodeViewLayoutHelper child, int childRegularHeight) {
         vGap = calculateNextVGap(index);
