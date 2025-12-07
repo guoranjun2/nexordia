@@ -318,7 +318,7 @@ class VerticalNodeViewLayoutStrategy {
         else if (childNodesAlignment == ChildNodesAlignment.BEFORE_PARENT
                 && contentSize.height > 0
                 && !isFirstVisibleLaidOutChild()) {
-            totalSideShiftY -= calculateAddedDistanceFromParentToChildren(minimalGapBetweenChildren, contentSize) + childCloudHeight/2;;
+            totalSideShiftY -= calculateAddedDistanceFromParentToChildren(minimalGapBetweenChildren, contentSize) + childCloudHeight/2;
         }
         calculateRelativeCoordinatesForContentAndBothSides(laysOutLeftSide);
     }
