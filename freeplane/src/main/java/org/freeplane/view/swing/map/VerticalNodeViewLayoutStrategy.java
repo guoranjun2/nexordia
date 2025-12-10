@@ -391,6 +391,8 @@ class VerticalNodeViewLayoutStrategy {
     }
 
     private int calculateExtraGapForChildren(final int minimalDistanceBetweenChildren) {
+    	if(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)
+    		return 0;
         if(3 * defaultVGap > minimalDistanceBetweenChildren)
             return minimalDistanceBetweenChildren + 2 * defaultVGap;
         else
