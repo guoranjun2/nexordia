@@ -391,8 +391,6 @@ class VerticalNodeViewLayoutStrategy {
     }
 
     private int calculateExtraGapForChildren(final int minimalDistanceBetweenChildren) {
-    	if(childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)
-    		return 0;
         if(3 * defaultVGap > minimalDistanceBetweenChildren)
             return minimalDistanceBetweenChildren + 2 * defaultVGap;
         else
@@ -469,7 +467,7 @@ class VerticalNodeViewLayoutStrategy {
 		if (childNodesAlignment == ChildNodesAlignment.FLOW ||
 		    childNodesAlignment == ChildNodesAlignment.AUTO) {
 		    final int yContentStart = contentTop + yBegin;
-			final int referenceY = Math.max(yBottom, y0 - Math.max(availableSpace, 0)) + vGap;
+			final int referenceY = Math.max(yBottom, y0 - Math.max(availableSpace, 0)) + vGap + (lastChildHasSubtree ? upperGap : 0);
 			final int childShift = (childShiftY > 0 || !isFirstVisibleLaidOutChild()) ? childShiftY : 0;
 			final int excessAboveReference = yContentStart - referenceY - childShift;
 			if(excessAboveReference > 0)
