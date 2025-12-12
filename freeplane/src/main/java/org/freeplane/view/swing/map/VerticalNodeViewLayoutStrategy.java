@@ -307,12 +307,15 @@ class VerticalNodeViewLayoutStrategy {
                 }
             }
         }
-        int regularChildAnchor = (childNodesAlignment == ChildNodesAlignment.FLOW || childNodesAlignment == ChildNodesAlignment.AUTO)
+        int regularChildAnchor = (childNodesAlignment.placement() == Placement.CENTER)
                 ? 0
                 : subtreeHeightBelowContent(lastRegularChild, lastRegularChildSavedSpace);
         if(childNodesAlignment.placement() != Placement.TOP) {
 			totalSideShiftY += contentSize.height + regularChildAnchor;
 		}
+        if(childNodesAlignment == ChildNodesAlignment.BY_CENTER) {
+        	totalSideShiftY -= bottomContentY;
+        }
         if(childNodesAlignment.placement() == Placement.CENTER)
             totalSideShiftY /= 2;
         else if (childNodesAlignment == ChildNodesAlignment.BEFORE_PARENT
@@ -483,7 +486,7 @@ class VerticalNodeViewLayoutStrategy {
 			if (isFirstVisibleLaidOutChild() && (placement == Placement.TOP || placement == Placement.CENTER)) {
 				totalSideShiftY -= contentTop;
 			}
-			if (placement != Placement.TOP){
+			if (placement != Placement.TOP && placement != Placement.CENTER){
 			    final int yRef = isFirstVisibleLaidOutChild() ? 0 : yBottom + childShiftY;
 			    int yEnd = yBegin + childRegularHeight;
 			    if(yEnd > yRef) {
