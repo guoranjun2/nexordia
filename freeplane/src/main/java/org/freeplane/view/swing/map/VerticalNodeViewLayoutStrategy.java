@@ -435,23 +435,33 @@ class VerticalNodeViewLayoutStrategy {
 		    y += calculateAddedDistanceFromParentToChildren(minimalGapBetweenChildren, contentSize) + childCloudHeight/2;
 		}
     	int availableSpace = 0;
-    	int upperGap = 0;
+		int excessAboveReference = 0;
     	boolean childHasSubtree = childRegularHeight - child.getContentHeight() > childCloudHeight;
 		if(! isFirstVisibleLaidOutChild()) {
 			final int spaceForClouds = (childCloudHeight + lastChildCloudHeight)/2 + (lastChildCloudHeight & 1);
+			final int spaceBetweenContentAndClouds = spaceBetweenContent - spaceForClouds;
 			if (isAutoCompactLayoutEnabled) {
-				final int spaceBetweenContentAndClouds = spaceBetweenContent - spaceForClouds;
 				availableSpace = calculateAvailableSpaceForCompactLayout(child, index, y0, spaceForClouds);
-				if(spaceBetweenContentAndClouds > availableSpace) {
-					upperGap = Math.min(spaceBetweenContentAndClouds - availableSpace, extraGapForChildren);
-				}
+		        excessAboveReference -= availableSpace;
 				y -= availableSpace;
-			} else if(lastChildHasSubtree || childHasSubtree){
-				upperGap = extraGapForChildren;
 			}
-
-        	y += Math.max(vGap + upperGap, lastMinimumDistanceConsideringHandles);
+			int lastChildExtraGap = lastChildHasSubtree ? extraGapForChildren / 2 : 0;
+			int currentChildExtraGap;
+			if(lastMinimumDistanceConsideringHandles > vGap + lastChildExtraGap) {
+				lastChildExtraGap = lastMinimumDistanceConsideringHandles - vGap;
+				currentChildExtraGap = childHasSubtree ? Math.max(extraGapForChildren - lastChildExtraGap, 0) : 0;
+			} else {
+				currentChildExtraGap = childHasSubtree ? extraGapForChildren - extraGapForChildren / 2 : 0;
+				if (isAutoCompactLayoutEnabled && spaceBetweenContentAndClouds > availableSpace) {
+					lastChildExtraGap = Math.min(spaceBetweenContentAndClouds - availableSpace, lastChildExtraGap);
+					currentChildExtraGap = Math.min(spaceBetweenContentAndClouds - availableSpace - lastChildExtraGap, currentChildExtraGap);
+					currentChildExtraGap = Math.max(0, currentChildExtraGap);
+				}
+			}
+			excessAboveReference += currentChildExtraGap;
+			y += vGap + lastChildExtraGap + currentChildExtraGap;
     	}
+		excessAboveReference += contentTop;
 
     	int yBegin = calculateInitialYPosition(childShiftY);
     	yCoordinates[index] = yBegin;
@@ -466,10 +476,6 @@ class VerticalNodeViewLayoutStrategy {
 
 		if (childNodesAlignment == ChildNodesAlignment.FLOW ||
 		    childNodesAlignment == ChildNodesAlignment.AUTO) {
-		    final int yContentStart = contentTop + yBegin;
-			final int referenceY = Math.max(yBottom, y0 - Math.max(availableSpace, 0)) + vGap + (lastChildHasSubtree ? upperGap : 0);
-			final int childShift = (childShiftY > 0 || !isFirstVisibleLaidOutChild()) ? childShiftY : 0;
-			final int excessAboveReference = yContentStart - referenceY - childShift;
 			if(excessAboveReference > 0)
 			    totalSideShiftY -= 2 * excessAboveReference;
 			totalSideShiftY -= child.getContentHeight() + vGap;
