@@ -25,6 +25,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
@@ -35,6 +36,8 @@ import java.awt.geom.Line2D;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.lang.ref.WeakReference;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
@@ -60,6 +63,7 @@ public class ConnectorView extends AConnectorView{
 	private static final int LABEL_GAP = 4;
 	private static final double PRECISION = 2;
 	private Shape arrowLinkCurve;
+	private final List<Polygon> arrows;
 	private Rectangle sourceTextRectangle;
 	private Rectangle middleTextRectangle;
 	private Rectangle targetTextRectangle;
@@ -88,6 +92,7 @@ public class ConnectorView extends AConnectorView{
 		else{
 			stroke = UITools.createStroke(width, linkController.getDashArray(connectorModel), BasicStroke.JOIN_ROUND);
 		}
+		 arrows = new LinkedList<>();
 	}
 
 
@@ -99,14 +104,15 @@ public class ConnectorView extends AConnectorView{
     /* (non-Javadoc)
 	 * @see org.freeplane.view.swing.map.link.ILinkView#detectCollision(java.awt.Point, boolean)
 	 */
+	@Override
 	public boolean detectCollision(final Point p, final boolean selectedOnly) {
-		if (selectedOnly && (source == null || !source.isSelected()) && (target == null || !target.isSelected())) {
+		if (selectedOnly && (source == null || !source.isSelected()) && (target == null || !target.isSelected())
+				|| arrowLinkCurve == null && arrows.isEmpty()) {
 			return false;
 		}
-		if (arrowLinkCurve == null) {
-			return false;
-		}
-		return new CollisionDetector().detectCollision(p, arrowLinkCurve);
+		CollisionDetector collisionDetector = new CollisionDetector();
+		return arrowLinkCurve != null && collisionDetector.detectCollision(p, arrowLinkCurve)
+				|| arrows.stream().anyMatch(shape -> collisionDetector.detectCollision(p, shape));
 	}
 
 	private Rectangle drawEndPointText(final Graphics2D g, final String text, final Point endPoint, final Point controlPoint) {
@@ -220,6 +226,7 @@ public class ConnectorView extends AConnectorView{
 	/* (non-Javadoc)
 	 * @see org.freeplane.view.swing.map.link.ILinkView#getModel()
 	 */
+	@Override
 	public ConnectorModel getConnector() {
 		return viewedConnector;
 	}
@@ -280,6 +287,7 @@ public class ConnectorView extends AConnectorView{
 	/* (non-Javadoc)
 	 * @see org.freeplane.view.swing.map.link.ILinkView#paint(java.awt.Graphics)
 	 */
+	@Override
 	public void paint(final Graphics graphics) {
 		if (!isSourceVisible() && !isTargetVisible()) {
 			return;
@@ -362,6 +370,7 @@ public class ConnectorView extends AConnectorView{
 		ConnectorShape shape = linkController.getShape(viewedConnector);
         final boolean isLine = ConnectorShape.LINE.equals(shape);
 		arrowLinkCurve = null;
+		arrows.clear();
 		if (paintsConnectorLine) {
 		    if (startPoint != null && endPoint != null) {
 		        if(isLine) {
@@ -454,7 +463,9 @@ public class ConnectorView extends AConnectorView{
     }
 
     private void paintArrow(final Graphics2D g, Point from, Point to, ArrowDirection direction) {
-        paintArrow(from, to, g, getZoom() * 10, direction);
+        Polygon arrow = paintArrow(from, to, g, getZoom() * 10, direction);
+        if(arrow != null)
+        	arrows.add(arrow);
     }
 
 	private void drawLabels(final Graphics2D g, Point startPoint, Point startPoint2, Point endPoint2, Point endPoint) {
@@ -521,6 +532,7 @@ public class ConnectorView extends AConnectorView{
 	/* (non-Javadoc)
 	 * @see org.freeplane.view.swing.map.link.ILinkView#increaseBounds(java.awt.Rectangle)
 	 */
+	@Override
 	public void increaseBounds(final Rectangle innerBounds) {
 		final Shape arrowLinkCurve = getArrowLinkCurve();
 		if (arrowLinkCurve == null) {

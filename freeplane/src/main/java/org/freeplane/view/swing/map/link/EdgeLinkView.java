@@ -23,7 +23,10 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.link.ArrowType;
@@ -43,6 +46,7 @@ import org.freeplane.view.swing.map.edge.EdgeViewFactory;
  */
 public class EdgeLinkView extends AConnectorView {
 	private final EdgeView edgeView;
+	private final List<Polygon> arrows;
 	private LinkController linkController;
 
 	public EdgeLinkView(final ConnectorModel model, final ModeController modeController, final NodeView source,
@@ -70,8 +74,10 @@ public class EdgeLinkView extends AConnectorView {
 			edgeView.setDash(dash);
 		}
 		edgeView.setColor(color);
+		arrows = new LinkedList<>();
 	}
 
+	@Override
 	public boolean detectCollision(final Point p, final boolean selectedOnly) {
 		if (selectedOnly) {
 			final NodeView source = edgeView.getSource();
@@ -82,18 +88,26 @@ public class EdgeLinkView extends AConnectorView {
 				}
 			}
 		}
-		return edgeView.detectCollision(p);
+		if (edgeView.detectCollision(p))
+			return true;
+		CollisionDetector collisionDetector = new CollisionDetector();
+		return arrows.stream().anyMatch(shape -> collisionDetector.detectCollision(p, shape));
+
 	}
 
+	@Override
 	public ConnectorModel getConnector() {
 		return viewedConnector;
 	}
 
+	@Override
 	public void increaseBounds(final Rectangle innerBounds) {
 		//edge link does not increase inner bounds
 	}
 
+	@Override
 	public void paint(final Graphics graphics) {
+		arrows.clear();
 		edgeView.paint((Graphics2D) graphics);
 		if(ConnectorShape.EDGE_LIKE.equals(linkController.getShape(viewedConnector))){
 			return;
@@ -114,6 +128,8 @@ public class EdgeLinkView extends AConnectorView {
 	}
 
 	private void paintArrow(final Graphics graphics, Point from, Point to) {
-	    paintArrow(from, to, (Graphics2D)graphics, getZoom() * 10, ArrowDirection.INCOMING);
+	    Polygon arrow = paintArrow(from, to, (Graphics2D)graphics, getZoom() * 10, ArrowDirection.INCOMING);
+	    if(arrow != null)
+	    	arrows.add(arrow);
     }
 }
