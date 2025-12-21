@@ -66,7 +66,12 @@ class VisibleOutlineNodes {
         return idx != null ? idx : -1;
     }
 
-    int getBreadcrumbHeight() {
+	TreeNode findNodeById(String id) {
+		int index = findNodeIndexById(id);
+		return getNodeAtVisibleIndex(index);
+	}
+
+	int getBreadcrumbHeight() {
         return breadcrumbHeight;
     }
 

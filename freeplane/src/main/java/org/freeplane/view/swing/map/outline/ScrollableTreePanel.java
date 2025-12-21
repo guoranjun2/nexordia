@@ -475,13 +475,13 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
 
-    void rebuildFromNode(TreeNode anchorNode) {
+    void rebuildFromNode(String anchorNodeId) {
         if (viewport == null) return;
 
         Component prevFocus = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         boolean prevInOutline = focusManager.isWithinOutline(prevFocus);
 
-        visibleNodes.updateVisibleNodes();
+        updateVisibleNodes();
 		int firstFullyVisibleNodeIndex = calculateFirstVisibleNodeIndex();
 
 
@@ -508,7 +508,7 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
             return;
         }
 
-        int anchorIndex = visibleNodes.findNodeIndexInVisibleList(anchorNode);
+        int anchorIndex = visibleNodes.findNodeIndexById(anchorNodeId);
         if (anchorIndex < 0) {
             updateVisibleBlocksAndBreadcrumb();
             ensureValidSelectionOrSyncFromMap();
@@ -808,11 +808,21 @@ class ScrollableTreePanel extends JPanel implements OutlineActionTarget {
     }
 
     void updateVisibleNodes(ScrollMode scrollMode) {
-        visibleNodes.updateVisibleNodes();
+        updateVisibleNodes();
         blockPanel.removeAll();
         blockCache.clear();
         ensureSelectionVisible(scrollMode);
     }
+
+	private void updateVisibleNodes() {
+		visibleNodes.updateVisibleNodes();
+		TreeNode selectedNode = outlineSelection.getSelectedNode();
+		if(selectedNode != null) {
+			TreeNode node = visibleNodes.findNodeById(selectedNode.getId());
+			if(node != selectedNode)
+				outlineSelection.selectNode(node);
+		}
+	}
 
     void updateVisibleBlocksAndBreadcrumb() {
     	int firstFullyVisibleNodeIndex = calculateFirstVisibleNodeIndex();

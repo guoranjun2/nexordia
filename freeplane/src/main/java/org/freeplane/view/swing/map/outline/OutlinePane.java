@@ -133,7 +133,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 	}
 
     void rebuildFromNode(TreeNode node) {
-    	treePanel.rebuildFromNode(node);
+    	treePanel.rebuildFromNode(node.getId());
     }
 
     void setRootNode(OutlineDisplayMode displayMode, TreeNode newRootNode) {
