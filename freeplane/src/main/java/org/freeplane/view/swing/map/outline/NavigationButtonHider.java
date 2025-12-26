@@ -18,8 +18,16 @@ class NavigationButtonHider {
 	static NavigationButtonHider INSTANCE = new NavigationButtonHider();
 	private AWTEventListener mouseMovementDetector;
 	private OutlineController outlineController;
-	void enable(JComponent buttonParent, NavigationButtons navigationButtons) {
+	private NavigationButtons navigationButtons;
+	void enable(JComponent buttonParent, NavigationButtons attachedNavigationButtons) {
+		if(navigationButtons == attachedNavigationButtons)
+			return;
+		if(navigationButtons != null) {
+			navigationButtons.hideNavigationButtons();
+			outlineController.resetHoveredNode();
+		}
 		disable();
+		this.navigationButtons = attachedNavigationButtons;
 		OutlinePane outlinePane = (OutlinePane) SwingUtilities.getAncestorOfClass(OutlinePane.class, buttonParent);
 		outlineController = outlinePane.getController();
         mouseMovementDetector = new AWTEventListener() {
@@ -30,7 +38,7 @@ class NavigationButtonHider {
 		            Point eventPoint = new Point (mouseEvent.getXOnScreen(),mouseEvent.getYOnScreen());
 		            SwingUtilities.convertPointFromScreen(eventPoint, outlinePane);
 		            if(eventPoint.x < 0 || eventPoint.y < 0 || eventPoint.x >= outlinePane.getWidth() || eventPoint.y >= outlinePane.getHeight()) {
-						navigationButtons.hideNavigationButtons();
+						attachedNavigationButtons.hideNavigationButtons();
 						outlineController.resetHoveredNode();
 						disable();
 					}
@@ -47,6 +55,7 @@ class NavigationButtonHider {
 		if(mouseMovementDetector != null) {
 			Toolkit.getDefaultToolkit().removeAWTEventListener(mouseMovementDetector);
 			outlineController = null;
+			navigationButtons = null;
 			mouseMovementDetector = null;
 		}
 	}
