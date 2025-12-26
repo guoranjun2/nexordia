@@ -78,6 +78,7 @@
 <node TEXT="Version 1.12.15" ID="ID_859157443">
 <node TEXT="Editor features" ID="ID_432815917">
 <node TEXT="Map outline panel" ID="ID_1880554169"/>
+<node TEXT="AES encryption for encrypted nodes and maps" ID="ID_1185446444"/>
 </node>
 </node>
 <node TEXT="Version 1.12.11" FOLDED="true" ID="ID_695231532">

@@ -1,8 +1,9 @@
 ==============================
 1.12.15
 ==============================
-Open selection as root in a new view (alt+shift+ESCAPE)
 Map outline panel
+AES encryption for encrypted nodes and maps
+Open selection as root in a new view (alt+shift+ESCAPE)
 
 ==============================
 1.12.14
