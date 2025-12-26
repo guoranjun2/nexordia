@@ -127,6 +127,7 @@ public class CodeMapController extends MapController implements CodeExplorer{
 	    mapViewManager.setMap(mapView, loadingHintMap);
 	    Controller.getCurrentController().getMapViewManager().setMapTitles();
 	    Controller.getCurrentController().getViewController().setWaitingCursor(true);
+	    FilterController.getCurrentFilterController().mapRootNodeChanged(loadingHintMap);
         CodeMap projectMap = newCodeMap(codeExplorerConfiguration.canBeSaved());
         projectMap.setConfiguration(codeExplorerConfiguration);
         loadingHintMap.addExtension(new LoadedMap(projectMap));

@@ -1,5 +1,6 @@
 package org.freeplane.core.undo;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,13 +12,13 @@ import org.freeplane.features.mode.Controller;
 public class SelectionActor implements IActor {
 	private final String[] nodeIDs;
 	final private MapModel map;
-	static private SelectionActor lastSelectionActor = null;
+	static private WeakReference<SelectionActor> lastSelectionActor = null;
 
 	static SelectionActor create(IMapSelection selection){
 		final SelectionActor selectionActor = new SelectionActor(selection);
-		if(!selectionActor.equals(lastSelectionActor))
-			lastSelectionActor = selectionActor;
-		return lastSelectionActor;
+		if(lastSelectionActor == null || !selectionActor.equals(lastSelectionActor.get()))
+			lastSelectionActor = new WeakReference<SelectionActor>(selectionActor);
+		return lastSelectionActor.get();
 	}
 
 	private SelectionActor(IMapSelection selection) {
