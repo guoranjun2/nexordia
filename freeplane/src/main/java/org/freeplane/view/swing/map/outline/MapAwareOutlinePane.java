@@ -88,17 +88,19 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 
 
     void handleMapSelectionChanged(NodeModel node) {
-        if(currentMapView == null || ! currentMapView.isSelected() || node == null)
-            return;
-        final ScrollableTreePanel panel = getTreePanel();
-        if(panel == null)
-            return;
-        SwingUtilities.invokeLater(this::syncronizeSelectionFollowingMap);
+        if(node != null && isCurrentMapViewSelected())
+			SwingUtilities.invokeLater(this::syncronizeSelectionFollowingMap);
     }
 
+	private boolean isCurrentMapViewSelected() {
+		return currentMapView != null && currentMapView.isSelected() && getTreePanel() != null;
+	}
+
 	private void syncronizeSelectionFollowingMap() {
-		getTreePanel().getOutlineSelection().setShowsExtendedBreadcrumb(true);
-		synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
+		if(isCurrentMapViewSelected()) {
+			getTreePanel().getOutlineSelection().setShowsExtendedBreadcrumb(true);
+			synchronizeOutlineSelection(SelectionSynchronizationTrigger.MAP, false);
+		}
 	}
 
     void synchronizeOutlineSelection(SelectionSynchronizationTrigger synchronizationTrigger, boolean requestFocus) {
