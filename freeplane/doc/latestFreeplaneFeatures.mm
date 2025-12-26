@@ -1,5 +1,6 @@
-<map version="freeplane 1.12.1">
+<map version="freeplane 1.12.15">
 <!--To view this file, download free mind mapping software Freeplane from https://www.freeplane.org -->
+<bookmarks/>
 <node TEXT="Latest Freeplane features" STYLE_REF="Introduction" FOLDED="false" ID="ID_1286342769" BACKGROUND_COLOR="#99ccff" MIN_WIDTH="0 cm" VGAP_QUANTITY="2 pt">
 <edge DASH="SOLID"/>
 <hook NAME="MapStyle" background="#ffccccff">
@@ -74,12 +75,17 @@
 </map_styles>
 </hook>
 <node TEXT="Version 1.12.x" POSITION="bottom_or_right" ID="ID_585965147">
-<node TEXT="Version 1.12.11" ID="ID_695231532">
-<node TEXT="Editor features" ID="ID_1804949975">
+<node TEXT="Version 1.12.15" ID="ID_859157443">
+<node TEXT="Editor features" ID="ID_432815917">
+<node TEXT="Map outline panel" ID="ID_1880554169"/>
+</node>
+</node>
+<node TEXT="Version 1.12.11" FOLDED="true" ID="ID_695231532">
+<node TEXT="Editor features" FOLDED="true" ID="ID_1804949975">
 <node TEXT="Automatic compact layout" ID="ID_767781867"/>
 </node>
 </node>
-<node TEXT="Version 1.12.2" ID="ID_1654459656">
+<node TEXT="Version 1.12.2" FOLDED="true" ID="ID_1654459656">
 <node TEXT="Editor features" ID="ID_159604560">
 <node TEXT="Node tags" ID="ID_886055435" LINK="freeplaneUserGuide.mm#ID_889515076"/>
 <node TEXT="Configure columns in &quot;Find and replace&quot;..." ID="ID_1771151367"/>
@@ -92,7 +98,7 @@
 </node>
 </node>
 </node>
-<node TEXT="Version 1.11.x" STYLE_REF="Actions" POSITION="bottom_or_right" ID="ID_414352132">
+<node TEXT="Version 1.11.x" STYLE_REF="Actions" FOLDED="true" POSITION="bottom_or_right" ID="ID_414352132">
 <node TEXT="Version 1.11.11" FOLDED="true" ID="ID_1996460640">
 <node TEXT="Editor features" ID="ID_960043093">
 <node TEXT="Record and analyze violations found by ArchUnit tests" ID="ID_237251897" LINK="https://github.com/freeplane/freeplane-archunit-extension"/>
