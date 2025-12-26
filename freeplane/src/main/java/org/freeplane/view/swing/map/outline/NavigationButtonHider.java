@@ -19,6 +19,7 @@ class NavigationButtonHider {
 	private AWTEventListener mouseMovementDetector;
 	private OutlineController outlineController;
 	void enable(JComponent buttonParent, NavigationButtons navigationButtons) {
+		disable();
 		OutlinePane outlinePane = (OutlinePane) SwingUtilities.getAncestorOfClass(OutlinePane.class, buttonParent);
 		outlineController = outlinePane.getController();
         mouseMovementDetector = new AWTEventListener() {

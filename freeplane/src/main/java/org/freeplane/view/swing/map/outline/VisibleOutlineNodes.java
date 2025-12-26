@@ -17,7 +17,7 @@ class VisibleOutlineNodes {
 
     VisibleOutlineNodes(TreeNode root) {
         this.root = root;
-        this.hoveredNode = root;
+        this.hoveredNode = null;
         updateVisibleNodes();
     }
 
