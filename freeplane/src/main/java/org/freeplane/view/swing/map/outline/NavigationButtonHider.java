@@ -31,6 +31,7 @@ class NavigationButtonHider {
 		            SwingUtilities.convertPointFromScreen(eventPoint, outlinePane);
 		            if(eventPoint.x < 0 || eventPoint.y < 0 || eventPoint.x >= outlinePane.getWidth() || eventPoint.y >= outlinePane.getHeight()) {
 						navigationButtons.hideNavigationButtons();
+						outlineController.resetHoveredNode();
 						disable();
 					}
 		        }
@@ -45,7 +46,6 @@ class NavigationButtonHider {
 	void disable() {
 		if(mouseMovementDetector != null) {
 			Toolkit.getDefaultToolkit().removeAWTEventListener(mouseMovementDetector);
-			outlineController.resetHoveredNode();
 			outlineController = null;
 			mouseMovementDetector = null;
 		}
