@@ -736,7 +736,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
                 builder.rebuildSubtree(existingSubtreeRoot);
             }
         }
-        if(! isFilterResultUpdateScheduled) {
+        if(! isFilterResultUpdateScheduled && node != null) {
 			super.rebuildFromNode(node);
 		}
     }
