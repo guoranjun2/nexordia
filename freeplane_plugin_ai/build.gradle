@@ -1,4 +1,6 @@
 dependencies {
     implementation project(':freeplane')
+    lib 'dev.langchain4j:langchain4j:1.10.0'
+    lib 'dev.langchain4j:langchain4j-open-ai:1.10.0'
+    lib 'dev.langchain4j:langchain4j-ollama:1.10.0'
 }
-

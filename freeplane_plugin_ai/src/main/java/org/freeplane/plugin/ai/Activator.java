@@ -1,23 +1,17 @@
 package org.freeplane.plugin.ai;
 
-import java.net.URL;
 import java.util.Hashtable;
 
-import org.freeplane.features.format.ContentTypeFormat;
-import org.freeplane.features.format.FormatController;
-import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
-import org.freeplane.features.note.NoteController;
-import org.freeplane.features.note.mindmapmode.MNoteController;
-import org.freeplane.features.text.TextController;
-import org.freeplane.features.text.mindmapmode.ConditionalContentTransformer;
-import org.freeplane.features.text.mindmapmode.MTextController;
+import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.main.application.CommandLineOptions;
-import org.freeplane.main.mindmapmode.stylemode.SModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.freeplane.core.ui.components.UITools;
+
+import javax.swing.JTabbedPane;
 
 public class Activator implements BundleActivator {
 
@@ -40,7 +34,9 @@ public class Activator implements BundleActivator {
 		    new IModeControllerExtensionProvider() {
 			    @Override
 				public void installExtension(final ModeController modeController, CommandLineOptions options) {
-
+				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
+				    tabs.addTab("AI", new AIChatPanel());
+				}
 		    }, props);
 	}
 
