@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><preferences_structure xmlns="http://freeplane.sf.net/ui/preferences/1.0">
+<tabbed_pane>
+<tab name="plugins">
+    <separator name="ai">
+        <string name="ai_provider_name"/>
+        <string name="ai_model_name"/>
+        <string name="ai_openrouter_service_address"/>
+        <string name="ai_openrouter_key"/>
+        <string name="ai_gemini_service_address"/>
+        <string name="ai_gemini_key"/>
+        <string name="ai_ollama_service_address"/>
+    </separator>
+</tab>
+</tabbed_pane>
+</preferences_structure>
