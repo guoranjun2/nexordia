@@ -69,6 +69,76 @@ Read tools
     - max_nodes.
   - Output:
     - items: list of { node_identifier, content, breadcrumbs } where content includes textualContent, attributesContent, tagsContent.
+- list_search_properties
+  - Purpose: list properties that can be used for both search and filter conditions, excluding attribute conditions.
+  - Parameters:
+    - map_identifier: optional, defaults to the current map.
+  - Output:
+    - properties: list of { name } using English property names accepted by the tools.
+- list_search_conditions_for_property
+  - Purpose: list valid conditions and value input modes for a property.
+  - Parameters:
+    - property_name: required.
+  - Output:
+    - conditions: list of { name, value_input_mode, case_sensitive_option_allowed, approximate_matching_option_allowed, ignore_diacritics_option_allowed }.
+  - Reject any property_name or condition_name that is not returned by the discovery tools.
+- search_nodes_by_condition
+  - Purpose: search nodes using the same condition model that powers filtering.
+  - Parameters:
+    - map_identifier: required.
+    - condition: { property_name, condition_name, value, case_sensitive, approximate_matching, ignore_diacritics }.
+    - scope_node_identifier: optional root for scoped search.
+    - maximum_results: optional cap.
+  - Output:
+    - node_identifiers: list of matching node identifiers.
+- list_attribute_names_for_map
+  - Purpose: list available attribute names for a map.
+  - Parameters:
+    - map_identifier: required.
+  - Output:
+    - attribute_names: list of strings.
+- search_attributes_by_name_and_value
+  - Purpose: search nodes by attribute name and value.
+  - Parameters:
+    - map_identifier: required.
+    - attribute_name: required.
+    - attribute_value: required.
+  - Output:
+    - node_identifiers: list of matching node identifiers.
+- generate_search_overview
+  - Purpose: generate a compact map overview and index for targeted search.
+  - Parameters:
+    - map_identifier: required.
+    - focus_request: optional; if provided, prioritize terms and sections relevant to the request.
+    - model_identifier: optional; selects a cheaper or faster model for overview generation.
+    - maximum_keyword_count: optional upper bound for keyword entries.
+    - maximum_section_count: optional upper bound for section entries.
+  - Output:
+    - summary: short abstract of what the map is about.
+    - themes: list of high level topics.
+    - sections: list of { node_identifier, node_text, keywords }.
+    - keywords: list of { term, node_identifiers }.
+
+AI only filter tools
+- set_ai_only_filter_condition
+  - Purpose: set a filter condition that affects only AI tool calls and not the user view.
+  - Parameters:
+    - map_identifier: required.
+    - condition: { property_name, condition_name, value, case_sensitive, approximate_matching, ignore_diacritics }.
+  - Output:
+    - active_condition: the active ai only filter condition.
+- get_ai_only_filter_condition
+  - Purpose: retrieve the active ai only filter condition for transparency.
+  - Parameters:
+    - map_identifier: required.
+  - Output:
+    - active_condition: condition object or null.
+- clear_ai_only_filter_condition
+  - Purpose: clear the active ai only filter condition.
+  - Parameters:
+    - map_identifier: required.
+  - Output:
+    - cleared: boolean confirmation.
 
 Action tools
 - create_nodes
@@ -101,6 +171,24 @@ Action tools
 Chat workflow
 - Chat should use read tools to gather context, then answer in the chat pane without modifying the map.
 - Suggested changes are reviewed in chat before any tool writes are executed.
+- When map scope is unclear, call generate_search_overview with the current user request to build a targeted index.
+- Use list_search_properties and list_search_conditions_for_property to build valid condition requests before calling search_nodes_by_condition.
+- Apply ai only filter conditions to narrow follow up reads without changing the user visible filter.
+- Support iterative structural extraction in chat by allowing branch scoped rewrites after user feedback.
+
+Minimum viable product scope and phased work
+- The minimum viable product focuses on chat panel workflows only; inline edit and side panel variations are later.
+- Accept or reject changes as a batch and fine grained undo are important but deferred to tool implementation.
+- The map may change during a session, and the LLM should assume its view can be stale unless it refreshes context.
+- Do not stream every map change to the LLM; rely on explicit read tools when needed.
+
+Deferred ideas (not considered now)
+- Inline proofreading with color coded suggestions and accept or reject controls.
+- Model provider expansion beyond the initial set, including local models and additional cloud gateways.
+- Multimodal context ingestion for files like PDF, DOCX, MP3, or MP4.
+- Custom context selection via Groovy scripts and user defined toolbox actions.
+- Asynchronous calls and multiple simultaneous conversations.
+- Dedicated validation user interface for proposed edits beyond the current chat flow.
 
 Response formats and identifiers
 - Tool responses should be strict and machine readable to allow reliable parsing and changes.
