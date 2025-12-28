@@ -36,6 +36,8 @@ public class AIChatPanel extends JPanel {
     private final JButton sendButton;
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
+    private final AIProviderConfiguration configuration;
+    private final AIModelSelectionController modelSelectionController;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -48,6 +50,9 @@ public class AIChatPanel extends JPanel {
         inputArea.setWrapStyleWord(true);
         sendButton = new JButton("Send");
         menuPopup = buildMenuPopup();
+        configuration = new AIProviderConfiguration();
+        modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
+        modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -76,6 +81,7 @@ public class AIChatPanel extends JPanel {
                 sendMessage();
             }
         });
+        modelSelectionController.loadInitialModelSelectionList();
     }
 
     private void configureToolbar(FreeplaneToolBar toolbar) {
@@ -83,6 +89,7 @@ public class AIChatPanel extends JPanel {
         TranslatedElementFactory.createTooltip(menuButton, "preferences");
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
         toolbar.add(menuButton);
+        toolbar.add(modelSelectionController.getModelSelectionComboBox());
     }
 
     private JPopupMenu buildMenuPopup() {
@@ -140,15 +147,29 @@ public class AIChatPanel extends JPanel {
         if (chatService != null) {
             return;
         }
-        AIProviderConfiguration configuration = new AIProviderConfiguration();
-        String providerName = configuration.getProviderName();
-        String modelName = configuration.getModelName();
-        if (providerName == null || providerName.isEmpty()) {
-            appendMessage("Missing AI provider setting.", false);
+        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
+        if (selection == null) {
+            appendMessage("Missing AI model selection.", false);
             return;
         }
-        if (modelName == null || modelName.isEmpty()) {
-            appendMessage("Missing AI model name setting.", false);
+        String providerName = selection.getProviderName();
+        if (AIChatModelFactory.PROVIDER_NAME_OPENROUTER.equalsIgnoreCase(providerName)) {
+            if (configuration.getOpenRouterKey() == null || configuration.getOpenRouterKey().isEmpty()) {
+                appendMessage("Missing OpenRouter key setting.", false);
+                return;
+            }
+        } else if (AIChatModelFactory.PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
+            if (configuration.getGeminiKey() == null || configuration.getGeminiKey().isEmpty()) {
+                appendMessage("Missing Gemini key setting.", false);
+                return;
+            }
+        } else if (AIChatModelFactory.PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
+            if (!configuration.isOllamaEnabled()) {
+                appendMessage("Ollama usage is disabled.", false);
+                return;
+            }
+        } else {
+            appendMessage("Unknown AI provider selection.", false);
             return;
         }
         chatService = AIChatServiceFactory.createService(new AIToolSet());
@@ -183,4 +204,5 @@ public class AIChatPanel extends JPanel {
         JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
         verticalBar.setValue(verticalBar.getMaximum());
     }
+
 }

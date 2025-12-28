@@ -18,25 +18,30 @@ public final class AIChatModelFactory {
     }
 
     public static ChatModel createChatLanguageModel(AIProviderConfiguration configuration) {
-        String providerName = configuration.getProviderName();
-        if (PROVIDER_NAME_OPENROUTER.equals(providerName)) {
+        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
+        if (selection == null) {
+            throw new IllegalArgumentException("Missing model selection");
+        }
+        String providerName = selection.getProviderName();
+        String modelName = selection.getModelName();
+        if (PROVIDER_NAME_OPENROUTER.equalsIgnoreCase(providerName)) {
             return OpenAiChatModel.builder()
                 .baseUrl(getOpenrouterServiceAddress(configuration))
                 .apiKey(configuration.getOpenRouterKey())
-                .modelName(configuration.getModelName())
+                .modelName(modelName)
                 .build();
         }
-        if (PROVIDER_NAME_GEMINI.equals(providerName)) {
+        if (PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
             return GoogleAiGeminiChatModel.builder()
                 .baseUrl(getGeminiServiceAddress(configuration))
                 .apiKey(configuration.getGeminiKey())
-                .modelName(configuration.getModelName())
+                .modelName(modelName)
                 .build();
         }
-        if (PROVIDER_NAME_OLLAMA.equals(providerName)) {
+        if (PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
             return OllamaChatModel.builder()
                 .baseUrl(getOllamaServiceAddress(configuration))
-                .modelName(configuration.getModelName())
+                .modelName(modelName)
                 .build();
         }
         throw new IllegalArgumentException("Unknown provider name: " + providerName);
