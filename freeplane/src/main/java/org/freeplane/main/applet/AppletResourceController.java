@@ -112,5 +112,8 @@ class AppletResourceController extends ResourceController {
     }
 
     @Override
-    public void secureProperty(String key) {/**/}
+    public void securePropertyForModification(String key) {/**/}
+
+    @Override
+    public void securePropertyForReadingAndModification(String key) {/**/}
 }

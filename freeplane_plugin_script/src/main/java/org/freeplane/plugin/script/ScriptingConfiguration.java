@@ -77,7 +77,7 @@ class ScriptingConfiguration {
         ResourceController.loadProperties(props, defaults);
         ResourceController resourceController = Controller.getCurrentController().getResourceController();
         resourceController.addDefaults(props);
-        props.keySet().forEach(key -> resourceController.secureProperty((String)key));
+        props.keySet().forEach(key -> resourceController.securePropertyForModification((String)key));
 	}
 
     private List<ScriptAddOnProperties> getInstalledScriptAddOns() {

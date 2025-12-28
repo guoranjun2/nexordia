@@ -2,6 +2,8 @@ package org.freeplane.plugin.ai;
 
 import java.net.URL;
 import java.util.Hashtable;
+import java.util.Objects;
+import java.util.Properties;
 
 import javax.swing.JTabbedPane;
 
@@ -30,8 +32,8 @@ public class Activator implements BundleActivator {
 	}
 
 	private void registerMindMapModeExtension(final BundleContext context) {
-		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
-		props.put("mode", new String[] { MModeController.MODENAME });
+		final Hashtable<String, String[]> properties = new Hashtable<String, String[]>();
+		properties.put("mode", new String[] { MModeController.MODENAME });
 		context.registerService(IModeControllerExtensionProvider.class.getName(),
 		    new IModeControllerExtensionProvider() {
 			    @Override
@@ -53,11 +55,14 @@ public class Activator implements BundleActivator {
 
 				private void addPluginDefaults() {
 					final URL defaults = this.getClass().getResource("defaults.properties");
-					if (defaults == null)
-						throw new RuntimeException("cannot open defaults");
-					ResourceController.getResourceController().addDefaults(defaults);
+					Objects.requireNonNull(defaults, "cannot open defaults");
+					Properties properties = new Properties();
+					ResourceController.loadProperties(properties, defaults);
+					ResourceController resourceController = ResourceController.getResourceController();
+					resourceController.addDefaults(properties);
+					properties.keySet().forEach(key -> resourceController.securePropertyForReadingAndModification((String) key));
 				}
-		    }, props);
+		    }, properties);
 	}
 
 	/*

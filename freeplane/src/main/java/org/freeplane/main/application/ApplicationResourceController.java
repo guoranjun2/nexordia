@@ -32,6 +32,7 @@ import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Properties;
@@ -67,6 +68,7 @@ public class ApplicationResourceController extends ResourceController {
 	private LastOpenedList lastOpened;
 	final private Properties props;
 	final private Properties securedProps;
+	final private Set<String> securedForReadingPropertyKeys;
 	public static final String FREEPLANE_BASEDIRECTORY_PROPERTY = "org.freeplane.basedirectory";
 	public static final String FREEPLANE_GLOBALRESOURCEDIR_PROPERTY = "org.freeplane.globalresourcedir";
 	public static final String DEFAULT_FREEPLANE_GLOBALRESOURCEDIR = "resources";
@@ -115,6 +117,7 @@ public class ApplicationResourceController extends ResourceController {
 		resourceDirectories = new ArrayList<File>(2);
 		defProps = readDefaultPreferences();
 		props = readUsersPreferences(defProps);
+		securedForReadingPropertyKeys = new HashSet<>();
 		replacePropertyKey("keepSelectedNodeVisibleAfterZoom", "keepSelectedNodeVisible");
 		replacePropertyKey("foldingsymbolwidth", "foldingsymbolsize");
 		securedProps = new Properties(props);
@@ -188,6 +191,8 @@ public class ApplicationResourceController extends ResourceController {
 
 	@Override
 	public String getProperty(final String key) {
+		if(securedForReadingPropertyKeys.contains(key))
+			checkSecurityPermission();
 	    return securedProps.getProperty(key);
 	}
 
@@ -384,10 +389,15 @@ public class ApplicationResourceController extends ResourceController {
     }
 
     @Override
-    public void secureProperty(String key) {
+    public void securePropertyForModification(String key) {
         checkSecurityPermission();
         if(! securedProps.containsKey(key))
             securedProps.setProperty(key, props.getProperty(key));
+    }
+    @Override
+    public void securePropertyForReadingAndModification(String key) {
+    	securePropertyForModification(key);
+    	securedForReadingPropertyKeys.add(key);
     }
 
     @Override

@@ -453,7 +453,9 @@ public abstract class ResourceController {
 
     abstract public Properties getSecuredProperties();
 
-    abstract public void secureProperty(String key);
+    abstract public void securePropertyForModification(String key);
+
+    abstract public void securePropertyForReadingAndModification(String key);
 
     public boolean isPropertySetByUser(String key) {
         return false;
