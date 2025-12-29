@@ -56,3 +56,9 @@ Treat the AI as a junior engineer who must submit a design doc for review before
         2.  **No Snippets**: Do not show code snippets or diffs during the proposal. Code here means programming language or markup language. Focus on the *intent* and *reasoning*.
         3.  **Align**: The AI asks for approval.
         4.  **Act**: Only after approval does the AI write the code.
+
+8.  **Architecture Decision Records**:
+    *   Record architecture decisions in `specs/architecture-decisions/` as a separate file per decision.
+    *   Use meaningful file names without numbers.
+    *   Use a short template that includes Title, Date, Status, Context, Decision, and Consequences.
+    *   Capture decisions that affect design, tooling, or public behavior before implementation begins.
