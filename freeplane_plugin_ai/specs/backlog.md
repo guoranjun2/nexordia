@@ -9,9 +9,11 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Status:** Backlog
 *   **User Story:** As an AI assistant, I want to read node context and navigate paths so I can answer questions accurately.
 *   **Tasks:**
-    *   [ ] Implement read_node_context with depth, layers, and output format support.
+    *   [ ] Define internal node content request hierarchy with content presets for read context.
+    *   [ ] Implement a new read context method with fixed parent and child structure and remove the old read context request and response types.
     *   [ ] Implement get_breadcrumbs to return the root to node path.
     *   [ ] Implement get_flat_list for branch scanning with optional breadcrumbs.
+    *   [ ] Remove the Gson dependency from the ai plugin and rely on Jackson provided by LangChain4j.
 
 ### Epic 2: Map Editing Tools
 **Goal:** Implement the map modification tools used after chat approval.
@@ -75,3 +77,30 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Tasks:**
     *   [ ] Implement system_message_for_chat to inject search and filter discovery data.
     *   [ ] Decide which properties and conditions are embedded and which remain tool discoverable.
+
+## Sprint 1
+
+### Task: Read context request hierarchy and presets
+**Status:** Plan Review
+**Scope:** Define a new internal NodeContentRequest hierarchy with content presets for focus, parent, and child nodes.
+**Research summary:**
+*   NodeContent groups TextualContent, AttributesContent, and TagsContent.
+*   TextualContent includes text, details, and note.
+*   AttributesContent stores a list of AttributeEntry name and value pairs.
+*   TagsContent stores a list of tag strings.
+*   NodeContextRequest currently includes map identifier, node identifier, depth, include flags, and output format.
+*   NodeContextResponse includes map identifier, output format, and payload.
+*   AIToolSet exposes readNodeContext with NodeContextRequest and NodeContextResponse.
+*   LangChain4j uses an internal JacksonJsonCodec by default; the ObjectMapper does not enable non-null inclusion, so null fields are serialized, missing fields deserialize as null for reference types and default values for primitives, and unknown properties are rejected unless a custom JsonCodecFactory is provided.
+**Plan:**
+1. Define internal request types: NodeContentRequest, TextualContentRequest, AttributesContentRequest, TagsContentRequest, and NodeContextContentRequest for focus, parent, and child nodes.
+2. Define content presets such as full and brief, with full covering all current content parts and brief covering text only.
+3. Add a preset resolver that maps presets to concrete requests for focus, parent, and child nodes.
+
+### Task: Remove Gson dependency from ai plugin
+**Status:** Identified
+**Scope:** Remove the Gson dependency from the ai plugin build file and use Jackson provided by LangChain4j instead.
+
+### Task: Implement new read context method
+**Status:** Identified
+**Scope:** Replace NodeContextRequest and NodeContextResponse with a new read context request and response that only require map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old request and response types.
