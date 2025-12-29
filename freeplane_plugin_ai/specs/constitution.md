@@ -14,10 +14,10 @@ Treat the AI as a junior engineer who must submit a design doc for review before
     *   Information gathering commands do **not** require a formal plan entry or prior approval. They are considered part of the analysis process.
 
 2.  **Standard Workflow: Research, Plan, Implement**:
-    *   **Research**: Gather the data needed to plan and document it in the task description. The research plan is discussed with the user. If it is recorded, it should be part of a dedicated research task.
-    *   **Plan**: Propose the implementation plan and obtain explicit user approval. Tests and acceptance criteria belong in the plan.
+    *   **Start with research**: Always begin with research unless the user explicitly waives it. Record research findings directly in the task’s **Research summary** section and update it as you go.
+    *   **Plan alongside research**: Research and planning are iterative and can be developed together, but the plan cannot be marked ready for approval until the research summary is documented.
+    *   **Plan approval**: Propose the implementation plan and obtain explicit user approval. Tests and acceptance criteria belong in the plan.
     *   **Implement**: Execute the approved plan and move the task to implementation review.
-    *   **Plan drafting during research**: You may draft or update a plan while research is in progress, but you must not mark the plan as complete or ready for approval until research is complete and documented.
 
 3.  **Scope Definition**:
     *   Plans do not need to list every single file if the scope can be accurately described using general terms (e.g., "all files in `src/main/java/com/example/`").
@@ -26,17 +26,16 @@ Treat the AI as a junior engineer who must submit a design doc for review before
 4.  **Task States**:
     *   Tasks in [backlog.md](backlog.md) must have one of the following states:
         *   **Identified**: The task is identified but not yet detailed.
-        *   **Research In Progress**: Research is underway to gather status quo data for planning.
-        *   **Research Review**: Research is documented and waiting for user review before planning.
-        *   **Plan In Progress**: The task is currently being planned.
-        *   **Plan Review**: The plan is written and waiting for user approval.
-        *   **To Implement**: The plan is approved and ready for execution.
-        *   **Implementation In Progress**: The task is currently being executed.
+        *   **Planning**: The task is currently being planned.
+        *   **Plan Review**: The plan is written and waiting for user approval. Research must be documented in the task’s **Research summary** before reaching this state.
+        *   **Plan Approved**: The plan is approved and ready for execution.
+        *   **Implementing**: The task is currently being executed.
         *   **Implementation Review**: The execution is done and waiting for user verification. The AI cannot transition a task to **Finished**; only the user can do that after review.
         *   **Finished**: The task is completed and verified.
         *   **Postponed**: The task is deferred.
-    *   **AI Responsibility**: The AI must update the task status in `backlog.md` before starting research, planning, or implementation, and after finishing each phase. This ensures overview and focus.
-    *   **New Tasks**: When creating a new task, assign it the status **Identified** (if just a placeholder) or **Research Review** (if research is already documented).
+    *   **Research And Plan Tracking**: Each task maintains **Research summary** and **Plan** sections from **Identified** onward. Research and planning can progress together, but **Plan Review** is allowed only after the research summary has initial entries. There is no separate research state; research updates stay within the task sections.
+    *   **AI Responsibility**: The AI must update the task status in `backlog.md` before starting implementation, and after finishing each phase. Research and planning progress are tracked in the task’s **Research summary** and **Plan** sections.
+    *   **New Tasks**: When creating a new task, assign it the status **Identified**.
     *   **Task Placement**: Always add new tasks to the **end** of the task list
 
 5.  **Stop & Ask**:
