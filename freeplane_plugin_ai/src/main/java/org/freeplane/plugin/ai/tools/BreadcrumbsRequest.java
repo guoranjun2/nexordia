@@ -3,12 +3,12 @@ package org.freeplane.plugin.ai.tools;
 public final class BreadcrumbsRequest {
     private final String mapIdentifier;
     private final String nodeIdentifier;
-    private final boolean includeNodeIdentifiers;
+    private final boolean includesNodeIdentifiers;
 
-    public BreadcrumbsRequest(String mapIdentifier, String nodeIdentifier, boolean includeNodeIdentifiers) {
+    public BreadcrumbsRequest(String mapIdentifier, String nodeIdentifier, boolean includesNodeIdentifiers) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifier = nodeIdentifier;
-        this.includeNodeIdentifiers = includeNodeIdentifiers;
+        this.includesNodeIdentifiers = includesNodeIdentifiers;
     }
 
     public String getMapIdentifier() {
@@ -19,7 +19,7 @@ public final class BreadcrumbsRequest {
         return nodeIdentifier;
     }
 
-    public boolean isIncludeNodeIdentifiers() {
-        return includeNodeIdentifiers;
+    public boolean includesNodeIdentifiers() {
+        return includesNodeIdentifiers;
     }
 }

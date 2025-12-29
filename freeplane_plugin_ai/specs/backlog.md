@@ -81,16 +81,16 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 ## Sprint 1
 
 ### Task: Read context request hierarchy and presets
-**Status:** Plan Review
+**Status:** Implementation Review
 **Scope:** Define a new internal NodeContentRequest hierarchy with content presets for focus, parent, and child nodes.
 **Research summary:**
 *   NodeContent groups TextualContent, AttributesContent, and TagsContent.
 *   TextualContent includes text, details, and note.
 *   AttributesContent stores a list of AttributeEntry name and value pairs.
 *   TagsContent stores a list of tag strings.
-*   NodeContextRequest currently includes map identifier, node identifier, depth, include flags, and output format.
-*   NodeContextResponse includes map identifier, output format, and payload.
-*   AIToolSet exposes readNodeContext with NodeContextRequest and NodeContextResponse.
+*   The previous NodeContextRequest included map identifier, node identifier, depth, include flags, and output format.
+*   The previous NodeContextResponse included map identifier, output format, and payload.
+*   AIToolSet previously exposed readNodeContext with NodeContextRequest and NodeContextResponse.
 *   LangChain4j uses an internal JacksonJsonCodec by default; the ObjectMapper does not enable non-null inclusion, so null fields are serialized, missing fields deserialize as null for reference types and default values for primitives, and unknown properties are rejected unless a custom JsonCodecFactory is provided.
 **Plan:**
 1. Define internal request types: NodeContentRequest, TextualContentRequest, AttributesContentRequest, TagsContentRequest, and NodeContextContentRequest for focus, parent, and child nodes.
@@ -102,5 +102,14 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 **Scope:** Remove the Gson dependency from the ai plugin build file and use Jackson provided by LangChain4j instead.
 
 ### Task: Implement new read context method
-**Status:** Identified
+**Status:** Implementation In Progress
 **Scope:** Replace NodeContextRequest and NodeContextResponse with a new read context request and response that only require map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old request and response types.
+**Research summary:**
+*   Research in progress; user approved removing the old read context request and response types and aligning flat list content selection now.
+**Plan:**
+1. Define a new read context request and response pair that use the fixed focus, parent, and child structure.
+2. Replace the old read context request and response types and tool method with the new read context method.
+3. Update flat list requests to use NodeContentRequest for content selection while keeping structural flags as booleans.
+4. Update related data structures or usages to align with the new response type.
+5. Add focused tests for preset selection and the default focus, parent, and child content settings, using the `uut` naming guideline.
+6. Verify with `gradle :freeplane_plugin_ai:test` after cleanup.

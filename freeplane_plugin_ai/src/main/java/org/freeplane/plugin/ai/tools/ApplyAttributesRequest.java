@@ -7,15 +7,15 @@ public final class ApplyAttributesRequest {
     private final List<String> schema;
     private final List<AttributeUpdate> updates;
     private final String mergeMode;
-    private final boolean removeMissing;
+    private final boolean removesMissing;
 
     public ApplyAttributesRequest(String mapIdentifier, List<String> schema, List<AttributeUpdate> updates,
-                                  String mergeMode, boolean removeMissing) {
+                                  String mergeMode, boolean removesMissing) {
         this.mapIdentifier = mapIdentifier;
         this.schema = schema;
         this.updates = updates;
         this.mergeMode = mergeMode;
-        this.removeMissing = removeMissing;
+        this.removesMissing = removesMissing;
     }
 
     public String getMapIdentifier() {
@@ -34,7 +34,7 @@ public final class ApplyAttributesRequest {
         return mergeMode;
     }
 
-    public boolean isRemoveMissing() {
-        return removeMissing;
+    public boolean removesMissing() {
+        return removesMissing;
     }
 }

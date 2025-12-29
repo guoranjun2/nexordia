@@ -53,7 +53,7 @@ final class AIModelSelectionController {
         notifyModelSelectionChange(selectedModel);
     }
 
-    private void updateModelSelectionList(boolean allowRefresh) {
+    private void updateModelSelectionList(boolean allowsRefresh) {
         if (isModelListLoadInProgress) {
             return;
         }
@@ -62,7 +62,7 @@ final class AIModelSelectionController {
         new SwingWorker<List<AIModelDescriptor>, Void>() {
             @Override
             protected List<AIModelDescriptor> doInBackground() {
-                return modelCatalog.getAvailableModels(allowRefresh);
+                return modelCatalog.getAvailableModels(allowsRefresh);
             }
 
             @Override

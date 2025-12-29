@@ -8,11 +8,6 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    @Tool("Read node context with optional layers and depth.")
-    public NodeContextResponse readNodeContext(NodeContextRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
     @Tool("Get breadcrumbs from the root to a node.")
     public BreadcrumbsResponse getBreadcrumbs(BreadcrumbsRequest request) {
         throw new UnsupportedOperationException("Not implemented yet.");

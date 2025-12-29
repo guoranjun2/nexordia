@@ -2,18 +2,18 @@ package org.freeplane.plugin.ai.tools;
 
 public final class ClearAiOnlyFilterConditionResponse {
     private final String mapIdentifier;
-    private final boolean cleared;
+    private final boolean clearsCondition;
 
-    public ClearAiOnlyFilterConditionResponse(String mapIdentifier, boolean cleared) {
+    public ClearAiOnlyFilterConditionResponse(String mapIdentifier, boolean clearsCondition) {
         this.mapIdentifier = mapIdentifier;
-        this.cleared = cleared;
+        this.clearsCondition = clearsCondition;
     }
 
     public String getMapIdentifier() {
         return mapIdentifier;
     }
 
-    public boolean isCleared() {
-        return cleared;
+    public boolean clearsCondition() {
+        return clearsCondition;
     }
 }

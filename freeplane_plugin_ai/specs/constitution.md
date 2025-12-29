@@ -17,6 +17,7 @@ Treat the AI as a junior engineer who must submit a design doc for review before
     *   **Research**: Gather the data needed to plan and document it in the task description. The research plan is discussed with the user. If it is recorded, it should be part of a dedicated research task.
     *   **Plan**: Propose the implementation plan and obtain explicit user approval. Tests and acceptance criteria belong in the plan.
     *   **Implement**: Execute the approved plan and move the task to implementation review.
+    *   **Plan drafting during research**: You may draft or update a plan while research is in progress, but you must not mark the plan as complete or ready for approval until research is complete and documented.
 
 3.  **Scope Definition**:
     *   Plans do not need to list every single file if the scope can be accurately described using general terms (e.g., "all files in `src/main/java/com/example/`").

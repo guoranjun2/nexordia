@@ -4,18 +4,18 @@ public final class SearchConditionState {
     private final String propertyName;
     private final String conditionName;
     private final String value;
-    private final boolean caseSensitive;
-    private final boolean approximateMatching;
-    private final boolean ignoreDiacritics;
+    private final boolean isCaseSensitive;
+    private final boolean usesApproximateMatching;
+    private final boolean ignoresDiacritics;
 
-    public SearchConditionState(String propertyName, String conditionName, String value, boolean caseSensitive,
-                                boolean approximateMatching, boolean ignoreDiacritics) {
+    public SearchConditionState(String propertyName, String conditionName, String value, boolean isCaseSensitive,
+                                boolean usesApproximateMatching, boolean ignoresDiacritics) {
         this.propertyName = propertyName;
         this.conditionName = conditionName;
         this.value = value;
-        this.caseSensitive = caseSensitive;
-        this.approximateMatching = approximateMatching;
-        this.ignoreDiacritics = ignoreDiacritics;
+        this.isCaseSensitive = isCaseSensitive;
+        this.usesApproximateMatching = usesApproximateMatching;
+        this.ignoresDiacritics = ignoresDiacritics;
     }
 
     public String getPropertyName() {
@@ -31,14 +31,14 @@ public final class SearchConditionState {
     }
 
     public boolean isCaseSensitive() {
-        return caseSensitive;
+        return isCaseSensitive;
     }
 
-    public boolean isApproximateMatching() {
-        return approximateMatching;
+    public boolean usesApproximateMatching() {
+        return usesApproximateMatching;
     }
 
-    public boolean isIgnoreDiacritics() {
-        return ignoreDiacritics;
+    public boolean ignoresDiacritics() {
+        return ignoresDiacritics;
     }
 }

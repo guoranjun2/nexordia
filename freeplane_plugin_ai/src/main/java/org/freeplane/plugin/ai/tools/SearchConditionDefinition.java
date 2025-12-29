@@ -3,17 +3,17 @@ package org.freeplane.plugin.ai.tools;
 public final class SearchConditionDefinition {
     private final String name;
     private final String valueInputMode;
-    private final boolean caseSensitiveOptionAllowed;
-    private final boolean approximateMatchingOptionAllowed;
-    private final boolean ignoreDiacriticsOptionAllowed;
+    private final boolean allowsCaseSensitiveOption;
+    private final boolean allowsApproximateMatchingOption;
+    private final boolean allowsIgnoreDiacriticsOption;
 
-    public SearchConditionDefinition(String name, String valueInputMode, boolean caseSensitiveOptionAllowed,
-                                     boolean approximateMatchingOptionAllowed, boolean ignoreDiacriticsOptionAllowed) {
+    public SearchConditionDefinition(String name, String valueInputMode, boolean allowsCaseSensitiveOption,
+                                     boolean allowsApproximateMatchingOption, boolean allowsIgnoreDiacriticsOption) {
         this.name = name;
         this.valueInputMode = valueInputMode;
-        this.caseSensitiveOptionAllowed = caseSensitiveOptionAllowed;
-        this.approximateMatchingOptionAllowed = approximateMatchingOptionAllowed;
-        this.ignoreDiacriticsOptionAllowed = ignoreDiacriticsOptionAllowed;
+        this.allowsCaseSensitiveOption = allowsCaseSensitiveOption;
+        this.allowsApproximateMatchingOption = allowsApproximateMatchingOption;
+        this.allowsIgnoreDiacriticsOption = allowsIgnoreDiacriticsOption;
     }
 
     public String getName() {
@@ -24,15 +24,15 @@ public final class SearchConditionDefinition {
         return valueInputMode;
     }
 
-    public boolean isCaseSensitiveOptionAllowed() {
-        return caseSensitiveOptionAllowed;
+    public boolean allowsCaseSensitiveOption() {
+        return allowsCaseSensitiveOption;
     }
 
-    public boolean isApproximateMatchingOptionAllowed() {
-        return approximateMatchingOptionAllowed;
+    public boolean allowsApproximateMatchingOption() {
+        return allowsApproximateMatchingOption;
     }
 
-    public boolean isIgnoreDiacriticsOptionAllowed() {
-        return ignoreDiacriticsOptionAllowed;
+    public boolean allowsIgnoreDiacriticsOption() {
+        return allowsIgnoreDiacriticsOption;
     }
 }

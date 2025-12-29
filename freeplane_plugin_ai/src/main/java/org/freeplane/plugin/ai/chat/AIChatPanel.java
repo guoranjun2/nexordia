@@ -175,13 +175,13 @@ public class AIChatPanel extends JPanel {
         chatService = AIChatServiceFactory.createService(new AIToolSet());
     }
 
-    private void appendMessage(String text, boolean fromUser) {
+    private void appendMessage(String text, boolean isFromUser) {
         JTextArea messageArea = new JTextArea();
         messageArea.setEditable(false);
         messageArea.setLineWrap(true);
         messageArea.setWrapStyleWord(true);
         messageArea.setText(text);
-        messageArea.setBackground(fromUser ? new Color(235, 235, 235) : new Color(245, 245, 245));
+        messageArea.setBackground(isFromUser ? new Color(235, 235, 235) : new Color(245, 245, 245));
         messageArea.setAlignmentX(LEFT_ALIGNMENT);
         Dimension preferredSize = messageArea.getPreferredSize();
         messageArea.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferredSize.height));

@@ -104,9 +104,9 @@ Output:
 - `conditions`: array of objects with:
   - `name`: string, English condition name accepted by the tool.
   - `valueInputMode`: string, one of `none`, `free_text`, `select_only`, `select_or_free_text`.
-  - `caseSensitiveOptionAllowed`: boolean.
-  - `approximateMatchingOptionAllowed`: boolean.
-  - `ignoreDiacriticsOptionAllowed`: boolean.
+  - `allowsCaseSensitiveOption`: boolean.
+  - `allowsApproximateMatchingOption`: boolean.
+  - `allowsIgnoreDiacriticsOption`: boolean.
 - Tools should reject property or condition names that are not in the list returned by the discovery methods.
 
 ### Tool: search nodes by condition
@@ -177,9 +177,9 @@ Output:
 - `SearchConditionDefinition`:
   - `name`: string.
   - `valueInputMode`: string.
-  - `caseSensitiveOptionAllowed`: boolean.
-  - `approximateMatchingOptionAllowed`: boolean.
-  - `ignoreDiacriticsOptionAllowed`: boolean.
+  - `allowsCaseSensitiveOption`: boolean.
+  - `allowsApproximateMatchingOption`: boolean.
+  - `allowsIgnoreDiacriticsOption`: boolean.
 - `SearchConditionRequest`:
   - `propertyName`: string.
   - `conditionName`: string.

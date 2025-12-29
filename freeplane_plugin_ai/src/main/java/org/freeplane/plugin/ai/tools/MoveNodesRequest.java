@@ -8,16 +8,16 @@ public final class MoveNodesRequest {
     private final String targetParentIdentifier;
     private final InsertPosition insertPosition;
     private final String referenceNodeIdentifier;
-    private final boolean preserveOrder;
+    private final boolean preservesOrder;
 
     public MoveNodesRequest(String mapIdentifier, List<String> nodeIdentifiers, String targetParentIdentifier,
-                            InsertPosition insertPosition, String referenceNodeIdentifier, boolean preserveOrder) {
+                            InsertPosition insertPosition, String referenceNodeIdentifier, boolean preservesOrder) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
         this.targetParentIdentifier = targetParentIdentifier;
         this.insertPosition = insertPosition;
         this.referenceNodeIdentifier = referenceNodeIdentifier;
-        this.preserveOrder = preserveOrder;
+        this.preservesOrder = preservesOrder;
     }
 
     public String getMapIdentifier() {
@@ -40,7 +40,7 @@ public final class MoveNodesRequest {
         return referenceNodeIdentifier;
     }
 
-    public boolean isPreserveOrder() {
-        return preserveOrder;
+    public boolean preservesOrder() {
+        return preservesOrder;
     }
 }

@@ -57,16 +57,16 @@ final class AIModelCatalog {
         this.gsonParser = new Gson();
     }
 
-    List<AIModelDescriptor> getAvailableModels(boolean allowRefresh) {
+    List<AIModelDescriptor> getAvailableModels(boolean allowsRefresh) {
         List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
         if (hasOpenrouterKey()) {
-            modelDescriptors.addAll(getOpenrouterModels(allowRefresh));
+            modelDescriptors.addAll(getOpenrouterModels(allowsRefresh));
         }
         if (hasGeminiKey()) {
             modelDescriptors.addAll(getGeminiModels());
         }
         if (configuration.isOllamaEnabled()) {
-            modelDescriptors.addAll(getOllamaModels(allowRefresh));
+            modelDescriptors.addAll(getOllamaModels(allowsRefresh));
         }
         return modelDescriptors;
     }
@@ -94,8 +94,8 @@ final class AIModelCatalog {
         return modelDescriptors;
     }
 
-    private List<AIModelDescriptor> getOpenrouterModels(boolean allowRefresh) {
-        if (!allowRefresh) {
+    private List<AIModelDescriptor> getOpenrouterModels(boolean allowsRefresh) {
+        if (!allowsRefresh) {
             return cachedOpenrouterModels;
         }
         synchronized (openrouterLock) {
@@ -110,8 +110,8 @@ final class AIModelCatalog {
         }
     }
 
-    private List<AIModelDescriptor> getOllamaModels(boolean allowRefresh) {
-        if (!allowRefresh) {
+    private List<AIModelDescriptor> getOllamaModels(boolean allowsRefresh) {
+        if (!allowsRefresh) {
             return cachedOllamaModels;
         }
         synchronized (ollamaLock) {
