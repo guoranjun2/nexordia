@@ -7,7 +7,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
+import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.ui.IMapViewManager;
 
 public final class ControllerMapModelProvider implements MapModelProvider {
@@ -36,5 +38,18 @@ public final class ControllerMapModelProvider implements MapModelProvider {
         }
         LinkedHashSet<MapModel> uniqueMapModels = new LinkedHashSet<>(mapModels);
         return new ArrayList<>(uniqueMapModels);
+    }
+
+    @Override
+    public NodeModel getCurrentSelectedNodeModel() {
+        Controller controller = Controller.getCurrentController();
+        if (controller == null) {
+            return null;
+        }
+        IMapSelection selection = controller.getSelection();
+        if (selection == null) {
+            return null;
+        }
+        return selection.getSelected();
     }
 }

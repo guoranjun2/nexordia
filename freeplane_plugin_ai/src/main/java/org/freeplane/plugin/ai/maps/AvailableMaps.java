@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeModel;
 
 public final class AvailableMaps {
     private final MapModelProvider mapModelProvider;
@@ -27,6 +28,14 @@ public final class AvailableMaps {
             return null;
         }
         return getOrCreateMapIdentifier(mapModel);
+    }
+
+    public MapModel getCurrentMapModel() {
+        return mapModelProvider.getCurrentMapModel();
+    }
+
+    public NodeModel getCurrentSelectedNodeModel() {
+        return mapModelProvider.getCurrentSelectedNodeModel();
     }
 
     public List<UUID> getAvailableMapIdentifiers() {

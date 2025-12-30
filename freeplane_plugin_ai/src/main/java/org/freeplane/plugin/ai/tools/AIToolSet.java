@@ -1,11 +1,23 @@
 package org.freeplane.plugin.ai.tools;
 
 import dev.langchain4j.agent.tool.Tool;
+import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
+import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
 public class AIToolSet {
+    private final SystemMessageBuilder systemMessageBuilder;
+
+    public AIToolSet() {
+        this(new SystemMessageBuilder(new AvailableMaps(new ControllerMapModelProvider())));
+    }
+
+    AIToolSet(SystemMessageBuilder systemMessageBuilder) {
+        this.systemMessageBuilder = systemMessageBuilder;
+    }
 
     public String systemMessageForChat(Object input) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        return systemMessageBuilder.buildForChat();
     }
 
     @Tool("Get breadcrumbs from the root to a node.")

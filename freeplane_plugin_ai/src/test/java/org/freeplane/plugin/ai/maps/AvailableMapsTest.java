@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeModel;
 import org.junit.Test;
 
 public class AvailableMapsTest {
@@ -31,7 +32,7 @@ public class AvailableMapsTest {
         MapModel firstMapModel = mock(MapModel.class);
         MapModel secondMapModel = mock(MapModel.class);
         FakeMapModelProvider mapModelProvider = new FakeMapModelProvider();
-        mapModelProvider.setOpenMapModels(Arrays.asList(firstMapModel, secondMapModel, firstMapModel));
+        mapModelProvider.setOpenMapModels(Arrays.asList(firstMapModel, secondMapModel));
         AvailableMaps uut = new AvailableMaps(mapModelProvider);
 
         List<UUID> firstIdentifiers = uut.getAvailableMapIdentifiers();
@@ -72,6 +73,11 @@ public class AvailableMapsTest {
         @Override
         public List<MapModel> getOpenMapModels() {
             return openMapModels;
+        }
+
+        @Override
+        public NodeModel getCurrentSelectedNodeModel() {
+            return null;
         }
 
         private void setCurrentMapModel(MapModel currentMapModel) {

@@ -1,7 +1,7 @@
 # Sprint 001
 
 ## Task: Read context request hierarchy and presets
-**Status:** Implementation Review
+**Status:** Finished
 **Scope:** Define a new internal NodeContentRequest hierarchy with content presets for focus, parent, and child nodes.
 **Research summary:**
 *   NodeContent groups TextualContent, AttributesContent, and TagsContent.
@@ -49,7 +49,7 @@
 6. Verify with `gradle :freeplane_plugin_ai:test` after cleanup.
 
 ## Task: AvailableMaps registry for map identifiers
-**Status:** Implementation Review
+**Status:** Finished
 **Scope:** Introduce AvailableMaps to provide session map identifiers backed by weak references and allow lookup by identifier.
 **Modified production files:**
 *   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/AvailableMaps.java
@@ -71,9 +71,28 @@
 5. Verify with `gradle :freeplane_plugin_ai:test` after cleanup.
 
 ## Task: System message map identifiers for reading methods
-**Status:** Identified
-**Scope:** Add the current map identifier and root node identifier to the system message output for reading methods.
+**Status:** Finished
+**Scope:** Add the current map identifier, current root node identifier, and current selected node identifier to the system message output for reading methods.
+**Modified production files:**
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/SystemMessageBuilder.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/AvailableMaps.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/ControllerMapModelProvider.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/MapModelProvider.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
+**Modified test files:**
+*   freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/SystemMessageBuilderTest.java
+*   freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/maps/AvailableMapsTest.java
 **Research summary:**
-*   Not started yet.
+*   AIToolSet.systemMessageForChat currently throws UnsupportedOperationException; it is the system message provider for AIChatService.
+*   AIChatPanel creates AIToolSet directly without dependencies; any system message builder must be constructed inside AIToolSet or added as a dependency there.
+*   Controller.getCurrentController().getMap() returns the current MapModel; MapModel.getRootNode().getID() provides the root node identifier.
+*   AvailableMaps exists in the ai plugin and can provide a UUID identifier for the current MapModel.
+*   The system message should be plain text and include only the current map identifier and root node identifier, with \"not available\" when missing.
+*   Map identifiers should use UUID values from AvailableMaps.
+*   The system message builder can rely on AvailableMaps and keep MapModelProvider hidden behind it.
+*   The system message should include the current selected node identifier and use \"not available\" when missing.
 **Plan:**
-1. Not started yet.
+1. Define the plain text system message format for map identifier, root node identifier, and selected node identifier fields, using \"not available\" when missing.
+2. Add a system message builder that uses AvailableMaps to resolve the current map UUID, root node identifier, and selected node identifier, keeping MapModelProvider hidden behind AvailableMaps.
+3. Update AIToolSet.systemMessageForChat to return the system message with map identifier, root node identifier, and selected node identifier.
+4. Add focused unit tests for the system message builder (if a helper class is introduced) and verify with `gradle :freeplane_plugin_ai:test` after cleanup.
