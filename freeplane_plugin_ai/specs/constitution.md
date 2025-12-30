@@ -4,14 +4,14 @@
 Keep work verifiable with a light, repeatable workflow that avoids surprises.
 
 ## Workflow
-1.  **Backlog as source of truth**: All tasks, plans, and execution status live in [backlog.md](backlog.md).
+1.  **Backlog as source of truth**: All tasks, plans, and execution status live in [backlog.md](backlog.md). The current sprint is tracked there and detailed in `specs/sprints/`.
 2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**.
 3.  **Plan and approval**: Draft the plan while research is in progress, then request approval. Do not modify code, tests, or configuration until the plan is approved.
 4.  **Status updates**: Update task status before implementation and after each phase.
 5.  **Information gathering**: Reading commands do not require plan approval.
 
 ## Task States
-Tasks in [backlog.md](backlog.md) must use one of these states:
+Tasks in the sprints must use one of these states:
 *   **Identified**: The task is known but not yet detailed.
 *   **Planning**: Research and planning are underway.
 *   **Plan Review**: The plan is written and waiting for user approval. Research must be documented before this state.
