@@ -73,12 +73,3 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Tasks:**
     *   [ ] Implement list_attribute_names_for_map based on map attribute data.
     *   [ ] Implement search_attributes_by_name_and_value with map specific lookup.
-
-### Epic 8: Chat System Message Builder
-**Goal:** Grow the system message incrementally as read and search tools require additional context.
-*   **Status:** Backlog
-*   **User Story:** As an AI assistant, I want the system message to include just the context needed for the current tool set.
-*   **Tasks:**
-    *   [ ] Add system message fields alongside each feature (for example, map identifier and root node identifier for reading methods).
-    *   [ ] Add the current map identifier and root node identifier to the system message for reading methods.
-    *   [ ] Track system message content in specs as new tool capabilities are added.
