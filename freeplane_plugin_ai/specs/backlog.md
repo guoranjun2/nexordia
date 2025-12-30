@@ -131,8 +131,14 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 6. Verify with `gradle :freeplane_plugin_ai:test` after cleanup.
 
 ### Task: AvailableMaps registry for map identifiers
-**Status:** Plan Review
+**Status:** Implementation Review
 **Scope:** Introduce AvailableMaps to provide session map identifiers backed by weak references and allow lookup by identifier.
+**Modified production files:**
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/AvailableMaps.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/ControllerMapModelProvider.java
+*   freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/MapModelProvider.java
+**Modified test files:**
+*   freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/maps/AvailableMapsTest.java
 **Research summary:**
 *   AvailableMaps can lazily enumerate maps on demand (all maps or the selected map) and assign UUIDs without listening to map lifecycle events.
 *   Weak references are sufficient to avoid retaining closed maps; explicit lifecycle listeners remain optional.
