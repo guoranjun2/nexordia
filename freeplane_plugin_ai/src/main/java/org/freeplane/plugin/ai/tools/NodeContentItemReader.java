@@ -1,8 +1,12 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.SummaryNode;
 
 public class NodeContentItemReader {
     private final NodeContentReader nodeContentReader;
@@ -17,6 +21,21 @@ public class NodeContentItemReader {
         }
         String nodeIdentifier = nodeModel.createID();
         NodeContent content = nodeContentReader.readNodeContent(nodeModel, preset);
-        return new NodeContentItem(nodeIdentifier, content);
+        List<String> qualifiers = buildQualifiers(nodeModel);
+        return new NodeContentItem(nodeIdentifier, content, qualifiers);
+    }
+
+    private List<String> buildQualifiers(NodeModel nodeModel) {
+        List<String> qualifiers = new ArrayList<>();
+        if (SummaryNode.isSummaryNode(nodeModel)) {
+            qualifiers.add("summary_node");
+        }
+        if (SummaryNode.isFirstGroupNode(nodeModel)) {
+            qualifiers.add("first_group_node");
+        }
+        if (qualifiers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(qualifiers);
     }
 }

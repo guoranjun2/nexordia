@@ -9,6 +9,8 @@ import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public final class SystemMessageBuilder {
     private static final String NOT_AVAILABLE = "not available";
+    private static final String QUALIFIERS_DESCRIPTION =
+        "Node qualifiers: summary_node (summary group node), first_group_node (first node of a summary group).";
     private final AvailableMaps availableMaps;
 
     public SystemMessageBuilder(AvailableMaps availableMaps) {
@@ -21,7 +23,8 @@ public final class SystemMessageBuilder {
         String selectedNodeIdentifier = resolveSelectedNodeIdentifier();
         return "Current map identifier: " + mapIdentifier + "\n"
             + "Current root node identifier: " + rootNodeIdentifier + "\n"
-            + "Current selected node identifier: " + selectedNodeIdentifier;
+            + "Current selected node identifier: " + selectedNodeIdentifier + "\n"
+            + QUALIFIERS_DESCRIPTION;
     }
 
     private String resolveMapIdentifier() {

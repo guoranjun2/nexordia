@@ -12,9 +12,11 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Status:** Backlog
 *   **User Story:** As an AI assistant, I want to read node context and navigate paths so I can answer questions accurately.
 *   **Tasks:**
-    *   [ ] Define internal node content request hierarchy with content presets for read context.
-    *   [ ] Implement a new read context method with fixed parent and child structure and remove the old read context request and response types.
-    *   [ ] Create AvailableMaps to manage map identifiers using weak references.
+    *   [x] Read context request hierarchy and presets.
+    *   [?] Implement reading methods.
+    *   [x] AvailableMaps registry for map identifiers.
+    *   [x] System message map identifiers for reading methods.
+    *   [x] Node content qualifiers for summary nodes.
     *   [ ] Implement get_breadcrumbs to return the root to node path.
     *   [ ] Implement get_flat_list for branch scanning with optional breadcrumbs.
     *   [ ] Remove the Gson dependency from the ai plugin and rely on Jackson provided by LangChain4j.

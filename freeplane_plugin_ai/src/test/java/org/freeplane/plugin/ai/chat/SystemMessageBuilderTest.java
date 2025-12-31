@@ -30,6 +30,7 @@ public class SystemMessageBuilderTest {
         assertThat(message).contains("Current map identifier: " + mapIdentifier);
         assertThat(message).contains("Current root node identifier: ID_1");
         assertThat(message).contains("Current selected node identifier: ID_1");
+        assertThat(message).contains("Node qualifiers: summary_node");
     }
 
     @Test

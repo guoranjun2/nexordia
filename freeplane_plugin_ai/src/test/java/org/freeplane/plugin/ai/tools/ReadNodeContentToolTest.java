@@ -31,13 +31,17 @@ public class ReadNodeContentToolTest {
         when(focusNode.getParentNode()).thenReturn(parentNode);
         when(focusNode.getChildren()).thenReturn(Arrays.asList(firstChildNode, secondChildNode));
         NodeContentItem focusItem = new NodeContentItem("ID_focus",
-            new NodeContent(null, new TextualContent("Focus", null, null), null, null));
+            new NodeContent(null, new TextualContent("Focus", null, null), null, null),
+            Collections.emptyList());
         NodeContentItem parentItem = new NodeContentItem("ID_parent",
-            new NodeContent("Parent", null, null, null));
+            new NodeContent("Parent", null, null, null),
+            Collections.emptyList());
         NodeContentItem firstChildItem = new NodeContentItem("ID_child_1",
-            new NodeContent("Child 1", null, null, null));
+            new NodeContent("Child 1", null, null, null),
+            Collections.emptyList());
         NodeContentItem secondChildItem = new NodeContentItem("ID_child_2",
-            new NodeContent("Child 2", null, null, null));
+            new NodeContent("Child 2", null, null, null),
+            Collections.emptyList());
         when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL)).thenReturn(focusItem);
         when(nodeContentItemReader.readNodeContentItem(parentNode, NodeContentPreset.BRIEF)).thenReturn(parentItem);
         when(nodeContentItemReader.readNodeContentItem(firstChildNode, NodeContentPreset.BRIEF))
@@ -73,7 +77,8 @@ public class ReadNodeContentToolTest {
         when(focusNode.getParentNode()).thenReturn(null);
         when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         NodeContentItem focusItem = new NodeContentItem("ID_root",
-            new NodeContent(null, new TextualContent("Root", null, null), null, null));
+            new NodeContent(null, new TextualContent("Root", null, null), null, null),
+            Collections.emptyList());
         when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL)).thenReturn(focusItem);
         AIToolSet uut = new AIToolSet(availableMaps, nodeContentItemReader);
 
