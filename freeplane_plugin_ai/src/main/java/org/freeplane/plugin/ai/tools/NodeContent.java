@@ -1,16 +1,21 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.Map;
-
 public final class NodeContent {
+    private final String briefText;
     private final TextualContent textualContent;
     private final AttributesContent attributesContent;
     private final TagsContent tagsContent;
 
-    public NodeContent(TextualContent textualContent, AttributesContent attributesContent, TagsContent tagsContent) {
+    public NodeContent(String briefText, TextualContent textualContent, AttributesContent attributesContent,
+                       TagsContent tagsContent) {
+        this.briefText = briefText;
         this.textualContent = textualContent;
         this.attributesContent = attributesContent;
         this.tagsContent = tagsContent;
+    }
+
+    public String getBriefText() {
+        return briefText;
     }
 
     public TextualContent getTextualContent() {

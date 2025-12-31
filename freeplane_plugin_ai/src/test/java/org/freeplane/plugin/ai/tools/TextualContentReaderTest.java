@@ -11,15 +11,15 @@ import org.junit.Test;
 
 public class TextualContentReaderTest {
     @Test
-    public void readTextualContent_usesShortPlainTextForBrief() {
+    public void readBriefText_usesShortPlainText() {
         TextController textController = mock(TextController.class);
         NodeModel nodeModel = mock(NodeModel.class);
         when(textController.getShortPlainText(nodeModel)).thenReturn("Short text");
         TextualContentReader uut = new TextualContentReader(textController);
 
-        TextualContent content = uut.readTextualContent(nodeModel, NodeContentPreset.BRIEF);
+        String briefText = uut.readBriefText(nodeModel);
 
-        assertThat(content.getText()).isEqualTo("Short text");
+        assertThat(briefText).isEqualTo("Short text");
         verify(textController).getShortPlainText(nodeModel);
     }
 }

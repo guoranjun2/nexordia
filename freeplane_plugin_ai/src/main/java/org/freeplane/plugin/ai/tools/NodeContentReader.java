@@ -21,9 +21,13 @@ public class NodeContentReader {
         if (nodeModel == null) {
             return null;
         }
+        if (preset == NodeContentPreset.BRIEF) {
+            String briefText = textualContentReader.readBriefText(nodeModel);
+            return new NodeContent(briefText, null, null, null);
+        }
         TextualContent textualContent = textualContentReader.readTextualContent(nodeModel, preset);
         AttributesContent attributesContent = attributesContentReader.readAttributesContent(nodeModel, preset);
         TagsContent tagsContent = tagsContentReader.readTagsContent(nodeModel, preset);
-        return new NodeContent(textualContent, attributesContent, tagsContent);
+        return new NodeContent(null, textualContent, attributesContent, tagsContent);
     }
 }

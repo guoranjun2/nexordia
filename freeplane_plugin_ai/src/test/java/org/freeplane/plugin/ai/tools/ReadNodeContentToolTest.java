@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
@@ -30,13 +31,13 @@ public class ReadNodeContentToolTest {
         when(focusNode.getParentNode()).thenReturn(parentNode);
         when(focusNode.getChildren()).thenReturn(Arrays.asList(firstChildNode, secondChildNode));
         NodeContentItem focusItem = new NodeContentItem("ID_focus",
-            new NodeContent(new TextualContent("Focus", null, null), null, null));
+            new NodeContent("Focus", null, null, null));
         NodeContentItem parentItem = new NodeContentItem("ID_parent",
-            new NodeContent(new TextualContent("Parent", null, null), null, null));
+            new NodeContent("Parent", null, null, null));
         NodeContentItem firstChildItem = new NodeContentItem("ID_child_1",
-            new NodeContent(new TextualContent("Child 1", null, null), null, null));
+            new NodeContent("Child 1", null, null, null));
         NodeContentItem secondChildItem = new NodeContentItem("ID_child_2",
-            new NodeContent(new TextualContent("Child 2", null, null), null, null));
+            new NodeContent("Child 2", null, null, null));
         when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.BRIEF)).thenReturn(focusItem);
         when(nodeContentItemReader.readNodeContentItem(parentNode, NodeContentPreset.BRIEF)).thenReturn(parentItem);
         when(nodeContentItemReader.readNodeContentItem(firstChildNode, NodeContentPreset.BRIEF))
@@ -52,6 +53,8 @@ public class ReadNodeContentToolTest {
         assertThat(response.getFocusNode()).isEqualTo(focusItem);
         assertThat(response.getParentNode()).isEqualTo(parentItem);
         assertThat(response.getChildNodes()).containsExactly(firstChildItem, secondChildItem);
+        assertThat(response.getFocusNode().getContent().getBriefText()).isEqualTo("Focus");
+        assertThat(response.getFocusNode().getContent().getTextualContent()).isNull();
         verify(nodeContentItemReader).readNodeContentItem(focusNode, NodeContentPreset.BRIEF);
         verify(nodeContentItemReader).readNodeContentItem(parentNode, NodeContentPreset.BRIEF);
         verify(nodeContentItemReader).readNodeContentItem(firstChildNode, NodeContentPreset.BRIEF);
@@ -68,9 +71,9 @@ public class ReadNodeContentToolTest {
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_root")).thenReturn(focusNode);
         when(focusNode.getParentNode()).thenReturn(null);
-        when(focusNode.getChildren()).thenReturn(java.util.Collections.emptyList());
+        when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         NodeContentItem focusItem = new NodeContentItem("ID_root",
-            new NodeContent(new TextualContent("Root", null, null), null, null));
+            new NodeContent("Root", null, null, null));
         when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.BRIEF)).thenReturn(focusItem);
         AIToolSet uut = new AIToolSet(availableMaps, nodeContentItemReader);
 
@@ -80,6 +83,8 @@ public class ReadNodeContentToolTest {
         assertThat(response.getFocusNode()).isEqualTo(focusItem);
         assertThat(response.getParentNode()).isNull();
         assertThat(response.getChildNodes()).isEmpty();
+        assertThat(response.getFocusNode().getContent().getBriefText()).isEqualTo("Root");
+        assertThat(response.getFocusNode().getContent().getTextualContent()).isNull();
     }
 
     @Test

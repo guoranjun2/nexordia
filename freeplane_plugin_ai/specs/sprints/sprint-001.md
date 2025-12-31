@@ -37,11 +37,12 @@ note "Not started yet." as Design
   - Not started yet.
 
 ## Task: Implement reading methods
-- **Status:** Implementing
+- **Status:** Implementation Review
 - **Scope:** Implement read_node_content with a request that requires only map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old read context request and response types.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AttributesContentReader.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContent.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItem.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItemReader.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentReader.java
@@ -50,6 +51,7 @@ note "Not started yet." as Design
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TagsContentReader.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TextualContentReader.java
 - **Modified test files:**
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeContentReaderTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/ReadNodeContentToolTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/TextualContentReaderTest.java
 - **Research summary:**
@@ -90,7 +92,9 @@ Request accepts only map identifier and node identifier.
 Response includes focus, parent, children only.
 Selected node identifiers stay in the system message.
 BRIEF uses TextController.getShortPlainText; node.getText is forbidden.
-FULL returns stored content only, no duplication; explicit content type metadata may be needed later.
+BRIEF uses NodeContent.briefText to avoid confusion with full content.
+FULL returns stored content only in TextualContent; briefText stays empty.
+Explicit content type metadata may be needed later.
 end note
 @enduml
 ```
@@ -110,6 +114,12 @@ class NodeModel
 class TextController
 class AttributeController
 class IconController
+class NodeContent {
+briefText
+textualContent
+attributesContent
+tagsContent
+}
 
 TextualContentReader --> TextController
 AttributesContentReader --> AttributeController
@@ -117,6 +127,7 @@ TagsContentReader --> IconController
 NodeContentReader o--> TextualContentReader
 NodeContentReader o--> AttributesContentReader
 NodeContentReader o--> TagsContentReader
+NodeContentReader --> NodeContent : briefText
 NodeContentItemReader o--> NodeContentReader
 NodeContentItemReader --> NodeModel : createID
 AIToolSet --> NodeContentItemReader
@@ -132,6 +143,8 @@ end note
 note bottom
 BRIEF uses TextController.getShortPlainText for focus, parent, children.
 FULL focus content method is pending.
+NodeContent.briefText is populated only for BRIEF responses.
+TextualContent is populated only for FULL responses.
 end note
 @enduml
 ```
@@ -155,9 +168,11 @@ AIToolSet --> Caller : ReadNodeContentResponse
 @enduml
 ```
 - **Test specification:**
-  - Verify BRIEF response includes focus, parent, and children with short plain text content and node identifiers.
+  - Verify BRIEF response includes focus, parent, and children with briefText and node identifiers.
   - Verify missing parent returns null and empty children list.
   - Verify invalid map identifier throws a validation error.
+  - Verify TextController.getShortPlainText is used for BRIEF content.
+  - Verify TextualContent is null for BRIEF responses.
   - Verify TextController.getShortPlainText is used for BRIEF content.
   - Add tests for FULL focus content once implemented.
 

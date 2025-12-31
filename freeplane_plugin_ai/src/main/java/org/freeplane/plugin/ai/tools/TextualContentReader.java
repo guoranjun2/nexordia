@@ -12,13 +12,19 @@ public class TextualContentReader {
         this.textController = Objects.requireNonNull(textController, "textController");
     }
 
+    public String readBriefText(NodeModel nodeModel) {
+        if (nodeModel == null) {
+            return null;
+        }
+        return textController.getShortPlainText(nodeModel);
+    }
+
     public TextualContent readTextualContent(NodeModel nodeModel, NodeContentPreset preset) {
         if (nodeModel == null) {
             return null;
         }
         if (preset == NodeContentPreset.BRIEF) {
-            String shortText = textController.getShortPlainText(nodeModel);
-            return new TextualContent(shortText, null, null);
+            return null;
         }
         throw new UnsupportedOperationException("Full content is not implemented yet.");
     }
