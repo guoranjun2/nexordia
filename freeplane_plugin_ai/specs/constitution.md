@@ -2,27 +2,28 @@
 
 ## Purpose
 Keep work verifiable with a light, repeatable workflow that avoids surprises.
+Established abbreviations like "ai", "uuid", and "llm" are valid terms and are not treated as abbreviations.
 
 ## Workflow
-1.  **Backlog as source of truth**: All tasks, plans, and execution status live in [backlog.md](backlog.md). The current sprint is tracked there and detailed in `specs/sprints/`.
-2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**.
-3.  **Plan and approval**: Draft the plan while research is in progress, then request approval. Do not modify code, tests, or configuration until the plan is approved.
+1.  **Backlog as source of truth**: All tasks, design, and execution status live in [backlog.md](backlog.md). The current sprint is tracked there and detailed in `specs/sprints/`.
+2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
+3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 4.  **Status updates**: Update task status before implementation and after each phase.
 5.  **Information gathering**: Reading commands do not require plan approval.
 
 ## Task States
 Tasks in the sprints must use one of these states:
 *   **Identified**: The task is known but not yet detailed.
-*   **Planning**: Research and planning are underway.
-*   **Plan Review**: The plan is written and waiting for user approval. Research must be documented before this state.
-*   **Plan Approved**: The plan is approved and ready for execution.
+*   **Designing**: Research and design are underway.
+*   **Design Review**: The design is written and waiting for user approval. Research must be documented before this state.
+*   **Design Approved**: The design is approved and ready for execution.
 *   **Implementing**: The task is being executed.
 *   **Implementation Review**: Execution is done and waiting for user verification. Only the user can mark **Finished**.
 *   **Finished**: The user has verified completion.
 *   **Postponed**: The task is deferred.
 
 ## Scope and Safeguards
-*   **Clarity**: Plans may describe file scope broadly when it stays unambiguous.
+*   **Clarity**: Designs may describe file scope broadly when it stays unambiguous.
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
 *   **Track modified production files**: List them in the task description in `backlog.md`.
 *   **Task placement**: Add new tasks to the end of the task list.
@@ -35,6 +36,13 @@ If there is confusion, contradictory instructions, or an unexpected failure that
 2.  **No code snippets** during proposal.
 3.  **Align** and get approval.
 4.  **Act** after approval.
+
+## Task Structure
+Each task includes:
+*   **Research summary**: facts and observations, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
+*   **Design**: structure, data flow, constraints, and decisions, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
+*   **Test specification**: brief description of planned tests before implementation.
+*   **Modified files**: production and test files touched.
 
 ## Architecture Decision Records
 *   Record architecture decisions in `specs/architecture-decisions/` as one file per decision with meaningful names.
