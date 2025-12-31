@@ -17,7 +17,7 @@ import org.junit.Test;
 
 public class ReadNodeContentToolTest {
     @Test
-    public void readNodeContent_returnsBriefItemsForFocusParentAndChildren() {
+    public void readNodeContent_returnsFullFocusWithBriefParentAndChildren() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         MapModel mapModel = mock(MapModel.class);
@@ -31,14 +31,14 @@ public class ReadNodeContentToolTest {
         when(focusNode.getParentNode()).thenReturn(parentNode);
         when(focusNode.getChildren()).thenReturn(Arrays.asList(firstChildNode, secondChildNode));
         NodeContentItem focusItem = new NodeContentItem("ID_focus",
-            new NodeContent("Focus", null, null, null));
+            new NodeContent(null, new TextualContent("Focus", null, null), null, null));
         NodeContentItem parentItem = new NodeContentItem("ID_parent",
             new NodeContent("Parent", null, null, null));
         NodeContentItem firstChildItem = new NodeContentItem("ID_child_1",
             new NodeContent("Child 1", null, null, null));
         NodeContentItem secondChildItem = new NodeContentItem("ID_child_2",
             new NodeContent("Child 2", null, null, null));
-        when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.BRIEF)).thenReturn(focusItem);
+        when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL)).thenReturn(focusItem);
         when(nodeContentItemReader.readNodeContentItem(parentNode, NodeContentPreset.BRIEF)).thenReturn(parentItem);
         when(nodeContentItemReader.readNodeContentItem(firstChildNode, NodeContentPreset.BRIEF))
             .thenReturn(firstChildItem);
@@ -53,9 +53,9 @@ public class ReadNodeContentToolTest {
         assertThat(response.getFocusNode()).isEqualTo(focusItem);
         assertThat(response.getParentNode()).isEqualTo(parentItem);
         assertThat(response.getChildNodes()).containsExactly(firstChildItem, secondChildItem);
-        assertThat(response.getFocusNode().getContent().getBriefText()).isEqualTo("Focus");
-        assertThat(response.getFocusNode().getContent().getTextualContent()).isNull();
-        verify(nodeContentItemReader).readNodeContentItem(focusNode, NodeContentPreset.BRIEF);
+        assertThat(response.getFocusNode().getContent().getBriefText()).isNull();
+        assertThat(response.getFocusNode().getContent().getTextualContent().getText()).isEqualTo("Focus");
+        verify(nodeContentItemReader).readNodeContentItem(focusNode, NodeContentPreset.FULL);
         verify(nodeContentItemReader).readNodeContentItem(parentNode, NodeContentPreset.BRIEF);
         verify(nodeContentItemReader).readNodeContentItem(firstChildNode, NodeContentPreset.BRIEF);
         verify(nodeContentItemReader).readNodeContentItem(secondChildNode, NodeContentPreset.BRIEF);
@@ -73,8 +73,8 @@ public class ReadNodeContentToolTest {
         when(focusNode.getParentNode()).thenReturn(null);
         when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         NodeContentItem focusItem = new NodeContentItem("ID_root",
-            new NodeContent("Root", null, null, null));
-        when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.BRIEF)).thenReturn(focusItem);
+            new NodeContent(null, new TextualContent("Root", null, null), null, null));
+        when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL)).thenReturn(focusItem);
         AIToolSet uut = new AIToolSet(availableMaps, nodeContentItemReader);
 
         ReadNodeContentResponse response = uut.readNodeContent(
@@ -83,8 +83,8 @@ public class ReadNodeContentToolTest {
         assertThat(response.getFocusNode()).isEqualTo(focusItem);
         assertThat(response.getParentNode()).isNull();
         assertThat(response.getChildNodes()).isEmpty();
-        assertThat(response.getFocusNode().getContent().getBriefText()).isEqualTo("Root");
-        assertThat(response.getFocusNode().getContent().getTextualContent()).isNull();
+        assertThat(response.getFocusNode().getContent().getBriefText()).isNull();
+        assertThat(response.getFocusNode().getContent().getTextualContent().getText()).isEqualTo("Root");
     }
 
     @Test

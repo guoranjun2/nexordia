@@ -1,8 +1,11 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.features.icon.IconController;
+import org.freeplane.features.icon.Tag;
 import org.freeplane.features.map.NodeModel;
 
 public class TagsContentReader {
@@ -16,6 +19,14 @@ public class TagsContentReader {
         if (nodeModel == null || preset == NodeContentPreset.BRIEF) {
             return null;
         }
-        throw new UnsupportedOperationException("Full content is not implemented yet.");
+        List<Tag> tags = iconController.getTags(nodeModel);
+        if (tags.isEmpty()) {
+            return null;
+        }
+        List<String> tagNames = new ArrayList<>(tags.size());
+        for (Tag tag : tags) {
+            tagNames.add(tag.getContent());
+        }
+        return new TagsContent(tagNames);
     }
 }

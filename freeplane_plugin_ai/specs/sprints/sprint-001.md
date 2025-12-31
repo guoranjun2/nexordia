@@ -93,7 +93,10 @@ Response includes focus, parent, children only.
 Selected node identifiers stay in the system message.
 BRIEF uses TextController.getShortPlainText; node.getText is forbidden.
 BRIEF uses NodeContent.briefText to avoid confusion with full content.
-FULL returns stored content only in TextualContent; briefText stays empty.
+FULL uses transformed text and transformed objects as shown to users.
+Use TextController.getTransformedTextForClipboard for full node, details, and note content to avoid latex icon rendering.
+Attributes use transformed object values and then convert to string values.
+briefText stays empty for full content.
 Explicit content type metadata may be needed later.
 end note
 @enduml
@@ -141,8 +144,9 @@ AIToolSet resolves controllers from the current mode controller and builds reade
 end note
 
 note bottom
-BRIEF uses TextController.getShortPlainText for focus, parent, children.
-FULL focus content method is pending.
+BRIEF uses TextController.getShortPlainText for parent and children.
+FULL uses TextController.getTransformedTextForClipboard for focus text, details, and note content.
+FULL uses transformed attribute values from TextController.getTransformedObjectNoFormattingNoThrow.
 NodeContent.briefText is populated only for BRIEF responses.
 TextualContent is populated only for FULL responses.
 end note
@@ -171,10 +175,11 @@ AIToolSet --> Caller : ReadNodeContentResponse
   - Verify BRIEF response includes focus, parent, and children with briefText and node identifiers.
   - Verify missing parent returns null and empty children list.
   - Verify invalid map identifier throws a validation error.
-  - Verify TextController.getShortPlainText is used for BRIEF content.
-  - Verify TextualContent is null for BRIEF responses.
-  - Verify TextController.getShortPlainText is used for BRIEF content.
-  - Add tests for FULL focus content once implemented.
+- Verify TextController.getShortPlainText is used for BRIEF content.
+- Verify TextualContent is null for BRIEF responses.
+- Verify TextController.getShortPlainText is used for BRIEF content.
+- Add tests for FULL focus content, including text, details, note, attributes, and tags.
+- Add a test that full text uses TextController.getTransformedTextForClipboard.
 
 ## Task: AvailableMaps registry for map identifiers
 - **Status:** Finished

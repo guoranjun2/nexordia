@@ -60,7 +60,7 @@ public class AIToolSet {
         if (focusNode == null) {
             throw new IllegalArgumentException("Unknown node identifier: " + nodeIdentifier);
         }
-        NodeContentItem focusNodeItem = nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.BRIEF);
+        NodeContentItem focusNodeItem = nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL);
         NodeContentItem parentNodeItem = nodeContentItemReader.readNodeContentItem(
             focusNode.getParentNode(), NodeContentPreset.BRIEF);
         List<NodeContentItem> childNodes = readChildNodes(focusNode);
@@ -110,7 +110,7 @@ public class AIToolSet {
                                                                      AttributeController attributeController,
                                                                      IconController iconController) {
         TextualContentReader textualContentReader = new TextualContentReader(textController);
-        AttributesContentReader attributesContentReader = new AttributesContentReader(attributeController);
+        AttributesContentReader attributesContentReader = new AttributesContentReader(attributeController, textController);
         TagsContentReader tagsContentReader = new TagsContentReader(iconController);
         NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader);
