@@ -26,6 +26,7 @@ Tasks in the sprints must use one of these states:
 *   **Clarity**: Designs may describe file scope broadly when it stays unambiguous.
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
 *   **Track modified production files**: List them in the task description in `backlog.md`.
+*   **Refactor tracking**: When refactoring, document it by updating the design section of the existing task or creating a new task.
 *   **Task placement**: Add new tasks to the end of the task list.
 
 ## Stop and Ask
