@@ -48,7 +48,7 @@ public class ReadNodeContentToolTest {
             .thenReturn(firstChildItem);
         when(nodeContentItemReader.readNodeContentItem(secondChildNode, NodeContentPreset.BRIEF))
             .thenReturn(secondChildItem);
-        AIToolSet uut = new AIToolSet(availableMaps, nodeContentItemReader);
+        ReadNodeContentTool uut = new ReadNodeContentTool(availableMaps, nodeContentItemReader);
 
         ReadNodeContentResponse response = uut.readNodeContent(
             new ReadNodeContentRequest(mapIdentifier.toString(), "ID_focus"));
@@ -80,7 +80,7 @@ public class ReadNodeContentToolTest {
             new NodeContent(null, new TextualContent("Root", null, null), null, null),
             Collections.emptyList());
         when(nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL)).thenReturn(focusItem);
-        AIToolSet uut = new AIToolSet(availableMaps, nodeContentItemReader);
+        ReadNodeContentTool uut = new ReadNodeContentTool(availableMaps, nodeContentItemReader);
 
         ReadNodeContentResponse response = uut.readNodeContent(
             new ReadNodeContentRequest(mapIdentifier.toString(), "ID_root"));
@@ -94,7 +94,7 @@ public class ReadNodeContentToolTest {
 
     @Test
     public void readNodeContent_throwsWhenMapIdentifierIsInvalid() {
-        AIToolSet uut = new AIToolSet(mock(AvailableMaps.class), mock(NodeContentItemReader.class));
+        ReadNodeContentTool uut = new ReadNodeContentTool(mock(AvailableMaps.class), mock(NodeContentItemReader.class));
 
         assertThatThrownBy(() -> uut.readNodeContent(
             new ReadNodeContentRequest("not-a-uuid", "ID_focus")))

@@ -16,10 +16,15 @@ public class NodeContentItemReader {
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset) {
+        return readNodeContentItem(nodeModel, preset, true);
+    }
+
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset,
+                                               boolean includesNodeIdentifiers) {
         if (nodeModel == null) {
             return null;
         }
-        String nodeIdentifier = nodeModel.createID();
+        String nodeIdentifier = includesNodeIdentifiers ? nodeModel.createID() : null;
         NodeContent content = nodeContentReader.readNodeContent(nodeModel, preset);
         List<String> qualifiers = buildQualifiers(nodeModel);
         return new NodeContentItem(nodeIdentifier, content, qualifiers);

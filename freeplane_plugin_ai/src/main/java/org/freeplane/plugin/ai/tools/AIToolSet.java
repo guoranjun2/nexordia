@@ -1,15 +1,10 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.icon.IconController;
-import org.freeplane.features.map.MapModel;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.text.TextController;
@@ -19,8 +14,8 @@ import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
 public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
-    private final AvailableMaps availableMaps;
-    private final NodeContentItemReader nodeContentItemReader;
+    private final ReadNodeContentTool readNodeContentTool;
+    private final BreadcrumbsTool breadcrumbsTool;
 
     public AIToolSet() {
         this(createAvailableMaps(), createTextController(), createAttributeController(), createIconController());
@@ -32,14 +27,16 @@ public class AIToolSet {
     }
 
     AIToolSet(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
-        this(availableMaps, new SystemMessageBuilder(availableMaps), nodeContentItemReader);
+        this(new SystemMessageBuilder(availableMaps),
+            new ReadNodeContentTool(availableMaps, nodeContentItemReader),
+            new BreadcrumbsTool(availableMaps, nodeContentItemReader));
     }
 
-    AIToolSet(AvailableMaps availableMaps, SystemMessageBuilder systemMessageBuilder,
-              NodeContentItemReader nodeContentItemReader) {
-        this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeContentTool readNodeContentTool,
+              BreadcrumbsTool breadcrumbsTool) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
-        this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
+        this.readNodeContentTool = Objects.requireNonNull(readNodeContentTool, "readNodeContentTool");
+        this.breadcrumbsTool = Objects.requireNonNull(breadcrumbsTool, "breadcrumbsTool");
     }
 
     public String systemMessageForChat(Object input) {
@@ -48,23 +45,7 @@ public class AIToolSet {
 
     @Tool("Read node content with parent and child context.")
     public ReadNodeContentResponse readNodeContent(ReadNodeContentRequest request) {
-        Objects.requireNonNull(request, "request");
-        String mapIdentifier = requireValue(request.getMapIdentifier(), "mapIdentifier");
-        String nodeIdentifier = requireValue(request.getNodeIdentifier(), "nodeIdentifier");
-        UUID mapIdentifierValue = parseMapIdentifier(mapIdentifier);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifierValue);
-        if (mapModel == null) {
-            throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifier);
-        }
-        NodeModel focusNode = mapModel.getNodeForID(nodeIdentifier);
-        if (focusNode == null) {
-            throw new IllegalArgumentException("Unknown node identifier: " + nodeIdentifier);
-        }
-        NodeContentItem focusNodeItem = nodeContentItemReader.readNodeContentItem(focusNode, NodeContentPreset.FULL);
-        NodeContentItem parentNodeItem = nodeContentItemReader.readNodeContentItem(
-            focusNode.getParentNode(), NodeContentPreset.BRIEF);
-        List<NodeContentItem> childNodes = readChildNodes(focusNode);
-        return new ReadNodeContentResponse(mapIdentifier, focusNodeItem, parentNodeItem, childNodes);
+        return readNodeContentTool.readNodeContent(request);
     }
 
     private static AvailableMaps createAvailableMaps() {
@@ -117,32 +98,9 @@ public class AIToolSet {
         return new NodeContentItemReader(nodeContentReader);
     }
 
-    private List<NodeContentItem> readChildNodes(NodeModel focusNode) {
-        List<NodeContentItem> childNodes = new ArrayList<>();
-        for (NodeModel childNode : focusNode.getChildren()) {
-            childNodes.add(nodeContentItemReader.readNodeContentItem(childNode, NodeContentPreset.BRIEF));
-        }
-        return childNodes;
-    }
-
-    private UUID parseMapIdentifier(String mapIdentifier) {
-        try {
-            return UUID.fromString(mapIdentifier);
-        } catch (IllegalArgumentException error) {
-            throw new IllegalArgumentException("Invalid map identifier: " + mapIdentifier, error);
-        }
-    }
-
-    private String requireValue(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Missing " + fieldName);
-        }
-        return value;
-    }
-
     @Tool("Get breadcrumbs from the root to a node.")
     public BreadcrumbsResponse getBreadcrumbs(BreadcrumbsRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        return breadcrumbsTool.getBreadcrumbs(request);
     }
 
     @Tool("Return a flat list of nodes under a branch.")

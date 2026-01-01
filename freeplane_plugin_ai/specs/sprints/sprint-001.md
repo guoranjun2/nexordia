@@ -46,6 +46,7 @@ note "Not started yet." as Design
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItem.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItemReader.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentReader.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ReadNodeContentTool.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ReadNodeContentRequest.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ReadNodeContentResponse.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TagsContentReader.java
@@ -109,9 +110,11 @@ class AttributesContentReader
 class TagsContentReader
 class NodeContentReader
 class NodeContentItemReader
+class NodeContentItem
 class ReadNodeContentRequest
 class ReadNodeContentResponse
 class AIToolSet
+class ReadNodeContentTool
 class AvailableMaps
 class NodeModel
 class TextController
@@ -133,20 +136,25 @@ NodeContentReader o--> TagsContentReader
 NodeContentReader --> NodeContent : briefText
 NodeContentItemReader o--> NodeContentReader
 NodeContentItemReader --> NodeModel : createID
-AIToolSet --> NodeContentItemReader
-AIToolSet --> AvailableMaps
-AIToolSet --> ReadNodeContentRequest
-AIToolSet --> ReadNodeContentResponse
+NodeContentItemReader --> NodeContentItem
+ReadNodeContentTool --> NodeContentItemReader
+ReadNodeContentTool --> AvailableMaps
+ReadNodeContentTool --> ReadNodeContentRequest
+ReadNodeContentTool --> ReadNodeContentResponse
+AIToolSet --> ReadNodeContentTool
 
 note right of AIToolSet
 ReadNodeContentService is removed.
-AIToolSet resolves controllers from the current mode controller and builds readers.
+AIToolSet resolves controllers from the current mode controller, builds readers,
+and delegates to ReadNodeContentTool.
 end note
 
 note bottom
 BRIEF uses TextController.getShortPlainText for parent and children.
 FULL uses TextController.getTransformedTextForClipboard for focus text, details, and note content.
 FULL uses transformed attribute values from TextController.getTransformedObjectNoFormattingNoThrow.
+ReadNodeContentTool always requests node identifiers.
+NodeContentItemReader calls createID only when identifiers are requested.
 NodeContent.briefText is populated only for BRIEF responses.
 TextualContent is populated only for FULL responses.
 end note
@@ -156,18 +164,21 @@ end note
 @startuml
 actor Caller
 participant AIToolSet
+participant ReadNodeContentTool
 participant AvailableMaps
 participant NodeContentItemReader
 participant NodeContentReader
 participant MapModel
 
 Caller -> AIToolSet : read_node_content(map id, node id)
-AIToolSet -> AvailableMaps : findMapModel(map id)
-AIToolSet -> MapModel : getNodeForID(node id)
-AIToolSet -> NodeContentItemReader : fromNodeModel(focus)
+AIToolSet -> ReadNodeContentTool : readNodeContent(request)
+ReadNodeContentTool -> AvailableMaps : findMapModel(map id)
+ReadNodeContentTool -> MapModel : getNodeForID(node id)
+ReadNodeContentTool -> NodeContentItemReader : fromNodeModel(focus, FULL, includesNodeIdentifiers)
 NodeContentItemReader -> NodeContentReader : buildNodeContent(focus, preset)
-AIToolSet -> NodeContentItemReader : fromNodeModel(parent)
-AIToolSet -> NodeContentItemReader : fromNodeModel(children)
+ReadNodeContentTool -> NodeContentItemReader : fromNodeModel(parent, BRIEF, includesNodeIdentifiers)
+ReadNodeContentTool -> NodeContentItemReader : fromNodeModel(children, BRIEF, includesNodeIdentifiers)
+ReadNodeContentTool --> AIToolSet : ReadNodeContentResponse
 AIToolSet --> Caller : ReadNodeContentResponse
 @enduml
 ```
@@ -295,3 +306,86 @@ end note
   - Verify first group nodes include first_group_node qualifier.
   - Verify non summary nodes have no qualifiers.
   - Verify system message includes qualifier descriptions.
+
+## Task: Implement get_breadcrumbs tool
+- **Status:** Implementation Review
+- **Scope:** Implement get_breadcrumbs to return the root to node path, skipping hidden summary nodes and optionally including node identifiers.
+- **Modified production files:**
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/BreadcrumbsTool.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItemReader.java
+- **Modified test files:**
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/BreadcrumbsToolTest.java
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeContentItemReaderTest.java
+- **Research summary:**
+```plantuml
+@startuml
+class BreadcrumbLayout
+class MapTreeNode
+class SummaryNode
+class NodeModel
+class TextController
+
+BreadcrumbLayout --> SummaryNode
+MapTreeNode --> TextController
+SummaryNode --> NodeModel
+
+note right of MapTreeNode
+Uses TextController.getShortPlainText for outline text.
+end note
+
+note right of BreadcrumbLayout
+Skips SummaryNode.isHidden nodes when bridging
+missing parents in breadcrumbs.
+end note
+
+note bottom
+NodeModel.getPathToRoot includes parents regardless of
+hidden summary nodes. SummaryNode.isHidden is derived
+from summary or first group flags plus empty text.
+end note
+@enduml
+```
+- **Design:**
+```plantuml
+@startuml
+class AIToolSet
+class BreadcrumbsTool
+class NodeContentItemReader
+class BreadcrumbItem
+class BreadcrumbsRequest
+class BreadcrumbsResponse
+class SummaryNode
+class NodeModel
+
+AIToolSet --> BreadcrumbsTool
+BreadcrumbsTool --> NodeContentItemReader
+BreadcrumbsTool --> BreadcrumbsRequest
+BreadcrumbsTool --> BreadcrumbsResponse
+NodeContentItemReader --> NodeModel
+SummaryNode --> NodeModel
+
+note right of AIToolSet
+Delegates to BreadcrumbsTool.
+end note
+
+note right of BreadcrumbsTool
+Resolve map and node identifiers.
+Walk parent chain to root.
+Skip SummaryNode.isHidden nodes.
+Use NodeContentItemReader with BRIEF
+to read breadcrumb text.
+Include node identifiers only when requested.
+end note
+
+note bottom
+Breadcrumb text uses short plain text to match
+outline behavior.
+end note
+@enduml
+```
+- **Test specification:**
+  - Verify breadcrumbs include root to target nodes in order.
+  - Verify SummaryNode.isHidden nodes are skipped.
+  - Verify node identifiers are included only when requested.
+  - Verify invalid map or node identifiers raise errors.

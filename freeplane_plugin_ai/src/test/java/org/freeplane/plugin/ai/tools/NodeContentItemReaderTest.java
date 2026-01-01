@@ -2,6 +2,8 @@ package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.freeplane.features.map.FirstGroupNodeFlag;
@@ -56,5 +58,19 @@ public class NodeContentItemReaderTest {
         NodeContentItem item = uut.readNodeContentItem(nodeModel, NodeContentPreset.BRIEF);
 
         assertThat(item.getQualifiers()).isEmpty();
+    }
+
+    @Test
+    public void readNodeContentItem_omitsNodeIdentifierWhenDisabled() {
+        NodeModel nodeModel = mock(NodeModel.class);
+        NodeContentReader nodeContentReader = mock(NodeContentReader.class);
+        when(nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF))
+            .thenReturn(new NodeContent("Brief", null, null, null));
+        NodeContentItemReader uut = new NodeContentItemReader(nodeContentReader);
+
+        NodeContentItem item = uut.readNodeContentItem(nodeModel, NodeContentPreset.BRIEF, false);
+
+        assertThat(item.getNodeIdentifier()).isNull();
+        verify(nodeModel, never()).createID();
     }
 }
