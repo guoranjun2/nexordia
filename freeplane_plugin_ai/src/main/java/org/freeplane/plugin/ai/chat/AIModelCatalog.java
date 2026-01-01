@@ -1,11 +1,13 @@
 package org.freeplane.plugin.ai.chat;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -50,11 +52,11 @@ final class AIModelCatalog {
     private static List<AIModelDescriptor> cachedOllamaModels = Collections.emptyList();
 
     private final AIProviderConfiguration configuration;
-    private final Gson gsonParser;
+    private final ObjectMapper objectMapper;
 
     AIModelCatalog(AIProviderConfiguration configuration) {
         this.configuration = configuration;
-        this.gsonParser = new Gson();
+        this.objectMapper = new ObjectMapper();
     }
 
     List<AIModelDescriptor> getAvailableModels(boolean allowsRefresh) {
@@ -145,27 +147,7 @@ final class AIModelCatalog {
             }
             try (InputStream inputStream = connection.getInputStream();
                  InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-                OpenrouterModelsResponse response = gsonParser.fromJson(reader, OpenrouterModelsResponse.class);
-                if (response == null || response.models == null) {
-                    return Collections.emptyList();
-                }
-                List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
-                for (OpenrouterModelItem modelItem : response.models) {
-                    if (modelItem == null || modelItem.modelIdentifier == null) {
-                        continue;
-                    }
-                    if (!OPENROUTER_MODEL_ALLOWLIST.contains(modelItem.modelIdentifier)) {
-                        continue;
-                    }
-                    boolean isFreeModel = isFreePricing(modelItem.pricing);
-                    modelDescriptors.add(new AIModelDescriptor(
-                        AIChatModelFactory.PROVIDER_NAME_OPENROUTER,
-                        modelItem.modelIdentifier,
-                        buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OPENROUTER, modelItem.modelIdentifier, isFreeModel),
-                        isFreeModel
-                    ));
-                }
-                return modelDescriptors;
+                return parseOpenrouterModelsResponse(reader);
             }
         } catch (IOException exception) {
             return Collections.emptyList();
@@ -189,27 +171,55 @@ final class AIModelCatalog {
             }
             try (InputStream inputStream = connection.getInputStream();
                  InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-                OllamaModelsResponse response = gsonParser.fromJson(reader, OllamaModelsResponse.class);
-                if (response == null || response.models == null) {
-                    return Collections.emptyList();
-                }
-                List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
-                for (OllamaModelItem modelItem : response.models) {
-                    if (modelItem == null || modelItem.modelName == null || modelItem.modelName.isEmpty()) {
-                        continue;
-                    }
-                    modelDescriptors.add(new AIModelDescriptor(
-                        AIChatModelFactory.PROVIDER_NAME_OLLAMA,
-                        modelItem.modelName,
-                        buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OLLAMA, modelItem.modelName, false),
-                        false
-                    ));
-                }
-                return modelDescriptors;
+                return parseOllamaModelsResponse(reader);
             }
         } catch (IOException exception) {
             return Collections.emptyList();
         }
+    }
+
+    List<AIModelDescriptor> parseOpenrouterModelsResponse(Reader reader) throws IOException {
+        OpenrouterModelsResponse response = objectMapper.readValue(reader, OpenrouterModelsResponse.class);
+        if (response == null || response.models == null) {
+            return Collections.emptyList();
+        }
+        List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
+        for (OpenrouterModelItem modelItem : response.models) {
+            if (modelItem == null || modelItem.modelIdentifier == null) {
+                continue;
+            }
+            if (!OPENROUTER_MODEL_ALLOWLIST.contains(modelItem.modelIdentifier)) {
+                continue;
+            }
+            boolean isFreeModel = isFreePricing(modelItem.pricing);
+            modelDescriptors.add(new AIModelDescriptor(
+                AIChatModelFactory.PROVIDER_NAME_OPENROUTER,
+                modelItem.modelIdentifier,
+                buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OPENROUTER, modelItem.modelIdentifier, isFreeModel),
+                isFreeModel
+            ));
+        }
+        return modelDescriptors;
+    }
+
+    List<AIModelDescriptor> parseOllamaModelsResponse(Reader reader) throws IOException {
+        OllamaModelsResponse response = objectMapper.readValue(reader, OllamaModelsResponse.class);
+        if (response == null || response.models == null) {
+            return Collections.emptyList();
+        }
+        List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
+        for (OllamaModelItem modelItem : response.models) {
+            if (modelItem == null || modelItem.modelName == null || modelItem.modelName.isEmpty()) {
+                continue;
+            }
+            modelDescriptors.add(new AIModelDescriptor(
+                AIChatModelFactory.PROVIDER_NAME_OLLAMA,
+                modelItem.modelName,
+                buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OLLAMA, modelItem.modelName, false),
+                false
+            ));
+        }
+        return modelDescriptors;
     }
 
     private String buildDisplayName(String providerName, String modelName, boolean isFreeModel) {
@@ -248,32 +258,37 @@ final class AIModelCatalog {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static final class OpenrouterModelsResponse {
-        @SerializedName("data")
+        @JsonProperty("data")
         private List<OpenrouterModelItem> models;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static final class OpenrouterModelItem {
-        @SerializedName("id")
+        @JsonProperty("id")
         private String modelIdentifier;
-        @SerializedName("pricing")
+        @JsonProperty("pricing")
         private OpenrouterModelPricing pricing;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static final class OpenrouterModelPricing {
-        @SerializedName("prompt")
+        @JsonProperty("prompt")
         private String promptPrice;
-        @SerializedName("completion")
+        @JsonProperty("completion")
         private String completionPrice;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static final class OllamaModelsResponse {
-        @SerializedName("models")
+        @JsonProperty("models")
         private List<OllamaModelItem> models;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static final class OllamaModelItem {
-        @SerializedName("name")
+        @JsonProperty("name")
         private String modelName;
     }
 }

@@ -4,5 +4,4 @@ dependencies {
     lib 'dev.langchain4j:langchain4j-open-ai:1.10.0'
     lib 'dev.langchain4j:langchain4j-ollama:1.10.0'
     lib 'dev.langchain4j:langchain4j-google-ai-gemini:1.10.0'
-    lib 'com.google.code.gson:gson:2.13.1'
 }
