@@ -1,0 +1,26 @@
+name: Delete branch on GitLab
+
+on:
+  delete:
+
+jobs:
+  delete-branch:
+    if: |
+      github.repository == 'freeplane/freeplane' &&
+      github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete branch on GitLab
+        env:
+          GITLAB_REPO_URL: ${{ secrets.GITLAB_REPO_URL }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          BRANCH: ${{ github.event.ref }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+
+          AUTH_URL=$(echo "$GITLAB_REPO_URL" | sed "s#https://#https://oauth2:${GITLAB_TOKEN}@#")
+          git remote add gitlab "$AUTH_URL"
+
+          git push gitlab :refs/heads/${BRANCH}
