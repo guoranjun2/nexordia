@@ -2,11 +2,16 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class ApplyAttributesResponse {
     private final String mapIdentifier;
     private final List<String> updatedNodeIdentifiers;
 
-    public ApplyAttributesResponse(String mapIdentifier, List<String> updatedNodeIdentifiers) {
+    @JsonCreator
+    public ApplyAttributesResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                   @JsonProperty("updatedNodeIdentifiers") List<String> updatedNodeIdentifiers) {
         this.mapIdentifier = mapIdentifier;
         this.updatedNodeIdentifiers = updatedNodeIdentifiers;
     }

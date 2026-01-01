@@ -1,10 +1,15 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class GetAiOnlyFilterConditionResponse {
     private final String mapIdentifier;
     private final SearchConditionState activeCondition;
 
-    public GetAiOnlyFilterConditionResponse(String mapIdentifier, SearchConditionState activeCondition) {
+    @JsonCreator
+    public GetAiOnlyFilterConditionResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                            @JsonProperty("activeCondition") SearchConditionState activeCondition) {
         this.mapIdentifier = mapIdentifier;
         this.activeCondition = activeCondition;
     }

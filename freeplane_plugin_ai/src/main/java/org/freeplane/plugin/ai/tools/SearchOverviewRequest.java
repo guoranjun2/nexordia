@@ -1,5 +1,8 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchOverviewRequest {
     private final String mapIdentifier;
     private final String focusRequest;
@@ -7,8 +10,12 @@ public final class SearchOverviewRequest {
     private final int maximumKeywordCount;
     private final int maximumSectionCount;
 
-    public SearchOverviewRequest(String mapIdentifier, String focusRequest, String modelIdentifier,
-                                 int maximumKeywordCount, int maximumSectionCount) {
+    @JsonCreator
+    public SearchOverviewRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                 @JsonProperty("focusRequest") String focusRequest,
+                                 @JsonProperty("modelIdentifier") String modelIdentifier,
+                                 @JsonProperty("maximumKeywordCount") int maximumKeywordCount,
+                                 @JsonProperty("maximumSectionCount") int maximumSectionCount) {
         this.mapIdentifier = mapIdentifier;
         this.focusRequest = focusRequest;
         this.modelIdentifier = modelIdentifier;

@@ -2,11 +2,16 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class BreadcrumbsResponse {
     private final String mapIdentifier;
     private final List<BreadcrumbItem> breadcrumbs;
 
-    public BreadcrumbsResponse(String mapIdentifier, List<BreadcrumbItem> breadcrumbs) {
+    @JsonCreator
+    public BreadcrumbsResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                               @JsonProperty("breadcrumbs") List<BreadcrumbItem> breadcrumbs) {
         this.mapIdentifier = mapIdentifier;
         this.breadcrumbs = breadcrumbs;
     }

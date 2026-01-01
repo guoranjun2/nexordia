@@ -1,12 +1,17 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 public final class SearchResult {
     private final String nodeIdentifier;
     private final NodeContent content;
 
-    public SearchResult(String nodeIdentifier, NodeContent content) {
+    @JsonCreator
+    public SearchResult(@JsonProperty("nodeIdentifier") String nodeIdentifier,
+                        @JsonProperty("content") NodeContent content) {
         this.nodeIdentifier = nodeIdentifier;
         this.content = content;
     }

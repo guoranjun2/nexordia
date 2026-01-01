@@ -2,6 +2,9 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchOverviewResponse {
     private final String mapIdentifier;
     private final String summary;
@@ -9,8 +12,12 @@ public final class SearchOverviewResponse {
     private final List<SearchOverviewSection> sections;
     private final List<SearchOverviewKeyword> keywords;
 
-    public SearchOverviewResponse(String mapIdentifier, String summary, List<String> themes,
-                                  List<SearchOverviewSection> sections, List<SearchOverviewKeyword> keywords) {
+    @JsonCreator
+    public SearchOverviewResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                  @JsonProperty("summary") String summary,
+                                  @JsonProperty("themes") List<String> themes,
+                                  @JsonProperty("sections") List<SearchOverviewSection> sections,
+                                  @JsonProperty("keywords") List<SearchOverviewKeyword> keywords) {
         this.mapIdentifier = mapIdentifier;
         this.summary = summary;
         this.themes = themes;

@@ -1,5 +1,8 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class FlatListRequest {
     private final String mapIdentifier;
     private final String nodeIdentifier;
@@ -8,9 +11,13 @@ public final class FlatListRequest {
     private final boolean includesBreadcrumbs;
     private final int maxNodes;
 
-    public FlatListRequest(String mapIdentifier, String nodeIdentifier, boolean includesDescendants,
-                           NodeContentRequest nodeContentRequest, boolean includesBreadcrumbs,
-                           int maxNodes) {
+    @JsonCreator
+    public FlatListRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                           @JsonProperty("nodeIdentifier") String nodeIdentifier,
+                           @JsonProperty("includesDescendants") boolean includesDescendants,
+                           @JsonProperty("nodeContentRequest") NodeContentRequest nodeContentRequest,
+                           @JsonProperty("includesBreadcrumbs") boolean includesBreadcrumbs,
+                           @JsonProperty("maxNodes") int maxNodes) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifier = nodeIdentifier;
         this.includesDescendants = includesDescendants;

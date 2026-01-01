@@ -1,11 +1,17 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class TextualContent {
     private final String text;
     private final String details;
     private final String note;
 
-    public TextualContent(String text, String details, String note) {
+    @JsonCreator
+    public TextualContent(@JsonProperty("text") String text,
+                          @JsonProperty("details") String details,
+                          @JsonProperty("note") String note) {
         this.text = text;
         this.details = details;
         this.note = note;

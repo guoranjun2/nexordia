@@ -1,10 +1,15 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class BreadcrumbItem {
     private final String text;
     private final String nodeIdentifier;
 
-    public BreadcrumbItem(String text, String nodeIdentifier) {
+    @JsonCreator
+    public BreadcrumbItem(@JsonProperty("text") String text,
+                          @JsonProperty("nodeIdentifier") String nodeIdentifier) {
         this.text = text;
         this.nodeIdentifier = nodeIdentifier;
     }

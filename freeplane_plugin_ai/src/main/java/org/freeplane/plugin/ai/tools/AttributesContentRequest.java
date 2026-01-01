@@ -1,9 +1,13 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class AttributesContentRequest {
     private final boolean includesAttributes;
 
-    public AttributesContentRequest(boolean includesAttributes) {
+    @JsonCreator
+    public AttributesContentRequest(@JsonProperty("includesAttributes") boolean includesAttributes) {
         this.includesAttributes = includesAttributes;
     }
 

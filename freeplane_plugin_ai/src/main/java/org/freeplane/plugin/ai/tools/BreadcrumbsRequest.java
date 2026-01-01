@@ -1,11 +1,17 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class BreadcrumbsRequest {
     private final String mapIdentifier;
     private final String nodeIdentifier;
     private final boolean includesNodeIdentifiers;
 
-    public BreadcrumbsRequest(String mapIdentifier, String nodeIdentifier, boolean includesNodeIdentifiers) {
+    @JsonCreator
+    public BreadcrumbsRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                              @JsonProperty("nodeIdentifier") String nodeIdentifier,
+                              @JsonProperty("includesNodeIdentifiers") boolean includesNodeIdentifiers) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifier = nodeIdentifier;
         this.includesNodeIdentifiers = includesNodeIdentifiers;

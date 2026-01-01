@@ -1,5 +1,8 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchConditionDefinition {
     private final String name;
     private final String valueInputMode;
@@ -7,8 +10,12 @@ public final class SearchConditionDefinition {
     private final boolean allowsApproximateMatchingOption;
     private final boolean allowsIgnoreDiacriticsOption;
 
-    public SearchConditionDefinition(String name, String valueInputMode, boolean allowsCaseSensitiveOption,
-                                     boolean allowsApproximateMatchingOption, boolean allowsIgnoreDiacriticsOption) {
+    @JsonCreator
+    public SearchConditionDefinition(@JsonProperty("name") String name,
+                                     @JsonProperty("valueInputMode") String valueInputMode,
+                                     @JsonProperty("allowsCaseSensitiveOption") boolean allowsCaseSensitiveOption,
+                                     @JsonProperty("allowsApproximateMatchingOption") boolean allowsApproximateMatchingOption,
+                                     @JsonProperty("allowsIgnoreDiacriticsOption") boolean allowsIgnoreDiacriticsOption) {
         this.name = name;
         this.valueInputMode = valueInputMode;
         this.allowsCaseSensitiveOption = allowsCaseSensitiveOption;

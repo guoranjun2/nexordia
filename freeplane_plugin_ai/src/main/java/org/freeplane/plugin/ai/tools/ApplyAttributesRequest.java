@@ -2,6 +2,9 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class ApplyAttributesRequest {
     private final String mapIdentifier;
     private final List<String> schema;
@@ -9,8 +12,12 @@ public final class ApplyAttributesRequest {
     private final String mergeMode;
     private final boolean removesMissing;
 
-    public ApplyAttributesRequest(String mapIdentifier, List<String> schema, List<AttributeUpdate> updates,
-                                  String mergeMode, boolean removesMissing) {
+    @JsonCreator
+    public ApplyAttributesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                  @JsonProperty("schema") List<String> schema,
+                                  @JsonProperty("updates") List<AttributeUpdate> updates,
+                                  @JsonProperty("mergeMode") String mergeMode,
+                                  @JsonProperty("removesMissing") boolean removesMissing) {
         this.mapIdentifier = mapIdentifier;
         this.schema = schema;
         this.updates = updates;

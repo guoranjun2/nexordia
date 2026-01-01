@@ -2,11 +2,16 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchAttributesByNameAndValueResponse {
     private final String mapIdentifier;
     private final List<String> nodeIdentifiers;
 
-    public SearchAttributesByNameAndValueResponse(String mapIdentifier, List<String> nodeIdentifiers) {
+    @JsonCreator
+    public SearchAttributesByNameAndValueResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                                  @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
     }

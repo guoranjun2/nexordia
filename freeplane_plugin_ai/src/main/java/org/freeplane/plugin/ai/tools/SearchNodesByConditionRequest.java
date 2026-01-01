@@ -1,13 +1,19 @@
 package org.freeplane.plugin.ai.tools;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchNodesByConditionRequest {
     private final String mapIdentifier;
     private final SearchConditionRequest condition;
     private final String scopeNodeIdentifier;
     private final int maximumResults;
 
-    public SearchNodesByConditionRequest(String mapIdentifier, SearchConditionRequest condition,
-                                         String scopeNodeIdentifier, int maximumResults) {
+    @JsonCreator
+    public SearchNodesByConditionRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                         @JsonProperty("condition") SearchConditionRequest condition,
+                                         @JsonProperty("scopeNodeIdentifier") String scopeNodeIdentifier,
+                                         @JsonProperty("maximumResults") int maximumResults) {
         this.mapIdentifier = mapIdentifier;
         this.condition = condition;
         this.scopeNodeIdentifier = scopeNodeIdentifier;

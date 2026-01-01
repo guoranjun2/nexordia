@@ -2,6 +2,9 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class MoveNodesRequest {
     private final String mapIdentifier;
     private final List<String> nodeIdentifiers;
@@ -10,8 +13,13 @@ public final class MoveNodesRequest {
     private final String referenceNodeIdentifier;
     private final boolean preservesOrder;
 
-    public MoveNodesRequest(String mapIdentifier, List<String> nodeIdentifiers, String targetParentIdentifier,
-                            InsertPosition insertPosition, String referenceNodeIdentifier, boolean preservesOrder) {
+    @JsonCreator
+    public MoveNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                            @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers,
+                            @JsonProperty("targetParentIdentifier") String targetParentIdentifier,
+                            @JsonProperty("insertPosition") InsertPosition insertPosition,
+                            @JsonProperty("referenceNodeIdentifier") String referenceNodeIdentifier,
+                            @JsonProperty("preservesOrder") boolean preservesOrder) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
         this.targetParentIdentifier = targetParentIdentifier;

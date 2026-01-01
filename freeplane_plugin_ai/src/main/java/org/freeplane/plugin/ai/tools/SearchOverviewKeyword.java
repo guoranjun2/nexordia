@@ -2,11 +2,16 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public final class SearchOverviewKeyword {
     private final String term;
     private final List<String> nodeIdentifiers;
 
-    public SearchOverviewKeyword(String term, List<String> nodeIdentifiers) {
+    @JsonCreator
+    public SearchOverviewKeyword(@JsonProperty("term") String term,
+                                 @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers) {
         this.term = term;
         this.nodeIdentifiers = nodeIdentifiers;
     }
