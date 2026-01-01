@@ -10,6 +10,7 @@ Established abbreviations like "ai", "uuid", and "llm" are valid terms and are n
 3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 4.  **Status updates**: Update task status before implementation and after each phase.
 5.  **Information gathering**: Reading commands do not require plan approval.
+6.  **Backlog status indicators**: Use `[ ]` for identified or in progress, `[x]` for finished, and `[?]` for implementation review tasks awaiting validation.
 
 ## Task States
 Tasks in the sprints must use one of these states:
