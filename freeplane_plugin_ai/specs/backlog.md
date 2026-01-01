@@ -18,7 +18,6 @@ We will implement the AI tool capabilities in epics, refining each one before ex
     *   [x] System message map identifiers for reading methods.
     *   [x] Node content qualifiers for summary nodes.
     *   [?] Implement get_breadcrumbs to return the root to node path.
-    *   [ ] Implement get_flat_list for branch scanning with optional breadcrumbs.
     *   [ ] Remove the Gson dependency from the ai plugin and rely on Jackson provided by LangChain4j.
 
 ### Epic 2: Map Editing Tools
