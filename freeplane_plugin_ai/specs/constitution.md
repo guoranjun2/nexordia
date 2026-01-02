@@ -5,7 +5,7 @@ Keep work verifiable with a light, repeatable workflow that avoids surprises.
 Established abbreviations like "ai", "uuid", and "llm" are valid terms and are not treated as abbreviations.
 
 ## Workflow
-1.  **Backlog as source of truth**: All tasks, design, and execution status live in [backlog.md](backlog.md). The current sprint is tracked there and detailed in `specs/sprints/`.
+1.  **Backlog as source of truth**: All tasks, design, and execution status live in [backlog.md](backlog.md). The current sprint is tracked there and detailed in `specs/sprints/`. Finished sprints are stored in `specs/sprints/finished/`.
 2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 4.  **Status updates**: Update task status before implementation and after each phase.

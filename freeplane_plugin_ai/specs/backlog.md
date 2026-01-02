@@ -2,7 +2,7 @@
 
 We will implement the AI tool capabilities in epics, refining each one before execution.
 
-**[Current sprint](./sprints/sprint-001.md)**
+**[Current sprint](./sprints/sprint-002.md)**
 
 ## Epics
 
@@ -74,3 +74,10 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Tasks:**
     *   [ ] Implement list_attribute_names_for_map based on map attribute data.
     *   [ ] Implement search_attributes_by_name_and_value with map specific lookup.
+
+### Epic 8: Chat Session Controls and Usage
+**Goal:** Provide chat session controls, usage status, and logging in the chat panel.
+*   **Status:** Backlog
+*   **User Story:** As a user, I want to control chat memory and see token usage and tool call logs so I can monitor context usage and restart sessions.
+*   **Tasks:**
+    *   [ ] Add chat memory controls, a chat status line for token usage, and a tool call log.

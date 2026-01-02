@@ -19,7 +19,7 @@ note "Define NodeContentRequest, TextualContentRequest, AttributesContentRequest
   - Not applicable for structure-only change.
 
 ## Task: Remove Gson dependency from ai plugin
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Remove the Gson dependency from the ai plugin build file and use Jackson provided by LangChain4j instead.
 - **Modified production files:**
   - freeplane_plugin_ai/build.gradle
@@ -75,7 +75,7 @@ end note
   - Add a unit test that parses a sample Ollama response and returns the expected model names.
 
 ## Task: Implement reading methods
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Implement read_node_content with a request that requires only map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old read context request and response types.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
@@ -346,7 +346,7 @@ end note
   - Verify system message includes qualifier descriptions.
 
 ## Task: Implement get_breadcrumbs tool
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Implement get_breadcrumbs to return the root to node path, skipping hidden summary nodes and optionally including node identifiers.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
