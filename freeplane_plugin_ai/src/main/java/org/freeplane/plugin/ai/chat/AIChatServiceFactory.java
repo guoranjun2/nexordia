@@ -8,9 +8,11 @@ public final class AIChatServiceFactory {
     private AIChatServiceFactory() {
     }
 
-    public static AIChatService createService(AIToolSet toolSet) {
+    public static AIChatService createService(AIToolSet toolSet, ChatSessionMemoryController chatSessionMemoryController,
+                                              ChatTokenUsageTracker chatTokenUsageTracker) {
         AIProviderConfiguration configuration = new AIProviderConfiguration();
         ChatModel chatLanguageModel = AIChatModelFactory.createChatLanguageModel(configuration);
-        return new AIChatService(chatLanguageModel, toolSet);
+        return new AIChatService(chatLanguageModel, toolSet, chatSessionMemoryController.getChatMemory(),
+            chatTokenUsageTracker);
     }
 }

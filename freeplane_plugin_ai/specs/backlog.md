@@ -80,4 +80,4 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Status:** Backlog
 *   **User Story:** As a user, I want to control chat memory and see token usage and tool call logs so I can monitor context usage and restart sessions.
 *   **Tasks:**
-    *   [ ] Add chat memory controls, a chat status line for token usage, and a tool call log.
+    *   [?] Add chat memory controls, a chat status line for token usage, and a tool call log.

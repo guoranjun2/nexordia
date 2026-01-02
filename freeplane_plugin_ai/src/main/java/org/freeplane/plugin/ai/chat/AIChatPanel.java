@@ -16,6 +16,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JLabel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -38,6 +39,9 @@ public class AIChatPanel extends JPanel {
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
     private final AIModelSelectionController modelSelectionController;
+    private final ChatSessionMemoryController chatSessionMemoryController;
+    private final ChatTokenUsageTracker chatTokenUsageTracker;
+    private final JLabel tokenUsageLabel;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -53,6 +57,9 @@ public class AIChatPanel extends JPanel {
         configuration = new AIProviderConfiguration();
         modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
+        chatSessionMemoryController = new ChatSessionMemoryController();
+        tokenUsageLabel = new JLabel();
+        chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -63,6 +70,7 @@ public class AIChatPanel extends JPanel {
         JPanel topBarContainer = new JPanel(new BorderLayout());
         topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
         topBarContainer.add(toolbar, BorderLayout.WEST);
+        topBarContainer.add(tokenUsageLabel, BorderLayout.EAST);
 
         add(scrollPane, BorderLayout.CENTER);
         add(inputPanel, BorderLayout.SOUTH);
@@ -89,6 +97,9 @@ public class AIChatPanel extends JPanel {
         TranslatedElementFactory.createTooltip(menuButton, "preferences");
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
         toolbar.add(menuButton);
+        JButton newChatButton = new JButton("New chat");
+        newChatButton.addActionListener(event -> startNewChat());
+        toolbar.add(newChatButton);
         toolbar.add(modelSelectionController.getModelSelectionComboBox());
     }
 
@@ -172,7 +183,8 @@ public class AIChatPanel extends JPanel {
             appendMessage("Unknown AI provider selection.", false);
             return;
         }
-        chatService = AIChatServiceFactory.createService(new AIToolSet());
+        chatService = AIChatServiceFactory.createService(new AIToolSet(), chatSessionMemoryController,
+            chatTokenUsageTracker);
     }
 
     private void appendMessage(String text, boolean isFromUser) {
@@ -198,6 +210,18 @@ public class AIChatPanel extends JPanel {
         messagesPanel.revalidate();
         messagesPanel.repaint();
         SwingUtilities.invokeLater(this::scrollToBottom);
+    }
+
+    private void startNewChat() {
+        messagesPanel.removeAll();
+        messagesPanel.revalidate();
+        messagesPanel.repaint();
+        chatSessionMemoryController.clearChatMemory();
+        chatTokenUsageTracker.resetTotals();
+    }
+
+    private void updateTokenUsageLabel(ChatUsageTotals totals) {
+        SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
     }
 
     private void scrollToBottom() {
