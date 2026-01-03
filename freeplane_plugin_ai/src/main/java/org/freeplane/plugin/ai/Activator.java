@@ -15,12 +15,15 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.application.CommandLineOptions;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
+import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
+import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 public class Activator implements BundleActivator {
 
 	private static final String PREFERENCES_RESOURCE = "preferences.xml";
+	private ModelContextProtocolServer modelContextProtocolServer;
 
 	/*
 	 * (non-Javadoc)
@@ -41,6 +44,7 @@ public class Activator implements BundleActivator {
 				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
 				    tabs.addTab("AI", new AIChatPanel());
 				    addPluginDefaults();
+				    startModelContextProtocolServer();
 				    addPreferencesToOptionPanel();
 				}
 
@@ -62,6 +66,14 @@ public class Activator implements BundleActivator {
 					resourceController.addDefaults(properties);
 					properties.keySet().forEach(key -> resourceController.securePropertyForReadingAndModification((String) key));
 				}
+
+				private void startModelContextProtocolServer() {
+					if (modelContextProtocolServer == null) {
+						modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSet());
+						ResourceController.getResourceController()
+							.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
+					}
+				}
 		    }, properties);
 	}
 
@@ -71,5 +83,8 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void stop(final BundleContext context) throws Exception {
+		if (modelContextProtocolServer != null) {
+			modelContextProtocolServer.stop();
+		}
 	}
 }

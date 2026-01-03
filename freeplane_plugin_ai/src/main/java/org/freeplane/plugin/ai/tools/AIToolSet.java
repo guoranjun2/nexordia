@@ -16,6 +16,7 @@ import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
     private final ReadNodeWithContextTool readNodeWithContextTool;
+    private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
 
     public AIToolSet() {
         this(createAvailableMaps(), createTextController(), createAttributeController(), createIconController());
@@ -28,12 +29,16 @@ public class AIToolSet {
 
     AIToolSet(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
         this(new SystemMessageBuilder(availableMaps),
-            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader));
+            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader),
+            new SelectedMapAndNodeIdentifiersTool(availableMaps));
     }
 
-    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool) {
+    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool,
+              SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
+        this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
+            selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
     }
 
     public String systemMessageForChat(Object input) {
@@ -44,6 +49,11 @@ public class AIToolSet {
     public ReadNodeWithContextResponse readNodeWithContext(String mapIdentifier, String nodeIdentifier,
                                                            List<ContextSection> contextSections) {
         return readNodeWithContextTool.readNodeWithContext(mapIdentifier, nodeIdentifier, contextSections);
+    }
+
+    @Tool("Get identifiers for the currently selected map and node.")
+    public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers() {
+        return selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers();
     }
 
     private static AvailableMaps createAvailableMaps() {

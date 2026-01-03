@@ -8,6 +8,8 @@
         <string name="ai_gemini_key"/>
         <string name="ai_ollama_service_address"/>
         <boolean name="ai_use_ollama"/>
+        <boolean name="ai_mcp_server_enabled"/>
+        <number name="ai_mcp_server_port" min="1024" max="65535" />
     </separator>
 </tab>
 </tabbed_pane>

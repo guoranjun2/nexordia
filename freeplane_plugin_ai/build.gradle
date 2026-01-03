@@ -1,7 +1,15 @@
+java {
+    targetCompatibility=JavaVersion.VERSION_21
+    sourceCompatibility=JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-parameters'
+}
 dependencies {
     implementation project(':freeplane')
     lib 'dev.langchain4j:langchain4j:1.10.0'
     lib 'dev.langchain4j:langchain4j-open-ai:1.10.0'
     lib 'dev.langchain4j:langchain4j-ollama:1.10.0'
     lib 'dev.langchain4j:langchain4j-google-ai-gemini:1.10.0'
+    lib 'io.fusionauth:java-http:1.4.0'
 }
