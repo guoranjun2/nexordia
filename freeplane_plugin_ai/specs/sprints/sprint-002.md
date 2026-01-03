@@ -114,3 +114,142 @@ end note
   - Verify usage totals update after response events.
   - Verify a tool call event writes to LogUtils.
   - Verify the status line reflects cumulative totals.
+
+## Task: Review llm feedback for read tools
+- **Status:** Implementation Review
+- **Scope:** Apply feedback to the read tool by renaming it to readNodeWithContext, flattening parameters, adding section selectors, and omitting null fields in responses.
+- **Modified production files:**
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ContextSection.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContent.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItem.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItemReader.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ReadNodeWithContextResponse.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ReadNodeWithContextTool.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TextualContent.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AttributesContent.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TagsContent.java
+- **Modified test files:**
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/ReadNodeWithContextToolTest.java
+- **Research summary:**
+```plantuml
+@startuml
+rectangle "Feedback" as Feedback
+rectangle "Decisions" as Decisions
+Feedback --> Decisions : rename read tool\nflatten parameters\nadd context sections\nbreadcrumb path default\nomit null fields
+@enduml
+```
+- **Design:**
+```plantuml
+@startuml
+class AIToolSet {
+  +readNodeWithContext(mapIdentifier, nodeIdentifier, contextSections)
+}
+class ReadNodeWithContextTool
+class ReadNodeWithContextResponse
+enum ContextSection {
+  BREADCRUMB_PATH
+  PARENT_SUMMARY
+  FOCUS_CONTENT
+  CHILD_SUMMARIES
+}
+class AvailableMaps
+class NodeContentItemReader
+class NodeContentItem
+class NodeContent
+
+AIToolSet --> ReadNodeWithContextTool
+ReadNodeWithContextTool --> AvailableMaps
+ReadNodeWithContextTool --> NodeContentItemReader
+ReadNodeWithContextTool --> ReadNodeWithContextResponse
+ReadNodeWithContextTool --> ContextSection
+ReadNodeWithContextResponse --> NodeContentItem
+NodeContentItem --> NodeContent
+
+note right of ReadNodeWithContextTool
+Default sections: breadcrumb_path, focus_content, child_summaries.
+Parent summary is included only when requested.
+end note
+
+note right of NodeContentItem
+JsonInclude NON_NULL omits null fields.
+Node identifiers are always included.
+end note
+@enduml
+```
+- **Test specification:**
+  - Verify default sections include focus content, child summaries, and breadcrumb path.
+  - Verify parent summary is included when requested.
+  - Verify focus content is omitted when not requested.
+  - Verify invalid map identifiers fail fast.
+
+## Task: Add icon content to node responses
+- **Status:** Designing
+- **Scope:** Expose node icons in read responses with icon names and optional emoji decoding for emoji icons.
+- **Research summary:**
+```plantuml
+@startuml
+class IconController
+interface NamedIcon
+interface IconDescription
+class UIIcon
+class MindIcon
+class EmojiIcon
+class IconStoreFactory
+
+IconController --> NamedIcon : getIcons(node, style)
+UIIcon ..|> NamedIcon
+UIIcon ..|> IconDescription
+MindIcon --|> UIIcon
+EmojiIcon --|> MindIcon
+IconStoreFactory --> MindIcon : createMindIcon(name)
+IconStoreFactory --> EmojiIcon : createEmojiIcons()
+
+note right of UIIcon
+getTranslatedDescription uses TextUtils
+and falls back to capitalized name.
+end note
+
+note right of EmojiIcon
+EmojiIcon stores the emoji character and
+overrides getTranslatedDescription to return
+the description key. File names are hex
+code points used by emoji assets.
+end note
+@enduml
+```
+- **Design:**
+```plantuml
+@startuml
+class NodeContent
+class IconsContent
+class IconEntry
+class IconsContentReader
+class IconController
+interface NamedIcon
+interface IconDescription
+class EmojiIcon
+class NodeContentReader
+
+NodeContentReader --> IconsContentReader
+IconsContentReader --> IconController
+IconsContentReader --> NamedIcon
+IconsContent --> IconEntry
+IconEntry ..> EmojiIcon : optional emoji decoding
+IconEntry ..> IconDescription : optional description
+
+note right of NodeContent
+Add iconsContent for FULL preset only.
+BRIEF preset stays text only.
+end note
+
+note right of IconsContentReader
+Use IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)
+to include visible icons, not only node-local icons.
+end note
+@enduml
+```
+- **Test specification:**
+  - Verify icon entries include name and file for each icon.
+  - Verify emoji icons include an emoji value when decoding is enabled.
+  - Verify no icons content is returned for BRIEF preset.

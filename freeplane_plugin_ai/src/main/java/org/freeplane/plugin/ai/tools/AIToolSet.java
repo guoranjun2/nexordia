@@ -1,5 +1,6 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.List;
 import java.util.Objects;
 
 import dev.langchain4j.agent.tool.Tool;
@@ -14,8 +15,7 @@ import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
 public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
-    private final ReadNodeContentTool readNodeContentTool;
-    private final BreadcrumbsTool breadcrumbsTool;
+    private final ReadNodeWithContextTool readNodeWithContextTool;
 
     public AIToolSet() {
         this(createAvailableMaps(), createTextController(), createAttributeController(), createIconController());
@@ -28,24 +28,22 @@ public class AIToolSet {
 
     AIToolSet(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
         this(new SystemMessageBuilder(availableMaps),
-            new ReadNodeContentTool(availableMaps, nodeContentItemReader),
-            new BreadcrumbsTool(availableMaps, nodeContentItemReader));
+            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader));
     }
 
-    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeContentTool readNodeContentTool,
-              BreadcrumbsTool breadcrumbsTool) {
+    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
-        this.readNodeContentTool = Objects.requireNonNull(readNodeContentTool, "readNodeContentTool");
-        this.breadcrumbsTool = Objects.requireNonNull(breadcrumbsTool, "breadcrumbsTool");
+        this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
     }
 
     public String systemMessageForChat(Object input) {
         return systemMessageBuilder.buildForChat();
     }
 
-    @Tool("Read node content with parent and child context.")
-    public ReadNodeContentResponse readNodeContent(ReadNodeContentRequest request) {
-        return readNodeContentTool.readNodeContent(request);
+    @Tool("Read node with context using selected sections.")
+    public ReadNodeWithContextResponse readNodeWithContext(String mapIdentifier, String nodeIdentifier,
+                                                           List<ContextSection> contextSections) {
+        return readNodeWithContextTool.readNodeWithContext(mapIdentifier, nodeIdentifier, contextSections);
     }
 
     private static AvailableMaps createAvailableMaps() {
@@ -96,11 +94,6 @@ public class AIToolSet {
         NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader);
         return new NodeContentItemReader(nodeContentReader);
-    }
-
-    @Tool("Get breadcrumbs from the root to a node.")
-    public BreadcrumbsResponse getBreadcrumbs(BreadcrumbsRequest request) {
-        return breadcrumbsTool.getBreadcrumbs(request);
     }
 
     // @Tool("Return a flat list of nodes under a branch.")

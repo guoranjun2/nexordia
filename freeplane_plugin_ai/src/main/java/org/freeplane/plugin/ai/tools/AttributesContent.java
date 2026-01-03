@@ -1,10 +1,12 @@
 package org.freeplane.plugin.ai.tools;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public final class AttributesContent {
     private final List<AttributeEntry> attributes;
 

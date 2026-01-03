@@ -30,6 +30,16 @@ public class NodeContentItemReader {
         return new NodeContentItem(nodeIdentifier, content, qualifiers);
     }
 
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContent content,
+                                               boolean includesNodeIdentifiers) {
+        if (nodeModel == null) {
+            return null;
+        }
+        String nodeIdentifier = includesNodeIdentifiers ? nodeModel.createID() : null;
+        List<String> qualifiers = buildQualifiers(nodeModel);
+        return new NodeContentItem(nodeIdentifier, content, qualifiers);
+    }
+
     private List<String> buildQualifiers(NodeModel nodeModel) {
         List<String> qualifiers = new ArrayList<>();
         if (SummaryNode.isSummaryNode(nodeModel)) {

@@ -1,8 +1,10 @@
 package org.freeplane.plugin.ai.tools;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public final class TextualContent {
     private final String text;
     private final String details;
