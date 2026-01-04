@@ -116,7 +116,7 @@ end note
   - Verify the status line reflects cumulative totals.
 
 ## Task: Review llm feedback for read tools
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Apply feedback to the read tool by renaming it to readNodeWithContext, flattening parameters, adding section selectors, and omitting null fields in responses.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
@@ -220,7 +220,7 @@ end note
 ```
 
 ## Task: Add selection identifiers tool
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Add a tool that returns the currently selected map identifier, selected node identifier, and root node identifier.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
@@ -311,7 +311,7 @@ end note
   - Verify no icons content is returned for BRIEF preset.
 
 ## Task: Model Context Protocol server
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Expose existing read tools through a Model Context Protocol server over an HTTP endpoint bound to the local interface, with startup controlled by preferences.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/Activator.java
@@ -408,7 +408,7 @@ end note
   - Verify invalid tool name returns a protocol error response.
 
 ## Task: Extend readNodeWithContext content selection and optional qualifiers
-- **Status:** Designing
+- **Status:** Finished
 - **Scope:** Redesign the read tool to accept list-only node identifiers and return list-only responses in the same order, add depth control for full content and summaries, enforce a total text budget by omitting nodes instead of truncating values, and make qualifiers optional.
 - **Research summary:**
   - AI map exploration benefits from list-only requests to reduce round trips.
@@ -518,7 +518,7 @@ ReadNodesWithContextItem --> Omissions
   - Verify omissions include omissionReasons with `TEXT_BUDGET` when budget is exceeded.
 
 ## Task: Search nodes using NodeContentRequest scope
-- **Status:** Designing
+- **Status:** Finished
 - **Scope:** Add a search tool that accepts subtree roots and pagination, scopes search using NodeContentRequest, and enforces a total text budget by omitting results instead of truncating values.
 - **Research summary:**
   - Search should be independent from map filter state to avoid hidden scope changes.

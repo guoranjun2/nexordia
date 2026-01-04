@@ -8,15 +8,15 @@ Progressive disclosure units
 - Breadcrumb path: the chain from the root to the current node to preserve global context.
 
 Node data layers to include
-- Textual content: text, details, and note.
+- Textual content: text, details, and note, returned as plain text for reading.
 - Attributes: list of name and value pairs, allowing repeated names.
 - Tags: a list of tag names assigned to the node.
 
 Map identifier policy
-- Use a session scoped map identifier for all tool calls.
+- Use a session scoped mapIdentifier for all tool calls.
 - Map identifiers are opaque strings that are valid only while the map is open.
-- When a map is reopened, it receives a new map identifier.
-- Tool requests default to the current map when map_identifier is empty.
+- When a map is reopened, it receives a new mapIdentifier.
+- Use getSelectedMapAndNodeIdentifiers to discover the current map identifier, selected node identifier, and root node identifier.
 
 Interaction protocol
 - Summarize and verify: return a brief summary of the provided branch and confirm understanding before proposing changes.
@@ -25,155 +25,101 @@ Interaction protocol
 
 Tooling specification
 Read tools
-- read_node_context
-  - Purpose: return a node with surrounding context and optional layers.
+- readNodeWithContext
+  - Purpose: return nodes with surrounding context and optional layers.
   - Parameters:
-    - map_identifier: optional, defaults to the current map.
-    - node_identifier: identifier of the target node; default to the current selection when empty.
-    - depth: how many descendant levels to include.
-    - include_notes: include note content.
-    - include_details: include node details.
-    - include_attributes: include attributes.
-    - include_ancestors: include the breadcrumb path to the root.
-    - include_node_identifiers: include node identifiers in output.
-    - max_nodes: cap the number of nodes returned to avoid large responses.
-    - output_format: structured text format such as markdown or a structured data object.
-- get_breadcrumbs
-  - Purpose: return the path from the root to a node.
-  - Parameters:
-    - map_identifier: optional, defaults to the current map.
-    - node_identifier.
-    - include_node_identifiers: include node identifiers in the breadcrumb list.
-- search_map
-  - Purpose: find nodes by text across the map or all open maps.
-  - Parameters:
-    - map_identifier: optional, defaults to all open maps when empty.
-    - query_text.
-    - scope_node_identifier: optional root for scoped search.
-    - include_notes.
-    - include_details.
-    - include_attributes.
-    - match_mode: exact, contains, regex.
-    - case_sensitive.
-    - max_results.
-- get_flat_list
-  - Purpose: return a flat list of nodes under a selected branch.
-  - Parameters:
-    - map_identifier: optional, defaults to the current map.
-    - node_identifier.
-    - recursive: include all descendants when true.
-    - include_notes.
-    - include_details.
-    - include_attributes.
-    - include_breadcrumbs.
-    - max_nodes.
+    - mapIdentifier: required.
+    - nodeIdentifiers: list of node identifiers; default to the root node when empty.
+    - contextSections: list of BREADCRUMB_PATH, PARENT_SUMMARY, QUALIFIERS.
+    - fullContentDepth: depth of full content.
+    - summaryDepth: depth of brief summaries beyond fullContentDepth.
+    - maximumTotalTextCharacters: total response budget.
+    - focusNodeContentRequest: optional override for focus nodes.
+    - parentNodeContentRequest: optional override for parent summary nodes.
+    - childNodeContentRequest: optional override for child nodes.
   - Output:
-    - items: list of { node_identifier, content, breadcrumbs } where content includes textualContent, attributesContent, tagsContent.
-- list_search_properties
-  - Purpose: list properties that can be used for both search and filter conditions, excluding attribute conditions.
+    - mapIdentifier, items, and omissions for omitted focus nodes.
+- getSelectedMapAndNodeIdentifiers
+  - Purpose: return identifiers for the current map, selected node, and root node.
+Search tools
+- searchNodes
+  - Purpose: find nodes by content within a map or subtree.
   - Parameters:
-    - map_identifier: optional, defaults to the current map.
+    - mapIdentifier: required.
+    - queryText: required.
+    - subtreeRootNodeIdentifiers: optional scope roots.
+    - nodeContentRequestForSearch: selects which content fields are searched.
+    - matchingMode: CONTAINS, EQUALS, REGULAR_EXPRESSION.
+    - caseSensitivity: CASE_INSENSITIVE, CASE_SENSITIVE.
+    - resultSections: BREADCRUMB_PATH.
+    - offset, limit.
+    - maximumTotalTextCharacters: total response budget.
   - Output:
-    - properties: list of { name } using English property names accepted by the tools.
-- list_search_conditions_for_property
-  - Purpose: list valid conditions and value input modes for a property.
-  - Parameters:
-    - property_name: required.
-  - Output:
-    - conditions: list of { name, value_input_mode, case_sensitive_option_allowed, approximate_matching_option_allowed, ignore_diacritics_option_allowed }.
-  - Reject any property_name or condition_name that is not returned by the discovery tools.
-- search_nodes_by_condition
-  - Purpose: search nodes using the same condition model that powers filtering.
-  - Parameters:
-    - map_identifier: required.
-    - condition: { property_name, condition_name, value, case_sensitive, approximate_matching, ignore_diacritics }.
-    - scope_node_identifier: optional root for scoped search.
-    - maximum_results: optional cap.
-  - Output:
-    - node_identifiers: list of matching node identifiers.
-- list_attribute_names_for_map
-  - Purpose: list available attribute names for a map.
-  - Parameters:
-    - map_identifier: required.
-  - Output:
-    - attribute_names: list of strings.
-- search_attributes_by_name_and_value
-  - Purpose: search nodes by attribute name and value.
-  - Parameters:
-    - map_identifier: required.
-    - attribute_name: required.
-    - attribute_value: required.
-  - Output:
-    - node_identifiers: list of matching node identifiers.
-- generate_search_overview
+    - mapIdentifier, results, and omissions.
+Overview tools
+- generateSearchOverview
   - Purpose: generate a compact map overview and index for targeted search.
   - Parameters:
-    - map_identifier: required.
-    - focus_request: optional; if provided, prioritize terms and sections relevant to the request.
-    - model_identifier: optional; selects a cheaper or faster model for overview generation.
-    - maximum_keyword_count: optional upper bound for keyword entries.
-    - maximum_section_count: optional upper bound for section entries.
+    - mapIdentifier: required.
+    - focusRequest: optional; if provided, prioritize terms and sections relevant to the request.
+    - modelIdentifier: optional; selects a cheaper or faster model for overview generation.
+    - maximumKeywordCount: optional upper bound for keyword entries.
+    - maximumSectionCount: optional upper bound for section entries.
   - Output:
     - summary: short abstract of what the map is about.
     - themes: list of high level topics.
-    - sections: list of { node_identifier, node_text, keywords }.
-    - keywords: list of { term, node_identifiers }.
+    - sections: list of { nodeIdentifier, nodeText, keywords }.
+    - keywords: list of { term, nodeIdentifiers }.
 
-AI only filter tools
-- set_ai_only_filter_condition
-  - Purpose: set a filter condition that affects only AI tool calls and not the user view.
+Attribute tools
+- listAttributeNamesForMap
+  - Purpose: list available attribute names for a map.
   - Parameters:
-    - map_identifier: required.
-    - condition: { property_name, condition_name, value, case_sensitive, approximate_matching, ignore_diacritics }.
+    - mapIdentifier: required.
   - Output:
-    - active_condition: the active ai only filter condition.
-- get_ai_only_filter_condition
-  - Purpose: retrieve the active ai only filter condition for transparency.
+    - attributeNames: list of strings.
+- searchAttributesByNameAndValue
+  - Purpose: search nodes by attribute name and value.
   - Parameters:
-    - map_identifier: required.
+    - mapIdentifier: required.
+    - attributeName: required.
+    - attributeValue: required.
   - Output:
-    - active_condition: condition object or null.
-- clear_ai_only_filter_condition
-  - Purpose: clear the active ai only filter condition.
-  - Parameters:
-    - map_identifier: required.
-  - Output:
-    - cleared: boolean confirmation.
+    - nodeIdentifiers: list of matching node identifiers.
 
 Action tools
-- create_nodes
+- createNodes
   - Purpose: add new nodes under a target node, including full subtrees.
   - Parameters:
-    - map_identifier: optional, defaults to the current map.
-    - target_parent_identifier.
-    - insert_position: BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, AFTER_LAST_CHILD.
-    - reference_node_identifier: required when insert_position is BEFORE_NODE or AFTER_NODE.
+    - mapIdentifier: optional, defaults to the current map.
+    - targetParentIdentifier.
+    - insertPosition: BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, AFTER_LAST_CHILD.
+    - referenceNodeIdentifier: required when insertPosition is BEFORE_NODE or AFTER_NODE.
     - nodes: list of node definitions to create, each containing content and recursive children.
   - Expected output: a structured response with created node identifiers in the order they were created.
-- apply_attributes
+- applyAttributes
   - Purpose: apply attributes to selected nodes based on analysis or rules.
   - Parameters:
-    - map_identifier: optional, defaults to the current map.
+    - mapIdentifier: optional, defaults to the current map.
     - schema: list of allowed attribute names.
     - updates: list of node identifiers with attribute entries.
-    - merge_mode: replace or merge.
-    - remove_missing: remove attributes not present in the update when true.
-- move_nodes
+    - mergeMode: replace or merge.
+    - removesMissing: remove attributes not present in the update when true.
+- moveNodes
   - Purpose: move nodes into a target parent for restructuring and cleanup.
   - Parameters:
-    - map_identifier: optional, defaults to the current map.
-    - node_identifiers: list of nodes to move.
-    - target_parent_identifier.
-    - insert_position: BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, AFTER_LAST_CHILD.
-    - reference_node_identifier: required when insert_position is BEFORE_NODE or AFTER_NODE.
-    - preserve_order: keep current order when true.
+    - mapIdentifier: optional, defaults to the current map.
+    - nodeIdentifiers: list of nodes to move.
+    - targetParentIdentifier.
+    - insertPosition: BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, AFTER_LAST_CHILD.
+    - referenceNodeIdentifier: required when insertPosition is BEFORE_NODE or AFTER_NODE.
+    - preservesOrder: keep current order when true.
 
 Chat workflow
 - Chat should use read tools to gather context, then answer in the chat pane without modifying the map.
 - Suggested changes are reviewed in chat before any tool writes are executed.
-- When map scope is unclear, call generate_search_overview with the current user request to build a targeted index.
-- Use list_search_properties and list_search_conditions_for_property to build valid condition requests before calling search_nodes_by_condition.
-- Apply ai only filter conditions to narrow follow up reads without changing the user visible filter.
+- When map scope is unclear, call generateSearchOverview with the current user request to build a targeted index.
+- Use searchNodes to locate relevant nodes, then readNodeWithContext for focused context before proposing edits.
 - Support iterative structural extraction in chat by allowing branch scoped rewrites after user feedback.
 
 Minimum viable product scope and phased work
@@ -194,16 +140,16 @@ Response formats and identifiers
 - Tool responses should be strict and machine readable to allow reliable parsing and changes.
 - Every change should reference a stable node identifier so the editor applies changes to the correct node.
 - Prefer explicit confirmation steps for destructive or large changes.
-- All requests and responses include map_identifier.
+- All requests and responses include mapIdentifier.
 
-create_nodes response format
+createNodes response format
 - Response example:
   - {
-      "action": "create_nodes",
-      "map_identifier": "MAP_IDENTIFIER",
-      "target_parent_identifier": "NODE_IDENTIFIER_PARENT",
-      "insert_position": "AFTER_LAST_CHILD",
-      "reference_node_identifier": "NODE_IDENTIFIER_SIBLING",
+      "action": "createNodes",
+      "mapIdentifier": "MAP_IDENTIFIER",
+      "targetParentIdentifier": "NODE_IDENTIFIER_PARENT",
+      "insertPosition": "AFTER_LAST_CHILD",
+      "referenceNodeIdentifier": "NODE_IDENTIFIER_SIBLING",
       "nodes": [
         {
           "content": {
@@ -249,7 +195,7 @@ create_nodes response format
       ]
     }
 - nodes supports recursive children to allow full subtree creation.
-- insert_position supports BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, or AFTER_LAST_CHILD.
+- insertPosition supports BEFORE_NODE, AFTER_NODE, BEFORE_FIRST_CHILD, or AFTER_LAST_CHILD.
 
 Change management and review
 - AI edited nodes should be tagged with a temporary state icon for easy review.

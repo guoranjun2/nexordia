@@ -9,16 +9,19 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 
 ### Epic 1: Read Context and Navigation Tools
 **Goal:** Implement core read tools used in chat workflows.
-*   **Status:** Backlog
+*   **Status:** In progress
 *   **User Story:** As an AI assistant, I want to read node context and navigate paths so I can answer questions accurately.
 *   **Tasks:**
     *   [x] Read context request hierarchy and presets.
-    *   [?] Implement reading methods.
+    *   [x] Implement reading methods.
     *   [x] AvailableMaps registry for map identifiers.
     *   [x] System message map identifiers for reading methods.
     *   [x] Node content qualifiers for summary nodes.
-    *   [?] Implement get_breadcrumbs to return the root to node path.
     *   [?] Remove the Gson dependency from the ai plugin and rely on Jackson provided by LangChain4j.
+    *   [x] Review llm feedback for read tools and propose revisions.
+    *   [x] Return textual content as plain text for read tools.
+    *   [ ] Add icon content to node responses with icon names and optional emoji decoding.
+    *   [x] Add selected map, node, and root node identifiers tool.
 
 ### Epic 2: Map Editing Tools
 **Goal:** Implement the map modification tools used after chat approval.
@@ -29,25 +32,14 @@ We will implement the AI tool capabilities in epics, refining each one before ex
     *   [ ] Implement apply_attributes with merge and remove_missing options.
     *   [ ] Implement move_nodes with ordering and positioning options.
 
-### Epic 3: Condition Discovery and Validation
-**Goal:** Provide property and condition names for AI tools using the same translation text as the filter UI, backed by the existing condition controllers.
-*   **Status:** Backlog
-*   **User Story:** As an AI assistant, I want to discover valid properties and conditions so I can build valid search requests.
+### Epic 3: Content Search Tools
+**Goal:** Provide search tools that use NodeContentRequest scope and pagination.
+*   **Status:** Finished
+*   **User Story:** As an AI assistant, I want to search nodes by content with explicit scope so I can jump directly to relevant areas.
 *   **Tasks:**
-    *   [ ] Define the translation text mapping for property and condition values backed by controller keys.
-    *   [ ] Reuse the filter UI translation pipeline so the tool outputs match existing filter names.
-    *   [ ] Implement list_search_properties and exclude attribute conditions.
-    *   [ ] Implement list_search_conditions_for_property with value_input_mode and option flags.
-    *   [ ] Reject property_name and condition_name values that are not returned by the discovery tools.
-
-### Epic 4: Condition Based Search Execution
-**Goal:** Execute searches using the same condition model as filtering.
-*   **Status:** Backlog
-*   **User Story:** As an AI assistant, I want to search nodes using controller backed conditions so results match Freeplane filtering behavior.
-*   **Tasks:**
-    *   [ ] Implement search_nodes_by_condition with scope support and result limits.
-    *   [ ] Map translation text names back to controller keys when building conditions.
-    *   [ ] Define consistent behavior for conditions that require no value.
+    *   [x] Implement search_nodes with subtree roots, matching mode, and pagination.
+    *   [x] Support case sensitivity for contains, equals, and regular expression matching.
+    *   [x] Enforce response text budget by omitting results instead of truncating values.
 
 ### Epic 5: Search Overview Tool
 **Goal:** Provide a compact overview and index using a selectable model.
@@ -58,14 +50,14 @@ We will implement the AI tool capabilities in epics, refining each one before ex
     *   [ ] Define chunking and aggregation rules for themes, sections, and keywords.
     *   [ ] Ensure the summary and index stay within the requested size limits.
 
-### Epic 6: AI Only Filter State
-**Goal:** Store and apply an AI only filter without changing the user visible filter state.
+### Epic 6: Editable Content for Safe Edits
+**Goal:** Provide raw content plus format metadata so edits do not destroy formulas or markup.
 *   **Status:** Backlog
-*   **User Story:** As an AI assistant, I want to narrow subsequent tool calls without altering the user view.
+*   **User Story:** As an AI assistant, I want access to editable content with format metadata so I can make safe edits.
 *   **Tasks:**
-    *   [ ] Implement set_ai_only_filter_condition, get_ai_only_filter_condition, and clear_ai_only_filter_condition.
-    *   [ ] Store filter state per map identifier.
-    *   [ ] Apply the AI only filter to AI tool read and search operations.
+    *   [ ] Define EditableContentRequest and EditableContent response structures.
+    *   [ ] Expose raw, transformed, and plain text representations for text, details, note, and attributes.
+    *   [ ] Expose format metadata such as content type, markup detection, and formula detection.
 
 ### Epic 7: Attribute Tools
 **Goal:** Provide attribute name discovery and attribute search as separate tools.
@@ -80,4 +72,4 @@ We will implement the AI tool capabilities in epics, refining each one before ex
 *   **Status:** Backlog
 *   **User Story:** As a user, I want to control chat memory and see token usage and tool call logs so I can monitor context usage and restart sessions.
 *   **Tasks:**
-    *   [?] Add chat memory controls, a chat status line for token usage, and a tool call log.
+    *   [x] Add chat memory controls, a chat status line for token usage, and a tool call log.
