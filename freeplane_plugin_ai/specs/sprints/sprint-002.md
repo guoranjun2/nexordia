@@ -242,26 +242,6 @@ end note
   - Verify user icons return the icon path as the description.
   - Verify descriptions preserve the node icon order.
 
-## Task: Add map icon usage list tool
-- **Status:** Designing
-- **Scope:** Provide a tool that lists effective icons used in the current map (including style icons), returning only English descriptions and excluding state icons and tags to keep the list relevant for LLM search and selection.
-- **Research summary:**
-  - `IconRegistry` tracks icons used on a map during the current session and powers icon filter dialogs. It is not a full icon catalog.
-  - `IconRegistry.getIconsAsListModel()` returns a `SortedComboBoxModel<NamedIcon>` containing the registry entries.
-  - `IconController` state icon providers can opt in to registry inclusion, so state icons may appear in the registry. Tags are stored separately and do not appear in `IconRegistry`.
-  - Icons can be attached directly to nodes (`NodeModel.getIcons()`) or inherited from logical styles (`IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)` merges style icons). The style map shares the parent map icon registry, so style icons are included in the registry.
-- **Design:**
-  - Add a new tool that takes a map identifier and returns a list of icon descriptions used in the map.
-  - Use the same description resolution logic as `IconsContentReader` (English description from `Resources_en.properties`, emoji decoding, user icon relative path).
-  - Include icons from both explicit node icons and style icons (the registry aggregates both via the shared style map).
-  - Filter out state icons by keeping only `MindIcon` instances and excluding any icon whose file name appears in the `icons.state` property. Tags are not included in the registry, so no tag filtering is needed.
-  - Document that icon descriptions are always English; matching should be done against English descriptions by default.
-- **Test specification:**
-  - Verify the tool returns English descriptions in a stable order.
-  - Verify state icons are excluded from the response.
-  - Verify emoji icons return the decoded Unicode character.
-  - Verify user icons return relative file paths.
-
 ## Task: Add selection identifiers tool
 - **Status:** Finished
 - **Scope:** Add a tool that returns the currently selected map identifier, selected node identifier, and root node identifier.
@@ -514,7 +494,7 @@ ReadNodesWithContextItem --> Omissions
 - **Request parameters:**
   - `mapIdentifier`: Map identifier string.
   - `nodeIdentifiers`: List of node identifier strings. Order is preserved in the response.
-  - `contextSections`: List of ContextSection values. Default: `BREADCRUMB_PATH`. Supported values: `BREADCRUMB_PATH`, `PARENT_SUMMARY`, `QUALIFIERS`.
+  - `contextSections`: List of ContextSection values. Default: empty list. Supported values: `BREADCRUMB_PATH`, `PARENT_SUMMARY`, `QUALIFIERS`.
   - `fullContentDepth`: Integer greater than or equal to 0. Default 0. Depth 0 is the requested node.
   - `summaryDepth`: Integer greater than or equal to 0. Default 1. This is the number of additional levels beyond fullContentDepth that return brief summaries. For example fullContentDepth 1 and summaryDepth 1 yields full content at depths 0–1 and brief summaries at depth 2.
   - `maximumTotalTextCharacters`: Integer. Default 65536.
@@ -664,6 +644,43 @@ SearchNodesResponse --> Omissions
   - Verify matching across all fields (briefText, text, details, note, attributes, tags, icons).
   - Verify the matcher honors matching mode and case sensitivity for each field.
   - Verify `SearchNodesTool` uses the shared matcher without changing result ordering or pagination behavior.
+
+## Task: Add map icon usage list tool
+- **Status:** Designing
+- **Scope:** Provide a tool that lists effective icons used in the current map (including style icons), returning only English descriptions and excluding state icons and tags to keep the list relevant for LLM search and selection.
+- **Research summary:**
+  - `IconRegistry` tracks icons used on a map during the current session and powers icon filter dialogs. It is not a full icon catalog.
+  - `IconRegistry.getIconsAsListModel()` returns a `SortedComboBoxModel<NamedIcon>` containing the registry entries.
+  - `IconController` state icon providers can opt in to registry inclusion, so state icons may appear in the registry. Tags are stored separately and do not appear in `IconRegistry`.
+  - Icons can be attached directly to nodes (`NodeModel.getIcons()`) or inherited from logical styles (`IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)` merges style icons). The style map shares the parent map icon registry, so style icons are included in the registry.
+- **Design:**
+  - Add a new tool that takes a map identifier and returns a list of icon descriptions used in the map.
+  - Use the same description resolution logic as `IconsContentReader` (English description from `Resources_en.properties`, emoji decoding, user icon relative path).
+  - Include icons from both explicit node icons and style icons (the registry aggregates both via the shared style map).
+  - Filter out state icons by keeping only `MindIcon` instances and excluding any icon whose file name appears in the `icons.state` property. Tags are not included in the registry, so no tag filtering is needed.
+  - Document that icon descriptions are always English; matching should be done against English descriptions by default.
+- **Test specification:**
+  - Verify the tool returns English descriptions in a stable order.
+  - Verify state icons are excluded from the response.
+  - Verify emoji icons return the decoded Unicode character.
+  - Verify user icons return relative file paths.
+
+## Task: Render assistant responses as Markdown and preserve copy line breaks
+- **Status:** Designing
+- **Scope:** Render assistant responses as Markdown in the chat pane, preserve line breaks when copying, and define the expected message format for assistant output.
+- **Research summary:**
+  - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`, and default clipboard export can drop line breaks when pasted into plain text targets.
+  - The Freeplane Markdown plugin already contains a Markdown to HyperText Markup Language converter that can be exported for reuse by the AI plugin.
+  - Assistant responses currently display as plain text, so Markdown markers remain visible and line breaks depend on direct newline rendering.
+- **Design:**
+  - Request Markdown for assistant responses in the system message and document that the output format is Markdown by default.
+  - Convert Markdown to HyperText Markup Language for display using the Markdown plugin converter and fall back to escaped plain text if conversion fails.
+  - Preserve the original Markdown text per message and use a custom `TransferHandler` to copy a plain text rendering with line breaks intact.
+  - Keep each message wrapped in a single HyperText Markup Language element with the existing message class to maintain styling.
+- **Test specification:**
+  - Verify Markdown headers, lists, and emphasis render as expected in the output HyperText Markup Language.
+  - Verify copying a message yields plain text with line breaks preserved.
+  - Verify disabling Markdown rendering falls back to plain text output and copy behavior.
 
 ## Task: Add editable content for safe edits
 - **Status:** Designing
