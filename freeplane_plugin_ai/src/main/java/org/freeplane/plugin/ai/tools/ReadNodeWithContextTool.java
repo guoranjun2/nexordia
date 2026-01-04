@@ -73,8 +73,6 @@ public class ReadNodeWithContextTool {
         List<ReadNodesWithContextItem> items = new ArrayList<>();
         int budgetUsed = 0;
         int omittedFocusNodeCount = 0;
-        int omittedChildCount = 0;
-        int omittedDescendantCount = 0;
         for (NodeModel focusNode : focusNodes) {
             ReadNodesWithContextItem item = buildItemForFocusNode(
                 focusNode,
@@ -100,22 +98,10 @@ public class ReadNodeWithContextTool {
                 }
                 budgetUsed += itemSize;
             }
-            Omissions omissions = item.getOmissions();
-            if (omissions != null) {
-                omittedChildCount += safeCount(omissions.getOmittedChildCount());
-                omittedDescendantCount += safeCount(omissions.getOmittedDescendantCount());
-            }
             items.add(item);
         }
-        Omissions responseOmissions = buildResponseOmissions(
-            omittedFocusNodeCount, omittedChildCount, omittedDescendantCount);
-        if (responseOmissions != null && !items.isEmpty()) {
-            ReadNodesWithContextItem lastItem = items.get(items.size() - 1);
-            Omissions merged = mergeOmissions(lastItem.getOmissions(), responseOmissions);
-            items.set(items.size() - 1, new ReadNodesWithContextItem(
-                lastItem.getNodes(), lastItem.getParentNode(), lastItem.getBreadcrumbPath(), merged));
-        }
-        return new ReadNodesWithContextResponse(mapIdentifierValue, items);
+        Omissions responseOmissions = buildResponseOmissions(omittedFocusNodeCount);
+        return new ReadNodesWithContextResponse(mapIdentifierValue, items, responseOmissions);
     }
 
     private ReadNodesWithContextItem buildItemForFocusNode(NodeModel focusNode,
@@ -212,11 +198,8 @@ public class ReadNodeWithContextTool {
         if (depth == 0) {
             content = nodeContentItemReader.readNodeContent(nodeModel, focusNodeContentRequest, NodeContentPreset.FULL);
         } else if (depth <= fullContentDepth) {
-            content = nodeContentItemReader.readNodeContent(nodeModel, childNodeContentRequest, NodeContentPreset.BRIEF);
+            content = nodeContentItemReader.readNodeContent(nodeModel, childNodeContentRequest, NodeContentPreset.FULL);
         } else {
-            content = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
-        }
-        if (depth > fullContentDepth) {
             content = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
         }
         List<String> qualifiers = includeQualifiers ? buildQualifiers(nodeModel) : null;
@@ -314,37 +297,12 @@ public class ReadNodeWithContextTool {
         return sections;
     }
 
-    private Omissions buildResponseOmissions(int omittedFocusNodeCount, int omittedChildCount,
-                                             int omittedDescendantCount) {
-        if (omittedFocusNodeCount == 0 && omittedChildCount == 0 && omittedDescendantCount == 0) {
+    private Omissions buildResponseOmissions(int omittedFocusNodeCount) {
+        if (omittedFocusNodeCount == 0) {
             return null;
         }
-        return new Omissions(omittedFocusNodeCount, omittedChildCount, omittedDescendantCount, null,
+        return new Omissions(omittedFocusNodeCount, null, null, null,
             Collections.singletonList(OmissionReason.TEXT_BUDGET));
-    }
-
-    private Omissions mergeOmissions(Omissions first, Omissions second) {
-        if (first == null) {
-            return second;
-        }
-        if (second == null) {
-            return first;
-        }
-        Integer omittedFocusNodeCount = sumCounts(first.getOmittedFocusNodeCount(), second.getOmittedFocusNodeCount());
-        Integer omittedChildCount = sumCounts(first.getOmittedChildCount(), second.getOmittedChildCount());
-        Integer omittedDescendantCount = sumCounts(first.getOmittedDescendantCount(), second.getOmittedDescendantCount());
-        List<OmissionReason> reasons = new ArrayList<>();
-        if (first.getOmissionReasons() != null) {
-            reasons.addAll(first.getOmissionReasons());
-        }
-        if (second.getOmissionReasons() != null) {
-            for (OmissionReason reason : second.getOmissionReasons()) {
-                if (!reasons.contains(reason)) {
-                    reasons.add(reason);
-                }
-            }
-        }
-        return new Omissions(omittedFocusNodeCount, omittedChildCount, omittedDescendantCount, null, reasons);
     }
 
     private int measureSerializedLength(Object item) {
@@ -387,14 +345,4 @@ public class ReadNodeWithContextTool {
         return value;
     }
 
-    private int safeCount(Integer value) {
-        return value == null ? 0 : value;
-    }
-
-    private Integer sumCounts(Integer first, Integer second) {
-        if (first == null && second == null) {
-            return null;
-        }
-        return safeCount(first) + safeCount(second);
-    }
 }

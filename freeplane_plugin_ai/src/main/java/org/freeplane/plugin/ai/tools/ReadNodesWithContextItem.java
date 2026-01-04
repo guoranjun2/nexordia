@@ -11,17 +11,17 @@ public final class ReadNodesWithContextItem {
     private final List<NodeDepthItem> nodes;
     private final NodeContentItem parentNode;
     private final String breadcrumbPath;
-    private final Omissions omissions;
+    private final Omissions childOmissions;
 
     @JsonCreator
     public ReadNodesWithContextItem(@JsonProperty("nodes") List<NodeDepthItem> nodes,
                                     @JsonProperty("parentNode") NodeContentItem parentNode,
                                     @JsonProperty("breadcrumbPath") String breadcrumbPath,
-                                    @JsonProperty("omissions") Omissions omissions) {
+                                    @JsonProperty("childOmissions") Omissions childOmissions) {
         this.nodes = nodes;
         this.parentNode = parentNode;
         this.breadcrumbPath = breadcrumbPath;
-        this.omissions = omissions;
+        this.childOmissions = childOmissions;
     }
 
     public List<NodeDepthItem> getNodes() {
@@ -36,7 +36,7 @@ public final class ReadNodesWithContextItem {
         return breadcrumbPath;
     }
 
-    public Omissions getOmissions() {
-        return omissions;
+    public Omissions getChildOmissions() {
+        return childOmissions;
     }
 }

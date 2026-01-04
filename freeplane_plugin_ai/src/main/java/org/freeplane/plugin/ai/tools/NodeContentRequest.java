@@ -4,8 +4,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class NodeContentRequest {
+    @JsonProperty(required = false)
     private final TextualContentRequest textualContentRequest;
+    @JsonProperty(required = false)
     private final AttributesContentRequest attributesContentRequest;
+    @JsonProperty(required = false)
     private final TagsContentRequest tagsContentRequest;
 
     @JsonCreator

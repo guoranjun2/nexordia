@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -21,6 +22,7 @@ public class SearchNodesTool {
     private static final int DEFAULT_LIMIT = 200;
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
+    private static final SearchCaseSensitivity DEFAULT_CASE_SENSITIVITY = SearchCaseSensitivity.CASE_INSENSITIVE;
 
     private final AvailableMaps availableMaps;
     private final NodeContentItemReader nodeContentItemReader;
@@ -51,8 +53,11 @@ public class SearchNodesTool {
         SearchMatchingMode matchingMode = request.getMatchingMode() == null
             ? SearchMatchingMode.CONTAINS
             : request.getMatchingMode();
+        SearchCaseSensitivity caseSensitivity = request.getCaseSensitivity() == null
+            ? DEFAULT_CASE_SENSITIVITY
+            : request.getCaseSensitivity();
         Pattern regularExpression = matchingMode == SearchMatchingMode.REGULAR_EXPRESSION
-            ? compileRegularExpression(queryText)
+            ? compileRegularExpression(queryText, caseSensitivity)
             : null;
         List<SearchResultSection> resultSections = request.getResultSections();
         boolean includesBreadcrumbPath = resultSections != null && resultSections.contains(SearchResultSection.BREADCRUMB_PATH);
@@ -68,7 +73,7 @@ public class SearchNodesTool {
         List<NodeModel> searchRoots = resolveSearchRoots(mapModel, request.getSubtreeRootNodeIdentifiers());
         List<NodeModel> matches = new ArrayList<>();
         for (NodeModel root : searchRoots) {
-            collectMatches(root, queryText, matchingMode, regularExpression, contentRequest, matches);
+            collectMatches(root, queryText, matchingMode, caseSensitivity, regularExpression, contentRequest, matches);
         }
         int fromIndex = Math.min(offset, matches.size());
         int toIndex = Math.min(fromIndex + limit, matches.size());
@@ -124,7 +129,8 @@ public class SearchNodesTool {
     }
 
     private void collectMatches(NodeModel root, String queryText, SearchMatchingMode matchingMode,
-                                Pattern regularExpression, NodeContentRequest contentRequest, List<NodeModel> matches) {
+                                SearchCaseSensitivity caseSensitivity, Pattern regularExpression,
+                                NodeContentRequest contentRequest, List<NodeModel> matches) {
         if (root == null) {
             return;
         }
@@ -132,7 +138,7 @@ public class SearchNodesTool {
         stack.push(root);
         while (!stack.isEmpty()) {
             NodeModel current = stack.pop();
-            if (matchesNode(current, queryText, matchingMode, regularExpression, contentRequest)) {
+            if (matchesNode(current, queryText, matchingMode, caseSensitivity, regularExpression, contentRequest)) {
                 matches.add(current);
             }
             List<NodeModel> children = current.getChildren();
@@ -146,33 +152,34 @@ public class SearchNodesTool {
     }
 
     private boolean matchesNode(NodeModel nodeModel, String queryText, SearchMatchingMode matchingMode,
-                                Pattern regularExpression, NodeContentRequest contentRequest) {
+                                SearchCaseSensitivity caseSensitivity, Pattern regularExpression,
+                                NodeContentRequest contentRequest) {
         NodeContent content = nodeContentItemReader.readNodeContent(nodeModel, contentRequest, NodeContentPreset.FULL);
         if (content == null) {
             return false;
         }
-        if (matchesValue(content.getBriefText(), queryText, matchingMode, regularExpression)) {
+        if (matchesValue(content.getBriefText(), queryText, matchingMode, caseSensitivity, regularExpression)) {
             return true;
         }
         TextualContent textualContent = content.getTextualContent();
         if (textualContent != null) {
-            if (matchesValue(textualContent.getText(), queryText, matchingMode, regularExpression)) {
+            if (matchesValue(textualContent.getText(), queryText, matchingMode, caseSensitivity, regularExpression)) {
                 return true;
             }
-            if (matchesValue(textualContent.getDetails(), queryText, matchingMode, regularExpression)) {
+            if (matchesValue(textualContent.getDetails(), queryText, matchingMode, caseSensitivity, regularExpression)) {
                 return true;
             }
-            if (matchesValue(textualContent.getNote(), queryText, matchingMode, regularExpression)) {
+            if (matchesValue(textualContent.getNote(), queryText, matchingMode, caseSensitivity, regularExpression)) {
                 return true;
             }
         }
         AttributesContent attributesContent = content.getAttributesContent();
         if (attributesContent != null && attributesContent.getAttributes() != null) {
             for (AttributeEntry entry : attributesContent.getAttributes()) {
-                if (matchesValue(entry.getName(), queryText, matchingMode, regularExpression)) {
+                if (matchesValue(entry.getName(), queryText, matchingMode, caseSensitivity, regularExpression)) {
                     return true;
                 }
-                if (matchesValue(entry.getValue(), queryText, matchingMode, regularExpression)) {
+                if (matchesValue(entry.getValue(), queryText, matchingMode, caseSensitivity, regularExpression)) {
                     return true;
                 }
             }
@@ -180,7 +187,7 @@ public class SearchNodesTool {
         TagsContent tagsContent = content.getTagsContent();
         if (tagsContent != null && tagsContent.getTags() != null) {
             for (String tag : tagsContent.getTags()) {
-                if (matchesValue(tag, queryText, matchingMode, regularExpression)) {
+                if (matchesValue(tag, queryText, matchingMode, caseSensitivity, regularExpression)) {
                     return true;
                 }
             }
@@ -189,17 +196,24 @@ public class SearchNodesTool {
     }
 
     private boolean matchesValue(String value, String queryText, SearchMatchingMode matchingMode,
-                                 Pattern regularExpression) {
+                                 SearchCaseSensitivity caseSensitivity, Pattern regularExpression) {
         if (value == null || queryText == null) {
             return false;
         }
+        if (matchingMode == SearchMatchingMode.REGULAR_EXPRESSION) {
+            return regularExpression.matcher(value).find();
+        }
+        String valueToMatch = value;
+        String queryToMatch = queryText;
+        if (caseSensitivity == SearchCaseSensitivity.CASE_INSENSITIVE) {
+            valueToMatch = value.toLowerCase(Locale.ROOT);
+            queryToMatch = queryText.toLowerCase(Locale.ROOT);
+        }
         switch (matchingMode) {
             case CONTAINS:
-                return value.toLowerCase().contains(queryText.toLowerCase());
+                return valueToMatch.contains(queryToMatch);
             case EQUALS:
-                return value.equalsIgnoreCase(queryText);
-            case REGULAR_EXPRESSION:
-                return regularExpression.matcher(value).find();
+                return valueToMatch.equals(queryToMatch);
             default:
                 return false;
         }
@@ -243,9 +257,12 @@ public class SearchNodesTool {
         }
     }
 
-    private Pattern compileRegularExpression(String expression) {
+    private Pattern compileRegularExpression(String expression, SearchCaseSensitivity caseSensitivity) {
         try {
-            return Pattern.compile(expression);
+            int flags = caseSensitivity == SearchCaseSensitivity.CASE_INSENSITIVE
+                ? Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+                : 0;
+            return Pattern.compile(expression, flags);
         } catch (PatternSyntaxException error) {
             throw new IllegalArgumentException("Invalid regular expression: " + error.getMessage(), error);
         }

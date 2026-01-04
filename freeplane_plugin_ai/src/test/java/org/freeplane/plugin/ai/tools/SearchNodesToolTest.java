@@ -56,6 +56,7 @@ public class SearchNodesToolTest {
             null,
             null,
             SearchMatchingMode.CONTAINS,
+            SearchCaseSensitivity.CASE_INSENSITIVE,
             Collections.singletonList(SearchResultSection.BREADCRUMB_PATH),
             0,
             200,
@@ -84,6 +85,7 @@ public class SearchNodesToolTest {
             Arrays.asList("ID_root", "ID_root"),
             null,
             SearchMatchingMode.CONTAINS,
+            SearchCaseSensitivity.CASE_INSENSITIVE,
             null,
             0,
             200,
@@ -92,5 +94,40 @@ public class SearchNodesToolTest {
         assertThatThrownBy(() -> uut.searchNodes(request))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("duplicate subtree root node identifiers");
+    }
+
+    @Test
+    public void searchNodes_respectsCaseSensitivity() throws Exception {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsBytes(any())).thenReturn(new byte[100]);
+        UUID mapIdentifier = UUID.fromString("8e7a4a4a-bad1-4d1d-bcf8-7f0b2d899b2c");
+        MapModel mapModel = mock(MapModel.class);
+        NodeModel rootNode = mock(NodeModel.class);
+        NodeModel childNode = mock(NodeModel.class);
+        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(mapModel.getRootNode()).thenReturn(rootNode);
+        when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
+        when(childNode.getChildren()).thenReturn(Collections.emptyList());
+        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null);
+        when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
+            .thenReturn(childFullContent);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
+        SearchNodesRequest request = new SearchNodesRequest(
+            mapIdentifier.toString(),
+            "alp",
+            null,
+            null,
+            SearchMatchingMode.CONTAINS,
+            SearchCaseSensitivity.CASE_SENSITIVE,
+            null,
+            0,
+            200,
+            1000);
+
+        SearchNodesResponse response = uut.searchNodes(request);
+
+        assertThat(response.getResults()).isEmpty();
     }
 }

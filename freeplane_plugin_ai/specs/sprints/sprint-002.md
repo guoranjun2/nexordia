@@ -420,7 +420,9 @@ end note
   - Depth controls: fullContentDepth plus additional summaryDepth.
   - NodeContentRequest overrides for focus, parent, and child nodes with presets as fallback.
   - Exact JavaScript Object Notation length budget with omissions instead of truncation.
+  - Response-level omissions for omitted focus nodes, per-item childOmissions for omitted children and descendants.
   - Optional qualifiers enabled only via contextSections.
+  - Tool schema marks optional fields explicitly and documents non-trivial defaults in field descriptions.
 - **Design diagram:**
 ```plantuml
 @startuml
@@ -438,12 +440,13 @@ class ReadNodesWithContextRequest {
 class ReadNodesWithContextResponse {
   mapIdentifier
   items[]
+  omissions
 }
 class ReadNodesWithContextItem {
   nodes[]
   parentNode
   breadcrumbPath
-  omissions
+  childOmissions
 }
 class NodeDepthItem {
   nodeIdentifier
@@ -461,13 +464,14 @@ class Omissions {
 ReadNodesWithContextRequest --> ReadNodesWithContextResponse
 ReadNodesWithContextResponse --> ReadNodesWithContextItem
 ReadNodesWithContextItem --> NodeDepthItem
+ReadNodesWithContextResponse --> Omissions
 ReadNodesWithContextItem --> Omissions
 @enduml
 ```
 - **Request parameters:**
   - `mapIdentifier`: Map identifier string.
   - `nodeIdentifiers`: List of node identifier strings. Order is preserved in the response.
-  - `contextSections`: List of ContextSection values. Default: `breadcrumb_path`. Supported values: `breadcrumb_path`, `parent_summary`, `qualifiers`.
+  - `contextSections`: List of ContextSection values. Default: `BREADCRUMB_PATH`. Supported values: `BREADCRUMB_PATH`, `PARENT_SUMMARY`, `QUALIFIERS`.
   - `fullContentDepth`: Integer greater than or equal to 0. Default 0. Depth 0 is the requested node.
   - `summaryDepth`: Integer greater than or equal to 0. Default 1. This is the number of additional levels beyond fullContentDepth that return brief summaries. For example fullContentDepth 1 and summaryDepth 1 yields full content at depths 0–1 and brief summaries at depth 2.
   - `maximumTotalTextCharacters`: Integer. Default 65536.
@@ -477,28 +481,30 @@ ReadNodesWithContextItem --> Omissions
 - **Response fields:**
   - `mapIdentifier`: Map identifier string.
   - `items`: List of ReadNodesWithContextItem entries in the same order as nodeIdentifiers, excluding any omitted focus nodes.
+  - `omissions`: Object, only when focus nodes are omitted.
 - **ReadNodesWithContextItem:**
   - `nodes`: List of NodeDepthItem entries in preorder from depth 0 through depth fullContentDepth plus summaryDepth. Depth 0 is the requested node.
-  - `parentNode`: NodeContentItem, only when `parent_summary` is present in contextSections.
-  - `breadcrumbPath`: String, only when `breadcrumb_path` is present in contextSections.
-  - `omissions`: Object, only when omissions occur.
+  - `parentNode`: NodeContentItem, only when `PARENT_SUMMARY` is present in contextSections.
+  - `breadcrumbPath`: String, only when `BREADCRUMB_PATH` is present in contextSections.
+  - `childOmissions`: Object, only when child or descendant omissions occur.
 - **NodeDepthItem:**
   - `nodeIdentifier`: Node identifier string.
   - `depth`: Integer depth relative to the requested node.
   - `content`: NodeContent. Included for all nodes; summary nodes include briefText only.
-  - `qualifiers`: List of strings, only when `qualifiers` is present in contextSections.
+  - `qualifiers`: List of strings, only when `QUALIFIERS` is present in contextSections.
 - **Omissions:**
-  - `omittedFocusNodeCount`: Integer.
-  - `omittedChildCount`: Integer.
-  - `omittedDescendantCount`: Integer.
+  - `omittedFocusNodeCount`: Integer (response-level omissions only).
+  - `omittedChildCount`: Integer (childOmissions only).
+  - `omittedDescendantCount`: Integer (childOmissions only).
   - `omissionReasons`: List of OmissionReason values.
 - **Behavior:**
   - Summary depth always extends beyond fullContentDepth. Brief summaries cover depth fullContentDepth plus 1 through fullContentDepth plus summaryDepth.
   - Summary nodes always return briefText only. NodeContentRequest is ignored for summary nodes.
-  - NodeContentRequest overrides are applied only to full content nodes. If a NodeContentRequest is not provided, presets are used: full for the focus node and brief for parent and child nodes.
-  - Qualifiers are computed and returned only when `qualifiers` is present in contextSections.
-  - The total text budget uses exact JavaScript Object Notation serialization length and is enforced only when more than one focus node is requested or when summaryDepth is greater than 0.
-  - When the budget is exceeded, the tool omits nodes instead of truncating values. Omitted focus nodes are excluded from `items` and counted in `omissions` with omissionReasons containing `text_budget`.
+  - NodeContentRequest overrides are applied only to full content nodes. If a NodeContentRequest is not provided, presets are used: full for focus and child nodes, brief for parent node.
+  - Qualifiers are computed and returned only when `QUALIFIERS` is present in contextSections.
+  - Textual content values are returned as plain text using HtmlUtils.htmlToPlain, with markup removed when present.
+  - The total text budget uses exact JavaScript Object Notation serialization length and is enforced only when more than one focus node is requested.
+  - When the budget is exceeded, the tool omits nodes instead of truncating values. Omitted focus nodes are excluded from `items` and counted in response-level omissions with omissionReasons containing `TEXT_BUDGET`. Omitted child and descendant nodes are recorded in childOmissions.
   - Single focus node requests are never truncated, regardless of maximumTotalTextCharacters.
   - Duplicate node identifiers return an error with message "duplicate node identifiers".
   - Unknown node identifiers return an error with message "Unknown node identifiers: ..." and the list of unknown identifiers.
@@ -509,7 +515,7 @@ ReadNodesWithContextItem --> Omissions
   - Verify summary nodes include only briefText and ignore NodeContentRequest.
   - Verify qualifiers are omitted unless requested.
   - Verify total text budget omits nodes for multi node requests and never truncates single node requests.
-  - Verify omissions include omissionReasons with `text_budget` when budget is exceeded.
+  - Verify omissions include omissionReasons with `TEXT_BUDGET` when budget is exceeded.
 
 ## Task: Search nodes using NodeContentRequest scope
 - **Status:** Designing
@@ -524,6 +530,8 @@ ReadNodesWithContextItem --> Omissions
   - Offset and limit control pagination.
   - NodeContentRequest selects which fields are searched.
   - Exact JavaScript Object Notation length budget with omissions instead of truncation.
+  - Case sensitivity controls apply to all matching modes.
+  - Tool schema marks optional fields explicitly and documents non-trivial defaults in field descriptions.
 - **Design diagram:**
 ```plantuml
 @startuml
@@ -533,6 +541,7 @@ class SearchNodesRequest {
   subtreeRootNodeIdentifiers[]
   nodeContentRequestForSearch
   matchingMode
+  caseSensitivity
   resultSections[]
   offset
   limit
@@ -563,8 +572,9 @@ SearchNodesResponse --> Omissions
   - `queryText`: Search query string.
   - `subtreeRootNodeIdentifiers`: List of node identifier strings that restrict search to those subtrees. When empty or null, search the whole map.
   - `nodeContentRequestForSearch`: NodeContentRequest that selects which content fields are searched.
-  - `matchingMode`: SearchMatchingMode. Default `contains`.
-  - `resultSections`: List of values. Supported values: `breadcrumb_path`.
+  - `matchingMode`: SearchMatchingMode. Default `CONTAINS`.
+  - `caseSensitivity`: SearchCaseSensitivity. Default `CASE_INSENSITIVE`.
+  - `resultSections`: List of values. Supported values: `BREADCRUMB_PATH`.
   - `offset`: Integer. Default 0.
   - `limit`: Integer. Default 200.
   - `maximumTotalTextCharacters`: Integer. Default 65536.
@@ -575,14 +585,14 @@ SearchNodesResponse --> Omissions
 - **SearchResultItem:**
   - `nodeIdentifier`: Node identifier string.
   - `briefText`: String.
-  - `breadcrumbPath`: String, only when `breadcrumb_path` is present in resultSections.
+  - `breadcrumbPath`: String, only when `BREADCRUMB_PATH` is present in resultSections.
 - **Omissions:**
   - `omittedResultCount`: Integer.
   - `omissionReasons`: List of OmissionReason values.
 - **Behavior:**
   - Results are ordered by map traversal order within each subtree root, and then filtered by offset and limit.
-  - The total text budget uses exact JavaScript Object Notation serialization length and omits results rather than truncating values, with omissionReasons containing `text_budget`.
-  - Search matching is controlled by matchingMode. contains uses case insensitive substring matching, equals uses case insensitive full value matching, and regular_expression uses Java regular expression matching on the selected fields.
+  - The total text budget uses exact JavaScript Object Notation serialization length and omits results rather than truncating values, with omissionReasons containing `TEXT_BUDGET`.
+  - Search matching is controlled by matchingMode and caseSensitivity. CONTAINS uses substring matching, EQUALS uses full value matching, and REGULAR_EXPRESSION uses Java regular expression matching on the selected fields. CASE_INSENSITIVE applies to all modes.
   - Duplicate subtree root node identifiers return an error with message "duplicate subtree root node identifiers".
   - Unknown subtree root node identifiers return an error with message "Unknown node identifiers: ..." and the list of unknown identifiers.
   - Search remains independent from filter state.
@@ -591,13 +601,69 @@ SearchNodesResponse --> Omissions
   - Verify offset and limit paginate results.
   - Verify NodeContentRequest controls which fields are searched.
   - Verify breadcrumbPath is included only when requested.
-  - Verify total text budget omits results and sets omissionReasons to `text_budget`.
+  - Verify caseSensitivity applies to contains, equals, and regular expression matching.
+  - Verify total text budget omits results and sets omissionReasons to `TEXT_BUDGET`.
+
+## Task: Add editable content for safe edits
+- **Status:** Designing
+- **Scope:** Add an optional editable content block that exposes raw values and format metadata for text, details, note, and attributes so a large language model can edit safely without losing formulas or markup.
+- **Research summary:**
+  - TextController applies a transformer chain that can change display text, add formatting, or evaluate formulas.
+  - RichTextModel stores content type and raw or Extensible Markup Language content separately from transformed output.
+  - Attributes are transformed for display, but their raw values should be preserved for editing.
+- **Design:**
+  - Add EditableContentRequest to NodeContentRequest to opt in to editable content.
+  - EditableContentRequest selects fields (TEXT, DETAILS, NOTE, ATTRIBUTES) and representations (RAW, TRANSFORMED, PLAIN, METADATA).
+  - EditableContent appears only when requested to reduce token usage.
+  - Each editable field includes raw content, transformed content, plain text, and metadata for format and formula detection.
+- **Design diagram:**
+```plantuml
+@startuml
+class EditableContentRequest {
+  fields[]
+  representations[]
+}
+class EditableContent {
+  editableText
+  editableDetails
+  editableNote
+  editableAttributes[]
+}
+class EditableText {
+  raw
+  transformed
+  plain
+  contentType
+  hasMarkup
+  isFormula
+}
+class EditableAttribute {
+  name
+  rawValue
+  transformedValue
+  plainValue
+  hasMarkup
+  isFormula
+}
+
+NodeContentRequest --> EditableContentRequest
+NodeContent --> EditableContent
+EditableContent --> EditableText
+EditableContent --> EditableAttribute
+@enduml
+```
+- **Test specification:**
+  - Verify editable content is omitted when not requested.
+  - Verify raw values match stored values for text, details, note, and attributes.
+  - Verify transformed values match TextController output.
+  - Verify plain values use HtmlUtils.htmlToPlain and do not include markup.
+  - Verify formula detection sets isFormula for formula content and leaves it false for normal text.
 
 ## Shared structures for read and search tools
 - **NodeContentRequest:**
-  - `textualContentRequest`: TextualContentRequest.
-  - `attributesContentRequest`: AttributesContentRequest.
-  - `tagsContentRequest`: TagsContentRequest.
+  - `textualContentRequest`: TextualContentRequest. Optional; omit to skip textual content matching or inclusion.
+  - `attributesContentRequest`: AttributesContentRequest. Optional; omit to skip attributes matching or inclusion.
+  - `tagsContentRequest`: TagsContentRequest. Optional; omit to skip tags matching or inclusion.
 - **TextualContentRequest:**
   - `includesText`: Boolean.
   - `includesDetails`: Boolean.
@@ -616,8 +682,11 @@ SearchNodesResponse --> Omissions
   - `attributesContent`: AttributesContent.
   - `tagsContent`: TagsContent.
 - **OmissionReason:**
-  - `text_budget`: Omitted because the maximumTotalTextCharacters budget was exceeded.
+  - `TEXT_BUDGET`: Omitted because the maximumTotalTextCharacters budget was exceeded.
 - **SearchMatchingMode:**
-  - `contains`: Case insensitive substring match.
-  - `equals`: Case insensitive full value match.
-  - `regular_expression`: Java regular expression match.
+  - `CONTAINS`: Substring match (caseSensitivity controls casing).
+  - `EQUALS`: Full value match (caseSensitivity controls casing).
+  - `REGULAR_EXPRESSION`: Java regular expression match (caseSensitivity controls casing).
+- **SearchCaseSensitivity:**
+  - `CASE_INSENSITIVE`: Case-insensitive matching for all modes.
+  - `CASE_SENSITIVE`: Case-sensitive matching for all modes.

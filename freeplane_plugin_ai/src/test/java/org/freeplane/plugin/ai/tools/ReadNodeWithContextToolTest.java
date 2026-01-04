@@ -167,9 +167,51 @@ public class ReadNodeWithContextToolTest {
         ReadNodesWithContextResponse response = uut.readNodeWithContext(request);
 
         assertThat(response.getItems()).hasSize(1);
-        Omissions omissions = response.getItems().get(0).getOmissions();
+        Omissions omissions = response.getOmissions();
         assertThat(omissions).isNotNull();
         assertThat(omissions.getOmittedFocusNodeCount()).isEqualTo(1);
         assertThat(omissions.getOmissionReasons()).containsExactly(OmissionReason.TEXT_BUDGET);
+    }
+
+    @Test
+    public void readNodeWithContext_returnsFullContentWithinFullContentDepth() throws Exception {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsBytes(any())).thenReturn(new byte[100]);
+        MapModel mapModel = mock(MapModel.class);
+        NodeModel focusNode = mock(NodeModel.class);
+        NodeModel childNode = mock(NodeModel.class);
+        UUID mapIdentifier = UUID.fromString("bd2f43b2-f1b4-4a3a-b41b-259d5c3427bf");
+        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
+        when(focusNode.getParentNode()).thenReturn(null);
+        when(focusNode.getChildren()).thenReturn(Collections.singletonList(childNode));
+        when(childNode.getChildren()).thenReturn(Collections.emptyList());
+        when(focusNode.createID()).thenReturn("ID_focus");
+        when(childNode.createID()).thenReturn("ID_child");
+        NodeContent focusFullContent = new NodeContent(null, new TextualContent("Focus full", null, null), null, null);
+        NodeContent childFullContent = new NodeContent(null, new TextualContent("Child full", null, null), null, null);
+        NodeContent focusBriefContent = new NodeContent("Focus", null, null, null);
+        when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.FULL)).thenReturn(focusFullContent);
+        when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.FULL)).thenReturn(childFullContent);
+        when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.BRIEF)).thenReturn(focusBriefContent);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, objectMapper);
+        ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
+            mapIdentifier.toString(),
+            Collections.singletonList("ID_focus"),
+            null,
+            1,
+            0,
+            null,
+            null,
+            null,
+            null);
+
+        ReadNodesWithContextResponse response = uut.readNodeWithContext(request);
+
+        ReadNodesWithContextItem item = response.getItems().get(0);
+        assertThat(item.getNodes()).hasSize(2);
+        assertThat(item.getNodes().get(1).getContent().getTextualContent().getText()).isEqualTo("Child full");
     }
 }

@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.Objects;
 
+import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.text.DetailModel;
@@ -55,7 +56,8 @@ public class TextualContentReader {
         if (data == null) {
             return null;
         }
-        return textController.getTransformedTextForClipboard(nodeModel, nodeModel, data);
+        String transformedText = textController.getTransformedTextForClipboard(nodeModel, nodeModel, data);
+        return convertToPlainText(transformedText);
     }
 
     private String readFullDetails(NodeModel nodeModel) {
@@ -67,7 +69,8 @@ public class TextualContentReader {
         if (detailsText == null) {
             return null;
         }
-        return textController.getTransformedTextForClipboard(nodeModel, detailModel, detailsText);
+        String transformedText = textController.getTransformedTextForClipboard(nodeModel, detailModel, detailsText);
+        return convertToPlainText(transformedText);
     }
 
     private String readFullNote(NodeModel nodeModel) {
@@ -79,6 +82,14 @@ public class TextualContentReader {
         if (noteText == null) {
             return null;
         }
-        return textController.getTransformedTextForClipboard(nodeModel, noteModel, noteText);
+        String transformedText = textController.getTransformedTextForClipboard(nodeModel, noteModel, noteText);
+        return convertToPlainText(transformedText);
+    }
+
+    private String convertToPlainText(String text) {
+        if (text == null) {
+            return null;
+        }
+        return HtmlUtils.htmlToPlain(text);
     }
 }
