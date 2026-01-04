@@ -10,14 +10,18 @@ public final class NodeContentRequest {
     private final AttributesContentRequest attributesContentRequest;
     @JsonProperty(required = false)
     private final TagsContentRequest tagsContentRequest;
+    @JsonProperty(required = false)
+    private final IconsContentRequest iconsContentRequest;
 
     @JsonCreator
     public NodeContentRequest(@JsonProperty("textualContentRequest") TextualContentRequest textualContentRequest,
                               @JsonProperty("attributesContentRequest") AttributesContentRequest attributesContentRequest,
-                              @JsonProperty("tagsContentRequest") TagsContentRequest tagsContentRequest) {
+                              @JsonProperty("tagsContentRequest") TagsContentRequest tagsContentRequest,
+                              @JsonProperty("iconsContentRequest") IconsContentRequest iconsContentRequest) {
         this.textualContentRequest = textualContentRequest;
         this.attributesContentRequest = attributesContentRequest;
         this.tagsContentRequest = tagsContentRequest;
+        this.iconsContentRequest = iconsContentRequest;
     }
 
     public TextualContentRequest getTextualContentRequest() {
@@ -30,5 +34,9 @@ public final class NodeContentRequest {
 
     public TagsContentRequest getTagsContentRequest() {
         return tagsContentRequest;
+    }
+
+    public IconsContentRequest getIconsContentRequest() {
+        return iconsContentRequest;
     }
 }

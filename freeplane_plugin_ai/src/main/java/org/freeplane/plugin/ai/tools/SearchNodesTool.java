@@ -192,6 +192,18 @@ public class SearchNodesTool {
                 }
             }
         }
+        IconsContentRequest iconsContentRequest = contentRequest.getIconsContentRequest();
+        if (iconsContentRequest != null && iconsContentRequest.includesIcons()) {
+            List<String> iconTerms = nodeContentItemReader.collectIconSearchTerms(nodeModel, iconsContentRequest);
+            if (iconTerms == null) {
+                return false;
+            }
+            for (String description : iconTerms) {
+                if (matchesValue(description, queryText, matchingMode, caseSensitivity, regularExpression)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -246,7 +258,7 @@ public class SearchNodesTool {
     }
 
     private NodeContentRequest defaultSearchContentRequest() {
-        return new NodeContentRequest(new TextualContentRequest(true, false, false), null, null);
+        return new NodeContentRequest(new TextualContentRequest(true, false, false), null, null, null);
     }
 
     private int measureSerializedLength(Object item) {

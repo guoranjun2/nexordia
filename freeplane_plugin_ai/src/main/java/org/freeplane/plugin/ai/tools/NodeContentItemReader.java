@@ -54,6 +54,10 @@ public class NodeContentItemReader {
         return nodeContentReader.readNodeContent(nodeModel, request, fallbackPreset);
     }
 
+    public List<String> collectIconSearchTerms(NodeModel nodeModel, IconsContentRequest request) {
+        return nodeContentReader.collectIconSearchTerms(nodeModel, request);
+    }
+
     private List<String> buildQualifiers(NodeModel nodeModel) {
         List<String> qualifiers = new ArrayList<>();
         if (SummaryNode.isSummaryNode(nodeModel)) {

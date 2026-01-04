@@ -184,9 +184,11 @@ end note
   - Verify invalid map identifiers fail fast.
 
 ## Task: Add icon content to node responses
-- **Status:** Designing
-- **Scope:** Expose node icons in read responses with icon names and optional emoji decoding for emoji icons.
+- **Status:** Finished
+- **Scope:** Expose node icons in read responses as human-friendly descriptions only, aligned with localized icon translations and emoji characters, while keeping an internal mapping to icon identifiers for future edit tools.
 - **Research summary:**
+  - `TextUtils.getText` uses the current UI language. `TextUtils.getOriginalRawText` reads the default `Resources_en.properties` entry and bypasses the UI language.
+  - `IconRegistry` tracks icons that are used on a map during the session (used by icon filtering UI). It is not a full icon catalog and may include state icons from providers that opt into registry inclusion.
 ```plantuml
 @startuml
 class IconController
@@ -195,6 +197,7 @@ interface IconDescription
 class UIIcon
 class MindIcon
 class EmojiIcon
+class UserIcon
 class IconStoreFactory
 
 IconController --> NamedIcon : getIcons(node, style)
@@ -202,6 +205,7 @@ UIIcon ..|> NamedIcon
 UIIcon ..|> IconDescription
 MindIcon --|> UIIcon
 EmojiIcon --|> MindIcon
+UserIcon --|> MindIcon
 IconStoreFactory --> MindIcon : createMindIcon(name)
 IconStoreFactory --> EmojiIcon : createEmojiIcons()
 
@@ -216,8 +220,47 @@ overrides getTranslatedDescription to return
 the description key. File names are hex
 code points used by emoji assets.
 end note
+
+note right of UserIcon
+User icons use usericon_* translation keys
+and fall back to the key when missing.
+end note
 @enduml
 ```
+- **Design:**
+  - Add `iconsContent` to NodeContent with a single field `descriptions`, a list of human-friendly strings in the icon order returned by `IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)`.
+  - Use English descriptions derived from `TextUtils.getOriginalRawText` for built-in icons (no mnemonic stripping) and update `Resources_en.properties` `icon_*` entries when descriptions do not match the icon meaning.
+  - Document that icon descriptions are always English; any icon search should match English descriptions by default, with optional inclusion of current UI language descriptions if needed later.
+  - For emoji icons, decode the emoji character from the icon name (for example `emoji-1f4d9`) and use the Unicode character as the description; fall back to the description key if decoding fails.
+  - For user icons, use the icon path as the description (user icon translations are typically not present).
+  - Keep an internal mapping from description to icon name for future edit tools, but do not expose it to the model.
+  - Exclude state icons and tags from `iconsContent`; include only explicit node icons.
+  - Perform a full review of `icon_*` entries in `Resources_en.properties`, rewriting entries that are unclear or misleading for model use.
+- **Test specification:**
+  - Verify built-in icons use English descriptions and fall back to capitalized names when translations are missing.
+  - Verify emoji icons return the decoded Unicode character.
+  - Verify user icons return the icon path as the description.
+  - Verify descriptions preserve the node icon order.
+
+## Task: Add map icon usage list tool
+- **Status:** Designing
+- **Scope:** Provide a tool that lists effective icons used in the current map (including style icons), returning only English descriptions and excluding state icons and tags to keep the list relevant for LLM search and selection.
+- **Research summary:**
+  - `IconRegistry` tracks icons used on a map during the current session and powers icon filter dialogs. It is not a full icon catalog.
+  - `IconRegistry.getIconsAsListModel()` returns a `SortedComboBoxModel<NamedIcon>` containing the registry entries.
+  - `IconController` state icon providers can opt in to registry inclusion, so state icons may appear in the registry. Tags are stored separately and do not appear in `IconRegistry`.
+  - Icons can be attached directly to nodes (`NodeModel.getIcons()`) or inherited from logical styles (`IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)` merges style icons). The style map shares the parent map icon registry, so style icons are included in the registry.
+- **Design:**
+  - Add a new tool that takes a map identifier and returns a list of icon descriptions used in the map.
+  - Use the same description resolution logic as `IconsContentReader` (English description from `Resources_en.properties`, emoji decoding, user icon relative path).
+  - Include icons from both explicit node icons and style icons (the registry aggregates both via the shared style map).
+  - Filter out state icons by keeping only `MindIcon` instances and excluding any icon whose file name appears in the `icons.state` property. Tags are not included in the registry, so no tag filtering is needed.
+  - Document that icon descriptions are always English; matching should be done against English descriptions by default.
+- **Test specification:**
+  - Verify the tool returns English descriptions in a stable order.
+  - Verify state icons are excluded from the response.
+  - Verify emoji icons return the decoded Unicode character.
+  - Verify user icons return relative file paths.
 
 ## Task: Add selection identifiers tool
 - **Status:** Finished
@@ -593,6 +636,7 @@ SearchNodesResponse --> Omissions
   - Results are ordered by map traversal order within each subtree root, and then filtered by offset and limit.
   - The total text budget uses exact JavaScript Object Notation serialization length and omits results rather than truncating values, with omissionReasons containing `TEXT_BUDGET`.
   - Search matching is controlled by matchingMode and caseSensitivity. CONTAINS uses substring matching, EQUALS uses full value matching, and REGULAR_EXPRESSION uses Java regular expression matching on the selected fields. CASE_INSENSITIVE applies to all modes.
+  - Icon descriptions are matched when icons are included in nodeContentRequestForSearch; emoji icon descriptions also match their description keys.
   - Duplicate subtree root node identifiers return an error with message "duplicate subtree root node identifiers".
   - Unknown subtree root node identifiers return an error with message "Unknown node identifiers: ..." and the list of unknown identifiers.
   - Search remains independent from filter state.
@@ -604,18 +648,37 @@ SearchNodesResponse --> Omissions
   - Verify caseSensitivity applies to contains, equals, and regular expression matching.
   - Verify total text budget omits results and sets omissionReasons to `TEXT_BUDGET`.
 
+## Task: Refactor search matching to reuse content readers
+- **Status:** Designing
+- **Scope:** Remove duplicated field-matching logic from `SearchNodesTool` by reusing the same content reader outputs that power read responses, keeping search semantics aligned with returned values.
+- **Research summary:**
+  - `SearchNodesTool` currently inspects `NodeContent` fields directly, duplicating matching logic for text, details, note, attributes, tags, and icons.
+  - `NodeContentReader` already normalizes content (for example, plain text conversion for textual fields) and controls which fields are present via `NodeContentRequest`.
+- **Design:**
+  - Add a `NodeContentReader.matches` method that reads content using the existing reader and evaluates the query by walking fields in a fixed order, returning immediately on the first match.
+  - Keep matching logic in a small matcher helper or interface so `NodeContentReader` stays focused on content retrieval and the matcher stays focused on matching rules.
+  - The matcher should evaluate the same values returned by `NodeContent` (briefText, textual content, attribute name/value, tags, icon descriptions) so search matches what read responses show.
+  - `SearchNodesTool` calls `NodeContentReader.matches` instead of duplicating field traversal logic.
+  - Keep matching mode and case sensitivity behavior identical to current search behavior.
+- **Test specification:**
+  - Verify matching across all fields (briefText, text, details, note, attributes, tags, icons).
+  - Verify the matcher honors matching mode and case sensitivity for each field.
+  - Verify `SearchNodesTool` uses the shared matcher without changing result ordering or pagination behavior.
+
 ## Task: Add editable content for safe edits
 - **Status:** Designing
-- **Scope:** Add an optional editable content block that exposes raw values and format metadata for text, details, note, and attributes so a large language model can edit safely without losing formulas or markup.
+- **Scope:** Add an optional editable content block that exposes raw values and format metadata for text, details, note, attributes, and explicit node icons so a large language model can edit safely without losing formulas or markup.
 - **Research summary:**
   - TextController applies a transformer chain that can change display text, add formatting, or evaluate formulas.
   - RichTextModel stores content type and raw or Extensible Markup Language content separately from transformed output.
   - Attributes are transformed for display, but their raw values should be preserved for editing.
+  - Explicit node icons are stored on the node (`NodeModel.getIcons()`), which excludes style icons. This is the icon set that should be editable.
 - **Design:**
   - Add EditableContentRequest to NodeContentRequest to opt in to editable content.
   - EditableContentRequest selects fields (TEXT, DETAILS, NOTE, ATTRIBUTES) and representations (RAW, TRANSFORMED, PLAIN, METADATA).
   - EditableContent appears only when requested to reduce token usage.
   - Each editable field includes raw content, transformed content, plain text, and metadata for format and formula detection.
+  - Add editableIcons to EditableContent, sourced only from `NodeModel.getIcons()` and described with the same English description rules used elsewhere (Resources_en.properties, emoji decoding, user icon relative path).
 - **Design diagram:**
 ```plantuml
 @startuml
@@ -628,6 +691,7 @@ class EditableContent {
   editableDetails
   editableNote
   editableAttributes[]
+  editableIcons[]
 }
 class EditableText {
   raw
@@ -650,6 +714,7 @@ NodeContentRequest --> EditableContentRequest
 NodeContent --> EditableContent
 EditableContent --> EditableText
 EditableContent --> EditableAttribute
+EditableContent --> editableIcons
 @enduml
 ```
 - **Test specification:**
@@ -658,6 +723,7 @@ EditableContent --> EditableAttribute
   - Verify transformed values match TextController output.
   - Verify plain values use HtmlUtils.htmlToPlain and do not include markup.
   - Verify formula detection sets isFormula for formula content and leaves it false for normal text.
+  - Verify editable icons only include explicit node icons and exclude style icons.
 
 ## Shared structures for read and search tools
 - **NodeContentRequest:**

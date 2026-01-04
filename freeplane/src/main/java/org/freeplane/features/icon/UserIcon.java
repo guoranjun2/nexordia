@@ -35,8 +35,7 @@ import org.freeplane.core.util.TextUtils;
  *
  */
 public class UserIcon extends MindIcon {
-	private static final String DEFAULT_IMAGE_PATH = //
-	        ResourceController.getResourceController().getFreeplaneUserDirectory() + "/icons";
+	private static String imagePath;
 
     public UserIcon(final String name, final String fileName, final String description, int order) {
 		super(name, fileName, description, order);
@@ -44,7 +43,10 @@ public class UserIcon extends MindIcon {
 
     @Override
     public String getImagePath() {
-        return DEFAULT_IMAGE_PATH;
+    	if(imagePath == null)
+    		imagePath = //
+ 	        ResourceController.getResourceController().getFreeplaneUserDirectory() + "/icons";
+        return imagePath;
     }
 
     @Override
@@ -59,7 +61,7 @@ public class UserIcon extends MindIcon {
         }
         return result;
     }
-    
+
 	@Override
 	public String getTranslatedDescription() {
 		String key = getDescriptionTranslationKey();
@@ -70,6 +72,6 @@ public class UserIcon extends MindIcon {
     public boolean hasStandardSize() {
         return false;
     }
-	
-	
+
+
 }

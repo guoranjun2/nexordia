@@ -10,16 +10,19 @@ public final class NodeContent {
     private final TextualContent textualContent;
     private final AttributesContent attributesContent;
     private final TagsContent tagsContent;
+    private final IconsContent iconsContent;
 
     @JsonCreator
     public NodeContent(@JsonProperty("briefText") String briefText,
                        @JsonProperty("textualContent") TextualContent textualContent,
                        @JsonProperty("attributesContent") AttributesContent attributesContent,
-                       @JsonProperty("tagsContent") TagsContent tagsContent) {
+                       @JsonProperty("tagsContent") TagsContent tagsContent,
+                       @JsonProperty("iconsContent") IconsContent iconsContent) {
         this.briefText = briefText;
         this.textualContent = textualContent;
         this.attributesContent = attributesContent;
         this.tagsContent = tagsContent;
+        this.iconsContent = iconsContent;
     }
 
     public String getBriefText() {
@@ -36,5 +39,9 @@ public final class NodeContent {
 
     public TagsContent getTagsContent() {
         return tagsContent;
+    }
+
+    public IconsContent getIconsContent() {
+        return iconsContent;
     }
 }

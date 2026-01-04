@@ -37,7 +37,6 @@ import org.freeplane.features.icon.factory.IconFactory;
  */
 public class UIIcon implements IconDescription, NamedIcon {
 	private static final String DEFAULT_IMAGE_PATH = "/images";
-	protected static final ResourceController RESOURCE_CONTROLLER = ResourceController.getResourceController();
 	private final String name;
 	private final String file;
 	private final String descriptionTranslationKey;
@@ -113,7 +112,7 @@ public class UIIcon implements IconDescription, NamedIcon {
 	public void initializeUrl() {
 		if (resourceURL == null) {
 			final String path = getPath();
-			resourceURL = RESOURCE_CONTROLLER.getIconResource(path);
+			resourceURL = ResourceController.getResourceController().getIconResource(path);
 		}
 	}
 

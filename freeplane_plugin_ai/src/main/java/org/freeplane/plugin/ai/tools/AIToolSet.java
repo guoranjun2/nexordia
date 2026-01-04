@@ -108,8 +108,10 @@ public class AIToolSet {
         TextualContentReader textualContentReader = new TextualContentReader(textController);
         AttributesContentReader attributesContentReader = new AttributesContentReader(attributeController, textController);
         TagsContentReader tagsContentReader = new TagsContentReader(iconController);
+        EnglishTextProvider englishTextProvider = new DefaultEnglishTextProvider();
+        IconsContentReader iconsContentReader = new IconsContentReader(englishTextProvider, iconController);
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
         return new NodeContentItemReader(nodeContentReader);
     }
 

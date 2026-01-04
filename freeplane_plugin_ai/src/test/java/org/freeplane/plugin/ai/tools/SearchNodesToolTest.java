@@ -39,10 +39,10 @@ public class SearchNodesToolTest {
         when(rootNode.createID()).thenReturn("ID_root");
         when(childNode.createID()).thenReturn("ID_child");
         when(otherNode.createID()).thenReturn("ID_other");
-        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null);
-        NodeContent otherFullContent = new NodeContent(null, new TextualContent("Beta", null, null), null, null);
-        NodeContent rootBriefContent = new NodeContent("Root", null, null, null);
-        NodeContent childBriefContent = new NodeContent("Alpha", null, null, null);
+        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null, null);
+        NodeContent otherFullContent = new NodeContent(null, new TextualContent("Beta", null, null), null, null, null);
+        NodeContent rootBriefContent = new NodeContent("Root", null, null, null, null);
+        NodeContent childBriefContent = new NodeContent("Alpha", null, null, null, null);
         when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
             .thenReturn(childFullContent);
         when(nodeContentItemReader.readNodeContent(eq(otherNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
@@ -110,7 +110,7 @@ public class SearchNodesToolTest {
         when(mapModel.getRootNode()).thenReturn(rootNode);
         when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
-        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null);
+        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null, null);
         when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
             .thenReturn(childFullContent);
         SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
@@ -129,5 +129,58 @@ public class SearchNodesToolTest {
         SearchNodesResponse response = uut.searchNodes(request);
 
         assertThat(response.getResults()).isEmpty();
+    }
+
+    @Test
+    public void searchNodes_matchesIconDescriptionsWhenRequested() throws Exception {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsBytes(any())).thenReturn(new byte[100]);
+        UUID mapIdentifier = UUID.fromString("b97e91ba-4b3b-49d9-9e7b-2d5ef542a1ab");
+        MapModel mapModel = mock(MapModel.class);
+        NodeModel rootNode = mock(NodeModel.class);
+        NodeModel childNode = mock(NodeModel.class);
+        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(mapModel.getRootNode()).thenReturn(rootNode);
+        when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
+        when(childNode.getChildren()).thenReturn(Collections.emptyList());
+        when(rootNode.createID()).thenReturn("ID_root");
+        when(childNode.createID()).thenReturn("ID_child");
+        NodeContent childFullContent = new NodeContent(
+            null,
+            new TextualContent("Alpha", null, null),
+            null,
+            null,
+            new IconsContent(Collections.singletonList("Priority 3")));
+        when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
+            .thenReturn(childFullContent);
+        when(nodeContentItemReader.collectIconSearchTerms(eq(childNode), any(IconsContentRequest.class)))
+            .thenReturn(Collections.singletonList("Priority 3"));
+        when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF))
+            .thenReturn(new NodeContent("Root", null, null, null, null));
+        when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))
+            .thenReturn(new NodeContent("Alpha", null, null, null, null));
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
+        SearchNodesRequest request = new SearchNodesRequest(
+            mapIdentifier.toString(),
+            "priority",
+            null,
+            new NodeContentRequest(
+                new TextualContentRequest(true, false, false),
+                null,
+                null,
+                new IconsContentRequest(true)),
+            SearchMatchingMode.CONTAINS,
+            SearchCaseSensitivity.CASE_INSENSITIVE,
+            Collections.singletonList(SearchResultSection.BREADCRUMB_PATH),
+            0,
+            200,
+            1000);
+
+        SearchNodesResponse response = uut.searchNodes(request);
+
+        assertThat(response.getResults()).hasSize(1);
+        assertThat(response.getResults().get(0).getNodeIdentifier()).isEqualTo("ID_child");
     }
 }
