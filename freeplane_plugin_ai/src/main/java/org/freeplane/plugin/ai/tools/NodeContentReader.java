@@ -1,6 +1,5 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.features.map.NodeModel;
@@ -57,7 +56,22 @@ public class NodeContentReader {
         return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent);
     }
 
-    public List<String> collectIconSearchTerms(NodeModel nodeModel, IconsContentRequest request) {
-        return iconsContentReader.collectSearchTerms(nodeModel, request);
+    public boolean matches(NodeModel nodeModel, NodeContentRequest request, NodeContentValueMatcher valueMatcher) {
+        if (nodeModel == null || valueMatcher == null) {
+            return false;
+        }
+        if (request == null) {
+            return false;
+        }
+        if (textualContentReader.matches(nodeModel, request.getTextualContentRequest(), valueMatcher)) {
+            return true;
+        }
+        if (attributesContentReader.matches(nodeModel, request.getAttributesContentRequest(), valueMatcher)) {
+            return true;
+        }
+        if (tagsContentReader.matches(nodeModel, request.getTagsContentRequest(), valueMatcher)) {
+            return true;
+        }
+        return iconsContentReader.matches(nodeModel, request.getIconsContentRequest(), valueMatcher);
     }
 }

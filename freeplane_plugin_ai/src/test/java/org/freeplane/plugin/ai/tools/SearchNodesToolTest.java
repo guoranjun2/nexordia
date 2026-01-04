@@ -39,14 +39,14 @@ public class SearchNodesToolTest {
         when(rootNode.createID()).thenReturn("ID_root");
         when(childNode.createID()).thenReturn("ID_child");
         when(otherNode.createID()).thenReturn("ID_other");
-        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null, null);
-        NodeContent otherFullContent = new NodeContent(null, new TextualContent("Beta", null, null), null, null, null);
         NodeContent rootBriefContent = new NodeContent("Root", null, null, null, null);
         NodeContent childBriefContent = new NodeContent("Alpha", null, null, null, null);
-        when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
-            .thenReturn(childFullContent);
-        when(nodeContentItemReader.readNodeContent(eq(otherNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
-            .thenReturn(otherFullContent);
+        when(nodeContentItemReader.matchesNodeContent(eq(childNode), any(NodeContentRequest.class),
+            any(NodeContentValueMatcher.class)))
+            .thenReturn(true);
+        when(nodeContentItemReader.matchesNodeContent(eq(otherNode), any(NodeContentRequest.class),
+            any(NodeContentValueMatcher.class)))
+            .thenReturn(false);
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF)).thenReturn(rootBriefContent);
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF)).thenReturn(childBriefContent);
         SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
@@ -110,9 +110,12 @@ public class SearchNodesToolTest {
         when(mapModel.getRootNode()).thenReturn(rootNode);
         when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
-        NodeContent childFullContent = new NodeContent(null, new TextualContent("Alpha", null, null), null, null, null);
-        when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
-            .thenReturn(childFullContent);
+        when(nodeContentItemReader.matchesNodeContent(eq(childNode), any(NodeContentRequest.class),
+            any(NodeContentValueMatcher.class)))
+            .thenAnswer(invocation -> {
+                NodeContentValueMatcher matcher = invocation.getArgument(2);
+                return matcher.matchesValue("Alpha");
+            });
         SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
@@ -147,16 +150,12 @@ public class SearchNodesToolTest {
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
         when(rootNode.createID()).thenReturn("ID_root");
         when(childNode.createID()).thenReturn("ID_child");
-        NodeContent childFullContent = new NodeContent(
-            null,
-            new TextualContent("Alpha", null, null),
-            null,
-            null,
-            new IconsContent(Collections.singletonList("Priority 3")));
-        when(nodeContentItemReader.readNodeContent(eq(childNode), any(NodeContentRequest.class), eq(NodeContentPreset.FULL)))
-            .thenReturn(childFullContent);
-        when(nodeContentItemReader.collectIconSearchTerms(eq(childNode), any(IconsContentRequest.class)))
-            .thenReturn(Collections.singletonList("Priority 3"));
+        when(nodeContentItemReader.matchesNodeContent(eq(childNode), any(NodeContentRequest.class),
+            any(NodeContentValueMatcher.class)))
+            .thenAnswer(invocation -> {
+                NodeContentValueMatcher matcher = invocation.getArgument(2);
+                return matcher.matchesValue("Priority 3");
+            });
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF))
             .thenReturn(new NodeContent("Root", null, null, null, null));
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))

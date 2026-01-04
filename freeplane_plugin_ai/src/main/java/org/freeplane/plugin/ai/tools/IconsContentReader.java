@@ -62,6 +62,19 @@ public class IconsContentReader {
         return terms;
     }
 
+    public boolean matches(NodeModel nodeModel, IconsContentRequest request, NodeContentValueMatcher valueMatcher) {
+        if (nodeModel == null || request == null || !request.includesIcons() || valueMatcher == null) {
+            return false;
+        }
+        List<String> terms = collectSearchTerms(nodeModel, request);
+        for (String term : terms) {
+            if (valueMatcher.matchesValue(term)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private IconsContent buildIconsContent(NodeModel nodeModel) {
         List<NamedIcon> icons = new ArrayList<>(iconController.getIcons(nodeModel, StyleOption.FOR_UNSELECTED_NODE));
         if (icons.isEmpty()) {

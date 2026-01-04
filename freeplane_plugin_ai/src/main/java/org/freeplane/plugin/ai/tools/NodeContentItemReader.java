@@ -54,8 +54,9 @@ public class NodeContentItemReader {
         return nodeContentReader.readNodeContent(nodeModel, request, fallbackPreset);
     }
 
-    public List<String> collectIconSearchTerms(NodeModel nodeModel, IconsContentRequest request) {
-        return nodeContentReader.collectIconSearchTerms(nodeModel, request);
+    public boolean matchesNodeContent(NodeModel nodeModel, NodeContentRequest request,
+                                      NodeContentValueMatcher valueMatcher) {
+        return nodeContentReader.matches(nodeModel, request, valueMatcher);
     }
 
     private List<String> buildQualifiers(NodeModel nodeModel) {

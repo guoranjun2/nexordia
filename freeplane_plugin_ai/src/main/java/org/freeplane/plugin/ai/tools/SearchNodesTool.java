@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -71,9 +70,11 @@ public class SearchNodesTool {
             contentRequest = defaultSearchContentRequest();
         }
         List<NodeModel> searchRoots = resolveSearchRoots(mapModel, request.getSubtreeRootNodeIdentifiers());
+        NodeContentValueMatcher valueMatcher = new NodeContentValueMatcher(
+            queryText, matchingMode, caseSensitivity, regularExpression);
         List<NodeModel> matches = new ArrayList<>();
         for (NodeModel root : searchRoots) {
-            collectMatches(root, queryText, matchingMode, caseSensitivity, regularExpression, contentRequest, matches);
+            collectMatches(root, contentRequest, valueMatcher, matches);
         }
         int fromIndex = Math.min(offset, matches.size());
         int toIndex = Math.min(fromIndex + limit, matches.size());
@@ -128,9 +129,8 @@ public class SearchNodesTool {
         return roots;
     }
 
-    private void collectMatches(NodeModel root, String queryText, SearchMatchingMode matchingMode,
-                                SearchCaseSensitivity caseSensitivity, Pattern regularExpression,
-                                NodeContentRequest contentRequest, List<NodeModel> matches) {
+    private void collectMatches(NodeModel root, NodeContentRequest contentRequest,
+                                NodeContentValueMatcher valueMatcher, List<NodeModel> matches) {
         if (root == null) {
             return;
         }
@@ -138,7 +138,7 @@ public class SearchNodesTool {
         stack.push(root);
         while (!stack.isEmpty()) {
             NodeModel current = stack.pop();
-            if (matchesNode(current, queryText, matchingMode, caseSensitivity, regularExpression, contentRequest)) {
+            if (matchesNode(current, contentRequest, valueMatcher)) {
                 matches.add(current);
             }
             List<NodeModel> children = current.getChildren();
@@ -151,84 +151,9 @@ public class SearchNodesTool {
         }
     }
 
-    private boolean matchesNode(NodeModel nodeModel, String queryText, SearchMatchingMode matchingMode,
-                                SearchCaseSensitivity caseSensitivity, Pattern regularExpression,
-                                NodeContentRequest contentRequest) {
-        NodeContent content = nodeContentItemReader.readNodeContent(nodeModel, contentRequest, NodeContentPreset.FULL);
-        if (content == null) {
-            return false;
-        }
-        if (matchesValue(content.getBriefText(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-            return true;
-        }
-        TextualContent textualContent = content.getTextualContent();
-        if (textualContent != null) {
-            if (matchesValue(textualContent.getText(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-                return true;
-            }
-            if (matchesValue(textualContent.getDetails(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-                return true;
-            }
-            if (matchesValue(textualContent.getNote(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-                return true;
-            }
-        }
-        AttributesContent attributesContent = content.getAttributesContent();
-        if (attributesContent != null && attributesContent.getAttributes() != null) {
-            for (AttributeEntry entry : attributesContent.getAttributes()) {
-                if (matchesValue(entry.getName(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-                    return true;
-                }
-                if (matchesValue(entry.getValue(), queryText, matchingMode, caseSensitivity, regularExpression)) {
-                    return true;
-                }
-            }
-        }
-        TagsContent tagsContent = content.getTagsContent();
-        if (tagsContent != null && tagsContent.getTags() != null) {
-            for (String tag : tagsContent.getTags()) {
-                if (matchesValue(tag, queryText, matchingMode, caseSensitivity, regularExpression)) {
-                    return true;
-                }
-            }
-        }
-        IconsContentRequest iconsContentRequest = contentRequest.getIconsContentRequest();
-        if (iconsContentRequest != null && iconsContentRequest.includesIcons()) {
-            List<String> iconTerms = nodeContentItemReader.collectIconSearchTerms(nodeModel, iconsContentRequest);
-            if (iconTerms == null) {
-                return false;
-            }
-            for (String description : iconTerms) {
-                if (matchesValue(description, queryText, matchingMode, caseSensitivity, regularExpression)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean matchesValue(String value, String queryText, SearchMatchingMode matchingMode,
-                                 SearchCaseSensitivity caseSensitivity, Pattern regularExpression) {
-        if (value == null || queryText == null) {
-            return false;
-        }
-        if (matchingMode == SearchMatchingMode.REGULAR_EXPRESSION) {
-            return regularExpression.matcher(value).find();
-        }
-        String valueToMatch = value;
-        String queryToMatch = queryText;
-        if (caseSensitivity == SearchCaseSensitivity.CASE_INSENSITIVE) {
-            valueToMatch = value.toLowerCase(Locale.ROOT);
-            queryToMatch = queryText.toLowerCase(Locale.ROOT);
-        }
-        switch (matchingMode) {
-            case CONTAINS:
-                return valueToMatch.contains(queryToMatch);
-            case EQUALS:
-                return valueToMatch.equals(queryToMatch);
-            default:
-                return false;
-        }
+    private boolean matchesNode(NodeModel nodeModel, NodeContentRequest contentRequest,
+                                NodeContentValueMatcher valueMatcher) {
+        return nodeContentItemReader.matchesNodeContent(nodeModel, contentRequest, valueMatcher);
     }
 
     private SearchResultItem buildSearchResultItem(NodeModel nodeModel, boolean includesBreadcrumbPath) {

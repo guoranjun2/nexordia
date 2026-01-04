@@ -1,6 +1,8 @@
 package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,10 +22,10 @@ public class NodeContentReaderTest {
         IconsContentReader iconsContentReader = mock(IconsContentReader.class);
         NodeModel nodeModel = mock(NodeModel.class);
         when(textualContentReader.readBriefText(nodeModel)).thenReturn("Brief text");
-        NodeContentReader uut = new NodeContentReader(
+        NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
 
-        NodeContent content = uut.readNodeContent(nodeModel, NodeContentPreset.BRIEF);
+        NodeContent content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF);
 
         assertThat(content.getBriefText()).isEqualTo("Brief text");
         assertThat(content.getTextualContent()).isNull();
@@ -49,10 +51,10 @@ public class NodeContentReaderTest {
         when(attributesContentReader.readAttributesContent(nodeModel, NodeContentPreset.FULL)).thenReturn(attributesContent);
         when(tagsContentReader.readTagsContent(nodeModel, NodeContentPreset.FULL)).thenReturn(tagsContent);
         when(iconsContentReader.readIconsContent(nodeModel, NodeContentPreset.FULL)).thenReturn(iconsContent);
-        NodeContentReader uut = new NodeContentReader(
+        NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
 
-        NodeContent content = uut.readNodeContent(nodeModel, NodeContentPreset.FULL);
+        NodeContent content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.FULL);
 
         assertThat(content.getBriefText()).isNull();
         assertThat(content.getTextualContent()).isSameAs(textualContent);
@@ -63,5 +65,29 @@ public class NodeContentReaderTest {
         verify(attributesContentReader).readAttributesContent(nodeModel, NodeContentPreset.FULL);
         verify(tagsContentReader).readTagsContent(nodeModel, NodeContentPreset.FULL);
         verify(iconsContentReader).readIconsContent(nodeModel, NodeContentPreset.FULL);
+    }
+
+    @Test
+    public void matches_returnsTrueWhenIconSearchTermsMatch() {
+        TextualContentReader textualContentReader = mock(TextualContentReader.class);
+        AttributesContentReader attributesContentReader = mock(AttributesContentReader.class);
+        TagsContentReader tagsContentReader = mock(TagsContentReader.class);
+        IconsContentReader iconsContentReader = mock(IconsContentReader.class);
+        NodeContentReader nodeContentReader = new NodeContentReader(
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
+        NodeModel nodeModel = mock(NodeModel.class);
+        IconsContentRequest iconsContentRequest = new IconsContentRequest(true);
+        NodeContentRequest request = new NodeContentRequest(null, null, null, iconsContentRequest);
+        when(iconsContentReader.matches(eq(nodeModel), eq(iconsContentRequest), any(NodeContentValueMatcher.class)))
+            .thenAnswer(invocation -> {
+                NodeContentValueMatcher matcher = invocation.getArgument(2);
+                return matcher.matchesValue("Priority 3");
+            });
+        NodeContentValueMatcher valueMatcher = new NodeContentValueMatcher(
+            "priority", SearchMatchingMode.CONTAINS, SearchCaseSensitivity.CASE_INSENSITIVE, null);
+
+        boolean matched = nodeContentReader.matches(nodeModel, request, valueMatcher);
+
+        assertThat(matched).isTrue();
     }
 }

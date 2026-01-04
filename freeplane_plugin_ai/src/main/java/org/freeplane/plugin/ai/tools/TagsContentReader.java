@@ -44,4 +44,17 @@ public class TagsContentReader {
         }
         return new TagsContent(tagNames);
     }
+
+    public boolean matches(NodeModel nodeModel, TagsContentRequest request, NodeContentValueMatcher valueMatcher) {
+        if (nodeModel == null || request == null || !request.includesTags() || valueMatcher == null) {
+            return false;
+        }
+        List<Tag> tags = iconController.getTags(nodeModel);
+        for (Tag tag : tags) {
+            if (valueMatcher.matchesValue(tag.getContent())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

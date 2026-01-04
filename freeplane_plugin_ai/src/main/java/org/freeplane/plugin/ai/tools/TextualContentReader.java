@@ -51,6 +51,19 @@ public class TextualContentReader {
         return new TextualContent(text, details, note);
     }
 
+    public boolean matches(NodeModel nodeModel, TextualContentRequest request, NodeContentValueMatcher valueMatcher) {
+        if (nodeModel == null || request == null || valueMatcher == null) {
+            return false;
+        }
+        if (request.includesText() && valueMatcher.matchesValue(readFullText(nodeModel))) {
+            return true;
+        }
+        if (request.includesDetails() && valueMatcher.matchesValue(readFullDetails(nodeModel))) {
+            return true;
+        }
+        return request.includesNote() && valueMatcher.matchesValue(readFullNote(nodeModel));
+    }
+
     private String readFullText(NodeModel nodeModel) {
         Object data = nodeModel.getUserObject();
         if (data == null) {
