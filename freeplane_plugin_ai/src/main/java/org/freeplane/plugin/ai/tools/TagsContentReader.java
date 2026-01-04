@@ -29,4 +29,19 @@ public class TagsContentReader {
         }
         return new TagsContent(tagNames);
     }
+
+    public TagsContent readTagsContent(NodeModel nodeModel, TagsContentRequest request) {
+        if (nodeModel == null || request == null || !request.includesTags()) {
+            return null;
+        }
+        List<Tag> tags = iconController.getTags(nodeModel);
+        if (tags.isEmpty()) {
+            return null;
+        }
+        List<String> tagNames = new ArrayList<>(tags.size());
+        for (Tag tag : tags) {
+            tagNames.add(tag.getContent());
+        }
+        return new TagsContent(tagNames);
+    }
 }

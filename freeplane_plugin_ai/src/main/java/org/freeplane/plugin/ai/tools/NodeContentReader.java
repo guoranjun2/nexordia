@@ -30,4 +30,23 @@ public class NodeContentReader {
         TagsContent tagsContent = tagsContentReader.readTagsContent(nodeModel, preset);
         return new NodeContent(null, textualContent, attributesContent, tagsContent);
     }
+
+    public NodeContent readNodeContent(NodeModel nodeModel, NodeContentRequest request, NodeContentPreset fallbackPreset) {
+        if (nodeModel == null) {
+            return null;
+        }
+        if (request == null) {
+            return readNodeContent(nodeModel, fallbackPreset);
+        }
+        TextualContent textualContent = textualContentReader.readTextualContent(
+            nodeModel, request.getTextualContentRequest());
+        AttributesContent attributesContent = attributesContentReader.readAttributesContent(
+            nodeModel, request.getAttributesContentRequest());
+        TagsContent tagsContent = tagsContentReader.readTagsContent(
+            nodeModel, request.getTagsContentRequest());
+        if (textualContent == null && attributesContent == null && tagsContent == null) {
+            return null;
+        }
+        return new NodeContent(null, textualContent, attributesContent, tagsContent);
+    }
 }

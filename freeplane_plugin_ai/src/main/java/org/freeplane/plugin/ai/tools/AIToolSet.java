@@ -1,6 +1,5 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.List;
 import java.util.Objects;
 
 import dev.langchain4j.agent.tool.Tool;
@@ -17,6 +16,7 @@ public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
     private final ReadNodeWithContextTool readNodeWithContextTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
+    private final SearchNodesTool searchNodesTool;
 
     public AIToolSet() {
         this(createAvailableMaps(), createTextController(), createAttributeController(), createIconController());
@@ -30,30 +30,37 @@ public class AIToolSet {
     AIToolSet(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
         this(new SystemMessageBuilder(availableMaps),
             new ReadNodeWithContextTool(availableMaps, nodeContentItemReader),
-            new SelectedMapAndNodeIdentifiersTool(availableMaps));
+            new SelectedMapAndNodeIdentifiersTool(availableMaps),
+            new SearchNodesTool(availableMaps, nodeContentItemReader));
     }
 
     AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool,
-              SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool) {
+              SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool,
+              SearchNodesTool searchNodesTool) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
+        this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
     }
 
     public String systemMessageForChat(Object input) {
         return systemMessageBuilder.buildForChat();
     }
 
-    @Tool("Read node with context using selected sections.")
-    public ReadNodeWithContextResponse readNodeWithContext(String mapIdentifier, String nodeIdentifier,
-                                                           List<ContextSection> contextSections) {
-        return readNodeWithContextTool.readNodeWithContext(mapIdentifier, nodeIdentifier, contextSections);
+    @Tool("Read nodes with context.")
+    public ReadNodesWithContextResponse readNodeWithContext(ReadNodesWithContextRequest request) {
+        return readNodeWithContextTool.readNodeWithContext(request);
     }
 
     @Tool("Get identifiers for the currently selected map and node.")
     public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers() {
         return selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers();
+    }
+
+    @Tool("Search nodes by content.")
+    public SearchNodesResponse searchNodes(SearchNodesRequest request) {
+        return searchNodesTool.searchNodes(request);
     }
 
     private static AvailableMaps createAvailableMaps() {

@@ -36,4 +36,23 @@ public class AttributesContentReader {
         }
         return new AttributesContent(attributes);
     }
+
+    public AttributesContent readAttributesContent(NodeModel nodeModel, AttributesContentRequest request) {
+        if (nodeModel == null || request == null || !request.includesAttributes()) {
+            return null;
+        }
+        NodeAttributeTableModel attributeTableModel = NodeAttributeTableModel.getModel(nodeModel);
+        int rowCount = attributeTableModel.getRowCount();
+        if (rowCount == 0) {
+            return null;
+        }
+        List<AttributeEntry> attributes = new ArrayList<>(rowCount);
+        for (Attribute attribute : attributeTableModel.getAttributes()) {
+            Object transformedValue = textController.getTransformedObjectNoFormattingNoThrow(
+                nodeModel, attributeTableModel, attribute.getValue());
+            String value = transformedValue == null ? null : String.valueOf(transformedValue);
+            attributes.add(new AttributeEntry(attribute.getName(), value));
+        }
+        return new AttributesContent(attributes);
+    }
 }

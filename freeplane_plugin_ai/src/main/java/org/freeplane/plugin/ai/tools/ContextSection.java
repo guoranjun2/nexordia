@@ -7,8 +7,6 @@ public enum ContextSection {
     BREADCRUMB_PATH,
     @JsonProperty("parent_summary")
     PARENT_SUMMARY,
-    @JsonProperty("focus_content")
-    FOCUS_CONTENT,
-    @JsonProperty("child_summaries")
-    CHILD_SUMMARIES
+    @JsonProperty("qualifiers")
+    QUALIFIERS
 }

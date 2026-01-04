@@ -37,6 +37,19 @@ public class TextualContentReader {
         return new TextualContent(text, details, note);
     }
 
+    public TextualContent readTextualContent(NodeModel nodeModel, TextualContentRequest request) {
+        if (nodeModel == null || request == null) {
+            return null;
+        }
+        String text = request.includesText() ? readFullText(nodeModel) : null;
+        String details = request.includesDetails() ? readFullDetails(nodeModel) : null;
+        String note = request.includesNote() ? readFullNote(nodeModel) : null;
+        if (text == null && details == null && note == null) {
+            return null;
+        }
+        return new TextualContent(text, details, note);
+    }
+
     private String readFullText(NodeModel nodeModel) {
         Object data = nodeModel.getUserObject();
         if (data == null) {
