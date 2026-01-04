@@ -2,28 +2,35 @@ package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.core.util.HtmlUtils;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
+import org.freeplane.plugin.ai.tools.ToolCallSummary;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JLabel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.StyleSheet;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
+import java.io.IOException;
 
 public class AIChatPanel extends JPanel {
 
@@ -31,13 +38,15 @@ public class AIChatPanel extends JPanel {
 	 * Comment for <code>serialVersionUID</code>
 	 */
 	private static final long serialVersionUID = 1L;
-    private final JPanel messagesPanel;
+    private final JEditorPane messageHistoryPane;
+    private final HTMLEditorKit messageHistoryEditorKit;
     private final JScrollPane scrollPane;
     private final JTextArea inputArea;
     private final JButton sendButton;
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
+    private final ChatDisplaySettings chatDisplaySettings;
     private final AIModelSelectionController modelSelectionController;
     private final ChatSessionMemoryController chatSessionMemoryController;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
@@ -45,9 +54,15 @@ public class AIChatPanel extends JPanel {
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
-        messagesPanel = new JPanel();
-        messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
-        scrollPane = new JScrollPane(messagesPanel);
+        messageHistoryPane = new JEditorPane();
+        messageHistoryPane.setContentType("text/html");
+        messageHistoryPane.setEditable(false);
+        messageHistoryPane.setOpaque(true);
+        messageHistoryPane.setBackground(Color.WHITE);
+        messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
+        configureMessageHistoryStyles();
+        resetMessageHistory();
+        scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         inputArea = new JTextArea(3, 20);
         inputArea.setLineWrap(true);
@@ -55,25 +70,31 @@ public class AIChatPanel extends JPanel {
         sendButton = new JButton("Send");
         menuPopup = buildMenuPopup();
         configuration = new AIProviderConfiguration();
+        chatDisplaySettings = new ChatDisplaySettings();
         modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
         chatSessionMemoryController = new ChatSessionMemoryController();
         tokenUsageLabel = new JLabel();
+        tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
+        JPanel inputContainer = new JPanel(new BorderLayout());
+        inputContainer.add(inputPanel, BorderLayout.CENTER);
+        JPanel tokenUsagePanel = new JPanel(new BorderLayout());
+        tokenUsagePanel.add(tokenUsageLabel, BorderLayout.EAST);
+        inputContainer.add(tokenUsagePanel, BorderLayout.SOUTH);
 
         FreeplaneToolBar toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
         configureToolbar(toolbar);
         JPanel topBarContainer = new JPanel(new BorderLayout());
         topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
         topBarContainer.add(toolbar, BorderLayout.WEST);
-        topBarContainer.add(tokenUsageLabel, BorderLayout.EAST);
 
         add(scrollPane, BorderLayout.CENTER);
-        add(inputPanel, BorderLayout.SOUTH);
+        add(inputContainer, BorderLayout.SOUTH);
         add(topBarContainer, BorderLayout.NORTH);
 
         sendButton.addActionListener(event -> sendMessage());
@@ -128,7 +149,7 @@ public class AIChatPanel extends JPanel {
         if (userMessage.isEmpty()) {
             return;
         }
-        appendMessage(userMessage, true);
+        appendChatMessage(userMessage, ChatMessageCategory.USER);
         inputArea.setText("");
         ensureChatService();
         if (chatService == null) {
@@ -144,9 +165,9 @@ public class AIChatPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    appendMessage(get(), false);
+                    appendChatMessage(get(), ChatMessageCategory.ASSISTANT);
                 } catch (Exception error) {
-                    appendMessage(String.valueOf(error.getMessage()), false);
+                    appendChatMessage(String.valueOf(error.getMessage()), ChatMessageCategory.ASSISTANT);
                 } finally {
                     sendButton.setEnabled(true);
                 }
@@ -160,62 +181,88 @@ public class AIChatPanel extends JPanel {
         }
         AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
         if (selection == null) {
-            appendMessage("Missing AI model selection.", false);
+            appendChatMessage("Missing AI model selection.", ChatMessageCategory.ASSISTANT);
             return;
         }
         String providerName = selection.getProviderName();
         if (AIChatModelFactory.PROVIDER_NAME_OPENROUTER.equalsIgnoreCase(providerName)) {
             if (configuration.getOpenRouterKey() == null || configuration.getOpenRouterKey().isEmpty()) {
-                appendMessage("Missing OpenRouter key setting.", false);
+                appendChatMessage("Missing OpenRouter key setting.", ChatMessageCategory.ASSISTANT);
                 return;
             }
         } else if (AIChatModelFactory.PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
             if (configuration.getGeminiKey() == null || configuration.getGeminiKey().isEmpty()) {
-                appendMessage("Missing Gemini key setting.", false);
+                appendChatMessage("Missing Gemini key setting.", ChatMessageCategory.ASSISTANT);
                 return;
             }
         } else if (AIChatModelFactory.PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
             if (!configuration.isOllamaEnabled()) {
-                appendMessage("Ollama usage is disabled.", false);
+                appendChatMessage("Ollama usage is disabled.", ChatMessageCategory.ASSISTANT);
                 return;
             }
         } else {
-            appendMessage("Unknown AI provider selection.", false);
+            appendChatMessage("Unknown AI provider selection.", ChatMessageCategory.ASSISTANT);
             return;
         }
-        chatService = AIChatServiceFactory.createService(new AIToolSet(), chatSessionMemoryController,
+        chatService = AIChatServiceFactory.createService(new AIToolSet(this::handleToolCallSummary),
+            chatSessionMemoryController,
             chatTokenUsageTracker);
     }
 
-    private void appendMessage(String text, boolean isFromUser) {
-        JTextArea messageArea = new JTextArea();
-        messageArea.setEditable(false);
-        messageArea.setLineWrap(true);
-        messageArea.setWrapStyleWord(true);
-        messageArea.setText(text);
-        messageArea.setBackground(isFromUser ? new Color(235, 235, 235) : new Color(245, 245, 245));
-        messageArea.setAlignmentX(LEFT_ALIGNMENT);
-        Dimension preferredSize = messageArea.getPreferredSize();
-        messageArea.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferredSize.height));
-        messageArea.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 8, 6, 8));
+    private void appendChatMessage(String text, ChatMessageCategory category) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            appendChatMessageInternal(text, category);
+        } else {
+            SwingUtilities.invokeLater(() -> appendChatMessageInternal(text, category));
+        }
+    }
 
-        JPanel messageWrapper = new JPanel(new BorderLayout());
-        messageWrapper.setAlignmentX(LEFT_ALIGNMENT);
-        messageWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferredSize.height + 12));
-        messageWrapper.add(messageArea, BorderLayout.CENTER);
-        messageWrapper.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 6, 4, 6));
+    private void appendChatMessageInternal(String text, ChatMessageCategory category) {
+        if (text == null || category == null) {
+            return;
+        }
+        HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
+        String messageText = formatMessageText(text);
+        String messageMarkup = "<div class=\"" + category.getStyleClassName() + "\">" + messageText + "</div>";
+        try {
+            messageHistoryEditorKit.insertHTML(document, document.getLength(), messageMarkup, 0, 0, null);
+        } catch (BadLocationException | IOException error) {
+            LogUtils.severe(error);
+        }
+        scrollToBottom();
+    }
 
-        messagesPanel.add(messageWrapper);
-        messagesPanel.add(Box.createRigidArea(new Dimension(0, 6)));
-        messagesPanel.revalidate();
-        messagesPanel.repaint();
-        SwingUtilities.invokeLater(this::scrollToBottom);
+    private void handleToolCallSummary(ToolCallSummary summary) {
+        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible()) {
+            return;
+        }
+        appendChatMessage(summary.getSummaryText(), ChatMessageCategory.TOOL_CALL);
+    }
+
+    private void configureMessageHistoryStyles() {
+        StyleSheet styleSheet = messageHistoryEditorKit.getStyleSheet();
+        styleSheet.addRule("body { font-family: Sans-Serif; font-size: 12pt; margin: 6px; }");
+        styleSheet.addRule(".message-user { margin: 6px 0; padding: 6px 8px; background-color: #ebebeb;"
+            + " border-left: 4px solid #3e3e3eff; }");
+        styleSheet.addRule(".message-assistant { margin: 6px 0; padding: 6px 8px; background-color: #f5f5f5;"
+            + " border-left: 4px solid #d7d7d7; }");
+        styleSheet.addRule(".message-tool { margin: 6px 0; padding: 6px 8px; background-color: #eaf3ff;"
+            + " border-left: 4px solid #bcd9ff; }");
+    }
+
+    private String formatMessageText(String text) {
+        String escaped = HtmlUtils.toXMLEscapedText(text);
+        String normalized = escaped.replace("\r\n", "\n").replace("\r", "\n");
+        return normalized.replace("\n", "<br>");
+    }
+
+    private void resetMessageHistory() {
+        messageHistoryPane.setText("<html><body></body></html>");
+        messageHistoryPane.setCaretPosition(0);
     }
 
     private void startNewChat() {
-        messagesPanel.removeAll();
-        messagesPanel.revalidate();
-        messagesPanel.repaint();
+        resetMessageHistory();
         chatSessionMemoryController.clearChatMemory();
         chatTokenUsageTracker.resetTotals();
     }
@@ -225,8 +272,23 @@ public class AIChatPanel extends JPanel {
     }
 
     private void scrollToBottom() {
-        JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
-        verticalBar.setValue(verticalBar.getMaximum());
+        messageHistoryPane.setCaretPosition(messageHistoryPane.getDocument().getLength());
+    }
+
+    private enum ChatMessageCategory {
+        USER("message-user"),
+        ASSISTANT("message-assistant"),
+        TOOL_CALL("message-tool");
+
+        private final String styleClassName;
+
+        ChatMessageCategory(String styleClassName) {
+            this.styleClassName = styleClassName;
+        }
+
+        String getStyleClassName() {
+            return styleClassName;
+        }
     }
 
 }

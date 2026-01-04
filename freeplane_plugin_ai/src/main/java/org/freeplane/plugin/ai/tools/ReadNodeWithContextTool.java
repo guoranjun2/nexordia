@@ -16,26 +16,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.SummaryNode;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class ReadNodeWithContextTool {
-    private static final EnumSet<ContextSection> DEFAULT_SECTIONS = EnumSet.of(ContextSection.BREADCRUMB_PATH);
+    private static final EnumSet<ContextSection> DEFAULT_SECTIONS = EnumSet.noneOf(ContextSection.class);
     private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
     private static final int DEFAULT_SUMMARY_DEPTH = 1;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
+    private static final int SUMMARY_PREVIEW_TEXT_LIMIT = 20;
+    private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
 
     private final AvailableMaps availableMaps;
     private final NodeContentItemReader nodeContentItemReader;
+    private final TextController textController;
     private final ObjectMapper objectMapper;
 
     public ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
-        this(availableMaps, nodeContentItemReader, new ObjectMapper());
+        this(availableMaps, nodeContentItemReader, TextController.getController(), new ObjectMapper());
+    }
+
+    public ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+                                   TextController textController) {
+        this(availableMaps, nodeContentItemReader, textController, new ObjectMapper());
     }
 
     ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
-                            ObjectMapper objectMapper) {
+                            TextController textController, ObjectMapper objectMapper) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
+        this.textController = Objects.requireNonNull(textController, "textController");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
@@ -71,6 +81,7 @@ public class ReadNodeWithContextTool {
         NodeContentRequest parentNodeContentRequest = request.getParentNodeContentRequest();
         NodeContentRequest childNodeContentRequest = request.getChildNodeContentRequest();
         List<ReadNodesWithContextItem> items = new ArrayList<>();
+        List<String> focusNodePreviewTexts = new ArrayList<>();
         int budgetUsed = 0;
         int omittedFocusNodeCount = 0;
         for (NodeModel focusNode : focusNodes) {
@@ -99,9 +110,10 @@ public class ReadNodeWithContextTool {
                 budgetUsed += itemSize;
             }
             items.add(item);
+            addPreviewText(focusNode, focusNodePreviewTexts);
         }
         Omissions responseOmissions = buildResponseOmissions(omittedFocusNodeCount);
-        return new ReadNodesWithContextResponse(mapIdentifierValue, items, responseOmissions);
+        return new ReadNodesWithContextResponse(mapIdentifierValue, items, responseOmissions, focusNodePreviewTexts);
     }
 
     private ReadNodesWithContextItem buildItemForFocusNode(NodeModel focusNode,
@@ -311,6 +323,48 @@ public class ReadNodeWithContextTool {
         } catch (Exception error) {
             throw new IllegalStateException("Failed to serialize read response.", error);
         }
+    }
+
+    private void addPreviewText(NodeModel focusNode, List<String> previews) {
+        if (focusNode == null || previews == null || previews.size() >= SUMMARY_PREVIEW_COUNT_LIMIT) {
+            return;
+        }
+        String previewText = textController.getShortPlainText(focusNode, SUMMARY_PREVIEW_TEXT_LIMIT, "");
+        if (previewText != null && !previewText.isEmpty()) {
+            previews.add(previewText);
+        }
+    }
+
+    ToolCallSummary buildToolCallSummary(ReadNodesWithContextRequest request, ReadNodesWithContextResponse response) {
+        int itemCount = response == null || response.getItems() == null ? 0 : response.getItems().size();
+        String summaryText = "readNodeWithContext: items=" + itemCount;
+        String focusNodeTexts = ToolCallSummaryFormatter.joinTextValues(
+            response == null ? null : response.getFocusNodePreviewTexts(), "; ");
+        if (!focusNodeTexts.isEmpty()) {
+            summaryText = summaryText + ", focusNodeTexts=\"" + focusNodeTexts + "\"";
+        }
+        if (request != null && request.getFullContentDepth() != null) {
+            summaryText = summaryText + ", fullContentDepth=" + request.getFullContentDepth();
+        }
+        if (request != null && request.getSummaryDepth() != null) {
+            summaryText = summaryText + ", summaryDepth=" + request.getSummaryDepth();
+        }
+        if (request != null && request.getContextSections() != null && !request.getContextSections().isEmpty()) {
+            String sectionsText = ToolCallSummaryFormatter.joinEnumValues(
+                resolveSections(request.getContextSections()));
+            if (!sectionsText.isEmpty()) {
+                summaryText = summaryText + ", sections=" + sectionsText;
+            }
+        }
+        return new ToolCallSummary("readNodeWithContext", summaryText, false);
+    }
+
+    ToolCallSummary buildToolCallErrorSummary(ReadNodesWithContextRequest request, RuntimeException error) {
+        String message = error == null ? "Unknown error" : error.getMessage();
+        String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
+            ? error.getClass().getSimpleName()
+            : message);
+        return new ToolCallSummary("readNodeWithContext", "readNodeWithContext error: " + safeMessage, true);
     }
 
     private List<String> buildQualifiers(NodeModel nodeModel) {

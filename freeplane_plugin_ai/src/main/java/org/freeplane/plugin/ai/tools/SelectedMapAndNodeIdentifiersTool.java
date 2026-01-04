@@ -25,4 +25,18 @@ public class SelectedMapAndNodeIdentifiersTool {
             : mapModel.getRootNode().getID();
         return new SelectionIdentifiersResponse(mapIdentifierValue, nodeIdentifier, rootNodeIdentifier);
     }
+
+    ToolCallSummary buildToolCallSummary(SelectionIdentifiersResponse response) {
+        return new ToolCallSummary("getSelectedMapAndNodeIdentifiers",
+            "getSelectedMapAndNodeIdentifiers: selected identifiers read", false);
+    }
+
+    ToolCallSummary buildToolCallErrorSummary(RuntimeException error) {
+        String message = error == null ? "Unknown error" : error.getMessage();
+        String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
+            ? error.getClass().getSimpleName()
+            : message);
+        return new ToolCallSummary("getSelectedMapAndNodeIdentifiers",
+            "getSelectedMapAndNodeIdentifiers error: " + safeMessage, true);
+    }
 }

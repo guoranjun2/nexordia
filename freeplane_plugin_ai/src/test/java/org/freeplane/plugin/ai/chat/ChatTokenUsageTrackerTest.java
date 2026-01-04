@@ -30,7 +30,7 @@ public class ChatTokenUsageTrackerTest {
         uut.resetTotals();
 
         ChatUsageTotals totals = totalsReference.get();
-        assertThat(totals.getInputTokenCount()).isNull();
-        assertThat(totals.getOutputTokenCount()).isNull();
+        assertThat(totals.getInputTokenCount()).isZero();
+        assertThat(totals.getOutputTokenCount()).isZero();
     }
 }

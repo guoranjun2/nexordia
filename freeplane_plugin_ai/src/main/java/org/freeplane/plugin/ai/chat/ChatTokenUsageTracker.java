@@ -10,8 +10,8 @@ import java.util.function.Consumer;
 
 public final class ChatTokenUsageTracker {
     private final Consumer<ChatUsageTotals> totalsConsumer;
-    private Long inputTokenCount;
-    private Long outputTokenCount;
+    private long inputTokenCount;
+    private long outputTokenCount;
 
     public ChatTokenUsageTracker(Consumer<ChatUsageTotals> totalsConsumer) {
         this.totalsConsumer = Objects.requireNonNull(totalsConsumer, "totalsConsumer");
@@ -28,10 +28,10 @@ public final class ChatTokenUsageTracker {
             return;
         }
         if (inputCount != null) {
-            inputTokenCount = sum(inputTokenCount, inputCount.longValue());
+            inputTokenCount += inputCount.longValue();
         }
         if (outputCount != null) {
-            outputTokenCount = sum(outputTokenCount, outputCount.longValue());
+            outputTokenCount += outputCount.longValue();
         }
         publishTotals();
     }
@@ -42,8 +42,8 @@ public final class ChatTokenUsageTracker {
     }
 
     public synchronized void resetTotals() {
-        inputTokenCount = null;
-        outputTokenCount = null;
+        inputTokenCount = 0L;
+        outputTokenCount = 0L;
         publishTotals();
     }
 
@@ -51,15 +51,7 @@ public final class ChatTokenUsageTracker {
         totalsConsumer.accept(new ChatUsageTotals(inputTokenCount, outputTokenCount));
     }
 
-    private static long sum(Long current, long addition) {
-        return (current == null ? 0L : current) + addition;
-    }
-
     private static String buildToolCallLogMessage(ToolExecutionRequest request) {
-        String arguments = request.arguments();
-        if (arguments == null || arguments.isEmpty()) {
-            return "Tool call: " + request.name();
-        }
-        return "Tool call: " + request.name() + " " + arguments;
+        return "Tool call: " + request.name();
     }
 }

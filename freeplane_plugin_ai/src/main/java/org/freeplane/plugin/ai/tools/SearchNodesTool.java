@@ -15,6 +15,7 @@ import java.util.regex.PatternSyntaxException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class SearchNodesTool {
@@ -22,19 +23,28 @@ public class SearchNodesTool {
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
     private static final SearchCaseSensitivity DEFAULT_CASE_SENSITIVITY = SearchCaseSensitivity.CASE_INSENSITIVE;
+    private static final int SUMMARY_PREVIEW_TEXT_LIMIT = 20;
+    private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
 
     private final AvailableMaps availableMaps;
     private final NodeContentItemReader nodeContentItemReader;
+    private final TextController textController;
     private final ObjectMapper objectMapper;
 
     public SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
-        this(availableMaps, nodeContentItemReader, new ObjectMapper());
+        this(availableMaps, nodeContentItemReader, TextController.getController(), new ObjectMapper());
+    }
+
+    public SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+                           TextController textController) {
+        this(availableMaps, nodeContentItemReader, textController, new ObjectMapper());
     }
 
     SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
-                    ObjectMapper objectMapper) {
+                    TextController textController, ObjectMapper objectMapper) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
+        this.textController = Objects.requireNonNull(textController, "textController");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
@@ -80,6 +90,7 @@ public class SearchNodesTool {
         int toIndex = Math.min(fromIndex + limit, matches.size());
         List<NodeModel> pageNodes = matches.subList(fromIndex, toIndex);
         List<SearchResultItem> results = new ArrayList<>(pageNodes.size());
+        List<String> resultPreviewTexts = new ArrayList<>();
         int budgetUsed = 0;
         int omittedResultCount = 0;
         for (NodeModel nodeModel : pageNodes) {
@@ -91,11 +102,12 @@ public class SearchNodesTool {
             }
             results.add(resultItem);
             budgetUsed += itemSize;
+            addPreviewText(nodeModel, resultPreviewTexts);
         }
         Omissions omissions = omittedResultCount > 0
             ? new Omissions(null, null, null, omittedResultCount, Collections.singletonList(OmissionReason.TEXT_BUDGET))
             : null;
-        return new SearchNodesResponse(mapIdentifierValue, results, omissions);
+        return new SearchNodesResponse(mapIdentifierValue, results, omissions, resultPreviewTexts);
     }
 
     private List<NodeModel> resolveSearchRoots(MapModel mapModel, List<String> subtreeRootNodeIdentifiers) {
@@ -218,5 +230,48 @@ public class SearchNodesTool {
             throw new IllegalArgumentException("Missing " + fieldName);
         }
         return value;
+    }
+
+    ToolCallSummary buildToolCallSummary(SearchNodesRequest request, SearchNodesResponse response) {
+        String queryText = request == null ? "" : ToolCallSummaryFormatter.sanitizeValue(request.getQueryText());
+        int resultCount = response == null || response.getResults() == null ? 0 : response.getResults().size();
+        String summaryText = "searchNodes: query=\"" + queryText + "\""
+            + ", results=" + resultCount;
+        String resultTexts = ToolCallSummaryFormatter.joinTextValues(
+            response == null ? null : response.getResultPreviewTexts(), "; ");
+        if (!resultTexts.isEmpty()) {
+            summaryText = summaryText + ", resultTexts=\"" + resultTexts + "\"";
+        }
+        if (request != null && request.getMatchingMode() != null) {
+            summaryText = summaryText + ", matchingMode=" + request.getMatchingMode();
+        }
+        if (request != null && request.getCaseSensitivity() != null) {
+            summaryText = summaryText + ", caseSensitivity=" + request.getCaseSensitivity();
+        }
+        if (request != null && request.getOffset() != null) {
+            summaryText = summaryText + ", offset=" + Math.max(0, request.getOffset());
+        }
+        if (request != null && request.getLimit() != null) {
+            summaryText = summaryText + ", limit=" + Math.max(0, request.getLimit());
+        }
+        return new ToolCallSummary("searchNodes", summaryText, false);
+    }
+
+    ToolCallSummary buildToolCallErrorSummary(SearchNodesRequest request, RuntimeException error) {
+        String message = error == null ? "Unknown error" : error.getMessage();
+        String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
+            ? error.getClass().getSimpleName()
+            : message);
+        return new ToolCallSummary("searchNodes", "searchNodes error: " + safeMessage, true);
+    }
+
+    private void addPreviewText(NodeModel resultNode, List<String> previews) {
+        if (resultNode == null || previews == null || previews.size() >= SUMMARY_PREVIEW_COUNT_LIMIT) {
+            return;
+        }
+        String previewText = textController.getShortPlainText(resultNode, SUMMARY_PREVIEW_TEXT_LIMIT, "");
+        if (previewText != null && !previewText.isEmpty()) {
+            previews.add(previewText);
+        }
     }
 }

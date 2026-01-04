@@ -14,6 +14,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
 
@@ -49,7 +50,8 @@ public class SearchNodesToolTest {
             .thenReturn(false);
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF)).thenReturn(rootBriefContent);
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF)).thenReturn(childBriefContent);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alp",
@@ -78,7 +80,8 @@ public class SearchNodesToolTest {
         UUID mapIdentifier = UUID.fromString("f605a3ed-c8a9-4f9a-a001-d2f0c2f92d21");
         MapModel mapModel = mock(MapModel.class);
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader);
+        TextController textController = mock(TextController.class);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alpha",
@@ -116,7 +119,8 @@ public class SearchNodesToolTest {
                 NodeContentValueMatcher matcher = invocation.getArgument(2);
                 return matcher.matchesValue("Alpha");
             });
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alp",
@@ -160,7 +164,8 @@ public class SearchNodesToolTest {
             .thenReturn(new NodeContent("Root", null, null, null, null));
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))
             .thenReturn(new NodeContent("Alpha", null, null, null, null));
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "priority",

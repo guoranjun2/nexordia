@@ -14,6 +14,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
 
@@ -50,12 +51,14 @@ public class ReadNodeWithContextToolTest {
         when(nodeContentItemReader.readNodeContent(secondChildNode, null, NodeContentPreset.BRIEF)).thenReturn(secondChildBrief);
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.BRIEF)).thenReturn(focusBreadcrumb);
         when(nodeContentItemReader.readNodeContent(parentNode, null, NodeContentPreset.BRIEF)).thenReturn(parentBreadcrumb);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(
+            availableMaps, nodeContentItemReader, textController, objectMapper);
 
         ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),
-            null,
+            Collections.singletonList(ContextSection.BREADCRUMB_PATH),
             null,
             null,
             null,
@@ -89,7 +92,8 @@ public class ReadNodeWithContextToolTest {
         UUID mapIdentifier = UUID.fromString("2e8d84f0-75b4-4c76-9c25-46863b02cdde");
         MapModel mapModel = mock(MapModel.class);
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader);
+        TextController textController = mock(TextController.class);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController);
         ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
             mapIdentifier.toString(),
             Arrays.asList("ID_dup", "ID_dup"),
@@ -114,7 +118,8 @@ public class ReadNodeWithContextToolTest {
         MapModel mapModel = mock(MapModel.class);
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_missing")).thenReturn(null);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader);
+        TextController textController = mock(TextController.class);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController);
         ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_missing"),
@@ -152,7 +157,9 @@ public class ReadNodeWithContextToolTest {
             .thenReturn(new NodeContent(null, new TextualContent("Focus", null, null), null, null, null));
         when(nodeContentItemReader.readNodeContent(secondFocusNode, null, NodeContentPreset.FULL))
             .thenReturn(new NodeContent(null, new TextualContent("Focus 2", null, null), null, null, null));
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(
+            availableMaps, nodeContentItemReader, textController, objectMapper);
         ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
             mapIdentifier.toString(),
             Arrays.asList("ID_focus", "ID_focus_2"),
@@ -196,7 +203,9 @@ public class ReadNodeWithContextToolTest {
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.FULL)).thenReturn(focusFullContent);
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.FULL)).thenReturn(childFullContent);
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.BRIEF)).thenReturn(focusBriefContent);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, objectMapper);
+        TextController textController = mock(TextController.class);
+        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(
+            availableMaps, nodeContentItemReader, textController, objectMapper);
         ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),

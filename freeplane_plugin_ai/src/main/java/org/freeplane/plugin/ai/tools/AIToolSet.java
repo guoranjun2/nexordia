@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import java.util.Objects;
 
 import dev.langchain4j.agent.tool.Tool;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.mode.Controller;
@@ -17,31 +18,41 @@ public class AIToolSet {
     private final ReadNodeWithContextTool readNodeWithContextTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
     private final SearchNodesTool searchNodesTool;
+    private final ToolCallSummaryHandler toolCallSummaryHandler;
 
     public AIToolSet() {
-        this(createAvailableMaps(), createTextController(), createAttributeController(), createIconController());
+        this(null);
     }
 
-    AIToolSet(AvailableMaps availableMaps, TextController textController,
+    public AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler) {
+        this(toolCallSummaryHandler, createAvailableMaps(), createTextController(), createAttributeController(),
+            createIconController());
+    }
+
+    AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps, TextController textController,
               AttributeController attributeController, IconController iconController) {
-        this(availableMaps, createNodeContentItemReader(textController, attributeController, iconController));
+        this(toolCallSummaryHandler, availableMaps,
+            createNodeContentItemReader(textController, attributeController, iconController), textController);
     }
 
-    AIToolSet(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
+    AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps,
+              NodeContentItemReader nodeContentItemReader, TextController textController) {
         this(new SystemMessageBuilder(availableMaps),
-            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader),
+            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController),
             new SelectedMapAndNodeIdentifiersTool(availableMaps),
-            new SearchNodesTool(availableMaps, nodeContentItemReader));
+            new SearchNodesTool(availableMaps, nodeContentItemReader, textController),
+            toolCallSummaryHandler);
     }
 
     AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool,
               SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool,
-              SearchNodesTool searchNodesTool) {
+              SearchNodesTool searchNodesTool, ToolCallSummaryHandler toolCallSummaryHandler) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
         this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
+        this.toolCallSummaryHandler = toolCallSummaryHandler;
     }
 
     public String systemMessageForChat(Object input) {
@@ -50,17 +61,38 @@ public class AIToolSet {
 
     @Tool("Read nodes with context.")
     public ReadNodesWithContextResponse readNodeWithContext(ReadNodesWithContextRequest request) {
-        return readNodeWithContextTool.readNodeWithContext(request);
+        try {
+            ReadNodesWithContextResponse response = readNodeWithContextTool.readNodeWithContext(request);
+            publishToolCallSummary(readNodeWithContextTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(readNodeWithContextTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 
     @Tool("Get identifiers for the currently selected map and node.")
     public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers() {
-        return selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers();
+        try {
+            SelectionIdentifiersResponse response = selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers();
+            publishToolCallSummary(selectedMapAndNodeIdentifiersTool.buildToolCallSummary(response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(selectedMapAndNodeIdentifiersTool.buildToolCallErrorSummary(error));
+            throw error;
+        }
     }
 
     @Tool("Search nodes by content.")
     public SearchNodesResponse searchNodes(SearchNodesRequest request) {
-        return searchNodesTool.searchNodes(request);
+        try {
+            SearchNodesResponse response = searchNodesTool.searchNodes(request);
+            publishToolCallSummary(searchNodesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(searchNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 
     private static AvailableMaps createAvailableMaps() {
@@ -113,6 +145,20 @@ public class AIToolSet {
         NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
         return new NodeContentItemReader(nodeContentReader);
+    }
+
+    private void publishToolCallSummary(ToolCallSummary summary) {
+        if (summary == null) {
+            return;
+        }
+        if (summary.hasError()) {
+            LogUtils.severe(summary.getSummaryText());
+        } else {
+            LogUtils.info(summary.getSummaryText());
+        }
+        if (toolCallSummaryHandler != null) {
+            toolCallSummaryHandler.handleToolCallSummary(summary);
+        }
     }
 
     // @Tool("Return a flat list of nodes under a branch.")

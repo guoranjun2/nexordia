@@ -13,7 +13,7 @@ public final class ReadNodesWithContextRequest {
     @Description("List of node identifiers. Default: root node.")
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
-    @Description("Context sections to include. Default: BREADCRUMB_PATH.")
+    @Description("Context sections to include. Default: empty list.")
     private final List<ContextSection> contextSections;
     @JsonProperty(required = false)
     @Description("Depth of full content. Default: 0.")
