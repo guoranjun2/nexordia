@@ -1,0 +1,18 @@
+# Task: Add map icon usage list tool
+- **Scope:** Provide a tool that lists effective icons used in the current map (including style icons), returning only English descriptions and excluding state icons and tags to keep the list relevant for LLM search and selection.
+- **Research summary:**
+  - `IconRegistry` tracks icons used on a map during the current session and powers icon filter dialogs. It is not a full icon catalog.
+  - `IconRegistry.getIconsAsListModel()` returns a `SortedComboBoxModel<NamedIcon>` containing the registry entries.
+  - `IconController` state icon providers can opt in to registry inclusion, so state icons may appear in the registry. Tags are stored separately and do not appear in `IconRegistry`.
+  - Icons can be attached directly to nodes (`NodeModel.getIcons()`) or inherited from logical styles (`IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)` merges style icons). The style map shares the parent map icon registry, so style icons are included in the registry.
+- **Design:**
+  - Add a new tool that takes a map identifier and returns a list of icon descriptions used in the map.
+  - Use the same description resolution logic as `IconsContentReader` (English description from `Resources_en.properties`, emoji decoding, user icon relative path).
+  - Include icons from both explicit node icons and style icons (the registry aggregates both via the shared style map).
+  - Filter out state icons by keeping only `MindIcon` instances and excluding any icon whose file name appears in the `icons.state` property. Tags are not included in the registry, so no tag filtering is needed.
+  - Document that icon descriptions are always English; matching should be done against English descriptions by default.
+- **Test specification:**
+  - Verify the tool returns English descriptions in a stable order.
+  - Verify state icons are excluded from the response.
+  - Verify emoji icons return the decoded Unicode character.
+  - Verify user icons return relative file paths.

@@ -1,0 +1,15 @@
+# Task: Render assistant responses as Markdown and preserve copy line breaks
+- **Scope:** Render assistant responses as Markdown in the chat pane, preserve line breaks when copying, and define the expected message format for assistant output.
+- **Research summary:**
+  - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`, and default clipboard export can drop line breaks when pasted into plain text targets.
+  - The Freeplane Markdown plugin already contains a Markdown to HyperText Markup Language converter that can be exported for reuse by the AI plugin.
+  - Assistant responses currently display as plain text, so Markdown markers remain visible and line breaks depend on direct newline rendering.
+- **Design:**
+  - Request Markdown for assistant responses in the system message and document that the output format is Markdown by default.
+  - Convert Markdown to HyperText Markup Language for display using the Markdown plugin converter and fall back to escaped plain text if conversion fails.
+  - Preserve the original Markdown text per message and use a custom `TransferHandler` to copy a plain text rendering with line breaks intact.
+  - Keep each message wrapped in a single HyperText Markup Language element with the existing message class to maintain styling.
+- **Test specification:**
+  - Verify Markdown headers, lists, and emphasis render as expected in the output HyperText Markup Language.
+  - Verify copying a message yields plain text with line breaks preserved.
+  - Verify disabling Markdown rendering falls back to plain text output and copy behavior.

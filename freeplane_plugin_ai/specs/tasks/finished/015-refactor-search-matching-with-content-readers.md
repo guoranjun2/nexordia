@@ -1,0 +1,15 @@
+# Task: Refactor search matching to reuse content readers
+- **Scope:** Remove duplicated field-matching logic from `SearchNodesTool` by reusing the same content reader outputs that power read responses, keeping search semantics aligned with returned values.
+- **Research summary:**
+  - `SearchNodesTool` currently inspects `NodeContent` fields directly, duplicating matching logic for text, details, note, attributes, tags, and icons.
+  - `NodeContentReader` already normalizes content (for example, plain text conversion for textual fields) and controls which fields are present via `NodeContentRequest`.
+- **Design:**
+  - Add `matches` methods to each content reader (`TextualContentReader`, `AttributesContentReader`, `TagsContentReader`, `IconsContentReader`) so matching uses the same normalized values that read responses expose (plain text conversion, attribute transformation, English icon descriptions, emoji handling).
+  - Keep `NodeContentReader.matches` as a small orchestrator that delegates to the content reader matchers in a fixed order and returns immediately on the first match.
+  - Introduce a `NodeContentValueMatcher` helper to encapsulate matching mode and case sensitivity rules; pass it into each reader matcher instead of duplicating matching logic.
+  - `SearchNodesTool` calls `NodeContentItemReader.matchesNodeContent`, which delegates to `NodeContentReader.matches`, removing field traversal logic from the tool.
+  - Keep matching mode and case sensitivity behavior identical to current search behavior.
+- **Test specification:**
+  - Verify matching across all fields (briefText, text, details, note, attributes, tags, icons).
+  - Verify the matcher honors matching mode and case sensitivity for each field.
+  - Verify `SearchNodesTool` uses the shared matcher without changing result ordering or pagination behavior.
