@@ -7,13 +7,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public final class SearchNodesRequest {
-    @Description("Map identifier string. Use getSelectedMapAndNodeIdentifiers for the current map identifier.")
+    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
     private final String mapIdentifier;
     @Description("Search query string.")
     private final String queryText;
     @JsonProperty(required = false)
-    @Description("List of node identifiers that restrict search to those subtrees. Default: root node. Use "
-        + "getSelectedMapAndNodeIdentifiers for the root node identifier.")
+    @Description("List of node identifiers that restrict search to those subtrees. Default: root node. Use another "
+        + "tool call to refresh identifiers if needed.")
     private final List<String> subtreeRootNodeIdentifiers;
     @JsonProperty(required = false)
     @Description("NodeContentRequest selecting which content fields are searched. Default: includesText true only.")
