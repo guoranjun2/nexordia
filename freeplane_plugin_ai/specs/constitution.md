@@ -14,9 +14,8 @@ Established abbreviations like "ai", "uuid", and "llm" are valid terms and are n
 
 ## Task States
 Tasks must use one of these status folders:
-*   **Backlog**: The task is known but not yet detailed.
-*   **Designing**: Research and design are underway.
-*   **Design Review**: The design is written and waiting for user approval. Research must be documented before this state.
+*   **Planning**: Research and design are underway.
+*   **Plan Review**: The design is written and waiting for user approval. Research must be documented before this state.
 *   **Implementing**: The task is being executed.
 *   **Implementation Review**: Execution is done and waiting for user verification. Only the user can mark **Finished**.
 *   **Finished**: The user has verified completion.
@@ -27,7 +26,7 @@ Tasks must use one of these status folders:
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
 *   **Track modified production files**: List them in the task file.
 *   **Refactor tracking**: When refactoring, document it by updating the design section of the existing task or creating a new task.
-*   **Task placement**: Add new tasks as individual files in `specs/tasks/backlog/`.
+*   **Task placement**: Add new tasks as individual files in `specs/tasks/planning/`.
 
 ## Stop and Ask
 If there is confusion, contradictory instructions, or an unexpected failure that would require unplanned changes to behavior or signatures, stop and ask for guidance.
