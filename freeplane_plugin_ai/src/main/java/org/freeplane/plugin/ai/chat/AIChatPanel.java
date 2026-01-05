@@ -20,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -30,6 +31,8 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 
 public class AIChatPanel extends JPanel {
@@ -98,7 +101,8 @@ public class AIChatPanel extends JPanel {
         add(topBarContainer, BorderLayout.NORTH);
 
         sendButton.addActionListener(event -> sendMessage());
-        inputArea.getInputMap().put(javax.swing.KeyStroke.getKeyStroke("ctrl ENTER"), "sendMessage");
+        int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, shortcutMask), "sendMessage");
         inputArea.getActionMap().put("sendMessage", new AbstractAction() {
             /**
 			 * Comment for <code>serialVersionUID</code>
