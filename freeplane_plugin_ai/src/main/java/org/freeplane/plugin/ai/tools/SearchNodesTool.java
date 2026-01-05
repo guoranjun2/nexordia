@@ -19,10 +19,6 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class SearchNodesTool {
-    private static final int DEFAULT_LIMIT = 200;
-    private static final int DEFAULT_OFFSET = 0;
-    private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
-    private static final SearchCaseSensitivity DEFAULT_CASE_SENSITIVITY = SearchCaseSensitivity.CASE_INSENSITIVE;
     private static final int SUMMARY_PREVIEW_TEXT_LIMIT = 20;
     private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
 
@@ -59,26 +55,16 @@ public class SearchNodesTool {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }
         String queryText = requireValue(request.getQueryText(), "queryText");
-        SearchMatchingMode matchingMode = request.getMatchingMode() == null
-            ? SearchMatchingMode.CONTAINS
-            : request.getMatchingMode();
-        SearchCaseSensitivity caseSensitivity = request.getCaseSensitivity() == null
-            ? DEFAULT_CASE_SENSITIVITY
-            : request.getCaseSensitivity();
+        SearchMatchingMode matchingMode = request.getMatchingMode();
+        SearchCaseSensitivity caseSensitivity = request.getCaseSensitivity();
         Pattern regularExpression = matchingMode == SearchMatchingMode.REGULAR_EXPRESSION
             ? compileRegularExpression(queryText, caseSensitivity)
             : null;
-        List<SearchResultSection> resultSections = request.getResultSections();
-        boolean includesBreadcrumbPath = resultSections != null && resultSections.contains(SearchResultSection.BREADCRUMB_PATH);
-        int offset = request.getOffset() == null ? DEFAULT_OFFSET : Math.max(0, request.getOffset());
-        int limit = request.getLimit() == null ? DEFAULT_LIMIT : Math.max(0, request.getLimit());
-        int maximumTotalTextCharacters = request.getMaximumTotalTextCharacters() == null
-            ? DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS
-            : request.getMaximumTotalTextCharacters();
+        boolean includesBreadcrumbPath = request.getResultSections().contains(SearchResultSection.BREADCRUMB_PATH);
+        int offset = request.getOffset();
+        int limit = request.getLimit();
+        int maximumTotalTextCharacters = request.getMaximumTotalTextCharacters();
         NodeContentRequest contentRequest = request.getNodeContentRequestForSearch();
-        if (contentRequest == null) {
-            contentRequest = defaultSearchContentRequest();
-        }
         List<NodeModel> searchRoots = resolveSearchRoots(mapModel, request.getSubtreeRootNodeIdentifiers());
         NodeContentValueMatcher valueMatcher = new NodeContentValueMatcher(
             queryText, matchingMode, caseSensitivity, regularExpression);
@@ -194,10 +180,6 @@ public class SearchNodesTool {
         return String.join("/", pathSegments);
     }
 
-    private NodeContentRequest defaultSearchContentRequest() {
-        return new NodeContentRequest(new TextualContentRequest(true, false, false), null, null, null);
-    }
-
     private int measureSerializedLength(Object item) {
         try {
             return objectMapper.writeValueAsBytes(item).length;
@@ -242,17 +224,17 @@ public class SearchNodesTool {
         if (!resultTexts.isEmpty()) {
             summaryText = summaryText + ", resultTexts=\"" + resultTexts + "\"";
         }
-        if (request != null && request.getMatchingMode() != null) {
+        if (request != null && request.hasMatchingMode()) {
             summaryText = summaryText + ", matchingMode=" + request.getMatchingMode();
         }
-        if (request != null && request.getCaseSensitivity() != null) {
+        if (request != null && request.hasCaseSensitivity()) {
             summaryText = summaryText + ", caseSensitivity=" + request.getCaseSensitivity();
         }
-        if (request != null && request.getOffset() != null) {
-            summaryText = summaryText + ", offset=" + Math.max(0, request.getOffset());
+        if (request != null && request.hasOffset()) {
+            summaryText = summaryText + ", offset=" + request.getOffset();
         }
-        if (request != null && request.getLimit() != null) {
-            summaryText = summaryText + ", limit=" + Math.max(0, request.getLimit());
+        if (request != null && request.hasLimit()) {
+            summaryText = summaryText + ", limit=" + request.getLimit();
         }
         return new ToolCallSummary("searchNodes", summaryText, false);
     }

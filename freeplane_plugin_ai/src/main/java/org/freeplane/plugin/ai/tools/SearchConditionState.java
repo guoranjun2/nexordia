@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.Objects;
+
 public final class SearchConditionState {
     private final String propertyName;
     private final String conditionName;
@@ -8,14 +10,14 @@ public final class SearchConditionState {
     private final boolean usesApproximateMatching;
     private final boolean ignoresDiacritics;
 
-    public SearchConditionState(String propertyName, String conditionName, String value, boolean isCaseSensitive,
-                                boolean usesApproximateMatching, boolean ignoresDiacritics) {
-        this.propertyName = propertyName;
-        this.conditionName = conditionName;
-        this.value = value;
-        this.isCaseSensitive = isCaseSensitive;
-        this.usesApproximateMatching = usesApproximateMatching;
-        this.ignoresDiacritics = ignoresDiacritics;
+    public SearchConditionState(SearchConditionRequest request) {
+        Objects.requireNonNull(request, "request");
+        this.propertyName = request.getPropertyName();
+        this.conditionName = request.getConditionName();
+        this.value = request.getValue();
+        this.isCaseSensitive = request.isCaseSensitive();
+        this.usesApproximateMatching = request.usesApproximateMatching();
+        this.ignoresDiacritics = request.ignoresDiacritics();
     }
 
     public String getPropertyName() {

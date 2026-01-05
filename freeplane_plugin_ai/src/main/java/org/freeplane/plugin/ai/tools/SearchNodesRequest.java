@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -7,6 +9,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public final class SearchNodesRequest {
+    private static final int DEFAULT_LIMIT = 200;
+    private static final int DEFAULT_OFFSET = 0;
+    private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
+    private static final SearchMatchingMode DEFAULT_MATCHING_MODE = SearchMatchingMode.CONTAINS;
+    private static final SearchCaseSensitivity DEFAULT_CASE_SENSITIVITY = SearchCaseSensitivity.CASE_INSENSITIVE;
+    private static final NodeContentRequest DEFAULT_CONTENT_REQUEST = new NodeContentRequest(
+        new TextualContentRequest(true, false, false),
+        null,
+        null,
+        null);
     @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
     private final String mapIdentifier;
     @Description("Search query string.")
@@ -36,6 +48,11 @@ public final class SearchNodesRequest {
     @JsonProperty(required = false)
     @Description("Maximum total response length in characters. Default: 65536.")
     private final Integer maximumTotalTextCharacters;
+    private final boolean hasMatchingMode;
+    private final boolean hasCaseSensitivity;
+    private final boolean hasOffset;
+    private final boolean hasLimit;
+    private final boolean hasMaximumTotalTextCharacters;
 
     @JsonCreator
     public SearchNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
@@ -51,13 +68,22 @@ public final class SearchNodesRequest {
         this.mapIdentifier = mapIdentifier;
         this.queryText = queryText;
         this.subtreeRootNodeIdentifiers = subtreeRootNodeIdentifiers;
-        this.nodeContentRequestForSearch = nodeContentRequestForSearch;
-        this.matchingMode = matchingMode;
-        this.caseSensitivity = caseSensitivity;
-        this.resultSections = resultSections;
-        this.offset = offset;
-        this.limit = limit;
-        this.maximumTotalTextCharacters = maximumTotalTextCharacters;
+        this.nodeContentRequestForSearch = nodeContentRequestForSearch == null
+            ? DEFAULT_CONTENT_REQUEST
+            : nodeContentRequestForSearch;
+        this.hasMatchingMode = matchingMode != null;
+        this.matchingMode = matchingMode == null ? DEFAULT_MATCHING_MODE : matchingMode;
+        this.hasCaseSensitivity = caseSensitivity != null;
+        this.caseSensitivity = caseSensitivity == null ? DEFAULT_CASE_SENSITIVITY : caseSensitivity;
+        this.resultSections = normalizeResultSections(resultSections);
+        this.hasOffset = offset != null;
+        this.offset = offset == null ? DEFAULT_OFFSET : Math.max(0, offset);
+        this.hasLimit = limit != null;
+        this.limit = limit == null ? DEFAULT_LIMIT : Math.max(0, limit);
+        this.hasMaximumTotalTextCharacters = maximumTotalTextCharacters != null;
+        this.maximumTotalTextCharacters = maximumTotalTextCharacters == null
+            ? DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS
+            : maximumTotalTextCharacters;
     }
 
     public String getMapIdentifier() {
@@ -98,5 +124,41 @@ public final class SearchNodesRequest {
 
     public Integer getMaximumTotalTextCharacters() {
         return maximumTotalTextCharacters;
+    }
+
+    public boolean hasMatchingMode() {
+        return hasMatchingMode;
+    }
+
+    public boolean hasCaseSensitivity() {
+        return hasCaseSensitivity;
+    }
+
+    public boolean hasOffset() {
+        return hasOffset;
+    }
+
+    public boolean hasLimit() {
+        return hasLimit;
+    }
+
+    public boolean hasMaximumTotalTextCharacters() {
+        return hasMaximumTotalTextCharacters;
+    }
+
+    private static List<SearchResultSection> normalizeResultSections(List<SearchResultSection> resultSections) {
+        if (resultSections == null || resultSections.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<SearchResultSection> normalized = new ArrayList<>();
+        for (SearchResultSection section : resultSections) {
+            if (section != null) {
+                normalized.add(section);
+            }
+        }
+        if (normalized.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(normalized);
     }
 }
