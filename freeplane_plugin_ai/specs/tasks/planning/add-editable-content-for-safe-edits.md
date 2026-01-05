@@ -1,5 +1,6 @@
 # Task: Add editable content for safe edits
 - **Scope:** Add an optional editable content block that exposes raw values and format metadata for text, details, note, attributes, and explicit node icons so a large language model can edit safely without losing formulas or markup.
+- **Motivation:** Editing with transformed output risks data loss for formulas, markup, or raw attribute values. Providing editable representations makes safe edits possible without changing how the map renders. This is needed before adding editing tools to avoid corrupting node content.
 - **Research summary:**
   - TextController applies a transformer chain that can change display text, add formatting, or evaluate formulas.
   - RichTextModel stores content type and raw or Extensible Markup Language content separately from transformed output.

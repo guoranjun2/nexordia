@@ -44,6 +44,7 @@ Each task includes:
 *   **Test specification**: brief description of planned tests before implementation.
 *   **Modified files**: production and test files touched.
 *   **Status**: implied by the folder; do not duplicate status in the task file.
+*   **Motivation**: explain why the task exists (planning and plan review tasks only).
 
 ## Architecture Decision Records
 *   Record architecture decisions in `specs/architecture-decisions/` as one file per decision with meaningful names.

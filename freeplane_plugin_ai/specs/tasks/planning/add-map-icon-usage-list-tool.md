@@ -1,5 +1,6 @@
 # Task: Add map icon usage list tool
 - **Scope:** Provide a tool that lists effective icons used in the current map (including style icons), returning only English descriptions and excluding state icons and tags to keep the list relevant for LLM search and selection.
+- **Motivation:** Icon searches and edits are hard without a map specific inventory of icons that are actually used. Returning map scoped icon descriptions reduces noise and avoids presenting the full icon catalog. This gives the model a reliable vocabulary for icon related actions.
 - **Research summary:**
   - `IconRegistry` tracks icons used on a map during the current session and powers icon filter dialogs. It is not a full icon catalog.
   - `IconRegistry.getIconsAsListModel()` returns a `SortedComboBoxModel<NamedIcon>` containing the registry entries.
