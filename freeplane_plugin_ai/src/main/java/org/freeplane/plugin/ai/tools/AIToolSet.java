@@ -37,7 +37,7 @@ public class AIToolSet {
 
     AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps,
               NodeContentItemReader nodeContentItemReader, TextController textController) {
-        this(new SystemMessageBuilder(availableMaps),
+        this(new SystemMessageBuilder(),
             new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController),
             new SelectedMapAndNodeIdentifiersTool(availableMaps),
             new SearchNodesTool(availableMaps, nodeContentItemReader, textController),

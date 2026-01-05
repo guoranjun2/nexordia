@@ -1,56 +1,40 @@
 package org.freeplane.plugin.ai.chat;
 
-import java.util.Objects;
-import java.util.UUID;
-
-import org.freeplane.features.map.MapModel;
-import org.freeplane.features.map.NodeModel;
-import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.core.resources.ResourceController;
 
 public final class SystemMessageBuilder {
-    private static final String NOT_AVAILABLE = "not available";
-    private static final String QUALIFIERS_DESCRIPTION =
-        "Node qualifiers: summary_node (summary group node), first_group_node (first node of a summary group).";
-    private final AvailableMaps availableMaps;
+	public static final String SYSTEM_MESSAGE_PROPERTY = "ai_system_message";
+    @FunctionalInterface
+    interface SystemMessageTextProvider {
+        String getSystemMessageText();
+    }
 
-    public SystemMessageBuilder(AvailableMaps availableMaps) {
-        this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+    private final SystemMessageTextProvider systemMessageTextProvider;
+
+    public SystemMessageBuilder() {
+        this(new ResourceControllerSystemMessageTextProvider());
+    }
+
+    SystemMessageBuilder(SystemMessageTextProvider systemMessageTextProvider) {
+        this.systemMessageTextProvider = systemMessageTextProvider;
     }
 
     public String buildForChat() {
-        String mapIdentifier = resolveMapIdentifier();
-        String rootNodeIdentifier = resolveRootNodeIdentifier();
-        String selectedNodeIdentifier = resolveSelectedNodeIdentifier();
-        return "Current map identifier: " + mapIdentifier + "\n"
-            + "Current root node identifier: " + rootNodeIdentifier + "\n"
-            + "Current selected node identifier: " + selectedNodeIdentifier + "\n"
-            + QUALIFIERS_DESCRIPTION;
+        String message = systemMessageTextProvider.getSystemMessageText();
+        if (message == null) {
+            return null;
+        }
+        String trimmed = message.trim();
+        return trimmed.isEmpty() ? null : message;
     }
 
-    private String resolveMapIdentifier() {
-        UUID mapIdentifier = availableMaps.getCurrentMapIdentifier();
-        return mapIdentifier == null ? NOT_AVAILABLE : mapIdentifier.toString();
-    }
+    private static final class ResourceControllerSystemMessageTextProvider implements SystemMessageTextProvider {
 
-    private String resolveRootNodeIdentifier() {
-        MapModel mapModel = availableMaps.getCurrentMapModel();
-        if (mapModel == null) {
-            return NOT_AVAILABLE;
+        @Override
+        public String getSystemMessageText() {
+            ResourceController resourceController = ResourceController.getResourceController();
+            String message = resourceController.getProperty(SYSTEM_MESSAGE_PROPERTY);
+            return message;
         }
-        NodeModel rootNode = mapModel.getRootNode();
-        if (rootNode == null) {
-            return NOT_AVAILABLE;
-        }
-        String nodeIdentifier = rootNode.getID();
-        return nodeIdentifier == null ? NOT_AVAILABLE : nodeIdentifier;
-    }
-
-    private String resolveSelectedNodeIdentifier() {
-        NodeModel selectedNode = availableMaps.getCurrentSelectedNodeModel();
-        if (selectedNode == null) {
-            return NOT_AVAILABLE;
-        }
-        String nodeIdentifier = selectedNode.getID();
-        return nodeIdentifier == null ? NOT_AVAILABLE : nodeIdentifier;
     }
 }

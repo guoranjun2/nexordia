@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.langchain4j.model.output.structured.Description;
 
 import java.util.List;
 
@@ -10,6 +11,8 @@ import java.util.List;
 public final class NodeContentItem {
     private final String nodeIdentifier;
     private final NodeContent content;
+    @Description("Optional qualifiers when requested: summary_node for summary group nodes, first_group_node for the "
+        + "first node of a summary group.")
     private final List<String> qualifiers;
 
     @JsonCreator

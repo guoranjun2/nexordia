@@ -7,13 +7,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public final class ReadNodesWithContextRequest {
-    @Description("Map identifier string.")
+    @Description("Map identifier string. Use getSelectedMapAndNodeIdentifiers for the current map identifier.")
     private final String mapIdentifier;
     @JsonProperty(required = false)
-    @Description("List of node identifiers. Default: root node.")
+    @Description("List of node identifiers. Default: root node. Use getSelectedMapAndNodeIdentifiers for the "
+        + "selected or root node identifier.")
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
-    @Description("Context sections to include. Default: empty list.")
+    @Description("Context sections to include. Default: empty list. QUALIFIERS adds qualifier strings such as "
+        + "summary_node and first_group_node.")
     private final List<ContextSection> contextSections;
     @JsonProperty(required = false)
     @Description("Depth of full content. Default: 0.")
