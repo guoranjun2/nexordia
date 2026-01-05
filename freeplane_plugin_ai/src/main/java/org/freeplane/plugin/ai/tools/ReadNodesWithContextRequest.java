@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -7,11 +9,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public final class ReadNodesWithContextRequest {
-    @Description("Map identifier string. Use getSelectedMapAndNodeIdentifiers for the current map identifier.")
+    private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
+    private static final int DEFAULT_SUMMARY_DEPTH = 1;
+    private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
+    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
     private final String mapIdentifier;
     @JsonProperty(required = false)
-    @Description("List of node identifiers. Default: root node. Use getSelectedMapAndNodeIdentifiers for the "
-        + "selected or root node identifier.")
+    @Description("List of node identifiers. Default: root node. Use another tool call to refresh identifiers "
+        + "if needed.")
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
     @Description("Context sections to include. Default: empty list. QUALIFIERS adds qualifier strings such as "
@@ -35,6 +40,9 @@ public final class ReadNodesWithContextRequest {
     @JsonProperty(required = false)
     @Description("NodeContentRequest override for child node full content.")
     private final NodeContentRequest childNodeContentRequest;
+    private final boolean hasFullContentDepth;
+    private final boolean hasSummaryDepth;
+    private final boolean hasMaximumTotalTextCharacters;
 
     @JsonCreator
     public ReadNodesWithContextRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
@@ -48,10 +56,15 @@ public final class ReadNodesWithContextRequest {
                                        @JsonProperty("childNodeContentRequest") NodeContentRequest childNodeContentRequest) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
-        this.contextSections = contextSections;
-        this.fullContentDepth = fullContentDepth;
-        this.summaryDepth = summaryDepth;
-        this.maximumTotalTextCharacters = maximumTotalTextCharacters;
+        this.contextSections = normalizeContextSections(contextSections);
+        this.hasFullContentDepth = fullContentDepth != null;
+        this.fullContentDepth = fullContentDepth == null ? DEFAULT_FULL_CONTENT_DEPTH : fullContentDepth;
+        this.hasSummaryDepth = summaryDepth != null;
+        this.summaryDepth = summaryDepth == null ? DEFAULT_SUMMARY_DEPTH : summaryDepth;
+        this.hasMaximumTotalTextCharacters = maximumTotalTextCharacters != null;
+        this.maximumTotalTextCharacters = maximumTotalTextCharacters == null
+            ? DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS
+            : maximumTotalTextCharacters;
         this.focusNodeContentRequest = focusNodeContentRequest;
         this.parentNodeContentRequest = parentNodeContentRequest;
         this.childNodeContentRequest = childNodeContentRequest;
@@ -81,6 +94,18 @@ public final class ReadNodesWithContextRequest {
         return maximumTotalTextCharacters;
     }
 
+    public boolean hasFullContentDepth() {
+        return hasFullContentDepth;
+    }
+
+    public boolean hasSummaryDepth() {
+        return hasSummaryDepth;
+    }
+
+    public boolean hasMaximumTotalTextCharacters() {
+        return hasMaximumTotalTextCharacters;
+    }
+
     public NodeContentRequest getFocusNodeContentRequest() {
         return focusNodeContentRequest;
     }
@@ -91,5 +116,21 @@ public final class ReadNodesWithContextRequest {
 
     public NodeContentRequest getChildNodeContentRequest() {
         return childNodeContentRequest;
+    }
+
+    private static List<ContextSection> normalizeContextSections(List<ContextSection> contextSections) {
+        if (contextSections == null || contextSections.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ContextSection> normalized = new ArrayList<>();
+        for (ContextSection section : contextSections) {
+            if (section != null) {
+                normalized.add(section);
+            }
+        }
+        if (normalized.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(normalized);
     }
 }

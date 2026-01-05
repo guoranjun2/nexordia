@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,10 +19,6 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class ReadNodeWithContextTool {
-    private static final EnumSet<ContextSection> DEFAULT_SECTIONS = EnumSet.noneOf(ContextSection.class);
-    private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
-    private static final int DEFAULT_SUMMARY_DEPTH = 1;
-    private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
     private static final int SUMMARY_PREVIEW_TEXT_LIMIT = 20;
     private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
 
@@ -62,24 +57,15 @@ public class ReadNodeWithContextTool {
         List<String> nodeIdentifiers = resolveNodeIdentifiers(mapModel, request.getNodeIdentifiers());
         validateDuplicateNodeIdentifiers(nodeIdentifiers);
         List<NodeModel> focusNodes = resolveFocusNodes(mapModel, nodeIdentifiers);
-        EnumSet<ContextSection> sections = resolveSections(request.getContextSections());
+        List<ContextSection> sections = request.getContextSections();
         boolean includeQualifiers = sections.contains(ContextSection.QUALIFIERS);
-        int fullContentDepth = request.getFullContentDepth() == null
-            ? DEFAULT_FULL_CONTENT_DEPTH
-            : request.getFullContentDepth();
-        int summaryDepth = request.getSummaryDepth() == null
-            ? DEFAULT_SUMMARY_DEPTH
-            : request.getSummaryDepth();
+        int fullContentDepth = request.getFullContentDepth();
+        int summaryDepth = request.getSummaryDepth();
         if (fullContentDepth < 0 || summaryDepth < 0) {
             throw new IllegalArgumentException("Depth values must be 0 or greater");
         }
-        int maximumTotalTextCharacters = request.getMaximumTotalTextCharacters() == null
-            ? DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS
-            : request.getMaximumTotalTextCharacters();
-        boolean enforceBudget = focusNodes.size() > 1;
-        NodeContentRequest focusNodeContentRequest = request.getFocusNodeContentRequest();
-        NodeContentRequest parentNodeContentRequest = request.getParentNodeContentRequest();
-        NodeContentRequest childNodeContentRequest = request.getChildNodeContentRequest();
+        int maximumTotalTextCharacters = request.getMaximumTotalTextCharacters();
+        boolean enforceBudget = focusNodes.size() > 1 || fullContentDepth > 0 || summaryDepth > 0;
         List<ReadNodesWithContextItem> items = new ArrayList<>();
         List<String> focusNodePreviewTexts = new ArrayList<>();
         int budgetUsed = 0;
@@ -87,15 +73,9 @@ public class ReadNodeWithContextTool {
         for (NodeModel focusNode : focusNodes) {
             ReadNodesWithContextItem item = buildItemForFocusNode(
                 focusNode,
-                sections,
-                fullContentDepth,
-                summaryDepth,
+                request,
                 includeQualifiers,
-                focusNodeContentRequest,
-                parentNodeContentRequest,
-                childNodeContentRequest,
                 enforceBudget,
-                maximumTotalTextCharacters,
                 budgetUsed);
             if (item == null) {
                 omittedFocusNodeCount = focusNodes.size() - items.size();
@@ -117,28 +97,26 @@ public class ReadNodeWithContextTool {
     }
 
     private ReadNodesWithContextItem buildItemForFocusNode(NodeModel focusNode,
-                                                           EnumSet<ContextSection> sections,
-                                                           int fullContentDepth,
-                                                           int summaryDepth,
+                                                           ReadNodesWithContextRequest request,
                                                            boolean includeQualifiers,
-                                                           NodeContentRequest focusNodeContentRequest,
-                                                           NodeContentRequest parentNodeContentRequest,
-                                                           NodeContentRequest childNodeContentRequest,
                                                            boolean enforceBudget,
-                                                           int maximumTotalTextCharacters,
                                                            int budgetUsed) {
         List<NodeDepthItem> allNodes = buildNodeDepthItems(
             focusNode,
-            fullContentDepth,
-            summaryDepth,
-            includeQualifiers,
-            focusNodeContentRequest,
-            childNodeContentRequest);
+            request,
+            includeQualifiers);
         if (allNodes.isEmpty()) {
             return null;
         }
-        NodeContentItem parentNode = buildParentNodeItem(focusNode, sections, includeQualifiers, parentNodeContentRequest);
-        String breadcrumbPath = sections.contains(ContextSection.BREADCRUMB_PATH) ? buildBreadcrumbPath(focusNode) : null;
+        List<ContextSection> contextSections = request.getContextSections();
+        NodeContentItem parentNode = buildParentNodeItem(
+            focusNode,
+            contextSections,
+            includeQualifiers,
+            request.getParentNodeContentRequest());
+        String breadcrumbPath = contextSections.contains(ContextSection.BREADCRUMB_PATH)
+            ? buildBreadcrumbPath(focusNode)
+            : null;
         List<NodeDepthItem> nodes = new ArrayList<>();
         ReadNodesWithContextItem baseItem = new ReadNodesWithContextItem(nodes, parentNode, breadcrumbPath, null);
         int omittedChildCount = 0;
@@ -147,7 +125,7 @@ public class ReadNodeWithContextTool {
             NodeDepthItem nodeDepthItem = allNodes.get(index);
             nodes.add(nodeDepthItem);
             int itemSize = measureSerializedLength(baseItem);
-            if (enforceBudget && budgetUsed + itemSize > maximumTotalTextCharacters) {
+            if (enforceBudget && budgetUsed + itemSize > request.getMaximumTotalTextCharacters()) {
                 nodes.remove(nodes.size() - 1);
                 if (nodes.isEmpty()) {
                     return null;
@@ -171,12 +149,9 @@ public class ReadNodeWithContextTool {
     }
 
     private List<NodeDepthItem> buildNodeDepthItems(NodeModel focusNode,
-                                                    int fullContentDepth,
-                                                    int summaryDepth,
-                                                    boolean includeQualifiers,
-                                                    NodeContentRequest focusNodeContentRequest,
-                                                    NodeContentRequest childNodeContentRequest) {
-        int maximumDepth = fullContentDepth + summaryDepth;
+                                                    ReadNodesWithContextRequest request,
+                                                    boolean includeQualifiers) {
+        int maximumDepth = request.getFullContentDepth() + request.getSummaryDepth();
         List<NodeDepthItem> nodes = new ArrayList<>();
         Deque<NodeModel> stack = new ArrayDeque<>();
         Deque<Integer> depthStack = new ArrayDeque<>();
@@ -189,7 +164,10 @@ public class ReadNodeWithContextTool {
                 continue;
             }
             NodeDepthItem nodeDepthItem = buildNodeDepthItem(
-                current, depth, fullContentDepth, includeQualifiers, focusNodeContentRequest, childNodeContentRequest);
+                current,
+                depth,
+                request,
+                includeQualifiers);
             nodes.add(nodeDepthItem);
             if (depth < maximumDepth) {
                 List<NodeModel> children = current.getChildren();
@@ -202,15 +180,20 @@ public class ReadNodeWithContextTool {
         return nodes;
     }
 
-    private NodeDepthItem buildNodeDepthItem(NodeModel nodeModel, int depth, int fullContentDepth,
-                                             boolean includeQualifiers,
-                                             NodeContentRequest focusNodeContentRequest,
-                                             NodeContentRequest childNodeContentRequest) {
+    private NodeDepthItem buildNodeDepthItem(NodeModel nodeModel, int depth, ReadNodesWithContextRequest request,
+                                             boolean includeQualifiers) {
+        int fullContentDepth = request.getFullContentDepth();
         NodeContent content;
         if (depth == 0) {
-            content = nodeContentItemReader.readNodeContent(nodeModel, focusNodeContentRequest, NodeContentPreset.FULL);
+            content = nodeContentItemReader.readNodeContent(
+                nodeModel,
+                request.getFocusNodeContentRequest(),
+                NodeContentPreset.FULL);
         } else if (depth <= fullContentDepth) {
-            content = nodeContentItemReader.readNodeContent(nodeModel, childNodeContentRequest, NodeContentPreset.FULL);
+            content = nodeContentItemReader.readNodeContent(
+                nodeModel,
+                request.getChildNodeContentRequest(),
+                NodeContentPreset.FULL);
         } else {
             content = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
         }
@@ -218,7 +201,7 @@ public class ReadNodeWithContextTool {
         return new NodeDepthItem(nodeModel.createID(), depth, content, qualifiers);
     }
 
-    private NodeContentItem buildParentNodeItem(NodeModel focusNode, EnumSet<ContextSection> sections,
+    private NodeContentItem buildParentNodeItem(NodeModel focusNode, List<ContextSection> sections,
                                                 boolean includeQualifiers, NodeContentRequest parentNodeContentRequest) {
         if (!sections.contains(ContextSection.PARENT_SUMMARY)) {
             return null;
@@ -293,22 +276,6 @@ public class ReadNodeWithContextTool {
         return focusNodes;
     }
 
-    private EnumSet<ContextSection> resolveSections(List<ContextSection> contextSections) {
-        if (contextSections == null || contextSections.isEmpty()) {
-            return DEFAULT_SECTIONS.clone();
-        }
-        EnumSet<ContextSection> sections = EnumSet.noneOf(ContextSection.class);
-        for (ContextSection section : contextSections) {
-            if (section != null) {
-                sections.add(section);
-            }
-        }
-        if (sections.isEmpty()) {
-            return DEFAULT_SECTIONS.clone();
-        }
-        return sections;
-    }
-
     private Omissions buildResponseOmissions(int omittedFocusNodeCount) {
         if (omittedFocusNodeCount == 0) {
             return null;
@@ -343,15 +310,15 @@ public class ReadNodeWithContextTool {
         if (!focusNodeTexts.isEmpty()) {
             summaryText = summaryText + ", focusNodeTexts=\"" + focusNodeTexts + "\"";
         }
-        if (request != null && request.getFullContentDepth() != null) {
+        if (request != null && request.hasFullContentDepth()) {
             summaryText = summaryText + ", fullContentDepth=" + request.getFullContentDepth();
         }
-        if (request != null && request.getSummaryDepth() != null) {
+        if (request != null && request.hasSummaryDepth()) {
             summaryText = summaryText + ", summaryDepth=" + request.getSummaryDepth();
         }
-        if (request != null && request.getContextSections() != null && !request.getContextSections().isEmpty()) {
+        if (request != null && !request.getContextSections().isEmpty()) {
             String sectionsText = ToolCallSummaryFormatter.joinEnumValues(
-                resolveSections(request.getContextSections()));
+                request.getContextSections());
             if (!sectionsText.isEmpty()) {
                 summaryText = summaryText + ", sections=" + sectionsText;
             }
