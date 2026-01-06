@@ -47,6 +47,7 @@ import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeMoveEvent;
 import org.freeplane.features.mode.Controller;
+import org.freeplane.features.mode.filemode.FModeController;
 import org.freeplane.features.ui.FocusOutlineAction;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
@@ -104,6 +105,8 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
 	}
 
     void synchronizeOutlineSelection(SelectionSynchronizationTrigger synchronizationTrigger, boolean requestFocus) {
+    	if(currentRoot == NO_MAP_AVAILABLE)
+    		return;
         final NodeModel node = currentMapView.getSelected().getNode();
         final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findOutlineNode(node);
@@ -228,6 +231,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             if(currentMapView != mapView) {
                 detachCurrentMapView();
                 currentMapView = mapView;
+                if(mapView.getModeController().getModeName().equals(FModeController.MODENAME)) {
+                	showNoMapState();
+                	return;
+                }
                 mapView.setFilterUpdateListener(filterUpdateListener);
             }
             OutlineTreeViewState saved = loadSavedViewState(currentMapView);
