@@ -35,9 +35,13 @@
   - Review existing InsertPosition usage and whether a shared anchor placement enum already exists.
 - **Design:**
   - Define a shared anchor placement component with anchor node identifier and placement mode (first child, last child, sibling before, sibling after).
-  - Define create request fields: map identifier, anchor placement, ordered group list of new node definitions with recursive children, and optional summary creation flag.
-  - Define move request fields: map identifier, anchor placement, ordered group list of existing node identifiers, and optional summary creation flag.
+  - Define create request fields: map identifier, anchor placement or summary anchor placement (mutually exclusive), ordered group list of new node definitions with recursive children, and optional summary content.
+  - Define move request fields: map identifier, anchor placement or summary anchor placement (mutually exclusive), ordered group list of existing node identifiers, and optional summary content.
   - Require a user summary string in each request and return it in the response for display.
+  - Model summary creation as a separate summary block that references the summarized node group; the summary is anchored by the first and last summarized nodes, not by the moved or created group.
+  - SummaryAnchorPlacement consists of two node identifier strings that must reference existing nodes to be summarized.
+  - Do not include summary content in the request; summary nodes are technical and generally have no text.
+  - Summary creation for newly created nodes requires a follow up call after node identifiers exist.
   - Define response fields: map identifier, user summary, modified node list with identifiers and short texts in tool order, and optional summary node identifier when created.
   - Ensure error responses cover invalid identifiers, invalid group ordering, and unsupported operations.
 - **Test specification:**
@@ -51,6 +55,7 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ModifiedNodeSummary.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesRequest.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesResponse.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryAnchorPlacement.java`
 
 ### Subtask: Create NodeModel elements for new nodes
 - **Status:** Planning
@@ -123,12 +128,15 @@
 
 ### Subtask: Support summary creation for a group
 - **Status:** Planning
-- **Scope:** Create a summary anchored to the first and last node in the group.
-- **Motivation:** Summary creation is a common Freeplane operation for grouped nodes.
+- **Scope:** Create a summary anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
+- **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
 - **Research summary:**
   - Review summary node creation helpers and constraints.
 - **Design:**
-  - Require first and last nodes to share a parent before creating the summary.
+  - Require first and last summarized nodes to share a parent before creating the summary.
+  - Require SummaryAnchorPlacement with two existing node identifiers that define the summarized range.
+  - Define how summary content is provided for the new summary node.
+  - Require a follow up call to summarize newly created nodes once identifiers exist.
   - Return errors for invalid summary anchors.
 - **Test specification:**
   - Verify summary creation succeeds with valid anchors.

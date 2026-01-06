@@ -9,20 +9,20 @@ public final class MoveNodesRequest {
     private final String mapIdentifier;
     private final String userSummary;
     private final AnchorPlacement anchorPlacement;
+    private final SummaryAnchorPlacement summaryAnchorPlacement;
     private final List<String> nodeIdentifiers;
-    private final boolean createSummary;
 
     @JsonCreator
     public MoveNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
                             @JsonProperty("userSummary") String userSummary,
                             @JsonProperty("anchorPlacement") AnchorPlacement anchorPlacement,
-                            @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers,
-                            @JsonProperty("createSummary") boolean createSummary) {
+                            @JsonProperty("summaryAnchorPlacement") SummaryAnchorPlacement summaryAnchorPlacement,
+                            @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers) {
         this.mapIdentifier = mapIdentifier;
         this.userSummary = userSummary;
         this.anchorPlacement = anchorPlacement;
+        this.summaryAnchorPlacement = summaryAnchorPlacement;
         this.nodeIdentifiers = nodeIdentifiers;
-        this.createSummary = createSummary;
     }
 
     public String getMapIdentifier() {
@@ -37,11 +37,11 @@ public final class MoveNodesRequest {
         return anchorPlacement;
     }
 
-    public List<String> getNodeIdentifiers() {
-        return nodeIdentifiers;
+    public SummaryAnchorPlacement getSummaryAnchorPlacement() {
+        return summaryAnchorPlacement;
     }
 
-    public boolean createSummary() {
-        return createSummary;
+    public List<String> getNodeIdentifiers() {
+        return nodeIdentifiers;
     }
 }

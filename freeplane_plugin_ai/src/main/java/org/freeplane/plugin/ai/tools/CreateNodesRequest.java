@@ -9,20 +9,20 @@ public final class CreateNodesRequest {
     private final String mapIdentifier;
     private final String userSummary;
     private final AnchorPlacement anchorPlacement;
+    private final SummaryAnchorPlacement summaryAnchorPlacement;
     private final List<NodeCreationItem> nodes;
-    private final boolean createSummary;
 
     @JsonCreator
     public CreateNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
                               @JsonProperty("userSummary") String userSummary,
                               @JsonProperty("anchorPlacement") AnchorPlacement anchorPlacement,
-                              @JsonProperty("nodes") List<NodeCreationItem> nodes,
-                              @JsonProperty("createSummary") boolean createSummary) {
+                              @JsonProperty("summaryAnchorPlacement") SummaryAnchorPlacement summaryAnchorPlacement,
+                              @JsonProperty("nodes") List<NodeCreationItem> nodes) {
         this.mapIdentifier = mapIdentifier;
         this.userSummary = userSummary;
         this.anchorPlacement = anchorPlacement;
+        this.summaryAnchorPlacement = summaryAnchorPlacement;
         this.nodes = nodes;
-        this.createSummary = createSummary;
     }
 
     public String getMapIdentifier() {
@@ -37,11 +37,11 @@ public final class CreateNodesRequest {
         return anchorPlacement;
     }
 
-    public List<NodeCreationItem> getNodes() {
-        return nodes;
+    public SummaryAnchorPlacement getSummaryAnchorPlacement() {
+        return summaryAnchorPlacement;
     }
 
-    public boolean createSummary() {
-        return createSummary;
+    public List<NodeCreationItem> getNodes() {
+        return nodes;
     }
 }
