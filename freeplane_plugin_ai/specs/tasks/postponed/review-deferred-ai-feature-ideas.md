@@ -1,0 +1,14 @@
+# Task: Review deferred ai feature ideas
+- **Scope:** Capture and later evaluate deferred ai feature ideas for the plugin.
+- **Motivation:** These ideas are out of scope for current work but should be preserved for later evaluation.
+- **Research summary:**
+  - Identify constraints for each deferred feature before prioritization.
+- **Design:**
+  - Inline proofreading with color coded suggestions and accept or reject controls.
+  - Model provider expansion beyond the initial set, including local models and additional cloud gateways.
+  - Multimodal context ingestion for files such as PDF, DOCX, MP3, or MP4.
+  - Custom context selection via Groovy scripts and user defined toolbox actions.
+  - Asynchronous calls and multiple simultaneous conversations.
+  - Dedicated validation user interface for proposed edits beyond the current chat flow.
+- **Test specification:**
+  - Define tests after the deferred features are selected.

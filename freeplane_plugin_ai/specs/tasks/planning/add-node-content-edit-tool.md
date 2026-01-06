@@ -1,0 +1,18 @@
+# Task: Add node content edit tool
+- **Scope:** Add a tool to edit node content values for text, details, note, attributes, tags, and icons, and return identifiers and short texts for all modified nodes. Run only on specific user requests.
+- **Motivation:** Editing must cover all editable content types and return updated identifiers and short texts so the model can continue edits without extra reads.
+- **Research summary:**
+  - Review how text, details, and note changes are applied through TextController and how formatted or formula content is handled.
+  - Review how attribute, tag, and icon updates are applied and how explicit node icons are distinguished from style icons.
+  - Review how short text is generated for use in tool responses.
+- **Design:**
+  - Accept a list of node updates with only the fields to change.
+  - Align with editable content formats to avoid corrupting formulas or markup.
+  - Support updates for attributes, tags, and explicit node icons (not style icons) alongside text, details, and note.
+  - Enforce map consistency and return an error when an edit cannot be applied.
+  - Return identifiers and short texts for all modified nodes as part of the response.
+  - Formatting and style manipulation are out of scope for this tool.
+- **Test specification:**
+  - Verify edits are applied to the correct nodes for each content type.
+  - Verify invalid edits return an error without partial changes.
+  - Verify responses include identifiers and short texts for all modified nodes.

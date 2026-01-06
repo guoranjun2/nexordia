@@ -1,10 +1,10 @@
-# Task: Rethink system message and MCP tool guidance
-- **Scope:** Decide whether to keep, remove, or minimize the system message in LangChain4j chat; move tool guidance and qualifier explanations into tool schemas; and define a user configurable system message option.
-- **Motivation:** The current system message mixes dynamic state with guidance, while MCP clients do not receive it at all. This creates divergent behavior between MCP and LangChain4j. A consistent approach improves tool discoverability and reduces reliance on static chat state.
+# Task: Rethink system message and model context protocol tool guidance
+- **Scope:** Decide whether to keep, remove, or minimize the system message in LangChain4j chat; move tool guidance and qualifier explanations into tool schemas; and define a user configurable system message option. Defer chat memory compaction and automatic retry behavior as a later optimization.
+- **Motivation:** The current system message mixes dynamic state with guidance, while Model Context Protocol clients do not receive it at all. This creates divergent behavior between Model Context Protocol and LangChain4j. A consistent approach improves tool discoverability and reduces reliance on static chat state.
 - **Research summary:**
   - `ResourceController.setDefaultProperty` sets defaults without overwriting user values; it is used to populate computed defaults such as spotlight background color in `freeplane/src/main/java/org/freeplane/view/swing/map/MapView.java`, monitor size in `freeplane/src/main/java/org/freeplane/core/ui/components/UITools.java`, and hidden preference flags in `freeplane/src/main/java/org/freeplane/core/resources/components/OptionPanelBuilder.java`.
-  - LangChain4j chat supports a system message, while MCP tool calls rely on schema metadata only.
-  - Current system message includes selection identifiers and qualifier explanations that are not available in MCP.
+  - LangChain4j chat supports a system message, while Model Context Protocol tool calls rely on schema metadata only.
+  - Current system message includes selection identifiers and qualifier explanations that are not available in Model Context Protocol.
   - Tool schemas already include field descriptions and can carry guidance for qualifiers and defaults.
   - `freeplane_plugin_latex/src/main/resources/org/freeplane/plugin/latex/preferences.xml` uses a `textbox` preference for `latex_macros` with `lines="5"` alongside font and editor settings, showing how text box inputs are configured in preferences.
 - **Design:**
@@ -12,7 +12,8 @@
   - Remove dynamic identifiers from the system message and rely on the selection identifiers tool.
   - Move qualifier explanations and other tool usage guidance into tool schema descriptions.
   - Make the system message optional and user configurable via preferences, with a minimal default.
-  - Ensure MCP tool schemas include the same guidance so clients behave consistently.
+  - Ensure Model Context Protocol tool schemas include the same guidance so clients behave consistently.
+  - Do not change chat memory behavior in this task; track memory compaction and automatic retry as a later optimization.
 - **Test specification:**
   - Verify system message is empty or minimal when disabled.
   - Verify tool schema descriptions include qualifier guidance and defaults.

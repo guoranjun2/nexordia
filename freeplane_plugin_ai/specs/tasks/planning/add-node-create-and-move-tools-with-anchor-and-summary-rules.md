@@ -1,0 +1,24 @@
+# Task: Add node create and move tools with anchor and summary rules
+- **Scope:** Add tools to create nodes and move nodes, including anchor placement rules, ordered group handling, and optional summary creation for a group. Return modified node identifiers and short texts for every successful operation. Run only on specific user requests.
+- **Motivation:** Editing requires consistent create and move operations. Newly created nodes only receive identifiers during creation, so the tool response must include those identifiers and short texts for follow up actions.
+- **Research summary:**
+  - Review existing map controller helpers for creating nodes, inserting at specific positions, and moving nodes.
+  - Review summary node creation helpers and constraints for summary anchors.
+  - Review how short text is derived for tool responses to keep response size stable.
+- **Design:**
+  - Require an anchor node and a placement mode for each operation: first child, last child, sibling before, sibling after.
+  - Allow creation requests to include recursive children so full subtrees can be created in one request.
+  - Treat a request as an ordered group of nodes; place nodes in the exact provided order without relying on current map order.
+  - Reject groups that contain nodes whose top level entries include descendants of other nodes in the same group.
+  - Support optional summary creation for a group of created or moved nodes, anchored by the first and last node in the group.
+  - Require summary anchor nodes to share the same parent node; return an error otherwise.
+  - Enforce map consistency and return errors for invalid operations, such as moving a node into its own subtree.
+  - After success, return a structure that includes identifiers and short texts for all modified nodes.
+  - Formatting and style manipulation are out of scope for this tool.
+- **Test specification:**
+  - Verify each anchor placement mode inserts or moves nodes at the correct position.
+  - Verify group ordering is preserved exactly as provided.
+  - Verify groups containing parent and descendant nodes are rejected.
+  - Verify summary creation uses the first and last nodes and rejects different parent nodes.
+  - Verify moving nodes into their own subtree returns an error.
+  - Verify responses include identifiers and short texts for all modified nodes, including newly created nodes.

@@ -1,0 +1,14 @@
+# Task: Add editing tool confirmation and consent
+- **Scope:** Add per tool confirmation dialogs and consent handling for editing tools, with separate confirmations for Model Context Protocol mode and large language model mode.
+- **Motivation:** Editing operations need explicit user consent that is specific to each tool and to the interaction mode.
+- **Research summary:**
+  - Review how OptionalDontShowMeAgainDialog is used in other Freeplane features.
+  - Review where Model Context Protocol mode and large language model mode are detected in the plugin.
+- **Design:**
+  - Use OptionalDontShowMeAgainDialog per tool, not as a global setting.
+  - Store separate confirmation preferences for Model Context Protocol mode and large language model mode.
+  - Ensure editing tools surface errors when confirmation is denied or unavailable.
+- **Test specification:**
+  - Verify each tool shows its own confirmation dialog and stores its own preference.
+  - Verify Model Context Protocol mode and large language model mode have separate confirmation preferences.
+  - Verify denied confirmation prevents the edit and returns an error.

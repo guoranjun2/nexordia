@@ -1,0 +1,15 @@
+# Task: Add search overview tool
+- **Scope:** Add a tool that generates a compact map overview and index for targeted search using a configurable model.
+- **Motivation:** Large maps need a low cost overview and index to guide targeted reads and searches.
+- **Research summary:**
+  - Review how to traverse a map to build sections and keyword lists within size limits.
+  - Review how model selection is handled for existing chat calls and whether a cheaper model can be used.
+- **Design:**
+  - Accept a map identifier, optional focus request, optional model identifier, and size limits for keywords and sections.
+  - Return a summary, a list of themes, a list of sections with node identifiers and keywords, and a keyword index.
+  - Enforce size limits by omitting sections or keywords rather than truncating values.
+  - Return identifiers and short texts for any referenced nodes to reduce follow up reads.
+- **Test specification:**
+  - Verify the overview respects keyword and section limits.
+  - Verify output includes summary, themes, sections, and keyword index.
+  - Verify identifiers and short texts are returned for referenced nodes.
