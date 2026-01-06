@@ -27,18 +27,30 @@
 ## Subtasks
 
 ### Subtask: Define request and response structures
-- **Status:** Planning
-- **Scope:** Define request fields, response shape, and modified node summaries for create and move operations.
-- **Motivation:** Clear contracts are required before implementation and testing.
+- **Status:** Finished
+- **Scope:** Define request fields, response shape, and modified node summaries for create and move operations, including shared anchor and ordering structures.
+- **Motivation:** Clear contracts are required before implementation and testing, especially for ordered groups, summaries, and user facing confirmation text.
 - **Research summary:**
-  - Review existing request and response structures for read and search tools to align field naming.
+  - Review existing request and response structures for read and search tools to align field naming and default handling.
+  - Review existing InsertPosition usage and whether a shared anchor placement enum already exists.
 - **Design:**
-  - Define request fields for anchor node, placement mode, ordered group list, and optional summary creation.
-  - Define response fields for modified node identifiers and short texts in the exact tool order.
-  - Ensure errors are returned for invalid identifiers or unsupported operations.
+  - Define a shared anchor placement component with anchor node identifier and placement mode (first child, last child, sibling before, sibling after).
+  - Define create request fields: map identifier, anchor placement, ordered group list of new node definitions with recursive children, and optional summary creation flag.
+  - Define move request fields: map identifier, anchor placement, ordered group list of existing node identifiers, and optional summary creation flag.
+  - Require a user summary string in each request and return it in the response for display.
+  - Define response fields: map identifier, user summary, modified node list with identifiers and short texts in tool order, and optional summary node identifier when created.
+  - Ensure error responses cover invalid identifiers, invalid group ordering, and unsupported operations.
 - **Test specification:**
-  - Verify request and response schema serialization.
+  - Verify request and response schema serialization and default values.
   - Verify response ordering matches the provided group order.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacement.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacementMode.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateNodesRequest.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateNodesResponse.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ModifiedNodeSummary.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesRequest.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesResponse.java`
 
 ### Subtask: Create NodeModel elements for new nodes
 - **Status:** Planning

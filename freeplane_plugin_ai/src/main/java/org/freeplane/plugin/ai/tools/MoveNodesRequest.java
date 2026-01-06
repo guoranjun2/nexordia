@@ -7,48 +7,41 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class MoveNodesRequest {
     private final String mapIdentifier;
+    private final String userSummary;
+    private final AnchorPlacement anchorPlacement;
     private final List<String> nodeIdentifiers;
-    private final String targetParentIdentifier;
-    private final InsertPosition insertPosition;
-    private final String referenceNodeIdentifier;
-    private final boolean preservesOrder;
+    private final boolean createSummary;
 
     @JsonCreator
     public MoveNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+                            @JsonProperty("userSummary") String userSummary,
+                            @JsonProperty("anchorPlacement") AnchorPlacement anchorPlacement,
                             @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers,
-                            @JsonProperty("targetParentIdentifier") String targetParentIdentifier,
-                            @JsonProperty("insertPosition") InsertPosition insertPosition,
-                            @JsonProperty("referenceNodeIdentifier") String referenceNodeIdentifier,
-                            @JsonProperty("preservesOrder") boolean preservesOrder) {
+                            @JsonProperty("createSummary") boolean createSummary) {
         this.mapIdentifier = mapIdentifier;
+        this.userSummary = userSummary;
+        this.anchorPlacement = anchorPlacement;
         this.nodeIdentifiers = nodeIdentifiers;
-        this.targetParentIdentifier = targetParentIdentifier;
-        this.insertPosition = insertPosition;
-        this.referenceNodeIdentifier = referenceNodeIdentifier;
-        this.preservesOrder = preservesOrder;
+        this.createSummary = createSummary;
     }
 
     public String getMapIdentifier() {
         return mapIdentifier;
     }
 
+    public String getUserSummary() {
+        return userSummary;
+    }
+
+    public AnchorPlacement getAnchorPlacement() {
+        return anchorPlacement;
+    }
+
     public List<String> getNodeIdentifiers() {
         return nodeIdentifiers;
     }
 
-    public String getTargetParentIdentifier() {
-        return targetParentIdentifier;
-    }
-
-    public InsertPosition getInsertPosition() {
-        return insertPosition;
-    }
-
-    public String getReferenceNodeIdentifier() {
-        return referenceNodeIdentifier;
-    }
-
-    public boolean preservesOrder() {
-        return preservesOrder;
+    public boolean createSummary() {
+        return createSummary;
     }
 }

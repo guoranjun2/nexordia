@@ -7,20 +7,34 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class MoveNodesResponse {
     private final String mapIdentifier;
-    private final List<String> movedNodeIdentifiers;
+    private final String userSummary;
+    private final List<ModifiedNodeSummary> modifiedNodes;
+    private final String summaryNodeIdentifier;
 
     @JsonCreator
     public MoveNodesResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
-                             @JsonProperty("movedNodeIdentifiers") List<String> movedNodeIdentifiers) {
+                             @JsonProperty("userSummary") String userSummary,
+                             @JsonProperty("modifiedNodes") List<ModifiedNodeSummary> modifiedNodes,
+                             @JsonProperty("summaryNodeIdentifier") String summaryNodeIdentifier) {
         this.mapIdentifier = mapIdentifier;
-        this.movedNodeIdentifiers = movedNodeIdentifiers;
+        this.userSummary = userSummary;
+        this.modifiedNodes = modifiedNodes;
+        this.summaryNodeIdentifier = summaryNodeIdentifier;
     }
 
     public String getMapIdentifier() {
         return mapIdentifier;
     }
 
-    public List<String> getMovedNodeIdentifiers() {
-        return movedNodeIdentifiers;
+    public String getUserSummary() {
+        return userSummary;
+    }
+
+    public List<ModifiedNodeSummary> getModifiedNodes() {
+        return modifiedNodes;
+    }
+
+    public String getSummaryNodeIdentifier() {
+        return summaryNodeIdentifier;
     }
 }
