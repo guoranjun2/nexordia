@@ -7,7 +7,9 @@
 - **Design:**
   - Use OptionalDontShowMeAgainDialog per tool, not as a global setting.
   - Store separate confirmation preferences for Model Context Protocol mode and large language model mode.
+  - Use the user summary from tool responses as the primary confirmation text.
   - Ensure editing tools surface errors when confirmation is denied or unavailable.
+  - Open question: should modifying tool requests also include user scope and user motivation strings for display?
 - **Test specification:**
   - Verify each tool shows its own confirmation dialog and stores its own preference.
   - Verify Model Context Protocol mode and large language model mode have separate confirmation preferences.

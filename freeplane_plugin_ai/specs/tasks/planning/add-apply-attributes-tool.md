@@ -9,6 +9,7 @@
   - Support merge and replace modes for attribute updates.
   - Support an option to remove attributes not present in the update.
   - Allow an optional list of allowed attribute names for validation.
+  - Require a user summary string in the request and return it in the response for display.
   - Return identifiers and short texts for all modified nodes in the response.
   - Formatting and style manipulation are out of scope for this tool.
 - **Test specification:**

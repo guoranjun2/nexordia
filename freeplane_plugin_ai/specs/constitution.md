@@ -38,13 +38,16 @@ If there is confusion, contradictory instructions, or an unexpected failure that
 4.  **Act** after approval.
 
 ## Task Structure
-Each task includes:
+Each task includes the following sections in this exact order:
+*   **Scope**: what the task will deliver.
+*   **Motivation**: explain why the task exists (planning and plan review tasks only).
 *   **Research summary**: facts and observations, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
 *   **Design**: structure, data flow, constraints, and decisions, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
 *   **Test specification**: brief description of planned tests before implementation.
-*   **Modified files**: production and test files touched.
-*   **Status**: implied by the folder; do not duplicate status in the task file.
-*   **Motivation**: explain why the task exists (planning and plan review tasks only).
+*   **Modified files**: production and test files touched (required for implementing and implementation review; optional for planning and plan review). Use either the task level or the subtask level, not both. If a change belongs to a subtask, list it there; otherwise list it at the task level.
+*   **Subtasks**: allowed inside tasks; each subtask follows the same structure and includes its own status section as the first element within the parent task.
+
+**Status** is implied by the folder and is not a task section.
 
 ## Architecture Decision Records
 *   Record architecture decisions in `specs/architecture-decisions/` as one file per decision with meaningful names.

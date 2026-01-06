@@ -9,6 +9,7 @@
   - Accept a list of node updates with only the fields to change.
   - Align with editable content formats to avoid corrupting formulas or markup.
   - Support updates for attributes, tags, and explicit node icons (not style icons) alongside text, details, and note.
+  - Require a user summary string in the request and return it in the response for display.
   - Enforce map consistency and return an error when an edit cannot be applied.
   - Return identifiers and short texts for all modified nodes as part of the response.
   - Formatting and style manipulation are out of scope for this tool.

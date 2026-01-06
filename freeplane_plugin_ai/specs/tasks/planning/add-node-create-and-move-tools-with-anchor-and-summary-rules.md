@@ -8,6 +8,7 @@
 - **Design:**
   - Require an anchor node and a placement mode for each operation: first child, last child, sibling before, sibling after.
   - Allow creation requests to include recursive children so full subtrees can be created in one request.
+  - Require a user summary string in the request and return it in the response for display.
   - Treat a request as an ordered group of nodes; place nodes in the exact provided order without relying on current map order.
   - Reject groups that contain nodes whose top level entries include descendants of other nodes in the same group.
   - Support optional summary creation for a group of created or moved nodes, anchored by the first and last node in the group.
@@ -22,3 +23,113 @@
   - Verify summary creation uses the first and last nodes and rejects different parent nodes.
   - Verify moving nodes into their own subtree returns an error.
   - Verify responses include identifiers and short texts for all modified nodes, including newly created nodes.
+
+## Subtasks
+
+### Subtask: Define request and response structures
+- **Status:** Planning
+- **Scope:** Define request fields, response shape, and modified node summaries for create and move operations.
+- **Motivation:** Clear contracts are required before implementation and testing.
+- **Research summary:**
+  - Review existing request and response structures for read and search tools to align field naming.
+- **Design:**
+  - Define request fields for anchor node, placement mode, ordered group list, and optional summary creation.
+  - Define response fields for modified node identifiers and short texts in the exact tool order.
+  - Ensure errors are returned for invalid identifiers or unsupported operations.
+- **Test specification:**
+  - Verify request and response schema serialization.
+  - Verify response ordering matches the provided group order.
+
+### Subtask: Create NodeModel elements for new nodes
+- **Status:** Planning
+- **Scope:** Create new NodeModel elements for a request group and place them relative to the anchor before applying content.
+- **Motivation:** Separate structural creation from content updates so creation order and placement are deterministic.
+- **Research summary:**
+  - Review node creation helpers and insertion helpers that support child and sibling placement.
+- **Design:**
+  - Create new nodes in the exact group order.
+  - Apply insertion for the entire group relative to the anchor node.
+  - Preserve the provided order, independent of existing map order.
+  - Skip undo integration for creation because no existing nodes are modified.
+- **Test specification:**
+  - Verify each placement mode produces the expected order for newly created nodes.
+  - Verify group order is preserved exactly.
+
+### Subtask: Apply content to created nodes with content editors
+- **Status:** Planning
+- **Scope:** Apply content values to newly created nodes using content editor helpers.
+- **Motivation:** Content updates should be consistent across types and reusable for later edit tools.
+- **Research summary:**
+  - Review how text, details, and note updates are applied through TextController.
+  - Review how attribute, tag, and icon updates are applied and how explicit node icons are distinguished from style icons.
+- **Design:**
+  - Introduce TextualContentEditor, AttributesContentEditor, TagsContentEditor, and IconsContentEditor helpers.
+  - Support operation modes with and without undo; use the no undo mode for creation in this task.
+  - Apply content for text, details, note, attributes, tags, and explicit node icons.
+- **Test specification:**
+  - Verify each content editor applies values for its content type.
+  - Verify explicit node icons are updated without style icons.
+  - Verify no undo recording is used for creation operations.
+
+### Subtask: Implement anchor placement and ordering rules for moves
+- **Status:** Planning
+- **Scope:** Implement placement for first child, last child, sibling before, and sibling after with strict group ordering for moved nodes.
+- **Motivation:** Deterministic placement is needed to keep edits predictable.
+- **Research summary:**
+  - Review insertion helpers that support child and sibling placement for existing nodes.
+- **Design:**
+  - Apply insertion for the entire moved group relative to the anchor node.
+  - Preserve the provided order, independent of existing map order.
+- **Test specification:**
+  - Verify each placement mode produces the expected order for moved nodes.
+  - Verify group order is preserved exactly.
+
+### Subtask: Validate group and move constraints
+- **Status:** Planning
+- **Scope:** Reject invalid groups and invalid move targets.
+- **Motivation:** Invalid moves can corrupt the map or create cycles.
+- **Research summary:**
+  - Review ancestry checks and subtree detection helpers.
+- **Design:**
+  - Reject groups containing nodes that are descendants of other group nodes at the top level.
+  - Reject moves into a node's own subtree.
+- **Test specification:**
+  - Verify ancestor and descendant conflicts are rejected.
+  - Verify subtree moves are rejected with a clear error.
+
+### Subtask: Handle clone aware moves and summaries
+- **Status:** Planning
+- **Scope:** Ensure create and move operations respect clone behavior.
+- **Motivation:** Cloned nodes share content and sometimes subtrees, so moves can affect multiple views.
+- **Research summary:**
+  - Review how clone nodes are represented and how moving a clone affects its siblings.
+- **Design:**
+  - Ensure move and summary operations do not break clone relationships.
+  - Decide whether creation should support creating clones as part of a group.
+- **Test specification:**
+  - Verify clone relationships are preserved after moves and summary creation.
+
+### Subtask: Support summary creation for a group
+- **Status:** Planning
+- **Scope:** Create a summary anchored to the first and last node in the group.
+- **Motivation:** Summary creation is a common Freeplane operation for grouped nodes.
+- **Research summary:**
+  - Review summary node creation helpers and constraints.
+- **Design:**
+  - Require first and last nodes to share a parent before creating the summary.
+  - Return errors for invalid summary anchors.
+- **Test specification:**
+  - Verify summary creation succeeds with valid anchors.
+  - Verify invalid anchor parents are rejected.
+
+### Subtask: Track and return modified node summaries
+- **Status:** Planning
+- **Scope:** Return identifiers and short texts for all modified nodes after creation or move.
+- **Motivation:** The model needs identifiers for follow up edits, especially for newly created nodes.
+- **Research summary:**
+  - Review short text generation rules used by read tools.
+- **Design:**
+  - Return modified node identifiers and short texts in tool order.
+  - Include newly created nodes and moved nodes in the response.
+- **Test specification:**
+  - Verify response includes identifiers and short texts for all modified nodes.

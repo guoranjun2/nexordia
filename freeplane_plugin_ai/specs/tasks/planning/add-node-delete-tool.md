@@ -6,6 +6,7 @@
   - Review constraints such as root node deletion behavior and summary node effects.
 - **Design:**
   - Accept an ordered list of node identifiers to delete.
+  - Require a user summary string in the request and return it in the response for display.
   - Enforce map consistency and return an error when deletion is not allowed.
   - Return identifiers and short texts for all deleted nodes as part of the response.
   - Formatting and style manipulation are out of scope for this tool.
