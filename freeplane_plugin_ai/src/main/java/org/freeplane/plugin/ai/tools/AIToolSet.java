@@ -213,7 +213,7 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    // @Tool("Create nodes and subtrees under a target parent.")
+    // @Tool("Create nodes and subtrees relative to an anchor node.")
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
@@ -223,8 +223,18 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    // @Tool("Move nodes under a new parent.")
+    // @Tool("Move nodes relative to an anchor node.")
     public MoveNodesResponse moveNodes(MoveNodesRequest request) {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    // @Tool("Create summary content and a summary bracket for a summarized range.")
+    public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    // @Tool("Move existing nodes to become summary content for a summarized range.")
+    public MoveNodesIntoSummaryResponse moveNodesIntoSummary(MoveNodesIntoSummaryRequest request) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 }

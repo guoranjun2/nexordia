@@ -9,17 +9,14 @@ public final class MoveNodesResponse {
     private final String mapIdentifier;
     private final String userSummary;
     private final List<ModifiedNodeSummary> modifiedNodes;
-    private final String summaryNodeIdentifier;
 
     @JsonCreator
     public MoveNodesResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
                              @JsonProperty("userSummary") String userSummary,
-                             @JsonProperty("modifiedNodes") List<ModifiedNodeSummary> modifiedNodes,
-                             @JsonProperty("summaryNodeIdentifier") String summaryNodeIdentifier) {
+                             @JsonProperty("modifiedNodes") List<ModifiedNodeSummary> modifiedNodes) {
         this.mapIdentifier = mapIdentifier;
         this.userSummary = userSummary;
         this.modifiedNodes = modifiedNodes;
-        this.summaryNodeIdentifier = summaryNodeIdentifier;
     }
 
     public String getMapIdentifier() {
@@ -32,9 +29,5 @@ public final class MoveNodesResponse {
 
     public List<ModifiedNodeSummary> getModifiedNodes() {
         return modifiedNodes;
-    }
-
-    public String getSummaryNodeIdentifier() {
-        return summaryNodeIdentifier;
     }
 }

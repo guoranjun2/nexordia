@@ -1,5 +1,5 @@
 # Task: Add node create and move tools with anchor and summary rules
-- **Scope:** Add tools to create nodes and move nodes, including anchor placement rules, ordered group handling, and optional summary creation for a group. Return modified node identifiers and short texts for every successful operation. Run only on specific user requests.
+- **Scope:** Add tools to create nodes, move nodes, create summaries, and move nodes into summaries, including anchor placement rules, ordered group handling, and summary anchor rules. Return modified node identifiers and short texts for every successful operation. Run only on specific user requests.
 - **Motivation:** Editing requires consistent create and move operations. Newly created nodes only receive identifiers during creation, so the tool response must include those identifiers and short texts for follow up actions.
 - **Research summary:**
   - Review existing map controller helpers for creating nodes, inserting at specific positions, and moving nodes.
@@ -11,8 +11,9 @@
   - Require a user summary string in the request and return it in the response for display.
   - Treat a request as an ordered group of nodes; place nodes in the exact provided order without relying on current map order.
   - Reject groups that contain nodes whose top level entries include descendants of other nodes in the same group.
-  - Support optional summary creation for a group of created or moved nodes, anchored by the first and last node in the group.
+  - Provide separate summary tools: createSummary and moveNodesIntoSummary, each anchored by the first and last summarized nodes, with summary content nodes required and a summary node created without content.
   - Require summary anchor nodes to share the same parent node; return an error otherwise.
+  - Remove summaries by deleting the summary node with the delete tool; no dedicated summary removal tool.
   - Enforce map consistency and return errors for invalid operations, such as moving a node into its own subtree.
   - After success, return a structure that includes identifiers and short texts for all modified nodes.
   - Formatting and style manipulation are out of scope for this tool.
@@ -28,31 +29,40 @@
 
 ### Subtask: Define request and response structures
 - **Status:** Finished
-- **Scope:** Define request fields, response shape, and modified node summaries for create and move operations, including shared anchor and ordering structures.
+- **Scope:** Define request fields, response shape, and modified node summaries for create, move, create summary, and move into summary operations, including shared anchor and ordering structures.
 - **Motivation:** Clear contracts are required before implementation and testing, especially for ordered groups, summaries, and user facing confirmation text.
 - **Research summary:**
   - Review existing request and response structures for read and search tools to align field naming and default handling.
   - Review existing InsertPosition usage and whether a shared anchor placement enum already exists.
 - **Design:**
   - Define a shared anchor placement component with anchor node identifier and placement mode (first child, last child, sibling before, sibling after).
-  - Define create request fields: map identifier, anchor placement or summary anchor placement (mutually exclusive), ordered group list of new node definitions with recursive children, and optional summary content.
-  - Define move request fields: map identifier, anchor placement or summary anchor placement (mutually exclusive), ordered group list of existing node identifiers, and optional summary content.
+  - Define createNodes request fields: map identifier, anchor placement, ordered group list of new node definitions with recursive children.
+  - Define moveNodes request fields: map identifier, anchor placement, ordered group list of existing node identifiers.
+  - Define createSummary request fields: map identifier, summary anchor placement, ordered group list of new node definitions with recursive children for summary content.
+  - Define moveNodesIntoSummary request fields: map identifier, summary anchor placement, ordered group list of existing node identifiers for summary content.
   - Require a user summary string in each request and return it in the response for display.
-  - Model summary creation as a separate summary block that references the summarized node group; the summary is anchored by the first and last summarized nodes, not by the moved or created group.
+  - Model summary creation as a separate summary tool that references the summarized node group; the summary is anchored by the first and last summarized nodes, not by the moved or created group.
   - SummaryAnchorPlacement consists of two node identifier strings that must reference existing nodes to be summarized.
-  - Do not include summary content in the request; summary nodes are technical and generally have no text.
+  - Summary content uses the same node definition structure as creation, must be non-empty, and can include multiple nodes.
+  - For summary tools, a new summary node is created without content and all provided nodes become its children in the provided order.
   - Summary creation for newly created nodes requires a follow up call after node identifiers exist.
-  - Define response fields: map identifier, user summary, modified node list with identifiers and short texts in tool order, and optional summary node identifier when created.
+  - Define response fields: map identifier, user summary, modified node list with identifiers and short texts in tool order.
+  - Summary tool responses include the summary node identifier.
   - Ensure error responses cover invalid identifiers, invalid group ordering, and unsupported operations.
 - **Test specification:**
   - Verify request and response schema serialization and default values.
   - Verify response ordering matches the provided group order.
 - **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacement.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacementMode.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateNodesRequest.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateNodesResponse.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateSummaryRequest.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateSummaryResponse.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ModifiedNodeSummary.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryRequest.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryResponse.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesRequest.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesResponse.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryAnchorPlacement.java`
@@ -128,14 +138,16 @@
 
 ### Subtask: Support summary creation for a group
 - **Status:** Planning
-- **Scope:** Create a summary anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
+- **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
 - **Research summary:**
   - Review summary node creation helpers and constraints.
 - **Design:**
   - Require first and last summarized nodes to share a parent before creating the summary.
   - Require SummaryAnchorPlacement with two existing node identifiers that define the summarized range.
-  - Define how summary content is provided for the new summary node.
+  - Require summary content using the same node definition structure as creation, require non-empty lists, and allow multiple nodes.
+  - For summary tools, a new summary node is created without content and all provided nodes become its children in the provided order.
+  - MoveNodesIntoSummary uses existing nodes as summary content and does not create new nodes.
   - Require a follow up call to summarize newly created nodes once identifiers exist.
   - Return errors for invalid summary anchors.
 - **Test specification:**

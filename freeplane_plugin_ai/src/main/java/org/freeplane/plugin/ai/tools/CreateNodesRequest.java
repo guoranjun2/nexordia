@@ -9,19 +9,16 @@ public final class CreateNodesRequest {
     private final String mapIdentifier;
     private final String userSummary;
     private final AnchorPlacement anchorPlacement;
-    private final SummaryAnchorPlacement summaryAnchorPlacement;
     private final List<NodeCreationItem> nodes;
 
     @JsonCreator
     public CreateNodesRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
                               @JsonProperty("userSummary") String userSummary,
                               @JsonProperty("anchorPlacement") AnchorPlacement anchorPlacement,
-                              @JsonProperty("summaryAnchorPlacement") SummaryAnchorPlacement summaryAnchorPlacement,
                               @JsonProperty("nodes") List<NodeCreationItem> nodes) {
         this.mapIdentifier = mapIdentifier;
         this.userSummary = userSummary;
         this.anchorPlacement = anchorPlacement;
-        this.summaryAnchorPlacement = summaryAnchorPlacement;
         this.nodes = nodes;
     }
 
@@ -35,10 +32,6 @@ public final class CreateNodesRequest {
 
     public AnchorPlacement getAnchorPlacement() {
         return anchorPlacement;
-    }
-
-    public SummaryAnchorPlacement getSummaryAnchorPlacement() {
-        return summaryAnchorPlacement;
     }
 
     public List<NodeCreationItem> getNodes() {
