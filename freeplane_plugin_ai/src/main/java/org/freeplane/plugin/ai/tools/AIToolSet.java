@@ -6,6 +6,8 @@ import dev.langchain4j.agent.tool.Tool;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.icon.IconController;
+import org.freeplane.features.map.MapController;
+import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.text.TextController;
@@ -18,10 +20,14 @@ public class AIToolSet {
     private final ReadNodeWithContextTool readNodeWithContextTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
     private final SearchNodesTool searchNodesTool;
+    private final CreateNodesTool createNodesTool;
+    private final MoveNodesTool moveNodesTool;
+    private final CreateSummaryTool createSummaryTool;
+    private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
 
     public AIToolSet() {
-        this(null);
+        this((ToolCallSummaryHandler)null);
     }
 
     public AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler) {
@@ -32,26 +38,49 @@ public class AIToolSet {
     AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps, TextController textController,
               AttributeController attributeController, IconController iconController) {
         this(toolCallSummaryHandler, availableMaps,
-            createNodeContentItemReader(textController, attributeController, iconController), textController);
+            createNodeContentItemReader(textController, attributeController, iconController), textController,
+            createMapController());
     }
 
     AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps,
-              NodeContentItemReader nodeContentItemReader, TextController textController) {
+              NodeContentItemReader nodeContentItemReader, TextController textController,
+              MMapController mapController) {
         this(new SystemMessageBuilder(),
             new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController),
             new SelectedMapAndNodeIdentifiersTool(availableMaps),
             new SearchNodesTool(availableMaps, nodeContentItemReader, textController),
+            new CreateNodesTool(availableMaps,
+                new NodeModelCreator(),
+                new NodeInserter(mapController, new AnchorPlacementCalculator()),
+                new ModifiedNodeSummaryBuilder(textController)),
+            new MoveNodesTool(availableMaps, mapController, new AnchorPlacementCalculator(),
+                new ModifiedNodeSummaryBuilder(textController)),
+            new CreateSummaryTool(availableMaps,
+                new NodeModelCreator(),
+                new NodeInserter(mapController, new AnchorPlacementCalculator()),
+                new SummaryNodeCreator(mapController),
+                new ModifiedNodeSummaryBuilder(textController)),
+            new MoveNodesIntoSummaryTool(availableMaps,
+                mapController,
+                new SummaryNodeCreator(mapController),
+                new ModifiedNodeSummaryBuilder(textController)),
             toolCallSummaryHandler);
     }
 
     AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool,
               SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool,
-              SearchNodesTool searchNodesTool, ToolCallSummaryHandler toolCallSummaryHandler) {
+              SearchNodesTool searchNodesTool, CreateNodesTool createNodesTool, MoveNodesTool moveNodesTool,
+              CreateSummaryTool createSummaryTool, MoveNodesIntoSummaryTool moveNodesIntoSummaryTool,
+              ToolCallSummaryHandler toolCallSummaryHandler) {
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
         this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
+        this.createNodesTool = Objects.requireNonNull(createNodesTool, "createNodesTool");
+        this.moveNodesTool = Objects.requireNonNull(moveNodesTool, "moveNodesTool");
+        this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
+        this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
     }
 
@@ -126,6 +155,15 @@ public class AIToolSet {
         return iconController;
     }
 
+    private static MMapController createMapController() {
+        ModeController modeController = requireModeController();
+        MapController mapController = modeController.getMapController();
+        if (!(mapController instanceof MMapController)) {
+            throw new IllegalStateException("Map controller is not available.");
+        }
+        return (MMapController) mapController;
+    }
+
     private static ModeController requireModeController() {
         ModeController modeController = Controller.getCurrentModeController();
         if (modeController == null) {
@@ -146,6 +184,7 @@ public class AIToolSet {
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
         return new NodeContentItemReader(nodeContentReader);
     }
+
 
     private void publishToolCallSummary(ToolCallSummary summary) {
         if (summary == null) {
@@ -213,9 +252,16 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    // @Tool("Create nodes and subtrees relative to an anchor node.")
+    @Tool("Create nodes and subtrees relative to an anchor node.")
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        try {
+            CreateNodesResponse response = createNodesTool.createNodes(request);
+            publishToolCallSummary(createNodesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(createNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 
     // @Tool("Apply attributes to selected nodes.")
@@ -223,18 +269,39 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    // @Tool("Move nodes relative to an anchor node.")
+    @Tool("Move nodes relative to an anchor node.")
     public MoveNodesResponse moveNodes(MoveNodesRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        try {
+            MoveNodesResponse response = moveNodesTool.moveNodes(request);
+            publishToolCallSummary(moveNodesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(moveNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 
-    // @Tool("Create summary content and a summary bracket for a summarized range.")
+    @Tool("Create summary content and a summary bracket for a summarized range.")
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        try {
+            CreateSummaryResponse response = createSummaryTool.createSummary(request);
+            publishToolCallSummary(createSummaryTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(createSummaryTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 
-    // @Tool("Move existing nodes to become summary content for a summarized range.")
+    @Tool("Move existing nodes to become summary content for a summarized range.")
     public MoveNodesIntoSummaryResponse moveNodesIntoSummary(MoveNodesIntoSummaryRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        try {
+            MoveNodesIntoSummaryResponse response = moveNodesIntoSummaryTool.moveNodesIntoSummary(request);
+            publishToolCallSummary(moveNodesIntoSummaryTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(moveNodesIntoSummaryTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
     }
 }

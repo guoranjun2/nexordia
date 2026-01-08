@@ -68,19 +68,38 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryAnchorPlacement.java`
 
 ### Subtask: Create NodeModel elements for new nodes
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Create new NodeModel elements for a request group and place them relative to the anchor before applying content.
 - **Motivation:** Separate structural creation from content updates so creation order and placement are deterministic.
 - **Research summary:**
-  - Review node creation helpers and insertion helpers that support child and sibling placement.
+  - MMapController addNewNode/insertNewNode checks writeability, rejects clone cycles via subtreeContainsCloneOf, inserts into all parent clones, and uses undo actors (insertSingleNewNode).
+  - MMapController insertNodeIntoWithoutUndo bypasses undo and only inserts into a single parent; clone propagation must be handled explicitly if needed.
+  - MMapController insertNode supports InsertionRelation (as child, sibling before, sibling after) and uses parent index calculations similar to MNodeDropListener drag and drop mappings.
+  - NodeProxy createChild creates a new NodeModel, sets side for root children via MapController.suggestNewChildSide, then inserts via mapController.insertNode.
+  - MMapClipboardController duplicates nodes and inserts via mapController.insertNode, reversing order only when UI setting places new child first (not desired for tool order preservation).
 - **Design:**
-  - Create new nodes in the exact group order.
-  - Apply insertion for the entire group relative to the anchor node.
-  - Preserve the provided order, independent of existing map order.
-  - Skip undo integration for creation because no existing nodes are modified.
+  - Build NodeModel subtrees from NodeCreationItem recursively with empty content placeholders to be filled by content editors.
+  - Insert each top level node in the exact provided order relative to the anchor placement, without reordering for UI preferences.
+  - Map anchor placement to parent and index using the same sibling/child positioning rules as MMapController insertNode and InsertionRelation.
+  - When inserting as a sibling, set the new node side to the anchor node side; when inserting as a child of the root, set the side via MapController.suggestNewChildSide.
+  - Enforce writeable checks on the target parent before insertion and reject clone cycles using subtreeContainsCloneOf.
+  - Use MMapController.insertNode with an explicit index to preserve order while keeping undo behavior and clone propagation.
 - **Test specification:**
-  - Verify each placement mode produces the expected order for newly created nodes.
-  - Verify group order is preserved exactly.
+  - Verify NodeModelCreator builds a subtree with children in the provided order.
+  - Verify AnchorPlacementCalculator computes parent and insertion index for each placement mode.
+  - Verify AnchorPlacementCalculator rejects sibling placement when the anchor is the root.
+  - Verify NodeInserter inserts nodes in exact order relative to the anchor placement.
+  - Verify NodeInserter assigns sibling node side to match the anchor node side.
+  - Verify NodeInserter assigns root child side using MapController.suggestNewChildSide.
+  - Verify NodeInserter rejects write protected parent nodes.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacementCalculator.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AnchorPlacementResult.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeInserter.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeModelCreator.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/AnchorPlacementCalculatorTest.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeInserterTest.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeModelCreatorTest.java`
 
 ### Subtask: Apply content to created nodes with content editors
 - **Status:** Planning
@@ -99,7 +118,7 @@
   - Verify no undo recording is used for creation operations.
 
 ### Subtask: Implement anchor placement and ordering rules for moves
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Implement placement for first child, last child, sibling before, and sibling after with strict group ordering for moved nodes.
 - **Motivation:** Deterministic placement is needed to keep edits predictable.
 - **Research summary:**
@@ -110,6 +129,10 @@
 - **Test specification:**
   - Verify each placement mode produces the expected order for moved nodes.
   - Verify group order is preserved exactly.
+  - Verify MoveNodesTool uses anchor placement to call mapController.moveNodes with the expected parent and index.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesTool.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesToolTest.java`
 
 ### Subtask: Validate group and move constraints
 - **Status:** Planning
@@ -137,25 +160,39 @@
   - Verify clone relationships are preserved after moves and summary creation.
 
 ### Subtask: Support summary creation for a group
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
 - **Research summary:**
-  - Review summary node creation helpers and constraints.
+  - MMapController.addNewSummaryNodeStartEditing uses SummaryLevels.canInsertSummaryNode to validate range and side, then inserts a summary node at end + 1, activates SummaryNode and AlwaysUnfoldedNode hooks, and ensures a FirstGroupNode at the start of the summarized range.
+  - SummaryLevels computes summary levels per child and side, finds summary nodes for a node index, and validates ranges with canInsertSummaryNode (same level, no overlapping summary, same side, optional prompt when nodes on other side are included).
+  - SummaryGroupEdgeListAdder expands move/delete groups to include summary edge nodes when a summarized range is moved or deleted.
+  - MMapController.deleteSingleSummaryNode removes empty summary nodes without children and cleans up FirstGroupNode markers when summaries are deleted.
 - **Design:**
   - Require first and last summarized nodes to share a parent before creating the summary.
   - Require SummaryAnchorPlacement with two existing node identifiers that define the summarized range.
   - Require summary content using the same node definition structure as creation, require non-empty lists, and allow multiple nodes.
   - For summary tools, a new summary node is created without content and all provided nodes become its children in the provided order.
+  - Validate summary ranges using SummaryLevels rules and return a tool error instead of any user prompt.
+  - Treat the SummaryLevels prompt about nodes on the other side as an error condition for tools.
+  - When creating a summary, activate SummaryNode and AlwaysUnfoldedNode hooks and ensure a FirstGroupNode at the start of the summarized range, mirroring MMapController behavior.
   - MoveNodesIntoSummary uses existing nodes as summary content and does not create new nodes.
   - Require a follow up call to summarize newly created nodes once identifiers exist.
   - Return errors for invalid summary anchors.
 - **Test specification:**
   - Verify summary creation succeeds with valid anchors.
   - Verify invalid anchor parents are rejected.
+  - Verify createSummary creates a summary node and returns its identifier.
+  - Verify moveNodesIntoSummary creates a summary node and moves the requested nodes.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateSummaryTool.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryTool.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryNodeCreator.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/CreateSummaryToolTest.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryToolTest.java`
 
 ### Subtask: Track and return modified node summaries
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Return identifiers and short texts for all modified nodes after creation or move.
 - **Motivation:** The model needs identifiers for follow up edits, especially for newly created nodes.
 - **Research summary:**
@@ -165,3 +202,10 @@
   - Include newly created nodes and moved nodes in the response.
 - **Test specification:**
   - Verify response includes identifiers and short texts for all modified nodes.
+  - Verify createNodes returns modified nodes in tool order.
+  - Verify moveNodes returns modified nodes in tool order.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/CreateNodesTool.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ModifiedNodeSummaryBuilder.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/CreateNodesToolTest.java`
