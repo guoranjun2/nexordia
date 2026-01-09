@@ -151,8 +151,29 @@
   - Reject moves into a node's own subtree.
 - **Test specification:**
   - Verify ancestor and descendant conflicts are rejected.
-  - Verify subtree moves are rejected with a clear error.
+- Verify subtree moves are rejected with a clear error.
 
+### Subtask: Surface clone/move restriction errors for tools
+- **Status:** Planning
+- **Scope:** Allow callers to observe every “not allowed” failure reported by `MMapController` instead of only triggering `UITools.errorMessage`, so AI tools and FCP can relay structured errors while UI callers continue to show popups.
+- **Motivation:** The current UI-only error popups are invisible to the tools, so move/create failures look like silent crashes from the AI perspective; we need a callback-driven path so tools can report the same errors back to the agent without regressing existing UI behavior.
+- **Research summary:**
+  - `MMapController.insertNewNode()` and `moveNodeAndItsClones()` currently call `UITools.errorMessage("not allowed")` when clone cycles or write protections are detected (e.g., at lines 342, 612, 617).
+  - The `moveNodes()` and `insertNode()` APIs funnel through these helpers, so any move or clone failure bubbles up as a popup without a programmatic signal.
+  - LangChain4j tools already wrap map controller calls; adding an error handler parameter lets us inject tool-friendly callbacks while preserving existing method signatures via default handlers that still call `UITools`.
+  - Define one `OperationErrorHandler` functional interface in `org.freeplane.features.map.mindmapmode` with `void handleError(String description)` so the new APIs have a uniform callback contract.
+- **Design:**
+  - Introduce a single `OperationErrorHandler` functional interface (with `handleError(String description)`) and add it as an optional parameter to `insertNewNode`, `moveNodes`, and `moveNodeAndItsClones` overloads.
+  - Keep the old method signatures but have them delegate to the new ones with handlers that call `UITools.errorMessage`, ensuring UI callers behave unchanged.
+  - Tool callers (e.g., `MoveNodesTool`, `MoveNodesIntoSummaryTool`, summary helpers) will pass handlers that record or throw a tool-visible exception instead of popping up a dialog.
+- **Test specification:**
+  - Unit test (or tool integration test) verifies that when a move would violate clone rules, the handler receives the expected message instead of just showing an alert.
+  - Ensure default UI callers observe identical behavior (popup + no exception) when no handler is supplied.
+- **Modified files:**
+  - `freeplane/src/main/java/org/freeplane/features/map/mindmapmode/MMapController.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesTool.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryTool.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
 ### Subtask: Handle clone aware moves and summaries
 - **Status:** Planning
 - **Scope:** Ensure create and move operations respect clone behavior.

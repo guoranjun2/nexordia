@@ -47,7 +47,7 @@ public final class SummaryNodeCreator {
         SummaryLevels summaryLevels = new SummaryLevels(rootNode, parentNode);
         int summaryLevel = summaryLevels.summaryLevels[startIndex];
         if (summaryLevel != summaryLevels.summaryLevels[endIndex]) {
-            throw new IllegalArgumentException("Summary is not possible for the provided anchor nodes.");
+            throw new IllegalArgumentException("Summary anchors are not on the same summary level.");
         }
         boolean nodesOnOtherSideFound = false;
         boolean isTopOrLeft = parentNode.getChildAt(startIndex).isTopOrLeft(rootNode);
@@ -57,16 +57,16 @@ public final class SummaryNodeCreator {
             if (nodeIsOnSameSide) {
                 int level = summaryLevels.summaryLevels[index];
                 if (level > summaryLevel || level == summaryLevel && SummaryNode.isFirstGroupNode(child)) {
-                    throw new IllegalArgumentException("Summary is not possible for the provided anchor nodes.");
+                    throw new IllegalArgumentException("A child between the anchors already belongs to a summary or is at a higher level.");
                 }
             }
             nodesOnOtherSideFound = nodesOnOtherSideFound || !nodeIsOnSameSide;
         }
         if (summaryLevels.findSummaryNodeIndex(endIndex) != SummaryLevels.NODE_NOT_FOUND) {
-            throw new IllegalArgumentException("Summary is not possible for the provided anchor nodes.");
+            throw new IllegalArgumentException("A summary node already covers the requested range.");
         }
         if (nodesOnOtherSideFound) {
-            throw new IllegalArgumentException("Summary is not possible when nodes exist on the opposite side.");
+            throw new IllegalArgumentException("Summary cannot cross sides; move all nodes to the same side before summarizing.");
         }
     }
 

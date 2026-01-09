@@ -47,7 +47,8 @@ public class MoveNodesTool {
         AnchorPlacementResult placement = anchorPlacementCalculator.calculatePlacement(anchorNode, placementMode);
         NodeModel parentNode = placement.getParentNode();
         int insertionIndex = placement.getInsertionIndex();
-        mapController.moveNodes(nodesToMove, parentNode, insertionIndex);
+        mapController.moveNodes(nodesToMove, parentNode, insertionIndex,
+            description -> { throw new IllegalStateException("Move failure: " + description); });
         return new MoveNodesResponse(mapIdentifierValue, userSummary, parentNode.createID(), insertionIndex);
     }
 

@@ -111,11 +111,7 @@ public class AIToolSet {
         if (summary == null) {
             return;
         }
-        if (summary.hasError()) {
-            LogUtils.severe(summary.getSummaryText());
-        } else {
-            LogUtils.info(summary.getSummaryText());
-        }
+        LogUtils.info(summary.getSummaryText());
         if (toolCallSummaryHandler != null) {
             toolCallSummaryHandler.handleToolCallSummary(summary);
         }

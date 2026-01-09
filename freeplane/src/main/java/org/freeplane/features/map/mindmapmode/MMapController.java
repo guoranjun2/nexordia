@@ -116,6 +116,9 @@ public class MMapController extends MapController {
     public static final int NEW_SIBLING_BEHIND = 3;
     public static final String RESOURCES_CONVERT_TO_CURRENT_VERSION = "convert_to_current_version";
 
+    private static final OperationErrorHandler DEFAULT_OPERATION_ERROR_HANDLER =
+            description -> UITools.errorMessage(description);
+
     public MMapController(ModeController modeController) {
         super(modeController);
         createActions(modeController);
@@ -334,12 +337,17 @@ public class MMapController extends MapController {
     }
 
     private void insertNewNode(final NodeModel newNode, final NodeModel parent, final int index) {
+        insertNewNode(newNode, parent, index, DEFAULT_OPERATION_ERROR_HANDLER);
+    }
+
+    private void insertNewNode(final NodeModel newNode, final NodeModel parent, final int index,
+                               OperationErrorHandler errorHandler) {
         if(index < 0 || index > parent.getChildCount()){
-            insertNewNode(newNode, parent, parent.getChildCount());
+            insertNewNode(newNode, parent, parent.getChildCount(), errorHandler);
             return;
         }
         if(newNode.subtreeContainsCloneOf(parent)){
-            UITools.errorMessage("not allowed");
+            errorHandler.handleError("not allowed: the subtree contains a parent or its clone");
             return;
         }
         stopInlineEditing();
@@ -555,6 +563,11 @@ public class MMapController extends MapController {
     }
 
     public void moveNodes(final List<NodeModel> movedNodes, final NodeModel newParent, final int newIndex) {
+        moveNodes(movedNodes, newParent, newIndex, DEFAULT_OPERATION_ERROR_HANDLER);
+    }
+
+    public void moveNodes(final List<NodeModel> movedNodes, final NodeModel newParent, final int newIndex,
+                          OperationErrorHandler errorHandler) {
         final List<NodeModel> movedNodesWithSummaryGroupIndicators = new SummaryGroupEdgeListAdder(movedNodes).addSummaryEdgeNodes();
         int index = newIndex;
         for(NodeModel node : movedNodesWithSummaryGroupIndicators) {
@@ -566,7 +579,7 @@ public class MMapController extends MapController {
                     index--;
                 }
             }
-            moveNodeAndItsClones(node, newParent, index++);
+            moveNodeAndItsClones(node, newParent, index++, errorHandler);
         }
         balanceFirstGroupNodes(newParent);
     }
@@ -608,17 +621,25 @@ public class MMapController extends MapController {
 
 
     public void moveNodeAndItsClones(NodeModel child, final NodeModel newParent, int newIndex) {
-        if(child.subtreeContainsCloneOf(newParent) || child.getMap() != newParent.getMap()){
-            UITools.errorMessage("not allowed");
+        moveNodeAndItsClones(child, newParent, newIndex, DEFAULT_OPERATION_ERROR_HANDLER);
+    }
+
+    public void moveNodeAndItsClones(NodeModel child, final NodeModel newParent, int newIndex,
+                                     OperationErrorHandler errorHandler) {
+        if(child.subtreeContainsCloneOf(newParent)){
+            errorHandler.handleError("not allowed: the subtree contains a parent or its clone");
+            return;
+        } else if (child.getMap() != newParent.getMap()) {
+            errorHandler.handleError("not allowed: the nodes belong to different maps");
             return;
         }
         final NodeModel oldParent = child.getParentNode();
         if(oldParent == null){
-            UITools.errorMessage("not allowed");
+            errorHandler.handleError("not allowed: the moved node has no parent");
             return;
         }
         if(newParent != oldParent && newParent.subtreeClones().contains(oldParent)) {
-            moveNodeAndItsClones(child, oldParent, newIndex);
+            moveNodeAndItsClones(child, oldParent, newIndex, errorHandler);
             return;
         }
 
