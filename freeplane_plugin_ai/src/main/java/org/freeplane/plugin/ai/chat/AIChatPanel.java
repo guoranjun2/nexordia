@@ -7,6 +7,7 @@ import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
+import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
 
 import javax.swing.AbstractAction;
@@ -208,7 +209,9 @@ public class AIChatPanel extends JPanel {
             appendChatMessage("Unknown AI provider selection.", ChatMessageCategory.ASSISTANT);
             return;
         }
-        chatService = AIChatServiceFactory.createService(new AIToolSet(this::handleToolCallSummary),
+        chatService = AIChatServiceFactory.createService(new AIToolSetBuilder()
+                .toolCallSummaryHandler(this::handleToolCallSummary)
+                .build(),
             chatSessionMemoryController,
             chatTokenUsageTracker);
     }

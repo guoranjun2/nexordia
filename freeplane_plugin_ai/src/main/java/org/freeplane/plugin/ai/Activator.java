@@ -19,6 +19,7 @@ import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
 import org.freeplane.plugin.ai.tools.AIToolSet;
+import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -79,13 +80,13 @@ public class Activator implements BundleActivator {
 					resourceController.securePropertyForReadingAndModification(SYSTEM_MESSAGE_PROPERTY);
 				}
 
-				private void startModelContextProtocolServer() {
-					if (modelContextProtocolServer == null) {
-						modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSet());
-						ResourceController.getResourceController()
-							.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
+					private void startModelContextProtocolServer() {
+						if (modelContextProtocolServer == null) {
+							modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder().build());
+							ResourceController.getResourceController()
+								.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
+						}
 					}
-				}
 		    }, properties);
 	}
 

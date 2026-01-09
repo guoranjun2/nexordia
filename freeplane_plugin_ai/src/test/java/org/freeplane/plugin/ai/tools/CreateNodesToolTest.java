@@ -23,8 +23,9 @@ public class CreateNodesToolTest {
         NodeInserter nodeInserter = mock(NodeInserter.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
+        NodeContentApplier nodeContentApplier = mock(NodeContentApplier.class);
         CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, nodeModelCreator, nodeInserter,
-            modifiedNodeSummaryBuilder);
+            modifiedNodeSummaryBuilder, nodeContentApplier);
         UUID mapIdentifier = UUID.fromString("f0ec8744-6a58-4b63-8e0e-9ef00b2e3c7a");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
@@ -59,5 +60,7 @@ public class CreateNodesToolTest {
         assertThat(response.getModifiedNodes().get(1).getShortText()).isEqualTo("Second");
         verify(nodeInserter).insertNodes(Arrays.asList(firstNodeModel, secondNodeModel), anchorNode,
             AnchorPlacementMode.LAST_CHILD);
+        verify(nodeContentApplier).apply(firstNodeModel, firstNodeItem);
+        verify(nodeContentApplier).apply(secondNodeModel, secondNodeItem);
     }
 }

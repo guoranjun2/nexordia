@@ -103,19 +103,25 @@
 
 ### Subtask: Apply content to created nodes with content editors
 - **Status:** Planning
-- **Scope:** Apply content values to newly created nodes using content editor helpers.
-- **Motivation:** Content updates should be consistent across types and reusable for later edit tools.
+- **Scope:** Apply content values directly to newly created nodes using shared editor helpers so the creation path mirrors later edit tools while staying undo-free.
+- **Motivation:** Consistent editors for text, attributes, tags, and icons reduce duplication and make future edit tools easier to build.
 - **Research summary:**
-  - Review how text, details, and note updates are applied through TextController.
-  - Review how attribute, tag, and icon updates are applied and how explicit node icons are distinguished from style icons.
+-  - Examine `TextController`/`MTextController` to understand how text, details, and note fields are written (including HTML/plain-text transformers and `TextualContentTransformer` utilities).
+-  - Review how `AttributeController` stores attribute values on `NodeModel` and which helpers normalize or validate attribute entries.
+-  - Study the tag handling helpers (e.g., `TagsContentReader`, `TagController`) to learn how to apply sanitized tag lists.
+-  - Inspect `IconController`, `NamedIcon`, and explicit icon handling to distinguish icons stored explicitly on the node from style-driven icons.
+-  - Analyze `MTextController`, `MAttributeController`, and `MIconController` to see their undo-wrapped content updates so the creation path can bypass those actors for new nodes.
+-  - Confirm direct assignments for new nodes do not require clone synchronization or undo actors, especially before nodes enter the map hierarchy.
 - **Design:**
-  - Introduce TextualContentEditor, AttributesContentEditor, TagsContentEditor, and IconsContentEditor helpers.
-  - Support operation modes with and without undo; use the no undo mode for creation in this task.
-  - Apply content for text, details, note, attributes, tags, and explicit node icons.
+-  - Introduce `TextualContentEditor`, `AttributesContentEditor`, `TagsContentEditor`, and `IconsContentEditor` helpers that accept `NodeModel` instances along with the corresponding content requests.
+-  - Apply values directly without invoking undo helpers; editors must still sanitize HTML/plain text, normalize attributes, deduplicate tags, and validate icons.
+-  - Treat explicit icons separately from style icons and allow editors to skip invalid entries while emitting diagnostics.
+-  - Reuse existing content request structures so later edit tools can share schemas with minimal duplication.
+-  - Limit this subtask to newly created nodes, deferring undoable edit behavior to later subtasks.
 - **Test specification:**
-  - Verify each content editor applies values for its content type.
-  - Verify explicit node icons are updated without style icons.
-  - Verify no undo recording is used for creation operations.
+-  - Verify each editor writes the expected content to a `NodeModel` (text, details, note, attributes, tags, icons).
+-  - Verify attribute and icon editors do not touch style-only data and only update explicit values.
+-  - Verify editors do not interact with undo helpers or `MMapController` when applying content during creation.
 
 ### Subtask: Implement anchor placement and ordering rules for moves
 - **Status:** Implementation Review

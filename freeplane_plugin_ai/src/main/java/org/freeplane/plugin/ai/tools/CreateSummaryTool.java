@@ -16,15 +16,18 @@ public class CreateSummaryTool {
     private final NodeInserter nodeInserter;
     private final SummaryNodeCreator summaryNodeCreator;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
+    private final NodeContentApplier nodeContentApplier;
 
     public CreateSummaryTool(AvailableMaps availableMaps, NodeModelCreator nodeModelCreator, NodeInserter nodeInserter,
                              SummaryNodeCreator summaryNodeCreator,
-                             ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
+                             ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
+                             NodeContentApplier nodeContentApplier) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeModelCreator = Objects.requireNonNull(nodeModelCreator, "nodeModelCreator");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
         this.summaryNodeCreator = Objects.requireNonNull(summaryNodeCreator, "summaryNodeCreator");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
+        this.nodeContentApplier = Objects.requireNonNull(nodeContentApplier, "nodeContentApplier");
     }
 
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
@@ -49,7 +52,9 @@ public class CreateSummaryTool {
         NodeModel summaryNode = summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode);
         List<NodeModel> createdNodes = new ArrayList<>(nodes.size());
         for (NodeCreationItem nodeItem : nodes) {
-            createdNodes.add(nodeModelCreator.createNodeModelTree(nodeItem, mapModel));
+            NodeModel nodeModel = nodeModelCreator.createNodeModelTree(nodeItem, mapModel);
+            nodeContentApplier.apply(nodeModel, nodeItem);
+            createdNodes.add(nodeModel);
         }
         nodeInserter.insertNodes(createdNodes, summaryNode, AnchorPlacementMode.LAST_CHILD);
         List<ModifiedNodeSummary> modifiedNodes = new ArrayList<>();

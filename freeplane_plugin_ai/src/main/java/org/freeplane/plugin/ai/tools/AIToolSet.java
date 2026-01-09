@@ -1,19 +1,17 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.features.attribute.AttributeController;
-import org.freeplane.features.icon.IconController;
-import org.freeplane.features.map.MapController;
+import org.freeplane.features.icon.NamedIcon;
+import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.map.mindmapmode.MMapController;
-import org.freeplane.features.mode.Controller;
-import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
 public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
@@ -26,52 +24,37 @@ public class AIToolSet {
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
 
-    public AIToolSet() {
-        this((ToolCallSummaryHandler)null);
-    }
-
-    public AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler) {
-        this(toolCallSummaryHandler, createAvailableMaps(), createTextController(), createAttributeController(),
-            createIconController());
-    }
-
     AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps, TextController textController,
-              AttributeController attributeController, IconController iconController) {
-        this(toolCallSummaryHandler, availableMaps,
-            createNodeContentItemReader(textController, attributeController, iconController), textController,
-            createMapController());
-    }
-
-    AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps,
-              NodeContentItemReader nodeContentItemReader, TextController textController,
-              MMapController mapController) {
-        this(new SystemMessageBuilder(),
-            new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController),
-            new SelectedMapAndNodeIdentifiersTool(availableMaps),
-            new SearchNodesTool(availableMaps, nodeContentItemReader, textController),
-            new CreateNodesTool(availableMaps,
-                new NodeModelCreator(),
-                new NodeInserter(mapController, new AnchorPlacementCalculator()),
-                new ModifiedNodeSummaryBuilder(textController)),
-            new MoveNodesTool(availableMaps, mapController, new AnchorPlacementCalculator(),
-                new ModifiedNodeSummaryBuilder(textController)),
-            new CreateSummaryTool(availableMaps,
-                new NodeModelCreator(),
-                new NodeInserter(mapController, new AnchorPlacementCalculator()),
-                new SummaryNodeCreator(mapController),
-                new ModifiedNodeSummaryBuilder(textController)),
-            new MoveNodesIntoSummaryTool(availableMaps,
-                mapController,
-                new SummaryNodeCreator(mapController),
-                new ModifiedNodeSummaryBuilder(textController)),
-            toolCallSummaryHandler);
-    }
-
-    AIToolSet(SystemMessageBuilder systemMessageBuilder, ReadNodeWithContextTool readNodeWithContextTool,
-              SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool,
-              SearchNodesTool searchNodesTool, CreateNodesTool createNodesTool, MoveNodesTool moveNodesTool,
-              CreateSummaryTool createSummaryTool, MoveNodesIntoSummaryTool moveNodesIntoSummaryTool,
-              ToolCallSummaryHandler toolCallSummaryHandler) {
+              NodeContentFactories nodeContentFactories, MMapController mapController) {
+        Objects.requireNonNull(mapController, "mapController");
+        NodeModelCreator nodeModelCreator = new NodeModelCreator();
+        AnchorPlacementCalculator anchorPlacementCalculator = new AnchorPlacementCalculator();
+        NodeInserter nodeInserter = new NodeInserter(mapController, anchorPlacementCalculator);
+        SummaryNodeCreator summaryNodeCreator = new SummaryNodeCreator(mapController);
+        ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
+        TextualContentEditor textualContentEditor = new TextualContentEditor();
+        AttributesContentEditor attributesContentEditor = new AttributesContentEditor();
+        TagsContentEditor tagsContentEditor = new TagsContentEditor();
+        List<NamedIcon> iconCandidates = new ArrayList<>(IconStoreFactory.ICON_STORE.getMindIcons());
+        iconCandidates.addAll(IconStoreFactory.ICON_STORE.getUserIcons());
+        IconsContentEditor iconsContentEditor = new IconsContentEditor(
+            nodeContentFactories.iconDescriptionResolver, iconCandidates);
+        NodeContentApplier nodeContentApplier = new NodeContentApplier(textualContentEditor, attributesContentEditor,
+            tagsContentEditor, iconsContentEditor);
+        SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
+        ReadNodeWithContextTool readNodeWithContextTool = new ReadNodeWithContextTool(
+            availableMaps, nodeContentFactories.nodeContentItemReader, textController);
+        SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool = new SelectedMapAndNodeIdentifiersTool(
+            availableMaps);
+        SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, nodeContentFactories.nodeContentItemReader,
+            textController);
+        CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeModelCreator, nodeInserter,
+            modifiedNodeSummaryBuilder, nodeContentApplier);
+        MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
+        CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeModelCreator, nodeInserter,
+            summaryNodeCreator, modifiedNodeSummaryBuilder, nodeContentApplier);
+        MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
+            summaryNodeCreator);
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
@@ -123,68 +106,6 @@ public class AIToolSet {
             throw error;
         }
     }
-
-    private static AvailableMaps createAvailableMaps() {
-        return new AvailableMaps(new ControllerMapModelProvider());
-    }
-
-    private static TextController createTextController() {
-        ModeController modeController = requireModeController();
-        TextController textController = modeController.getExtension(TextController.class);
-        if (textController == null) {
-            throw new IllegalStateException("Text controller is not available.");
-        }
-        return textController;
-    }
-
-    private static AttributeController createAttributeController() {
-        ModeController modeController = requireModeController();
-        AttributeController attributeController = modeController.getExtension(AttributeController.class);
-        if (attributeController == null) {
-            throw new IllegalStateException("Attribute controller is not available.");
-        }
-        return attributeController;
-    }
-
-    private static IconController createIconController() {
-        ModeController modeController = requireModeController();
-        IconController iconController = modeController.getExtension(IconController.class);
-        if (iconController == null) {
-            throw new IllegalStateException("Icon controller is not available.");
-        }
-        return iconController;
-    }
-
-    private static MMapController createMapController() {
-        ModeController modeController = requireModeController();
-        MapController mapController = modeController.getMapController();
-        if (!(mapController instanceof MMapController)) {
-            throw new IllegalStateException("Map controller is not available.");
-        }
-        return (MMapController) mapController;
-    }
-
-    private static ModeController requireModeController() {
-        ModeController modeController = Controller.getCurrentModeController();
-        if (modeController == null) {
-            throw new IllegalStateException("Current mode controller is not available.");
-        }
-        return modeController;
-    }
-
-    private static NodeContentItemReader createNodeContentItemReader(TextController textController,
-                                                                     AttributeController attributeController,
-                                                                     IconController iconController) {
-        TextualContentReader textualContentReader = new TextualContentReader(textController);
-        AttributesContentReader attributesContentReader = new AttributesContentReader(attributeController, textController);
-        TagsContentReader tagsContentReader = new TagsContentReader(iconController);
-        EnglishTextProvider englishTextProvider = new DefaultEnglishTextProvider();
-        IconsContentReader iconsContentReader = new IconsContentReader(englishTextProvider, iconController);
-        NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
-        return new NodeContentItemReader(nodeContentReader);
-    }
-
 
     private void publishToolCallSummary(ToolCallSummary summary) {
         if (summary == null) {
@@ -252,7 +173,7 @@ public class AIToolSet {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    @Tool("Create nodes and subtrees relative to an anchor node.")
+    @Tool("Create nodes and subtrees relative to an anchor node. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
         try {
             CreateNodesResponse response = createNodesTool.createNodes(request);
@@ -281,7 +202,7 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Create summary content and a summary bracket for a summarized range.")
+    @Tool("Create summary content and a summary bracket for a summarized range. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
         try {
             CreateSummaryResponse response = createSummaryTool.createSummary(request);

@@ -16,15 +16,12 @@ public class MoveNodesTool {
     private final AvailableMaps availableMaps;
     private final MMapController mapController;
     private final AnchorPlacementCalculator anchorPlacementCalculator;
-    private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
 
     public MoveNodesTool(AvailableMaps availableMaps, MMapController mapController,
-                         AnchorPlacementCalculator anchorPlacementCalculator,
-                         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
+                         AnchorPlacementCalculator anchorPlacementCalculator) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.mapController = Objects.requireNonNull(mapController, "mapController");
         this.anchorPlacementCalculator = Objects.requireNonNull(anchorPlacementCalculator, "anchorPlacementCalculator");
-        this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
     }
 
     public MoveNodesResponse moveNodes(MoveNodesRequest request) {
@@ -48,9 +45,10 @@ public class MoveNodesTool {
         List<String> nodeIdentifiers = requireNodes(request.getNodeIdentifiers());
         List<NodeModel> nodesToMove = resolveNodes(mapModel, nodeIdentifiers);
         AnchorPlacementResult placement = anchorPlacementCalculator.calculatePlacement(anchorNode, placementMode);
-        mapController.moveNodes(nodesToMove, placement.getParentNode(), placement.getInsertionIndex());
-        List<ModifiedNodeSummary> modifiedNodes = modifiedNodeSummaryBuilder.buildSummaries(nodesToMove, false);
-        return new MoveNodesResponse(mapIdentifierValue, userSummary, modifiedNodes);
+        NodeModel parentNode = placement.getParentNode();
+        int insertionIndex = placement.getInsertionIndex();
+        mapController.moveNodes(nodesToMove, parentNode, insertionIndex);
+        return new MoveNodesResponse(mapIdentifierValue, userSummary, parentNode.createID(), insertionIndex);
     }
 
     ToolCallSummary buildToolCallSummary(MoveNodesRequest request, MoveNodesResponse response) {

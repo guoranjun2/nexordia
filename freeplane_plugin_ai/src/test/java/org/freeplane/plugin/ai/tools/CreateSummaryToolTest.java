@@ -24,9 +24,10 @@ public class CreateSummaryToolTest {
         SummaryNodeCreator summaryNodeCreator = mock(SummaryNodeCreator.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
+        NodeContentApplier nodeContentApplier = mock(NodeContentApplier.class);
         CreateSummaryTool unitUnderTest = new CreateSummaryTool(availableMaps, nodeModelCreator, nodeInserter,
             summaryNodeCreator,
-            modifiedNodeSummaryBuilder);
+            modifiedNodeSummaryBuilder, nodeContentApplier);
         UUID mapIdentifier = UUID.fromString("2d872386-bb55-4c6c-9da0-d600b7400b10");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel rootNode = new NodeModel("root", mapModel);
@@ -59,5 +60,6 @@ public class CreateSummaryToolTest {
         assertThat(response.getModifiedNodes()).hasSize(2);
         verify(nodeInserter).insertNodes(Collections.singletonList(childNodeModel), summaryNode,
             AnchorPlacementMode.LAST_CHILD);
+        verify(nodeContentApplier).apply(childNodeModel, childItem);
     }
 }

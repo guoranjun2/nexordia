@@ -14,13 +14,16 @@ public class CreateNodesTool {
     private final NodeModelCreator nodeModelCreator;
     private final NodeInserter nodeInserter;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
+    private final NodeContentApplier nodeContentApplier;
 
     public CreateNodesTool(AvailableMaps availableMaps, NodeModelCreator nodeModelCreator, NodeInserter nodeInserter,
-                           ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
+                           ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
+                           NodeContentApplier nodeContentApplier) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeModelCreator = Objects.requireNonNull(nodeModelCreator, "nodeModelCreator");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
+        this.nodeContentApplier = Objects.requireNonNull(nodeContentApplier, "nodeContentApplier");
     }
 
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
@@ -44,7 +47,9 @@ public class CreateNodesTool {
         List<NodeCreationItem> nodes = requireNodes(request.getNodes());
         List<NodeModel> createdNodes = new ArrayList<>(nodes.size());
         for (NodeCreationItem nodeItem : nodes) {
-            createdNodes.add(nodeModelCreator.createNodeModelTree(nodeItem, mapModel));
+            NodeModel nodeModel = nodeModelCreator.createNodeModelTree(nodeItem, mapModel);
+            nodeContentApplier.apply(nodeModel, nodeItem);
+            createdNodes.add(nodeModel);
         }
         List<NodeModel> insertedNodes = nodeInserter.insertNodes(createdNodes, anchorNode, placementMode);
         List<ModifiedNodeSummary> modifiedNodes = modifiedNodeSummaryBuilder.buildSummaries(insertedNodes, true);

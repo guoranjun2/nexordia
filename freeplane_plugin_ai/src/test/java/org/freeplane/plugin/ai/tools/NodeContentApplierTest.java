@@ -1,0 +1,74 @@
+package org.freeplane.plugin.ai.tools;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Collections;
+
+import javax.swing.tree.DefaultMutableTreeNode;
+
+import org.freeplane.core.util.HtmlUtils;
+import org.freeplane.features.attribute.NodeAttributeTableModel;
+import org.freeplane.features.icon.IconRegistry;
+import org.freeplane.features.icon.MindIcon;
+import org.freeplane.features.icon.NamedIcon;
+import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagReference;
+import org.freeplane.features.icon.Tags;
+import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.note.NoteModel;
+import org.freeplane.features.text.DetailModel;
+import org.junit.Test;
+
+public class NodeContentApplierTest {
+    @Test
+    public void apply_outputsContentOnAllNodes() {
+        MapModel mapModel = new MapModel(
+            (source, targetMap, withChildren) -> null, iconRegistry(), null);
+        NodeModel parentNode = new NodeModel("parent", mapModel);
+        NodeModel childNode = new NodeModel("child", mapModel);
+        parentNode.insert(childNode, 0);
+
+        TextualContent parentTextual = new TextualContent("root", "details", "note");
+        AttributesContent parentAttributes = new AttributesContent(
+            Collections.singletonList(new AttributeEntry("key", "value")));
+        TagsContent parentTags = new TagsContent(Collections.singletonList("tag"));
+        NamedIcon sampleIcon = new MindIcon("node-icon", "/images/node.svg", "node", 0);
+        IconsContent parentIcons = new IconsContent(Collections.singletonList(sampleIcon.getName()));
+        NodeContent parentContent = new NodeContent(null, parentTextual, parentAttributes, parentTags, parentIcons);
+
+        TextualContent childTextual = new TextualContent("child-text", null, null);
+        NodeContent childContent = new NodeContent(null, childTextual, null, null, null);
+        NodeCreationItem childItem = new NodeCreationItem(childContent, Collections.emptyList());
+        NodeCreationItem parentItem = new NodeCreationItem(parentContent, Collections.singletonList(childItem));
+
+        IconDescriptionResolver resolver = new IconDescriptionResolver(new DefaultEnglishTextProvider());
+        NodeContentApplier unitUnderTest = new NodeContentApplier(
+            new TextualContentEditor(),
+            new AttributesContentEditor(),
+            new TagsContentEditor(),
+            new IconsContentEditor(resolver, Collections.singletonList(sampleIcon)));
+
+        unitUnderTest.apply(parentNode, parentItem);
+
+        assertThat(parentNode.getText()).isEqualTo("root");
+        assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(parentNode))).isEqualTo("details");
+        assertThat(HtmlUtils.htmlToPlain(NoteModel.getNoteText(parentNode))).isEqualTo("note");
+        NodeAttributeTableModel parentAttributesModel = NodeAttributeTableModel.getModel(parentNode);
+        assertThat(parentAttributesModel.getRowCount()).isEqualTo(1);
+        assertThat(parentAttributesModel.getName(0)).isEqualTo("key");
+        assertThat(parentAttributesModel.getValue(0)).isEqualTo("value");
+        assertThat(Tags.getTagReferences(parentNode)).hasSize(1);
+        TagReference tagReference = Tags.getTagReferences(parentNode).get(0);
+        assertThat(tagReference.getContent()).isEqualTo("tag");
+        assertThat(parentNode.getIcons()).hasSize(1);
+        assertThat(parentNode.getIcons().get(0)).isSameAs(sampleIcon);
+        assertThat(childNode.getText()).isEqualTo("child-text");
+    }
+
+    private static IconRegistry iconRegistry() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("tags");
+        DefaultMutableTreeNode uncategorized = new DefaultMutableTreeNode("uncategorized");
+        return new IconRegistry(new TagCategories(root, uncategorized, "/"));
+    }
+}

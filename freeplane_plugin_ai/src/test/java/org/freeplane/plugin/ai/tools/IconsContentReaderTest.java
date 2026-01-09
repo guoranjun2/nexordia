@@ -19,7 +19,8 @@ public class IconsContentReaderTest {
     public void readIconsContent_usesEnglishDescriptionsForBuiltinIcons() {
         EnglishTextProvider englishTextProvider = key -> "English Description";
         IconController iconController = mock(IconController.class);
-        IconsContentReader uut = new IconsContentReader(englishTextProvider, iconController);
+        IconDescriptionResolver resolver = new IconDescriptionResolver(englishTextProvider);
+        IconsContentReader uut = new IconsContentReader(resolver, iconController);
         MindIcon mindIcon = new MindIcon("idea", "idea.svg", "icon_idea", 1);
         NodeModel nodeModel = mock(NodeModel.class);
         when(iconController.getIcons(nodeModel, StyleOption.FOR_UNSELECTED_NODE))
@@ -34,7 +35,8 @@ public class IconsContentReaderTest {
     public void readIconsContent_decodesEmojiFromName() {
         EnglishTextProvider englishTextProvider = key -> "English Description";
         IconController iconController = mock(IconController.class);
-        IconsContentReader uut = new IconsContentReader(englishTextProvider, iconController);
+        IconDescriptionResolver resolver = new IconDescriptionResolver(englishTextProvider);
+        IconsContentReader uut = new IconsContentReader(resolver, iconController);
         String emoji = new String(new int[] { 0x1F4D9 }, 0, 1);
         MindIcon emojiIcon = new MindIcon("emoji-1f4d9", "1f4d9.svg", "emoji_description", 1);
         NodeModel nodeModel = mock(NodeModel.class);
@@ -50,7 +52,8 @@ public class IconsContentReaderTest {
     public void readIconsContent_usesRelativePathForUserIcons() {
         EnglishTextProvider englishTextProvider = key -> "English Description";
         IconController iconController = mock(IconController.class);
-        IconsContentReader uut = new IconsContentReader(englishTextProvider, iconController);
+        IconDescriptionResolver resolver = new IconDescriptionResolver(englishTextProvider);
+        IconsContentReader uut = new IconsContentReader(resolver, iconController);
         UserIcon userIcon = new UserIcon("custom", "custom/icon.svg", "Custom", 1);
         NodeModel nodeModel = mock(NodeModel.class);
         when(iconController.getIcons(nodeModel, StyleOption.FOR_UNSELECTED_NODE))
@@ -65,7 +68,8 @@ public class IconsContentReaderTest {
     public void readIconsContent_fallsBackToIconNameWhenEnglishTextMissing() {
         EnglishTextProvider englishTextProvider = key -> null;
         IconController iconController = mock(IconController.class);
-        IconsContentReader uut = new IconsContentReader(englishTextProvider, iconController);
+        IconDescriptionResolver resolver = new IconDescriptionResolver(englishTextProvider);
+        IconsContentReader uut = new IconsContentReader(resolver, iconController);
         MindIcon mindIcon = new MindIcon("idea", "idea.svg", "icon_idea", 1);
         NodeModel nodeModel = mock(NodeModel.class);
         when(iconController.getIcons(nodeModel, StyleOption.FOR_UNSELECTED_NODE))
@@ -85,7 +89,8 @@ public class IconsContentReaderTest {
             return null;
         };
         IconController iconController = mock(IconController.class);
-        IconsContentReader uut = new IconsContentReader(englishTextProvider, iconController);
+        IconDescriptionResolver resolver = new IconDescriptionResolver(englishTextProvider);
+        IconsContentReader uut = new IconsContentReader(resolver, iconController);
         MindIcon firstIcon = new MindIcon("idea", "idea.svg", "icon_idea", 1);
         UserIcon secondIcon = new UserIcon("custom", "custom/icon.svg", "Custom", 2);
         NodeModel nodeModel = mock(NodeModel.class);

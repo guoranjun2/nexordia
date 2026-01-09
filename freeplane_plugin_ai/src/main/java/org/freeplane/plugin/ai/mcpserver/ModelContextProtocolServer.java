@@ -212,6 +212,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
             JsonNode argumentsNode = params == null ? null : params.get("arguments");
             ToolExecutionResult executionResult;
             try {
+            	LogUtils.info("MCP call " + toolName + " " + argumentsNode);
                 executionResult = toolDispatcher.dispatch(toolName, argumentsNode);
             } catch (IllegalArgumentException error) {
                 return buildErrorResponse(idValue, -32602, error.getMessage());
@@ -314,6 +315,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
         }
 
         private void writeJsonResponse(HTTPResponse response, Object responseBody) throws IOException {
+        	LogUtils.info("MCP response " + objectMapper.writeValueAsString(responseBody));
             byte[] responseBytes = objectMapper.writeValueAsBytes(responseBody);
             response.setStatus(200);
             response.setContentType(ContentTypes.ApplicationJson);

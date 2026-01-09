@@ -1,7 +1,6 @@
 package org.freeplane.plugin.ai.tools;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -17,15 +16,12 @@ public class MoveNodesIntoSummaryTool {
     private final AvailableMaps availableMaps;
     private final MMapController mapController;
     private final SummaryNodeCreator summaryNodeCreator;
-    private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
 
     public MoveNodesIntoSummaryTool(AvailableMaps availableMaps, MMapController mapController,
-                                    SummaryNodeCreator summaryNodeCreator,
-                                    ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
+                                    SummaryNodeCreator summaryNodeCreator) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.mapController = Objects.requireNonNull(mapController, "mapController");
         this.summaryNodeCreator = Objects.requireNonNull(summaryNodeCreator, "summaryNodeCreator");
-        this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
     }
 
     public MoveNodesIntoSummaryResponse moveNodesIntoSummary(MoveNodesIntoSummaryRequest request) {
@@ -49,11 +45,9 @@ public class MoveNodesIntoSummaryTool {
         List<NodeModel> nodesToMove = resolveNodes(mapModel, nodeIdentifiers);
         NodeModel summaryNode = summaryNodeCreator.createSummaryNode(mapModel.getRootNode(), firstNode, lastNode);
         mapController.moveNodes(nodesToMove, summaryNode, 0);
-        List<ModifiedNodeSummary> modifiedNodes = new ArrayList<>();
-        modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(Collections.singletonList(summaryNode), false));
-        modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(nodesToMove, false));
         String summaryNodeIdentifier = summaryNode.createID();
-        return new MoveNodesIntoSummaryResponse(mapIdentifierValue, userSummary, modifiedNodes, summaryNodeIdentifier);
+        return new MoveNodesIntoSummaryResponse(mapIdentifierValue, userSummary, summaryNodeIdentifier, 0,
+            summaryNodeIdentifier);
     }
 
     ToolCallSummary buildToolCallSummary(MoveNodesIntoSummaryRequest request, MoveNodesIntoSummaryResponse response) {
