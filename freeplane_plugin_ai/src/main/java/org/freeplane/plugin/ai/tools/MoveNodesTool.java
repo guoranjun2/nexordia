@@ -11,7 +11,7 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.MoveErrorDescription;
+import org.freeplane.plugin.ai.tools.ToolErrorHandler;
 
 public class MoveNodesTool {
     private final AvailableMaps availableMaps;
@@ -49,7 +49,7 @@ public class MoveNodesTool {
         NodeModel parentNode = placement.getParentNode();
         int insertionIndex = placement.getInsertionIndex();
         mapController.moveNodes(nodesToMove, parentNode, insertionIndex,
-            (description, nodes) -> { throw new IllegalStateException("Move failure: " + description + MoveErrorDescription.describe(nodes)); });
+            new ToolErrorHandler("Move failure: "));
         return new MoveNodesResponse(mapIdentifierValue, userSummary, parentNode.createID(), insertionIndex);
     }
 
