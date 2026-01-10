@@ -1,11 +1,9 @@
 # Task: Add node create and move tools with anchor and summary rules
 - **Scope:** Add tools to create nodes, move nodes, create summaries, and move nodes into summaries, including anchor placement rules, ordered group handling, and summary anchor rules. Return modified node identifiers and short texts for every successful operation. Run only on specific user requests.
 - **Motivation:** Editing requires consistent create and move operations. Newly created nodes only receive identifiers during creation, so the tool response must include those identifiers and short texts for follow up actions.
-- **Research summary:**
   - Review existing map controller helpers for creating nodes, inserting at specific positions, and moving nodes.
   - Review summary node creation helpers and constraints for summary anchors.
   - Review how short text is derived for tool responses to keep response size stable.
-- **Design:**
   - Require an anchor node and a placement mode for each operation: first child, last child, sibling before, sibling after.
   - Allow creation requests to include recursive children so full subtrees can be created in one request.
   - Require a user summary string in the request and return it in the response for display.
@@ -17,7 +15,6 @@
   - Enforce map consistency and return errors for invalid operations, such as moving a node into its own subtree.
   - After success, return a structure that includes identifiers and short texts for all modified nodes.
   - Formatting and style manipulation are out of scope for this tool.
-- **Test specification:**
   - Verify each anchor placement mode inserts or moves nodes at the correct position.
   - Verify group ordering is preserved exactly as provided.
   - Verify groups containing parent and descendant nodes are rejected.
@@ -140,19 +137,6 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesTool.java`
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesToolTest.java`
 
-### Subtask: Validate group and move constraints
-- **Status:** Planning
-- **Scope:** Reject invalid groups and invalid move targets.
-- **Motivation:** Invalid moves can corrupt the map or create cycles.
-- **Research summary:**
-  - Review ancestry checks and subtree detection helpers.
-- **Design:**
-  - Reject groups containing nodes that are descendants of other group nodes at the top level.
-  - Reject moves into a node's own subtree.
-- **Test specification:**
-  - Verify ancestor and descendant conflicts are rejected.
-- Verify subtree moves are rejected with a clear error.
-
 ### Subtask: Surface clone/move restriction errors for tools
 - **Status:** Finished
 - **Scope:** Allow callers to observe every “not allowed” failure reported by `MMapController` instead of only triggering `UITools.errorMessage`, so AI tools and FCP can relay structured errors while UI callers continue to show popups.
@@ -174,18 +158,7 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesTool.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryTool.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
-### Subtask: Handle clone aware moves and summaries
-- **Status:** Planning
-- **Scope:** Ensure create and move operations respect clone behavior.
-- **Motivation:** Cloned nodes share content and sometimes subtrees, so moves can affect multiple views.
-- **Research summary:**
-  - Review how clone nodes are represented and how moving a clone affects its siblings.
-- **Design:**
-  - Ensure move and summary operations do not break clone relationships.
-  - Decide whether creation should support creating clones as part of a group.
-- **Test specification:**
-  - Verify clone relationships are preserved after moves and summary creation.
-
+### Subtask: Support summary creation for a group
 - **Status:** Finished
 - **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
