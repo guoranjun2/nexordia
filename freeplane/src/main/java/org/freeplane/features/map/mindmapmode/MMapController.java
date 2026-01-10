@@ -58,6 +58,7 @@ import org.freeplane.core.undo.IActor;
 import org.freeplane.core.util.ConfigurationUtils;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.clipboard.ClipboardControllers;
 import org.freeplane.features.clipboard.mindmapmode.MClipboardControllers;
 import org.freeplane.features.icon.mindmapmode.MIconController.Keys;
@@ -117,7 +118,7 @@ public class MMapController extends MapController {
     public static final String RESOURCES_CONVERT_TO_CURRENT_VERSION = "convert_to_current_version";
 
     private static final OperationErrorHandler DEFAULT_OPERATION_ERROR_HANDLER =
-            description -> UITools.errorMessage(description);
+            (description, nodes) -> UITools.errorMessage(description);
 
     public MMapController(ModeController modeController) {
         super(modeController);
@@ -347,7 +348,8 @@ public class MMapController extends MapController {
             return;
         }
         if(newNode.subtreeContainsCloneOf(parent)){
-            errorHandler.handleError("not allowed: the subtree contains a parent or its clone");
+            errorHandler.handleError("not allowed: the subtree contains a parent or its clone",
+                Arrays.asList(newNode, parent));
             return;
         }
         stopInlineEditing();
@@ -626,16 +628,18 @@ public class MMapController extends MapController {
 
     public void moveNodeAndItsClones(NodeModel child, final NodeModel newParent, int newIndex,
                                      OperationErrorHandler errorHandler) {
-        if(child.subtreeContainsCloneOf(newParent)){
-            errorHandler.handleError("not allowed: the subtree contains a parent or its clone");
+        if(child.getMap() != newParent.getMap()){
+            errorHandler.handleError("not allowed: cannot move nodes across maps", Arrays.asList(child, newParent));
             return;
-        } else if (child.getMap() != newParent.getMap()) {
-            errorHandler.handleError("not allowed: the nodes belong to different maps");
+        }
+        if(child.subtreeContainsCloneOf(newParent)){
+            errorHandler.handleError("not allowed: target parent is within the subtree or a clone of the moving node",
+                Arrays.asList(child, newParent));
             return;
         }
         final NodeModel oldParent = child.getParentNode();
         if(oldParent == null){
-            errorHandler.handleError("not allowed: the moved node has no parent");
+            errorHandler.handleError("not allowed: the moved node has no parent", Arrays.asList(child));
             return;
         }
         if(newParent != oldParent && newParent.subtreeClones().contains(oldParent)) {

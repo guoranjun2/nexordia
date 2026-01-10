@@ -161,9 +161,9 @@
   - `MMapController.insertNewNode()` and `moveNodeAndItsClones()` currently call `UITools.errorMessage("not allowed")` when clone cycles or write protections are detected (e.g., at lines 342, 612, 617).
   - The `moveNodes()` and `insertNode()` APIs funnel through these helpers, so any move or clone failure bubbles up as a popup without a programmatic signal.
   - LangChain4j tools already wrap map controller calls; adding an error handler parameter lets us inject tool-friendly callbacks while preserving existing method signatures via default handlers that still call `UITools`.
-  - Define one `OperationErrorHandler` functional interface in `org.freeplane.features.map.mindmapmode` with `void handleError(String description)` so the new APIs have a uniform callback contract.
+  - Define one `OperationErrorHandler` functional interface in `org.freeplane.features.map.mindmapmode` with `void handleError(String description, List<NodeModel> involvedNodes)` so the new APIs surface both the failure description and the nodes participating in the failed operation.
 - **Design:**
-  - Introduce a single `OperationErrorHandler` functional interface (with `handleError(String description)`) and add it as an optional parameter to `insertNewNode`, `moveNodes`, and `moveNodeAndItsClones` overloads.
+  - Introduce a single `OperationErrorHandler` functional interface (with `handleError(String description, List<NodeModel> involvedNodes)`) and add it as an optional parameter to `insertNewNode`, `moveNodes`, and `moveNodeAndItsClones` overloads.
   - Keep the old method signatures but have them delegate to the new ones with handlers that call `UITools.errorMessage`, ensuring UI callers behave unchanged.
   - Tool callers (e.g., `MoveNodesTool`, `MoveNodesIntoSummaryTool`, summary helpers) will pass handlers that record or throw a tool-visible exception instead of popping up a dialog.
 - **Test specification:**

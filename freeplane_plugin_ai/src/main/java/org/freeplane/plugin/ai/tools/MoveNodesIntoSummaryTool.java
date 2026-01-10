@@ -11,6 +11,7 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.plugin.ai.tools.MoveErrorDescription;
 
 public class MoveNodesIntoSummaryTool {
     private final AvailableMaps availableMaps;
@@ -45,11 +46,12 @@ public class MoveNodesIntoSummaryTool {
         List<NodeModel> nodesToMove = resolveNodes(mapModel, nodeIdentifiers);
         NodeModel summaryNode = summaryNodeCreator.createSummaryNode(mapModel.getRootNode(), firstNode, lastNode);
         mapController.moveNodes(nodesToMove, summaryNode, 0,
-            description -> { throw new IllegalStateException("Move failure: " + description); });
+            (description, nodes) -> { throw new IllegalStateException("Move failure: " + description + MoveErrorDescription.describe(nodes)); });
         String summaryNodeIdentifier = summaryNode.createID();
         return new MoveNodesIntoSummaryResponse(mapIdentifierValue, userSummary, summaryNodeIdentifier, 0,
             summaryNodeIdentifier);
     }
+
 
     ToolCallSummary buildToolCallSummary(MoveNodesIntoSummaryRequest request, MoveNodesIntoSummaryResponse response) {
         if (request == null) {
