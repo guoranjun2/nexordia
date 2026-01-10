@@ -1,6 +1,9 @@
 package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +14,7 @@ import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
@@ -39,8 +43,9 @@ public class CreateNodesToolTest {
         secondNodeModel.setID("ID_second");
         when(nodeModelCreator.createNodeModelTree(firstNodeItem, mapModel)).thenReturn(firstNodeModel);
         when(nodeModelCreator.createNodeModelTree(secondNodeItem, mapModel)).thenReturn(secondNodeModel);
-        when(nodeInserter.insertNodes(Arrays.asList(firstNodeModel, secondNodeModel), anchorNode,
-            AnchorPlacementMode.LAST_CHILD)).thenReturn(Arrays.asList(firstNodeModel, secondNodeModel));
+        when(nodeInserter.insertNodes(anyList(), any(NodeModel.class), eq(AnchorPlacementMode.LAST_CHILD),
+            any(OperationErrorHandler.class)))
+            .thenReturn(Arrays.asList(firstNodeModel, secondNodeModel));
         when(textController.getShortPlainText(firstNodeModel, 20, " ...")).thenReturn("First");
         when(textController.getShortPlainText(secondNodeModel, 20, " ...")).thenReturn("Second");
         CreateNodesRequest request = new CreateNodesRequest(
@@ -58,8 +63,8 @@ public class CreateNodesToolTest {
         assertThat(response.getModifiedNodes().get(0).getShortText()).isEqualTo("First");
         assertThat(response.getModifiedNodes().get(1).getNodeIdentifier()).isEqualTo("ID_second");
         assertThat(response.getModifiedNodes().get(1).getShortText()).isEqualTo("Second");
-        verify(nodeInserter).insertNodes(Arrays.asList(firstNodeModel, secondNodeModel), anchorNode,
-            AnchorPlacementMode.LAST_CHILD);
+        verify(nodeInserter).insertNodes(anyList(), eq(anchorNode), eq(AnchorPlacementMode.LAST_CHILD),
+            any(OperationErrorHandler.class));
         verify(nodeContentApplier).apply(firstNodeModel, firstNodeItem);
         verify(nodeContentApplier).apply(secondNodeModel, secondNodeItem);
     }

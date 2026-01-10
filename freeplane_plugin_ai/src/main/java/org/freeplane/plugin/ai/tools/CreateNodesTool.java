@@ -51,7 +51,8 @@ public class CreateNodesTool {
             nodeContentApplier.apply(nodeModel, nodeItem);
             createdNodes.add(nodeModel);
         }
-        List<NodeModel> insertedNodes = nodeInserter.insertNodes(createdNodes, anchorNode, placementMode);
+        List<NodeModel> insertedNodes = nodeInserter.insertNodes(
+            createdNodes, anchorNode, placementMode, new ToolErrorHandler("Create failure: "));
         List<ModifiedNodeSummary> modifiedNodes = modifiedNodeSummaryBuilder.buildSummaries(insertedNodes, true);
         return new CreateNodesResponse(mapIdentifierValue, userSummary, modifiedNodes);
     }

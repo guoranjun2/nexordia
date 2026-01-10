@@ -8,6 +8,7 @@ import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeModel.Side;
 import org.freeplane.features.map.mindmapmode.MMapController;
+import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 
 public class NodeInserter {
     private final MMapController mapController;
@@ -19,6 +20,11 @@ public class NodeInserter {
     }
 
     public List<NodeModel> insertNodes(List<NodeModel> nodes, NodeModel anchorNode, AnchorPlacementMode placementMode) {
+        return insertNodes(nodes, anchorNode, placementMode, null);
+    }
+
+    public List<NodeModel> insertNodes(List<NodeModel> nodes, NodeModel anchorNode, AnchorPlacementMode placementMode,
+                                       OperationErrorHandler errorHandler) {
         if (nodes == null) {
             throw new IllegalArgumentException("Missing nodes.");
         }
@@ -39,7 +45,11 @@ public class NodeInserter {
         int insertionIndex = placement.getInsertionIndex();
         for (NodeModel node : nodes) {
             applySide(node, anchorNode, parentNode, placementMode);
-            mapController.insertNode(node, parentNode, insertionIndex);
+            if (errorHandler == null) {
+                mapController.insertNode(node, parentNode, insertionIndex);
+            } else {
+                mapController.insertNode(node, parentNode, insertionIndex, errorHandler);
+            }
             insertionIndex += 1;
         }
         return nodes;

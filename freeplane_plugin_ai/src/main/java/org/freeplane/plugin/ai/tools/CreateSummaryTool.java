@@ -56,7 +56,8 @@ public class CreateSummaryTool {
             nodeContentApplier.apply(nodeModel, nodeItem);
             createdNodes.add(nodeModel);
         }
-        nodeInserter.insertNodes(createdNodes, summaryNode, AnchorPlacementMode.LAST_CHILD);
+        nodeInserter.insertNodes(
+            createdNodes, summaryNode, AnchorPlacementMode.LAST_CHILD, new ToolErrorHandler("Summary creation failure: "));
         List<ModifiedNodeSummary> modifiedNodes = new ArrayList<>();
         modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(Collections.singletonList(summaryNode), false));
         modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(createdNodes, true));

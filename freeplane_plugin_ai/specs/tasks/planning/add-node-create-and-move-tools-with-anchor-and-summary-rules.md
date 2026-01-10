@@ -68,7 +68,7 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryAnchorPlacement.java`
 
 ### Subtask: Create NodeModel elements for new nodes
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Create new NodeModel elements for a request group and place them relative to the anchor before applying content.
 - **Motivation:** Separate structural creation from content updates so creation order and placement are deterministic.
 - **Research summary:**
@@ -102,7 +102,7 @@
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeModelCreatorTest.java`
 
 ### Subtask: Apply content to created nodes with content editors
-- **Status:** Planning
+- **Status:** Finished
 - **Scope:** Apply content values directly to newly created nodes using shared editor helpers so the creation path mirrors later edit tools while staying undo-free.
 - **Motivation:** Consistent editors for text, attributes, tags, and icons reduce duplication and make future edit tools easier to build.
 - **Research summary:**
@@ -124,7 +124,7 @@
 -  - Verify editors do not interact with undo helpers or `MMapController` when applying content during creation.
 
 ### Subtask: Implement anchor placement and ordering rules for moves
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Implement placement for first child, last child, sibling before, and sibling after with strict group ordering for moved nodes.
 - **Motivation:** Deterministic placement is needed to keep edits predictable.
 - **Research summary:**
@@ -154,7 +154,7 @@
 - Verify subtree moves are rejected with a clear error.
 
 ### Subtask: Surface clone/move restriction errors for tools
-- **Status:** Planning
+- **Status:** Finished
 - **Scope:** Allow callers to observe every “not allowed” failure reported by `MMapController` instead of only triggering `UITools.errorMessage`, so AI tools and FCP can relay structured errors while UI callers continue to show popups.
 - **Motivation:** The current UI-only error popups are invisible to the tools, so move/create failures look like silent crashes from the AI perspective; we need a callback-driven path so tools can report the same errors back to the agent without regressing existing UI behavior.
 - **Research summary:**
@@ -186,8 +186,7 @@
 - **Test specification:**
   - Verify clone relationships are preserved after moves and summary creation.
 
-### Subtask: Support summary creation for a group
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
 - **Research summary:**
@@ -219,7 +218,7 @@
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryToolTest.java`
 
 ### Subtask: Track and return modified node summaries
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Return identifiers and short texts for all modified nodes after creation or move.
 - **Motivation:** The model needs identifiers for follow up edits, especially for newly created nodes.
 - **Research summary:**

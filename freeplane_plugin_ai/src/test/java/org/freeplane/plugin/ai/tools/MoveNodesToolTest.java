@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
+import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
 
@@ -47,6 +49,7 @@ public class MoveNodesToolTest {
         assertThat(response.getUserSummary()).isEqualTo("Reorder nodes");
         assertThat(response.getParentNodeIdentifier()).isEqualTo("ID_parent");
         assertThat(response.getInsertionIndex()).isEqualTo(1);
-        verify(mapController).moveNodes(Arrays.asList(firstNode, secondNode), parentNode, 1);
+        verify(mapController).moveNodes(eq(Arrays.asList(firstNode, secondNode)), eq(parentNode), eq(1),
+            any(OperationErrorHandler.class));
     }
 }

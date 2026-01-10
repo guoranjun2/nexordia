@@ -1,6 +1,9 @@
 package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +14,7 @@ import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
@@ -44,8 +48,9 @@ public class CreateSummaryToolTest {
         NodeModel childNodeModel = new NodeModel("child", mapModel);
         childNodeModel.setID("ID_child");
         when(nodeModelCreator.createNodeModelTree(childItem, mapModel)).thenReturn(childNodeModel);
-        when(nodeInserter.insertNodes(Collections.singletonList(childNodeModel), summaryNode,
-            AnchorPlacementMode.LAST_CHILD)).thenReturn(Collections.singletonList(childNodeModel));
+        when(nodeInserter.insertNodes(anyList(), eq(summaryNode), eq(AnchorPlacementMode.LAST_CHILD),
+            any(OperationErrorHandler.class)))
+            .thenReturn(Collections.singletonList(childNodeModel));
         when(textController.getShortPlainText(summaryNode, 20, " ...")).thenReturn("Summary");
         when(textController.getShortPlainText(childNodeModel, 20, " ...")).thenReturn("Child");
         CreateSummaryRequest request = new CreateSummaryRequest(
@@ -58,8 +63,8 @@ public class CreateSummaryToolTest {
 
         assertThat(response.getSummaryNodeIdentifier()).isEqualTo("ID_summary");
         assertThat(response.getModifiedNodes()).hasSize(2);
-        verify(nodeInserter).insertNodes(Collections.singletonList(childNodeModel), summaryNode,
-            AnchorPlacementMode.LAST_CHILD);
+        verify(nodeInserter).insertNodes(anyList(), eq(summaryNode), eq(AnchorPlacementMode.LAST_CHILD),
+            any(OperationErrorHandler.class));
         verify(nodeContentApplier).apply(childNodeModel, childItem);
     }
 }

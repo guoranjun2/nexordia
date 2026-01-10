@@ -15,6 +15,7 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeModel.Side;
 import org.freeplane.features.map.mindmapmode.MMapController;
+import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.junit.Test;
@@ -32,11 +33,13 @@ public class NodeInserterTest {
         NodeModel firstNode = new NodeModel("first", mapModel);
         NodeModel secondNode = new NodeModel("second", mapModel);
 
-        unitUnderTest.insertNodes(Arrays.asList(firstNode, secondNode), anchorNode, AnchorPlacementMode.FIRST_CHILD);
+        OperationErrorHandler handler = (description, involvedNodes) -> {};
+        unitUnderTest.insertNodes(Arrays.asList(firstNode, secondNode), anchorNode, AnchorPlacementMode.FIRST_CHILD,
+            handler);
 
         InOrder inOrder = inOrder(mapController);
-        inOrder.verify(mapController).insertNode(firstNode, anchorNode, 0);
-        inOrder.verify(mapController).insertNode(secondNode, anchorNode, 1);
+        inOrder.verify(mapController).insertNode(firstNode, anchorNode, 0, handler);
+        inOrder.verify(mapController).insertNode(secondNode, anchorNode, 1, handler);
     }
 
     @Test
@@ -52,7 +55,9 @@ public class NodeInserterTest {
         anchorNode.setSide(Side.TOP_OR_LEFT);
         NodeModel newNode = new NodeModel("new", mapModel);
 
-        unitUnderTest.insertNodes(Collections.singletonList(newNode), anchorNode, AnchorPlacementMode.SIBLING_AFTER);
+        OperationErrorHandler handler = (description, involvedNodes) -> {};
+        unitUnderTest.insertNodes(Collections.singletonList(newNode), anchorNode, AnchorPlacementMode.SIBLING_AFTER,
+            handler);
 
         assertThat(newNode.getSide()).isEqualTo(Side.TOP_OR_LEFT);
     }
@@ -77,8 +82,10 @@ public class NodeInserterTest {
             mapModel.setRoot(rootNode);
             NodeModel newNode = new NodeModel("new", mapModel);
             when(layoutController.suggestNewChildSide(rootNode, rootNode)).thenReturn(Side.TOP_OR_LEFT);
+            OperationErrorHandler handler = (description, involvedNodes) -> {};
 
-            unitUnderTest.insertNodes(Collections.singletonList(newNode), rootNode, AnchorPlacementMode.LAST_CHILD);
+            unitUnderTest.insertNodes(Collections.singletonList(newNode), rootNode, AnchorPlacementMode.LAST_CHILD,
+                handler);
 
             assertThat(newNode.getSide()).isEqualTo(Side.TOP_OR_LEFT);
         } finally {
@@ -96,8 +103,9 @@ public class NodeInserterTest {
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         NodeModel newNode = new NodeModel("new", mapModel);
 
+        OperationErrorHandler handler = (description, involvedNodes) -> {};
         assertThatThrownBy(() -> unitUnderTest.insertNodes(Collections.singletonList(newNode), anchorNode,
-            AnchorPlacementMode.FIRST_CHILD))
+            AnchorPlacementMode.FIRST_CHILD, handler))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Target node is write protected.");
     }

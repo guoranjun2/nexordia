@@ -543,7 +543,12 @@ public class MMapController extends MapController {
     }
 
     public void insertNode(final NodeModel node, final NodeModel parentNode, final int index) {
-        insertNewNode(node, parentNode, index);
+        insertNode(node, parentNode, index, DEFAULT_OPERATION_ERROR_HANDLER);
+    }
+
+    public void insertNode(final NodeModel node, final NodeModel parentNode, final int index,
+                           OperationErrorHandler errorHandler) {
+        insertNewNode(node, parentNode, index, errorHandler);
     }
 
     @Override
