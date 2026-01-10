@@ -25,17 +25,31 @@ task createGitProperty {
     // for src/srcpure tarballs, /gitinfo.txt exists, so we don't call git
     // (which is not available)
 	def gitInfoFile = new File(rootDir, 'gitinfo.txt')
-    onlyIf { !gitInfoFile.exists() }
+    onlyIf {
+        def shouldRun = !gitInfoFile.exists()
+        if (!shouldRun) {
+            logger.lifecycle("createGitProperty: skipped because ${gitInfoFile} exists")
+        }
+        shouldRun
+    }
 
 
 	doLast {
+        def execOps = project.services.get(org.gradle.process.ExecOperations)
 		def whoami
 		def revisionHash
 		def execResult
 		try {
+            execResult = execOps.exec {
+                commandLine 'git', '--version'
+                ignoreExitValue = true
+            }
+            if (execResult.exitValue != 0) {
+                return
+            }
 
 			new ByteArrayOutputStream().withStream { os ->
-				execResult = exec {
+				execResult = execOps.exec {
 					commandLine  'git', 'config', 'user.name'
 					standardOutput = os
 					ignoreExitValue = true
@@ -43,10 +57,10 @@ task createGitProperty {
 				whoami = os.toString().trim()
 			}
 			 if(execResult.exitValue != 0)
-				return
+				throw new GradleException("createGitProperty failed: git config user.name exit=${execResult.exitValue}")
 
 			new ByteArrayOutputStream().withStream { os ->
-				execResult = exec {
+				execResult = execOps.exec {
 					commandLine 'git', 'log', '--pretty=format:%H', '-n1'
 					standardOutput = os
 					ignoreExitValue = true
@@ -55,9 +69,9 @@ task createGitProperty {
 			}
 
 			 if(execResult.exitValue != 0)
-				return
+				throw new GradleException("createGitProperty failed: git log exit=${execResult.exitValue}")
 		}
-		catch (TaskExecutionException) {
+		catch (Exception) {
 			return
 		}
 
