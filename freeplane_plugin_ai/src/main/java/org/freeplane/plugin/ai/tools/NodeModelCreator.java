@@ -5,7 +5,7 @@ import java.util.List;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 
-public final class NodeModelCreator {
+public class NodeModelCreator {
     public NodeModel createNodeModelTree(NodeCreationItem creationItem, MapModel mapModel) {
         if (creationItem == null) {
             throw new IllegalArgumentException("Missing node creation item.");

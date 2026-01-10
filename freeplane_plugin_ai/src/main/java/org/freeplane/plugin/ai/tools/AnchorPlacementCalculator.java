@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import org.freeplane.features.map.NodeModel;
 
-public final class AnchorPlacementCalculator {
+public class AnchorPlacementCalculator {
     public AnchorPlacementResult calculatePlacement(NodeModel anchorNode, AnchorPlacementMode placementMode) {
         if (anchorNode == null) {
             throw new IllegalArgumentException("Missing anchor node.");

@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-final class AIModelCatalog {
+class AIModelCatalog {
     private static final long OPENROUTER_REFRESH_INTERVAL_MILLISECONDS = 30L * 60L * 1000L;
     private static final Set<String> OPENROUTER_MODEL_ALLOWLIST = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         "deepseek/deepseek-r1-0528:free",
@@ -259,13 +259,13 @@ final class AIModelCatalog {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static final class OpenrouterModelsResponse {
+    private static class OpenrouterModelsResponse {
         @JsonProperty("data")
         private List<OpenrouterModelItem> models;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static final class OpenrouterModelItem {
+    private static class OpenrouterModelItem {
         @JsonProperty("id")
         private String modelIdentifier;
         @JsonProperty("pricing")
@@ -273,7 +273,7 @@ final class AIModelCatalog {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static final class OpenrouterModelPricing {
+    private static class OpenrouterModelPricing {
         @JsonProperty("prompt")
         private String promptPrice;
         @JsonProperty("completion")
@@ -281,13 +281,13 @@ final class AIModelCatalog {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static final class OllamaModelsResponse {
+    private static class OllamaModelsResponse {
         @JsonProperty("models")
         private List<OllamaModelItem> models;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static final class OllamaModelItem {
+    private static class OllamaModelItem {
         @JsonProperty("name")
         private String modelName;
     }

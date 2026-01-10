@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class NodeCreationItem {
+public class NodeCreationItem {
     private final NodeContent content;
     private final List<NodeCreationItem> children;
 

@@ -5,7 +5,7 @@ import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
-public final class AIChatModelFactory {
+public class AIChatModelFactory {
 
     public static final String PROVIDER_NAME_OPENROUTER = "openrouter";
     public static final String PROVIDER_NAME_GEMINI = "gemini";

@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import org.freeplane.features.map.NodeModel;
 
-public final class AnchorPlacementResult {
+public class AnchorPlacementResult {
     private final NodeModel parentNode;
     private final int insertionIndex;
 

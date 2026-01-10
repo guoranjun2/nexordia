@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class TextualContentRequest {
+public class TextualContentRequest {
     private final boolean includesText;
     private final boolean includesDetails;
     private final boolean includesNote;

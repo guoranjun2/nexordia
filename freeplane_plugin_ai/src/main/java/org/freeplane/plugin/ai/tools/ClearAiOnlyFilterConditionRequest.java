@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ClearAiOnlyFilterConditionRequest {
+public class ClearAiOnlyFilterConditionRequest {
     private final String mapIdentifier;
 
     @JsonCreator

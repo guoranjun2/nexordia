@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class TagsContent {
+public class TagsContent {
     private final List<String> tags;
 
     @JsonCreator

@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SearchAttributesByNameAndValueRequest {
+public class SearchAttributesByNameAndValueRequest {
     private final String mapIdentifier;
     private final String attributeName;
     private final String attributeValue;

@@ -7,7 +7,7 @@ import org.freeplane.features.icon.IconDescription;
 import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.icon.UserIcon;
 
-final class IconDescriptionResolver {
+class IconDescriptionResolver {
     private static final String EMOJI_NAME_PREFIX = "emoji-";
 
     private final EnglishTextProvider englishTextProvider;

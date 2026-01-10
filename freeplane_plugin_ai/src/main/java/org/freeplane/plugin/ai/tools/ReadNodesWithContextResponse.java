@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class ReadNodesWithContextResponse {
+public class ReadNodesWithContextResponse {
     private final String mapIdentifier;
     private final List<ReadNodesWithContextItem> items;
     private final Omissions omissions;

@@ -11,7 +11,7 @@ import org.freeplane.features.icon.TagReference;
 import org.freeplane.features.icon.Tags;
 import org.freeplane.features.map.NodeModel;
 
-public final class TagsContentEditor {
+public class TagsContentEditor {
     public void apply(NodeModel nodeModel, TagsContent tagsContent) {
         if (nodeModel == null || tagsContent == null) {
             return;

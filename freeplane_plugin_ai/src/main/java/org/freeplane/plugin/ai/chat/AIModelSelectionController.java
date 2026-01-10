@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-final class AIModelSelectionController {
+class AIModelSelectionController {
     private final AIProviderConfiguration configuration;
     private final AIModelCatalog modelCatalog;
     private final JComboBox<AIModelDescriptor> modelSelectionComboBox;
@@ -129,7 +129,7 @@ final class AIModelSelectionController {
         }
     }
 
-    private static final class ModelSelectionRenderer extends DefaultListCellRenderer {
+    private static class ModelSelectionRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class Omissions {
+public class Omissions {
     private final Integer omittedFocusNodeCount;
     private final Integer omittedChildCount;
     private final Integer omittedDescendantCount;

@@ -9,7 +9,7 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeModel.Side;
 import org.freeplane.features.map.mindmapmode.MMapController;
 
-public final class NodeInserter {
+public class NodeInserter {
     private final MMapController mapController;
     private final AnchorPlacementCalculator anchorPlacementCalculator;
 

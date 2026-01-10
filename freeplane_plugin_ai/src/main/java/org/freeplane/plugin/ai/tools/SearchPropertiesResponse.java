@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SearchPropertiesResponse {
+public class SearchPropertiesResponse {
     private final String mapIdentifier;
     private final List<SearchPropertyDefinition> properties;
 

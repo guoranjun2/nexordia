@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import dev.langchain4j.model.chat.ChatModel;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 
-public final class AIChatServiceFactory {
+public class AIChatServiceFactory {
 
     private AIChatServiceFactory() {
     }

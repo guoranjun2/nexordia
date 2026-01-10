@@ -1,6 +1,6 @@
 package org.freeplane.plugin.ai.tools;
 
-final class NodeContentFactories {
+class NodeContentFactories {
     final NodeContentItemReader nodeContentItemReader;
     final IconDescriptionResolver iconDescriptionResolver;
 

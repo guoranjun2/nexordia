@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public final class NodeContentValueMatcher {
+public class NodeContentValueMatcher {
     private final String queryText;
     private final SearchMatchingMode matchingMode;
     private final SearchCaseSensitivity caseSensitivity;

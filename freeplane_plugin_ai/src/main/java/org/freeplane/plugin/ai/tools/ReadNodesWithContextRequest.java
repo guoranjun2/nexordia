@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
-public final class ReadNodesWithContextRequest {
+public class ReadNodesWithContextRequest {
     private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
     private static final int DEFAULT_SUMMARY_DEPTH = 1;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;

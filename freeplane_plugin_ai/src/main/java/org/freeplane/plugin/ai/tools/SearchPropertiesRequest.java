@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SearchPropertiesRequest {
+public class SearchPropertiesRequest {
     private final String mapIdentifier;
 
     @JsonCreator

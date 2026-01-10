@@ -10,7 +10,7 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
-public final class AIToolSetBuilder {
+public class AIToolSetBuilder {
     private ToolCallSummaryHandler toolCallSummaryHandler;
     private AvailableMaps availableMaps;
     private TextController textController;

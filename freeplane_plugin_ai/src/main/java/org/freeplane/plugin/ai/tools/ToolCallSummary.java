@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.Objects;
 
-public final class ToolCallSummary {
+public class ToolCallSummary {
     private final String toolName;
     private final String summaryText;
     private final boolean hasError;

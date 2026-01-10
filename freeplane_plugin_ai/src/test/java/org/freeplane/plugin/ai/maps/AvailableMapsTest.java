@@ -61,7 +61,7 @@ public class AvailableMapsTest {
         assertThat(uut.findMapModel(UUID.randomUUID())).isNull();
     }
 
-    private static final class FakeMapModelProvider implements MapModelProvider {
+    private static class FakeMapModelProvider implements MapModelProvider {
         private MapModel currentMapModel;
         private List<MapModel> openMapModels = new ArrayList<>();
 

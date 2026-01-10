@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
-public final class FlatListItem {
+public class FlatListItem {
     private final String nodeIdentifier;
     private final NodeContent content;
     private final List<BreadcrumbItem> breadcrumbs;

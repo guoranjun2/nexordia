@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import java.util.Objects;
 
-public final class SearchConditionState {
+public class SearchConditionState {
     private final String propertyName;
     private final String conditionName;
     private final String value;

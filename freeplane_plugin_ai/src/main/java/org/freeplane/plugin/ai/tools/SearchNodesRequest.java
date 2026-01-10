@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
-public final class SearchNodesRequest {
+public class SearchNodesRequest {
     private static final int DEFAULT_LIMIT = 200;
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;

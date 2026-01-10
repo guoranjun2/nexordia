@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ApplyAttributesRequest {
+public class ApplyAttributesRequest {
     private final String mapIdentifier;
     private final List<String> schema;
     private final List<AttributeUpdate> updates;

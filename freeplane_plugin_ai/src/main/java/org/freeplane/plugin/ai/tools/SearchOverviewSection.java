@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SearchOverviewSection {
+public class SearchOverviewSection {
     private final String nodeIdentifier;
     private final String nodeText;
     private final List<String> keywords;

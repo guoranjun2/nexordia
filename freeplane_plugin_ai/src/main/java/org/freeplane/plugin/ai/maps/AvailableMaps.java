@@ -13,7 +13,7 @@ import java.util.WeakHashMap;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 
-public final class AvailableMaps {
+public class AvailableMaps {
     private final MapModelProvider mapModelProvider;
     private final Map<MapModel, UUID> mapIdentifiersByMapModel = new WeakHashMap<>();
     private final Map<UUID, WeakReference<MapModel>> mapReferencesByIdentifier = new HashMap<>();

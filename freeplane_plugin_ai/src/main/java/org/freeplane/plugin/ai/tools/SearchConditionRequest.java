@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SearchConditionRequest {
+public class SearchConditionRequest {
     private final String propertyName;
     private final String conditionName;
     private final String value;

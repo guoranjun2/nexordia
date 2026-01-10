@@ -13,7 +13,7 @@ import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.map.NodeModel;
 
-public final class IconsContentEditor {
+public class IconsContentEditor {
     private final IconDescriptionResolver iconDescriptionResolver;
     private final Iterable<NamedIcon> defaultCandidates;
 

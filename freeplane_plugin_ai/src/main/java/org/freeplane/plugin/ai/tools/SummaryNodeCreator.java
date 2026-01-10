@@ -11,7 +11,7 @@ import org.freeplane.features.map.SummaryNodeFlag;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 
-public final class SummaryNodeCreator {
+public class SummaryNodeCreator {
     private final MMapController mapController;
 
     public SummaryNodeCreator(MMapController mapController) {

@@ -1,6 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
-final class AIModelSelection {
+class AIModelSelection {
     static final String SELECTION_SEPARATOR = "|";
     private final String providerName;
     private final String modelName;

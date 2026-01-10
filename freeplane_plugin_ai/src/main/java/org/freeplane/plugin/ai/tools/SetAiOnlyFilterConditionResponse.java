@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SetAiOnlyFilterConditionResponse {
+public class SetAiOnlyFilterConditionResponse {
     private final String mapIdentifier;
     private final SearchConditionState activeCondition;
 

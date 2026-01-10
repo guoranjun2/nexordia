@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class CreateSummaryResponse {
+public class CreateSummaryResponse {
     private final String mapIdentifier;
     private final String userSummary;
     private final List<ModifiedNodeSummary> modifiedNodes;

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.freeplane.features.map.NodeModel;
 
-public final class NodeContentApplier {
+public class NodeContentApplier {
     private final TextualContentEditor textualContentEditor;
     private final AttributesContentEditor attributesContentEditor;
     private final TagsContentEditor tagsContentEditor;

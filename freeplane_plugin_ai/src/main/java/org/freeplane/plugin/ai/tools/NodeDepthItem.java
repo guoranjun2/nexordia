@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class NodeDepthItem {
+public class NodeDepthItem {
     private final String nodeIdentifier;
     private final int depth;
     private final NodeContent content;

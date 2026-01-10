@@ -1,6 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
-public final class ChatUsageTotals {
+public class ChatUsageTotals {
     private final long inputTokenCount;
     private final long outputTokenCount;
 

@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.core.resources.ResourceController;
 
-public final class ChatMemorySettings {
+public class ChatMemorySettings {
     private static final String CHAT_MEMORY_MODE_PROPERTY = "ai_chat_memory_mode";
     private static final String CHAT_MEMORY_MAXIMUM_MESSAGE_COUNT_PROPERTY = "ai_chat_memory_maximum_message_count";
     private static final int DEFAULT_MAXIMUM_MESSAGE_COUNT = 40;

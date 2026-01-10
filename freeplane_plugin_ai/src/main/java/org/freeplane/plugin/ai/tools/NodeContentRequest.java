@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class NodeContentRequest {
+public class NodeContentRequest {
     @JsonProperty(required = false)
     private final TextualContentRequest textualContentRequest;
     @JsonProperty(required = false)

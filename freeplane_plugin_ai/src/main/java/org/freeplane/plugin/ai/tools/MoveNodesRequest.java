@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class MoveNodesRequest {
+public class MoveNodesRequest {
     private final String mapIdentifier;
     private final String userSummary;
     private final AnchorPlacement anchorPlacement;

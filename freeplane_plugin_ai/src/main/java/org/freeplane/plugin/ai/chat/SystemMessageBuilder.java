@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.core.resources.ResourceController;
 
-public final class SystemMessageBuilder {
+public class SystemMessageBuilder {
 	public static final String SYSTEM_MESSAGE_PROPERTY = "ai_system_message";
     @FunctionalInterface
     interface SystemMessageTextProvider {
@@ -28,7 +28,7 @@ public final class SystemMessageBuilder {
         return trimmed.isEmpty() ? null : message;
     }
 
-    private static final class ResourceControllerSystemMessageTextProvider implements SystemMessageTextProvider {
+    private static class ResourceControllerSystemMessageTextProvider implements SystemMessageTextProvider {
 
         @Override
         public String getSystemMessageText() {

@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.core.resources.ResourceController;
 
-public final class AIProviderConfiguration {
+public class AIProviderConfiguration {
     private static final String AI_PROVIDER_NAME_PROPERTY = "ai_provider_name";
     private static final String AI_MODEL_NAME_PROPERTY = "ai_model_name";
     private static final String AI_SELECTED_MODEL_PROPERTY = "ai_selected_model";

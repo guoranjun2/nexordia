@@ -5,7 +5,7 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.util.Objects;
 
-public final class ChatSessionMemoryController {
+public class ChatSessionMemoryController {
     private final ChatMemorySettings chatMemorySettings;
     private ChatMemory chatMemory;
 

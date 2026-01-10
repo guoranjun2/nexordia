@@ -8,7 +8,7 @@ import org.freeplane.core.util.LogUtils;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public final class ChatTokenUsageTracker {
+public class ChatTokenUsageTracker {
     private final Consumer<ChatUsageTotals> totalsConsumer;
     private long inputTokenCount;
     private long outputTokenCount;

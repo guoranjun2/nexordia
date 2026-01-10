@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import org.freeplane.features.map.NodeModel;
 
-public final class MoveErrorDescription {
+public class MoveErrorDescription {
 
     private MoveErrorDescription() {
     }

@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.text.TextController;
 
-public final class ModifiedNodeSummaryBuilder {
+public class ModifiedNodeSummaryBuilder {
     private static final int DEFAULT_MAXIMUM_TEXT_CHARACTERS = 20;
     private static final String DEFAULT_CONTINUATION_MARK = " ...";
 

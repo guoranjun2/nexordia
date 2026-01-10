@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import java.util.Collection;
 import java.util.Iterator;
 
-final class ToolCallSummaryFormatter {
+class ToolCallSummaryFormatter {
     private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
 
     private ToolCallSummaryFormatter() {

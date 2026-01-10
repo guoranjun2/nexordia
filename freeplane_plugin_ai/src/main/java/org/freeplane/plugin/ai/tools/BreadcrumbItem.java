@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class BreadcrumbItem {
+public class BreadcrumbItem {
     private final String text;
     private final String nodeIdentifier;
 

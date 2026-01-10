@@ -2,7 +2,7 @@ package org.freeplane.plugin.ai.chat;
 
 import java.util.Objects;
 
-final class AIModelDescriptor {
+class AIModelDescriptor {
     private final String providerName;
     private final String modelName;
     private final String displayName;

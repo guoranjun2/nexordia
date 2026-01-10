@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class BreadcrumbsResponse {
+public class BreadcrumbsResponse {
     private final String mapIdentifier;
     private final List<BreadcrumbItem> breadcrumbs;
 

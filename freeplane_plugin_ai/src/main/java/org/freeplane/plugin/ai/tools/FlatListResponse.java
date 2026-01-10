@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class FlatListResponse {
+public class FlatListResponse {
     private final String mapIdentifier;
     private final List<FlatListItem> items;
 

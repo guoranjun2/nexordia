@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class IconsContent {
+public class IconsContent {
     private final List<String> descriptions;
 
     @JsonCreator

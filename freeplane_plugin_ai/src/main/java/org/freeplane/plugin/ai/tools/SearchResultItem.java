@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class SearchResultItem {
+public class SearchResultItem {
     private final String nodeIdentifier;
     private final String briefText;
     private final String breadcrumbPath;

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class ReadNodesWithContextItem {
+public class ReadNodesWithContextItem {
     private final List<NodeDepthItem> nodes;
     private final NodeContentItem parentNode;
     private final String breadcrumbPath;

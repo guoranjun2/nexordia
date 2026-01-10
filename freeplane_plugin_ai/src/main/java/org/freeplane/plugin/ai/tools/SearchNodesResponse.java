@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class SearchNodesResponse {
+public class SearchNodesResponse {
     private final String mapIdentifier;
     private final List<SearchResultItem> results;
     private final Omissions omissions;

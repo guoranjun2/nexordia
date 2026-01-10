@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ModifiedNodeSummary {
+public class ModifiedNodeSummary {
     private final String nodeIdentifier;
     private final String shortText;
 

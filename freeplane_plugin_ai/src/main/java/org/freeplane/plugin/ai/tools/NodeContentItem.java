@@ -8,7 +8,7 @@ import dev.langchain4j.model.output.structured.Description;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class NodeContentItem {
+public class NodeContentItem {
     private final String nodeIdentifier;
     private final NodeContent content;
     @Description("Optional qualifiers when requested: summary_node for summary group nodes, first_group_node for the "

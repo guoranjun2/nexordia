@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class AnchorPlacement {
+public class AnchorPlacement {
     private final String anchorNodeIdentifier;
     private final AnchorPlacementMode placementMode;
 
