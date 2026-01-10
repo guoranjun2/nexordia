@@ -20,6 +20,7 @@ import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
+import org.freeplane.plugin.ai.tools.ToolCaller;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -47,9 +48,10 @@ public class Activator implements BundleActivator {
 			    @Override
 				public void installExtension(final ModeController modeController, CommandLineOptions options) {
 				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
-				    tabs.addTab("AI", new AIChatPanel());
+				    AIChatPanel aiChatPanel = new AIChatPanel();
+				    tabs.addTab("AI", aiChatPanel);
 				    addPluginDefaults();
-				    startModelContextProtocolServer();
+				    startModelContextProtocolServer(aiChatPanel);
 				    addPreferencesToOptionPanel();
 				}
 
@@ -80,9 +82,12 @@ public class Activator implements BundleActivator {
 					resourceController.securePropertyForReadingAndModification(SYSTEM_MESSAGE_PROPERTY);
 				}
 
-					private void startModelContextProtocolServer() {
+					private void startModelContextProtocolServer(AIChatPanel aiChatPanel) {
 						if (modelContextProtocolServer == null) {
-							modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder().build());
+							modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
+							    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
+							    .toolCaller(ToolCaller.MCP)
+							    .build());
 							ResourceController.getResourceController()
 								.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
 						}

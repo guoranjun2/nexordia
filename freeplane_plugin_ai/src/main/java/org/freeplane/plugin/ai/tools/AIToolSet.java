@@ -23,9 +23,11 @@ public class AIToolSet {
     private final CreateSummaryTool createSummaryTool;
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
+    private final ToolCaller toolCaller;
 
     AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps, TextController textController,
-              NodeContentFactories nodeContentFactories, MMapController mapController) {
+              NodeContentFactories nodeContentFactories, MMapController mapController,
+              ToolCaller toolCaller) {
         Objects.requireNonNull(mapController, "mapController");
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         AnchorPlacementCalculator anchorPlacementCalculator = new AnchorPlacementCalculator();
@@ -65,6 +67,9 @@ public class AIToolSet {
         this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
+        this.toolCaller = toolCaller == null
+            ? ToolCaller.CHAT
+            : toolCaller;
     }
 
     public String systemMessageForChat(Object input) {
@@ -113,7 +118,8 @@ public class AIToolSet {
         }
         LogUtils.info(summary.getSummaryText());
         if (toolCallSummaryHandler != null) {
-            toolCallSummaryHandler.handleToolCallSummary(summary);
+            toolCallSummaryHandler.handleToolCallSummary(
+                summary.withToolCaller(toolCaller));
         }
     }
 

@@ -9,6 +9,8 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.ToolCaller;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -239,11 +241,22 @@ public class AIChatPanel extends JPanel {
         scrollToBottom();
     }
 
+    public ToolCallSummaryHandler toolCallSummaryHandler() {
+        return this::handleToolCallSummary;
+    }
+
     private void handleToolCallSummary(ToolCallSummary summary) {
         if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible()) {
             return;
         }
-        appendChatMessage(summary.getSummaryText(), ChatMessageCategory.TOOL_CALL);
+        boolean isMcpCall = summary.getToolCaller() == ToolCaller.MCP;
+        ChatMessageCategory category = isMcpCall
+                ? ChatMessageCategory.MCP_CALL
+                : ChatMessageCategory.TOOL_CALL;
+        String messageText = isMcpCall
+            ? "MCP: " + summary.getSummaryText()
+            : summary.getSummaryText();
+        appendChatMessage(messageText, category);
     }
 
     private void configureMessageHistoryStyles() {
@@ -255,6 +268,8 @@ public class AIChatPanel extends JPanel {
             + " border-left: 4px solid #d7d7d7; }");
         styleSheet.addRule(".message-tool { margin: 6px 0; padding: 6px 8px; background-color: #eaf3ff;"
             + " border-left: 4px solid #bcd9ff; }");
+        styleSheet.addRule(".message-mcp-call { margin: 6px 0; padding: 6px 8px; background-color: #eaf3ff;"
+            + " border-left: 8px solid #5c79bd; }");
     }
 
     private String formatMessageText(String text) {
@@ -285,7 +300,8 @@ public class AIChatPanel extends JPanel {
     private enum ChatMessageCategory {
         USER("message-user"),
         ASSISTANT("message-assistant"),
-        TOOL_CALL("message-tool");
+        TOOL_CALL("message-tool"),
+        MCP_CALL("message-mcp-call");
 
         private final String styleClassName;
 

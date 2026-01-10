@@ -10,6 +10,8 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 
+import java.util.Objects;
+
 public class AIToolSetBuilder {
     private ToolCallSummaryHandler toolCallSummaryHandler;
     private AvailableMaps availableMaps;
@@ -17,9 +19,15 @@ public class AIToolSetBuilder {
     private AttributeController attributeController;
     private IconController iconController;
     private MMapController mapController;
+    private ToolCaller toolCaller = ToolCaller.CHAT;
 
     public AIToolSetBuilder toolCallSummaryHandler(ToolCallSummaryHandler handler) {
         this.toolCallSummaryHandler = handler;
+        return this;
+    }
+
+    public AIToolSetBuilder toolCaller(ToolCaller toolCaller) {
+        this.toolCaller = Objects.requireNonNull(toolCaller, "toolCaller");
         return this;
     }
 
@@ -57,7 +65,8 @@ public class AIToolSetBuilder {
         MMapController mapController = this.mapController != null ? this.mapController : createMapController();
         NodeContentFactories nodeContentFactories = createNodeContentFactories(textController, attributeController,
             iconController);
-        return new AIToolSet(toolCallSummaryHandler, availableMaps, textController, nodeContentFactories, mapController);
+        return new AIToolSet(toolCallSummaryHandler, availableMaps, textController, nodeContentFactories, mapController,
+            toolCaller);
     }
 
     private AvailableMaps createAvailableMaps() {
