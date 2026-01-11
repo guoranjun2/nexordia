@@ -82,7 +82,7 @@ EditableContent --> editableIcons
   - Verify editable icons only include explicit node icons and exclude style icons.
 
 ### Subtask: Add editing tool confirmation and consent
-- **Status:** Planning
+- **Status:** Plan Review
 - **Scope:** Add per tool confirmation dialogs and consent handling for editing tools, with separate confirmations for Model Context Protocol mode and large language model mode.
 - **Motivation:** Editing operations need explicit user consent that is specific to each tool and to the interaction mode.
 - **Research summary:**
