@@ -12,7 +12,7 @@ import org.freeplane.features.icon.Tags;
 import org.freeplane.features.map.NodeModel;
 
 public class TagsContentEditor {
-    public void apply(NodeModel nodeModel, TagsContent tagsContent) {
+    public void setInitialContent(NodeModel nodeModel, TagsContent tagsContent) {
         if (nodeModel == null || tagsContent == null) {
             return;
         }

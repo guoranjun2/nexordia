@@ -11,13 +11,13 @@ import org.junit.Test;
 
 public class TextualContentEditorTest {
     @Test
-    public void apply_setsTextDetailsAndNote() {
+    public void setInitialContent_setsTextDetailsAndNote() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         TextualContent textualContent = new TextualContent("text", "details", "note");
         TextualContentEditor unitUnderTest = new TextualContentEditor();
 
-        unitUnderTest.apply(nodeModel, textualContent);
+        unitUnderTest.setInitialContent(nodeModel, textualContent);
 
         assertThat(nodeModel.getText()).isEqualTo("text");
         assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(nodeModel))).isEqualTo("details");

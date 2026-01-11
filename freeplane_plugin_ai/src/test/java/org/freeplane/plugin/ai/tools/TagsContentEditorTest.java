@@ -16,14 +16,14 @@ import org.junit.Test;
 
 public class TagsContentEditorTest {
     @Test
-    public void apply_addsTags() {
+    public void setInitialContent_addsTags() {
         MapModel mapModel = new MapModel(
             (source, targetMap, withChildren) -> null, iconRegistry(), null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         TagsContent tagsContent = new TagsContent(Collections.singletonList("flag"));
         TagsContentEditor unitUnderTest = new TagsContentEditor();
 
-        unitUnderTest.apply(nodeModel, tagsContent);
+        unitUnderTest.setInitialContent(nodeModel, tagsContent);
 
         assertThat(Tags.getTagReferences(nodeModel)).hasSize(1);
         TagReference reference = Tags.getTagReferences(nodeModel).get(0);

@@ -6,7 +6,7 @@ import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.text.DetailModel;
 
 public class TextualContentEditor {
-    public void apply(NodeModel nodeModel, TextualContent textualContent) {
+    public void setInitialContent(NodeModel nodeModel, TextualContent textualContent) {
         if (nodeModel == null || textualContent == null) {
             return;
         }

@@ -7,7 +7,7 @@ import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.NodeModel;
 
 public class AttributesContentEditor {
-    public void apply(NodeModel nodeModel, AttributesContent attributesContent) {
+    public void setInitialContent(NodeModel nodeModel, AttributesContent attributesContent) {
         if (nodeModel == null || attributesContent == null) {
             return;
         }

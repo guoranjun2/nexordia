@@ -22,7 +22,7 @@ public class IconsContentEditor {
         this.defaultCandidates = Objects.requireNonNull(defaultCandidates, "defaultCandidates");
     }
 
-    public void apply(NodeModel nodeModel, IconsContent iconsContent) {
+    public void setInitialContent(NodeModel nodeModel, IconsContent iconsContent) {
         if (nodeModel == null || iconsContent == null) {
             return;
         }

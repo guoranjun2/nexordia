@@ -43,9 +43,9 @@ public class NodeContentApplier {
         if (content == null) {
             return;
         }
-        textualContentEditor.apply(nodeModel, content.getTextualContent());
-        attributesContentEditor.apply(nodeModel, content.getAttributesContent());
-        tagsContentEditor.apply(nodeModel, content.getTagsContent());
-        iconsContentEditor.apply(nodeModel, content.getIconsContent());
+        textualContentEditor.setInitialContent(nodeModel, content.getTextualContent());
+        attributesContentEditor.setInitialContent(nodeModel, content.getAttributesContent());
+        tagsContentEditor.setInitialContent(nodeModel, content.getTagsContent());
+        iconsContentEditor.setInitialContent(nodeModel, content.getIconsContent());
     }
 }

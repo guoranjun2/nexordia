@@ -16,7 +16,7 @@ import org.junit.Test;
 
 public class IconsContentEditorTest {
     @Test
-    public void apply_addsIconByDescription() {
+    public void setInitialContent_addsIconByDescription() {
         MapModel mapModel = new MapModel(
             (source, targetMap, withChildren) -> null, iconRegistry(), null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
@@ -26,7 +26,7 @@ public class IconsContentEditorTest {
         IconsContentEditor unitUnderTest = new IconsContentEditor(resolver, Collections.singletonList(sampleIcon));
         IconsContent iconsContent = new IconsContent(Collections.singletonList(sampleIcon.getName()));
 
-        unitUnderTest.apply(nodeModel, iconsContent);
+        unitUnderTest.setInitialContent(nodeModel, iconsContent);
 
         assertThat(nodeModel.getIcons()).hasSize(1);
         assertThat(nodeModel.getIcons().get(0)).isSameAs(sampleIcon);

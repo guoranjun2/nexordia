@@ -11,14 +11,14 @@ import org.junit.Test;
 
 public class AttributesContentEditorTest {
     @Test
-    public void apply_addsAttributes() {
+    public void setInitialContent_addsAttributes() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         AttributesContent attributesContent = new AttributesContent(
             Collections.singletonList(new AttributeEntry("key", "value")));
         AttributesContentEditor unitUnderTest = new AttributesContentEditor();
 
-        unitUnderTest.apply(nodeModel, attributesContent);
+        unitUnderTest.setInitialContent(nodeModel, attributesContent);
 
         NodeAttributeTableModel attributeTableModel = NodeAttributeTableModel.getModel(nodeModel);
         assertThat(attributeTableModel.getRowCount()).isEqualTo(1);
