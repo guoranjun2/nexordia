@@ -112,6 +112,11 @@ public class AIToolSet {
         }
     }
 
+    @Tool("Edit a node content element once editable metadata has been read.")
+    public NodeContentItem editNodeContent(NodeContentEditRequest request) {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
     private void publishToolCallSummary(ToolCallSummary summary) {
         if (summary == null) {
             return;
