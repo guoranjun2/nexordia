@@ -1,6 +1,7 @@
 package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
 
@@ -18,6 +19,8 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.text.DetailModel;
+import org.freeplane.features.attribute.mindmapmode.MAttributeController;
+import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.junit.Test;
 
 public class NodeContentApplierTest {
@@ -43,13 +46,14 @@ public class NodeContentApplierTest {
         NodeCreationItem parentItem = new NodeCreationItem(parentContent, Collections.singletonList(childItem));
 
         IconDescriptionResolver resolver = new IconDescriptionResolver(new DefaultEnglishTextProvider());
-        NodeContentApplier unitUnderTest = new NodeContentApplier(
-            new TextualContentEditor(),
-            new AttributesContentEditor(),
-            new TagsContentEditor(),
-            new IconsContentEditor(resolver, Collections.singletonList(sampleIcon)));
+        NodeContentApplier uut = new NodeContentApplier(
+            new TextualContentEditor(
+                mock(TextContentWriteController.class), mock(NoteContentWriteController.class)),
+            new AttributesContentEditor(mock(MAttributeController.class)),
+            new TagsContentEditor(mock(MIconController.class)),
+            new IconsContentEditor(resolver, Collections.singletonList(sampleIcon), mock(MIconController.class)));
 
-        unitUnderTest.apply(parentNode, parentItem);
+        uut.apply(parentNode, parentItem);
 
         assertThat(parentNode.getText()).isEqualTo("root");
         assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(parentNode))).isEqualTo("details");

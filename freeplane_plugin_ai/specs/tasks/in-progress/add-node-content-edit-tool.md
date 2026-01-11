@@ -135,7 +135,7 @@ EditableContent --> editableIcons
   - Not yet implemented; future tests should cover request validation, formula rejection, and the response shape.
 
 ### Subtask: Implement undo-aware edit helpers for textual content
-- **Status:** Plan Review
+- **Status:** Implementing
 - **Scope:** Build edit helpers that rely on `MTextController` and `MNoteController` so node text, details, and notes are updated through the existing undo `IActor`s and content-type metadata.
 - **Motivation:** Those editors already wrap writes in `IActor`s, fire `nodeChanged`, and expose `TextController.isFormula`, so reusing them keeps formulas guarded and the undo stack consistent.
 - **Research summary:**
@@ -146,7 +146,7 @@ EditableContent --> editableIcons
   - Confirm the helper uses the controllers’ actors, respects the `isFormula` guard, and results in updated `NodeContentItem` content for text/details/note edits.
 
 ### Subtask: Implement undo-aware edit helpers for collections
-- **Status:** Plan Review
+- **Status:** Implementing
 - **Scope:** Use `MAttributeController` and `MIconController` to implement add/delete/replace flows for attributes, tags, and explicit icons, honoring the optional `index`/selector and keeping all changes undoable.
 - **Motivation:** Collection edits already execute inside `IActor`s (`SetAttributeValueActor`, `RemoveAttributeActor`, `addIcon`/`removeIcon`, etc.), so reusing them keeps the map consistent while allowing precise targeting of duplicates.
 - **Research summary:**
