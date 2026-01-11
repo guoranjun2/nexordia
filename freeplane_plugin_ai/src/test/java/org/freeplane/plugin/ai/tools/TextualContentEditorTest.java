@@ -86,7 +86,7 @@ public class TextualContentEditorTest {
         assertThatThrownBy(() -> uut.editExistingTextualContent(
             nodeModel, EditedElement.TEXT, ContentType.MARKDOWN, "<html><body>value</body></html>", textController))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Markdown text content does not allow html.");
+            .hasMessage("Markdown content does not allow html; use markdown syntax.");
     }
 
     @Test

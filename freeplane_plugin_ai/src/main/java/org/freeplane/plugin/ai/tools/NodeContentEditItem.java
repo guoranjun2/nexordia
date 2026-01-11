@@ -3,13 +3,17 @@ package org.freeplane.plugin.ai.tools;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentEditItem {
     private final EditedElement editedElement;
     @JsonProperty("originalContentType")
+    @Description(
+        "Original content type read from editableContent. Use MARKDOWN only when the node is already Markdown.")
     private final ContentType originalContentType;
     @JsonProperty(required = false)
+    @Description("New content value. Use HTML for formatting unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
     private final String value;
     @JsonProperty(required = false)
     private final Integer index;

@@ -137,7 +137,7 @@ public class TextualContentEditor {
             return prepareLatexValue(value, nodeTextContentType.latexPrefix, allowLatexPrefixWithoutReapply);
         }
         if (nodeTextContentType.contentType == ContentType.MARKDOWN) {
-            rejectHtml(value, "Markdown text content does not allow html.");
+            rejectHtml(value, "Markdown content does not allow html; use markdown syntax.");
         }
         return value;
     }
@@ -148,7 +148,7 @@ public class TextualContentEditor {
             return prepareLatexValue(value, null, allowLatexPrefixWithoutReapply);
         }
         if (currentContentType == ContentType.MARKDOWN) {
-            rejectHtml(value, "Markdown content does not allow html for " + editedElement + ".");
+            rejectHtml(value, "Markdown content does not allow html; use markdown syntax.");
         }
         return value;
     }

@@ -133,7 +133,7 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Edit node content safely through undo-aware controllers. Formula edits are rejected. Provide the original content type; core text may switch between plain text and html when the new value already matches the target type, and latex edits keep the original prefix.")
+    @Tool("Edit node content safely through undo-aware controllers. Formula edits are rejected. Formatting: use HTML unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
     public NodeContentItem editNodeContent(NodeContentEditRequest request) {
         try {
             NodeContentItem response = nodeContentEditor.edit(resolveNode(request), request);
