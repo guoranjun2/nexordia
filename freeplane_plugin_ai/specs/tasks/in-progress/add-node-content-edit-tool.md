@@ -134,34 +134,25 @@ EditableContent --> editableIcons
 - **Test specification:**
   - Not yet implemented; future tests should cover request validation, formula rejection, and the response shape.
 
-### Subtask: Implement undo-aware edit helpers
+### Subtask: Implement undo-aware edit helpers for textual content
 - **Status:** Plan Review
-- **Scope:** Build edit helpers that call the mind-map (`M*`) controllers for each editable element so edits run through undo actors and preserve Freeplane’s formatting metadata.
-- **Motivation:** Each controller applied by the UI already wraps writes in `IActor`s, fires `MapController.nodeChanged`, and keeps content-type data; reusing them guarantees undo support and lets us reject formulas consistently.
+- **Scope:** Build edit helpers that rely on `MTextController` and `MNoteController` so node text, details, and notes are updated through the existing undo `IActor`s and content-type metadata.
+- **Motivation:** Those editors already wrap writes in `IActor`s, fire `nodeChanged`, and expose `TextController.isFormula`, so reusing them keeps formulas guarded and the undo stack consistent.
 - **Research summary:**
-  - **Text:** `MTextController.setNodeObject` replaces the node’s user object through an `IActor` and notifies the map controller, while `TextController.isFormula` inspects transformers and signals when content is a formula so the edit helper can refuse formula edits (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:556-593`, `freeplane/src/main/java/org/freeplane/features/text/TextController.java:183-192`).
-  - **Details:** `MTextController.setDetails`/`setDetailsContentType` clone the existing `DetailModel`, update text/contentType, and execute an undo actor that swaps the detail extension and fires `nodeChanged`, preserving both undo state and the `DetailModel` metadata (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:664-718`).
-  - **Note:** `MNoteController.setNoteText` and `setNoteContentType` follow the same pattern: copy the `NoteModel`, mutate text or content type, and execute an `IActor` that replaces the extension and reports the change, keeping undo/redo aligned with UI behavior (`freeplane/src/main/java/org/freeplane/features/note/mindmapmode/MNoteController.java:202-263`).
-  - **Attributes:** `MAttributeController` exposes actors like `SetAttributeValueActor`, `InsertAttributeActor`, and `RemoveAttributeActor` executed via `Controller.getCurrentModeController().execute`, so attribute edits are already undoable and send table change signals (`freeplane/src/main/java/org/freeplane/features/attribute/mindmapmode/MAttributeController.java:297-484`).
-  - **Tags/Icons:** `MIconController` runs `setTagReferences`, `addIcon`, and `removeIcon` inside `IActor`s, updates tag/icon lists via `Tags.setTagReferences` and `node.addIcon`, and fires `nodeChanged`, so explicit icon/tag edits go through the undo stack (`freeplane/src/main/java/org/freeplane/features/icon/mindmapmode/MIconController.java:302-349`, `621-667`, `529-562`).
-  - **Formula guard:** The controllers expose content-type or formula indicators, so the edit helper must verify `isFormula` is false both before and after writing, keeping formula editing out of scope.
-- **Design diagram:**
-```plantuml
-@startuml
-class EditTool
-class NodeContentItem
-class MTextController
-class MNoteController
-class MAttributeController
-class MIconController
-EditTool --> MTextController : text/details edits
-EditTool --> MNoteController : note edits
-EditTool --> MAttributeController : attribute edits
-EditTool --> MIconController : tag/icon edits
-EditTool --> NodeContentItem : return updated content
-MTextController --> TextController : isFormula checks
-MIconController --> Tags : setTagReferences
-@enduml
-```
+  - `MTextController.setNodeObject` sets the node user object inside an `IActor` and synchronizes with the map controller; `TextController.isFormula` inspects transformers and the special `'` prefix, so the edit helper should reject edits when formulas are involved (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:556-593`, `freeplane/src/main/java/org/freeplane/features/text/TextController.java:183-192`).
+  - `MTextController.setDetails`/`setDetailsContentType` clone the `DetailModel`, change text/content type, and swap the extension inside an `IActor`, which is exactly what we need for detail editing (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:664-718`).
+  - `MNoteController.setNoteText`/`setNoteContentType` follow the same copy-and-replace pattern for the `NoteModel` and fire the necessary `nodeChanged` events through undo actors (`freeplane/src/main/java/org/freeplane/features/note/mindmapmode/MNoteController.java:202-263`).
 - **Test specification:**
-  - Future tests should verify each helper delegates to the correct controller, runs through undo actors, rejects formula content, and produces the expected `NodeContentItem`.
+  - Confirm the helper uses the controllers’ actors, respects the `isFormula` guard, and results in updated `NodeContentItem` content for text/details/note edits.
+
+### Subtask: Implement undo-aware edit helpers for collections
+- **Status:** Plan Review
+- **Scope:** Use `MAttributeController` and `MIconController` to implement add/delete/replace flows for attributes, tags, and explicit icons, honoring the optional `index`/selector and keeping all changes undoable.
+- **Motivation:** Collection edits already execute inside `IActor`s (`SetAttributeValueActor`, `RemoveAttributeActor`, `addIcon`/`removeIcon`, etc.), so reusing them keeps the map consistent while allowing precise targeting of duplicates.
+- **Research summary:**
+  - `MAttributeController` provides actors for updating, inserting, and removing attribute entries and always executes them via `Controller.getCurrentModeController().execute`, so collection edits stay undoable and emit table change events (`freeplane/src/main/java/org/freeplane/features/attribute/mindmapmode/MAttributeController.java:297-484`).
+  - `MIconController.setTagReferences` packages tag updates through an `IActor` that runs `Tags.setTagReferences` and fires `nodeChanged`, so we can reuse it for both tags and coloring operations (`freeplane/src/main/java/org/freeplane/features/icon/mindmapmode/MIconController.java:621-667`).
+  - `MIconController.addIcon`/`removeIcon` also wrap their updates in `IActor`s, calling `node.addIcon`/`node.removeIcon` and notifying the map controller for explicit icon edits (`freeplane/src/main/java/org/freeplane/features/icon/mindmapmode/MIconController.java:302-349`, `529-562`).
+  - The helper will honor the optional `index` and operation (add/delete/replace) so duplicates can be modified deterministically.
+- **Test specification:**
+  - Verify collection edits trigger the correct controller actors, the index/selector resolves the intended entry, and the returned `NodeContentItem` reflects the new attributes/tags/icons.
