@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
-public class ReadNodesWithContextRequest {
+public class ReadNodesWithDescendantsRequest {
     private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
     private static final int DEFAULT_SUMMARY_DEPTH = 1;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
@@ -31,29 +31,17 @@ public class ReadNodesWithContextRequest {
     @JsonProperty(required = false)
     @Description("Maximum total response length in characters. Default: 65536.")
     private final Integer maximumTotalTextCharacters;
-    @JsonProperty(required = false)
-    @Description("NodeContentRequest override for focus node full content.")
-    private final NodeContentRequest focusNodeContentRequest;
-    @JsonProperty(required = false)
-    @Description("NodeContentRequest override for parent node summary.")
-    private final NodeContentRequest parentNodeContentRequest;
-    @JsonProperty(required = false)
-    @Description("NodeContentRequest override for child node full content.")
-    private final NodeContentRequest childNodeContentRequest;
     private final boolean hasFullContentDepth;
     private final boolean hasSummaryDepth;
     private final boolean hasMaximumTotalTextCharacters;
 
     @JsonCreator
-    public ReadNodesWithContextRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
+    public ReadNodesWithDescendantsRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
                                        @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers,
                                        @JsonProperty("contextSections") List<ContextSection> contextSections,
                                        @JsonProperty("fullContentDepth") Integer fullContentDepth,
                                        @JsonProperty("summaryDepth") Integer summaryDepth,
-                                       @JsonProperty("maximumTotalTextCharacters") Integer maximumTotalTextCharacters,
-                                       @JsonProperty("focusNodeContentRequest") NodeContentRequest focusNodeContentRequest,
-                                       @JsonProperty("parentNodeContentRequest") NodeContentRequest parentNodeContentRequest,
-                                       @JsonProperty("childNodeContentRequest") NodeContentRequest childNodeContentRequest) {
+                                       @JsonProperty("maximumTotalTextCharacters") Integer maximumTotalTextCharacters) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
         this.contextSections = normalizeContextSections(contextSections);
@@ -65,9 +53,6 @@ public class ReadNodesWithContextRequest {
         this.maximumTotalTextCharacters = maximumTotalTextCharacters == null
             ? DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS
             : maximumTotalTextCharacters;
-        this.focusNodeContentRequest = focusNodeContentRequest;
-        this.parentNodeContentRequest = parentNodeContentRequest;
-        this.childNodeContentRequest = childNodeContentRequest;
     }
 
     public String getMapIdentifier() {
@@ -104,18 +89,6 @@ public class ReadNodesWithContextRequest {
 
     public boolean hasMaximumTotalTextCharacters() {
         return hasMaximumTotalTextCharacters;
-    }
-
-    public NodeContentRequest getFocusNodeContentRequest() {
-        return focusNodeContentRequest;
-    }
-
-    public NodeContentRequest getParentNodeContentRequest() {
-        return parentNodeContentRequest;
-    }
-
-    public NodeContentRequest getChildNodeContentRequest() {
-        return childNodeContentRequest;
     }
 
     private static List<ContextSection> normalizeContextSections(List<ContextSection> contextSections) {

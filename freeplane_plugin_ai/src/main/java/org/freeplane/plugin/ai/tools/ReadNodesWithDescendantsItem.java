@@ -7,15 +7,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReadNodesWithContextItem {
+public class ReadNodesWithDescendantsItem {
     private final List<NodeDepthItem> nodes;
-    private final NodeContentItem parentNode;
+    private final NodeDepthItem parentNode;
     private final String breadcrumbPath;
     private final Omissions childOmissions;
 
     @JsonCreator
-    public ReadNodesWithContextItem(@JsonProperty("nodes") List<NodeDepthItem> nodes,
-                                    @JsonProperty("parentNode") NodeContentItem parentNode,
+    public ReadNodesWithDescendantsItem(@JsonProperty("nodes") List<NodeDepthItem> nodes,
+                                    @JsonProperty("parentNode") NodeDepthItem parentNode,
                                     @JsonProperty("breadcrumbPath") String breadcrumbPath,
                                     @JsonProperty("childOmissions") Omissions childOmissions) {
         this.nodes = nodes;
@@ -28,7 +28,7 @@ public class ReadNodesWithContextItem {
         return nodes;
     }
 
-    public NodeContentItem getParentNode() {
+    public NodeDepthItem getParentNode() {
         return parentNode;
     }
 

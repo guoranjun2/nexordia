@@ -8,22 +8,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReadNodesWithContextResponse {
+public class ReadNodesWithDescendantsResponse {
     private final String mapIdentifier;
-    private final List<ReadNodesWithContextItem> items;
+    private final List<ReadNodesWithDescendantsItem> items;
     private final Omissions omissions;
     @JsonIgnore
     private final List<String> focusNodePreviewTexts;
 
     @JsonCreator
-    public ReadNodesWithContextResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
-                                        @JsonProperty("items") List<ReadNodesWithContextItem> items,
+    public ReadNodesWithDescendantsResponse(@JsonProperty("mapIdentifier") String mapIdentifier,
+                                        @JsonProperty("items") List<ReadNodesWithDescendantsItem> items,
                                         @JsonProperty("omissions") Omissions omissions) {
         this(mapIdentifier, items, omissions, null);
     }
 
-    ReadNodesWithContextResponse(String mapIdentifier, List<ReadNodesWithContextItem> items, Omissions omissions,
-                                 List<String> focusNodePreviewTexts) {
+    ReadNodesWithDescendantsResponse(String mapIdentifier, List<ReadNodesWithDescendantsItem> items, Omissions omissions,
+                                     List<String> focusNodePreviewTexts) {
         this.mapIdentifier = mapIdentifier;
         this.items = items;
         this.omissions = omissions;
@@ -34,7 +34,7 @@ public class ReadNodesWithContextResponse {
         return mapIdentifier;
     }
 
-    public List<ReadNodesWithContextItem> getItems() {
+    public List<ReadNodesWithDescendantsItem> getItems() {
         return items;
     }
 

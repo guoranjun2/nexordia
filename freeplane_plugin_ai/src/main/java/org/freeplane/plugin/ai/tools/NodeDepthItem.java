@@ -11,7 +11,8 @@ import dev.langchain4j.model.output.structured.Description;
 public class NodeDepthItem {
     private final String nodeIdentifier;
     private final int depth;
-    private final NodeContent content;
+    @Description("Concatenated plain text content for the node.")
+    private final String unformattedText;
     @Description("Optional qualifiers when requested: summary_node for summary group nodes, first_group_node for the "
         + "first node of a summary group.")
     private final List<String> qualifiers;
@@ -19,11 +20,11 @@ public class NodeDepthItem {
     @JsonCreator
     public NodeDepthItem(@JsonProperty("nodeIdentifier") String nodeIdentifier,
                          @JsonProperty("depth") int depth,
-                         @JsonProperty("content") NodeContent content,
+                         @JsonProperty("unformattedText") String unformattedText,
                          @JsonProperty("qualifiers") List<String> qualifiers) {
         this.nodeIdentifier = nodeIdentifier;
         this.depth = depth;
-        this.content = content;
+        this.unformattedText = unformattedText;
         this.qualifiers = qualifiers;
     }
 
@@ -35,8 +36,8 @@ public class NodeDepthItem {
         return depth;
     }
 
-    public NodeContent getContent() {
-        return content;
+    public String getUnformattedText() {
+        return unformattedText;
     }
 
     public List<String> getQualifiers() {

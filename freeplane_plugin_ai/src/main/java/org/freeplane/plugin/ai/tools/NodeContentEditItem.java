@@ -13,11 +13,12 @@ public class NodeContentEditItem {
         "Original content type read from editableContent. Use MARKDOWN only when the node is already Markdown.")
     private final ContentType originalContentType;
     @JsonProperty(required = false)
-    @Description("New content value. Use HTML for formatting unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
+    @Description("New content value. For PLAIN_TEXT nodes, formatted text must be wrapped in <html><body>...</body></html>. Use HTML for formatting unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
     private final String value;
     @JsonProperty(required = false)
     private final Integer index;
     @JsonProperty(required = false)
+    @Description("Operation for collection edits (ATTRIBUTES, TAGS, ICONS). Omit for TEXT, DETAILS, or NOTE edits.")
     private final EditOperation operation;
     @JsonProperty(required = false)
     private final String targetKey;

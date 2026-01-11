@@ -26,7 +26,7 @@ import org.junit.Test;
 
 public class EditableContentReaderTest {
     @Test
-    public void readEditableContent_includesTextRepresentationsAndMetadata() {
+    public void readEditableContent_includesTextRepresentations() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("raw", mapModel);
         nodeModel.setUserObject("<html><body><p>raw</p></body></html>");
@@ -40,11 +40,7 @@ public class EditableContentReaderTest {
             new IconDescriptionResolver(key -> null),
             new ContentTypeConverter());
         EditableContentRequest request = new EditableContentRequest(
-            Collections.singletonList(EditableContentField.TEXT),
-            Arrays.asList(EditableContentRepresentation.RAW,
-                EditableContentRepresentation.TRANSFORMED,
-                EditableContentRepresentation.PLAIN,
-                EditableContentRepresentation.METADATA));
+            Collections.singletonList(EditableContentField.TEXT));
 
         EditableContent editableContent = reader.readEditableContent(nodeModel, request);
 
@@ -53,8 +49,7 @@ public class EditableContentReaderTest {
         assertThat(editableText.getTransformed()).contains("Transformed");
         assertThat(editableText.getPlain()).isEqualTo("Transformed");
         assertThat(editableText.getContentType()).isEqualTo(ContentType.HTML);
-        assertThat(editableText.getHasMarkup()).isTrue();
-        assertThat(editableText.getIsFormula()).isFalse();
+        assertThat(editableText.getIsEditable()).isTrue();
     }
 
     @Test
@@ -70,8 +65,7 @@ public class EditableContentReaderTest {
             new IconDescriptionResolver(key -> null),
             new ContentTypeConverter());
         EditableContentRequest request = new EditableContentRequest(
-            Collections.singletonList(EditableContentField.TEXT),
-            Arrays.asList(EditableContentRepresentation.RAW, EditableContentRepresentation.METADATA));
+            Collections.singletonList(EditableContentField.TEXT));
 
         EditableContent editableContent = reader.readEditableContent(nodeModel, request);
 
@@ -79,7 +73,7 @@ public class EditableContentReaderTest {
     }
 
     @Test
-    public void readEditableContent_includesAttributesWithRepresentations() {
+    public void readEditableContent_includesAttributes() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         NodeAttributeTableModel attributeTableModel = NodeAttributeTableModel.getModel(nodeModel);
@@ -94,11 +88,7 @@ public class EditableContentReaderTest {
             new IconDescriptionResolver(key -> null),
             new ContentTypeConverter());
         EditableContentRequest request = new EditableContentRequest(
-            Collections.singletonList(EditableContentField.ATTRIBUTES),
-            Arrays.asList(EditableContentRepresentation.RAW,
-                EditableContentRepresentation.TRANSFORMED,
-                EditableContentRepresentation.PLAIN,
-                EditableContentRepresentation.METADATA));
+            Collections.singletonList(EditableContentField.ATTRIBUTES));
 
         EditableContent editableContent = reader.readEditableContent(nodeModel, request);
 
@@ -107,8 +97,7 @@ public class EditableContentReaderTest {
         assertThat(attribute.getRawValue()).contains("value");
         assertThat(attribute.getTransformedValue()).contains("Transformed");
         assertThat(attribute.getPlainValue()).isEqualTo("Transformed");
-        assertThat(attribute.getHasMarkup()).isTrue();
-        assertThat(attribute.getIsFormula()).isFalse();
+        assertThat(attribute.getIsEditable()).isTrue();
         assertThat(attribute.getIndex()).isEqualTo(0);
     }
 
@@ -126,8 +115,7 @@ public class EditableContentReaderTest {
             new IconDescriptionResolver(key -> null),
             new ContentTypeConverter());
         EditableContentRequest request = new EditableContentRequest(
-            Arrays.asList(EditableContentField.TAGS, EditableContentField.ICONS),
-            Collections.singletonList(EditableContentRepresentation.RAW));
+            Arrays.asList(EditableContentField.TAGS, EditableContentField.ICONS));
 
         EditableContent editableContent = reader.readEditableContent(nodeModel, request);
 

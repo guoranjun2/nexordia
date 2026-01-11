@@ -1,7 +1,7 @@
 # Task: Refactor search matching to reuse content readers
 - **Scope:** Remove duplicated field-matching logic from `SearchNodesTool` by reusing the same content reader outputs that power read responses, keeping search semantics aligned with returned values.
 - **Research summary:**
-  - `SearchNodesTool` currently inspects `NodeContent` fields directly, duplicating matching logic for text, details, note, attributes, tags, and icons.
+  - `SearchNodesTool` currently inspects `NodeContentResponse` fields directly, duplicating matching logic for text, details, note, attributes, tags, and icons.
   - `NodeContentReader` already normalizes content (for example, plain text conversion for textual fields) and controls which fields are present via `NodeContentRequest`.
 - **Design:**
   - Add `matches` methods to each content reader (`TextualContentReader`, `AttributesContentReader`, `TagsContentReader`, `IconsContentReader`) so matching uses the same normalized values that read responses expose (plain text conversion, attribute transformation, English icon descriptions, emoji handling).

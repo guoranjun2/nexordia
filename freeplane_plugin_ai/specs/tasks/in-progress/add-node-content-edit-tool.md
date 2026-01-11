@@ -31,7 +31,7 @@
   - Explicit node icons are stored on the node (`NodeModel.getIcons()`), which excludes style icons. This is the icon set that should be editable.
 - **Design:**
   - Add `EditableContentRequest` to `NodeContentRequest` to opt in to editable content.
-  - `EditableContentRequest` selects fields (`TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`, `TAGS`, `ICONS`) and representations (`RAW`, `TRANSFORMED`, `PLAIN`, `METADATA`).
+  - `EditableContentRequest` selects fields (`TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`, `TAGS`, `ICONS`). All representations are returned for selected fields.
   - `EditableContent` appears only when requested to reduce token usage.
   - Each editable field includes raw content, transformed content, plain text, and metadata for format and formula detection.
   - Add `editableTags` and `editableIcons` to `EditableContent`, sourced from `Tags.getTagReferences(node)` and `NodeModel.getIcons()`. Use the same English description rules used elsewhere for icon descriptions (resources, emoji decoding, user icon relative path).
@@ -41,7 +41,6 @@
 @startuml
 class EditableContentRequest {
   fields[]
-  representations[]
 }
 class EditableContent {
   editableText
@@ -56,16 +55,14 @@ class EditableText {
   transformed
   plain
   contentType
-  hasMarkup
-  isFormula
+  isEditable
 }
 class EditableAttribute {
   name
   rawValue
   transformedValue
   plainValue
-  hasMarkup
-  isFormula
+  isEditable
   index
 }
 class EditableTag {
@@ -78,7 +75,7 @@ class EditableIcon {
 }
 
 NodeContentRequest --> EditableContentRequest
-NodeContent --> EditableContent
+NodeContentResponse --> EditableContent
 EditableContent --> EditableText
 EditableContent --> EditableAttribute
 EditableContent --> EditableTag
@@ -90,7 +87,7 @@ EditableContent --> EditableIcon
   - Verify raw values match stored values for text, details, note, and attributes.
   - Verify transformed values match TextController output.
   - Verify plain values use `HtmlUtils.htmlToPlain` and do not include markup.
-  - Verify formula detection sets `isFormula` for formula content and leaves it false for normal text.
+  - Verify formula detection sets `isEditable` false for formula content and true for normal text.
   - Verify editable icons only include explicit node icons and exclude style icons.
 
 ### Subtask: Add editing tool confirmation and consent
@@ -135,14 +132,15 @@ EditableContent --> EditableIcon
 - **Motivation:** The edit tool needs to know which element was read (text, details, note, attributes, tags, icons) and what `ContentType` the model saw (plain text, HTML, Markdown, LaTeX, formula) so it can reject mismatches and keep formula editing out of scope. Returning the updated node content gives the caller confirmation that the change was applied.
 - **Research summary:**
   - The tool must already know if a field contains markup or a formula from the editable content metadata; exposing `ContentType` makes it explicit what the LLM expects before every edit.
-  - Freeplane’s formula detection is built into the node editors, so we should reject edits when `isFormula` is true before or after the update to avoid corrupting formulas.
+  - Freeplane’s formula detection is built into the node editors, so we should reject edits when `isEditable` is false before or after the update to avoid corrupting formulas.
 - **Design:**
   - Introduce an `EditedElement` enum with values such as `TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`, `TAGS`, and `ICONS` so the tool request names the specific node field being edited.
   - Introduce a `ContentType` enum that distinguishes plain text, HTML, Markdown, LaTeX, and formula so the tool can validate that the model hasn’t switched formats.
   - The `NodeContentEditRequest` includes `mapIdentifier`, `nodeIdentifier`, `userSummary`, and a list of `NodeContentEditItem` entries. Each entry carries the `EditedElement`, the original `ContentType` the model edited, and the new raw value to write.
   - The response returns the edited `NodeContentItem`, including the identifier, edited content, and brief text, so the caller can verify the current node state. It does not repeat the request items.
+  - Require fetchNodesForEditing before edits so original content type and editability metadata come from editable content, not readNodesWithDescendants output.
   - When editing collection-like elements (tags, icons, attributes), include the optional `index` from the editable content so duplicates can be targeted; the helper can also fall back to matching by value when the index is absent.
-  - The edit helper must compare the node’s current `ContentType` and formula metadata against the request and reject the edit if the node currently contains a formula or if applying the new value would make it appear to be a formula.
+  - The edit helper must compare the node’s current `ContentType` and editability metadata against the request and reject the edit if the node is not editable or if applying the new value would make it appear to be a formula.
   - For text edits, determine the current content type from a `\\latex` or `\\unparsedlatex` prefix first, then from node format when it is markdown or latex, otherwise use HTML detection on the raw text.
   - For plain text or html node text, allow the new value to be either plain text or html without conversion.
   - For latex node text, strip any `\\latex` or `\\unparsedlatex` prefix from the edit value and reapply the original prefix; for details and note latex content types, strip any prefix but do not reapply.
@@ -153,13 +151,13 @@ EditableContent --> EditableIcon
 ### Subtask: Implement undo-aware edit helpers for textual content
 - **Status:** Implementing
 - **Scope:** Build edit helpers that rely on `MTextController` and `MNoteController` so node text, details, and notes are updated through the existing undo `IActor`s and content-type metadata.
-- **Motivation:** Those editors already wrap writes in `IActor`s, fire `nodeChanged`, and expose `TextController.isFormula`, so reusing them keeps formulas guarded and the undo stack consistent.
+- **Motivation:** Those editors already wrap writes in `IActor`s, fire `nodeChanged`, and expose `TextController.isFormula`, so reusing them keeps formulas guarded and the undo stack consistent; the `isEditable` metadata is derived from the same formula checks.
 - **Research summary:**
-  - `MTextController.setNodeObject` sets the node user object inside an `IActor` and synchronizes with the map controller; `TextController.isFormula` inspects transformers and the special `'` prefix, so the edit helper should reject edits when formulas are involved (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:556-593`, `freeplane/src/main/java/org/freeplane/features/text/TextController.java:183-192`).
+  - `MTextController.setNodeObject` sets the node user object inside an `IActor` and synchronizes with the map controller; `TextController.isFormula` inspects transformers and the special `'` prefix, so the edit helper should reject edits when formulas are involved and mark `isEditable` false (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:556-593`, `freeplane/src/main/java/org/freeplane/features/text/TextController.java:183-192`).
   - `MTextController.setDetails`/`setDetailsContentType` clone the `DetailModel`, change text/content type, and swap the extension inside an `IActor`, which is exactly what we need for detail editing (`freeplane/src/main/java/org/freeplane/features/text/mindmapmode/MTextController.java:664-718`).
   - `MNoteController.setNoteText`/`setNoteContentType` follow the same copy-and-replace pattern for the `NoteModel` and fire the necessary `nodeChanged` events through undo actors (`freeplane/src/main/java/org/freeplane/features/note/mindmapmode/MNoteController.java:202-263`).
 - **Test specification:**
-  - Confirm the helper uses the controllers’ actors, respects the `isFormula` guard, and results in updated `NodeContentItem` content for text/details/note edits.
+  - Confirm the helper uses the controllers’ actors, respects the `isEditable` guard, and results in updated `NodeContentItem` content for text/details/note edits.
 
 ### Subtask: Implement undo-aware edit helpers for collections
 - **Status:** Implementing
@@ -172,3 +170,14 @@ EditableContent --> EditableIcon
   - The helper will honor the optional `index` and operation (add/delete/replace) so duplicates can be modified deterministically.
 - **Test specification:**
   - Verify collection edits trigger the correct controller actors, the index/selector resolves the intended entry, and the returned `NodeContentItem` reflects the new attributes/tags/icons.
+
+### Subtask: Prune MCP schema via input-only DTOs
+- **Status:** Plan Review
+- **Scope:** Introduce input-only data transfer objects for write tools (`createNodes`, `createSummary`, `editNodeContent`) using a minimal base class, and move output-only fields (like `editableContent`, transformed values, and metadata) into derived response types so the MCP schema is smaller.
+- **Motivation:** Tool schemas are too large (around 10,000 tokens). Input schemas should include only writable fields to reduce token usage while keeping rich output responses.
+- **Design decisions:**
+  - Use a base input class with only writable fields (text/details/note, attributes, tags, icons).
+  - Output classes extend the base and add read-only fields.
+  - Keep tool descriptions short and rely on the minimal formatting guidance already added.
+- **Test specification:**
+  - Existing tests should still pass; add targeted tests only if schema generation or request parsing changes.

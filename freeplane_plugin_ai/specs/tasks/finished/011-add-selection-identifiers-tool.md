@@ -55,7 +55,7 @@ end note
 - **Design:**
 ```plantuml
 @startuml
-class NodeContent
+class NodeContentResponse
 class IconsContent
 class IconEntry
 class IconsContentReader
@@ -72,7 +72,7 @@ IconsContent --> IconEntry
 IconEntry ..> EmojiIcon : optional emoji decoding
 IconEntry ..> IconDescription : optional description
 
-note right of NodeContent
+note right of NodeContentResponse
 Add iconsContent for FULL preset only.
 BRIEF preset stays text only.
 end note

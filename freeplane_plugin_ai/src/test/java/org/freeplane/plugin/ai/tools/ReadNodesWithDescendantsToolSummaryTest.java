@@ -11,35 +11,33 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
 
-public class ReadNodeWithContextToolSummaryTest {
+public class ReadNodesWithDescendantsToolSummaryTest {
     @Test
     public void buildToolCallSummary_usesDefaultDepthsAndSections() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController);
-        ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
+            availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             "map-identifier",
             null,
             null,
             null,
             null,
-            null,
-            null,
-            null,
             null);
-        List<ReadNodesWithContextItem> items = Arrays.asList(
-            new ReadNodesWithContextItem(Collections.emptyList(), null, null, null),
-            new ReadNodesWithContextItem(Collections.emptyList(), null, null, null));
-        ReadNodesWithContextResponse response = new ReadNodesWithContextResponse(
+        List<ReadNodesWithDescendantsItem> items = Arrays.asList(
+            new ReadNodesWithDescendantsItem(Collections.emptyList(), null, null, null),
+            new ReadNodesWithDescendantsItem(Collections.emptyList(), null, null, null));
+        ReadNodesWithDescendantsResponse response = new ReadNodesWithDescendantsResponse(
             "map-identifier", items, null, Arrays.asList("Alpha", "Beta"));
 
-        ToolCallSummary summary = uut.buildToolCallSummary(request, response);
+        ToolCallSummary summary = readTool.buildToolCallSummary(request, response);
 
-        assertThat(summary.getToolName()).isEqualTo("readNodeWithContext");
+        assertThat(summary.getToolName()).isEqualTo("readNodesWithDescendants");
         assertThat(summary.hasError()).isFalse();
         assertThat(summary.getSummaryText()).isEqualTo(
-            "readNodeWithContext: items=2, focusNodeTexts=\"Alpha; Beta\"");
+            "readNodesWithDescendants: items=2, focusNodeTexts=\"Alpha; Beta\"");
     }
 
     @Test
@@ -47,24 +45,22 @@ public class ReadNodeWithContextToolSummaryTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController);
-        ReadNodesWithContextRequest request = new ReadNodesWithContextRequest(
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
+            availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             "map-identifier",
             null,
             Arrays.asList(ContextSection.PARENT_SUMMARY, ContextSection.QUALIFIERS),
             2,
             3,
-            null,
-            null,
-            null,
             null);
-        ReadNodesWithContextResponse response = new ReadNodesWithContextResponse(
+        ReadNodesWithDescendantsResponse response = new ReadNodesWithDescendantsResponse(
             "map-identifier", Collections.emptyList(), null);
 
-        ToolCallSummary summary = uut.buildToolCallSummary(request, response);
+        ToolCallSummary summary = readTool.buildToolCallSummary(request, response);
 
         assertThat(summary.getSummaryText()).isEqualTo(
-            "readNodeWithContext: items=0, fullContentDepth=2, summaryDepth=3, "
+            "readNodesWithDescendants: items=0, fullContentDepth=2, summaryDepth=3, "
                 + "sections=PARENT_SUMMARY,QUALIFIERS");
     }
 
@@ -73,12 +69,13 @@ public class ReadNodeWithContextToolSummaryTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
-        ReadNodeWithContextTool uut = new ReadNodeWithContextTool(availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
+            availableMaps, nodeContentItemReader, textController);
 
-        ToolCallSummary summary = uut.buildToolCallErrorSummary(null, new IllegalStateException("Missing\nmap"));
+        ToolCallSummary summary = readTool.buildToolCallErrorSummary(null, new IllegalStateException("Missing\nmap"));
 
-        assertThat(summary.getToolName()).isEqualTo("readNodeWithContext");
+        assertThat(summary.getToolName()).isEqualTo("readNodesWithDescendants");
         assertThat(summary.hasError()).isTrue();
-        assertThat(summary.getSummaryText()).isEqualTo("readNodeWithContext error: Missing map");
+        assertThat(summary.getSummaryText()).isEqualTo("readNodesWithDescendants error: Missing map");
     }
 }

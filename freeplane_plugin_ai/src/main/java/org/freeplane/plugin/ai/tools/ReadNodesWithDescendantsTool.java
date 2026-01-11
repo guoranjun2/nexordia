@@ -12,31 +12,38 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.SummaryNode;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
-public class ReadNodeWithContextTool {
+public class ReadNodesWithDescendantsTool {
     private static final int SUMMARY_PREVIEW_TEXT_LIMIT = 20;
     private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
+    private static final NodeContentRequest FULL_CONTENT_REQUEST = new NodeContentRequest(
+        new TextualContentRequest(true, true, true),
+        new AttributesContentRequest(true),
+        new TagsContentRequest(true),
+        new IconsContentRequest(true),
+        null);
 
     private final AvailableMaps availableMaps;
     private final NodeContentItemReader nodeContentItemReader;
     private final TextController textController;
     private final ObjectMapper objectMapper;
 
-    public ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
+    public ReadNodesWithDescendantsTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
         this(availableMaps, nodeContentItemReader, TextController.getController(), new ObjectMapper());
     }
 
-    public ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+    public ReadNodesWithDescendantsTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
                                    TextController textController) {
         this(availableMaps, nodeContentItemReader, textController, new ObjectMapper());
     }
 
-    ReadNodeWithContextTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+    ReadNodesWithDescendantsTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
                             TextController textController, ObjectMapper objectMapper) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
@@ -44,7 +51,7 @@ public class ReadNodeWithContextTool {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
-    public ReadNodesWithContextResponse readNodeWithContext(ReadNodesWithContextRequest request) {
+    public ReadNodesWithDescendantsResponse readNodesWithDescendants(ReadNodesWithDescendantsRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Missing request");
         }
@@ -66,12 +73,12 @@ public class ReadNodeWithContextTool {
         }
         int maximumTotalTextCharacters = request.getMaximumTotalTextCharacters();
         boolean enforceBudget = focusNodes.size() > 1 || fullContentDepth > 0 || summaryDepth > 0;
-        List<ReadNodesWithContextItem> items = new ArrayList<>();
+        List<ReadNodesWithDescendantsItem> items = new ArrayList<>();
         List<String> focusNodePreviewTexts = new ArrayList<>();
         int budgetUsed = 0;
         int omittedFocusNodeCount = 0;
         for (NodeModel focusNode : focusNodes) {
-            ReadNodesWithContextItem item = buildItemForFocusNode(
+            ReadNodesWithDescendantsItem item = buildItemForFocusNode(
                 focusNode,
                 request,
                 includeQualifiers,
@@ -93,11 +100,40 @@ public class ReadNodeWithContextTool {
             addPreviewText(focusNode, focusNodePreviewTexts);
         }
         Omissions responseOmissions = buildResponseOmissions(omittedFocusNodeCount);
-        return new ReadNodesWithContextResponse(mapIdentifierValue, items, responseOmissions, focusNodePreviewTexts);
+        return new ReadNodesWithDescendantsResponse(mapIdentifierValue, items, responseOmissions, focusNodePreviewTexts);
     }
 
-    private ReadNodesWithContextItem buildItemForFocusNode(NodeModel focusNode,
-                                                           ReadNodesWithContextRequest request,
+    public FetchNodesForEditingResponse fetchNodesForEditing(FetchNodesForEditingRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Missing request");
+        }
+        String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
+        UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        if (mapModel == null) {
+            throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
+        }
+        List<String> nodeIdentifiers = resolveNodeIdentifiers(mapModel, request.getNodeIdentifiers());
+        validateDuplicateNodeIdentifiers(nodeIdentifiers);
+        List<NodeModel> focusNodes = resolveFocusNodes(mapModel, nodeIdentifiers);
+        EditableContentRequest editableContentRequest = request.getEditableContentRequest();
+        if (editableContentRequest == null) {
+            editableContentRequest = new EditableContentRequest(null);
+        }
+        NodeContentRequest contentRequest = new NodeContentRequest(null, null, null, null, editableContentRequest);
+        List<NodeContentItem> items = new ArrayList<>();
+        for (NodeModel focusNode : focusNodes) {
+            NodeContentResponse content = nodeContentItemReader.readNodeContent(
+                focusNode,
+                contentRequest,
+                NodeContentPreset.FULL);
+            items.add(nodeContentItemReader.readNodeContentItem(focusNode, content, true, false));
+        }
+        return new FetchNodesForEditingResponse(mapIdentifierValue, items);
+    }
+
+    private ReadNodesWithDescendantsItem buildItemForFocusNode(NodeModel focusNode,
+                                                           ReadNodesWithDescendantsRequest request,
                                                            boolean includeQualifiers,
                                                            boolean enforceBudget,
                                                            int budgetUsed) {
@@ -109,16 +145,15 @@ public class ReadNodeWithContextTool {
             return null;
         }
         List<ContextSection> contextSections = request.getContextSections();
-        NodeContentItem parentNode = buildParentNodeItem(
+        NodeDepthItem parentNode = buildParentNodeItem(
             focusNode,
             contextSections,
-            includeQualifiers,
-            request.getParentNodeContentRequest());
+            includeQualifiers);
         String breadcrumbPath = contextSections.contains(ContextSection.BREADCRUMB_PATH)
             ? buildBreadcrumbPath(focusNode)
             : null;
         List<NodeDepthItem> nodes = new ArrayList<>();
-        ReadNodesWithContextItem baseItem = new ReadNodesWithContextItem(nodes, parentNode, breadcrumbPath, null);
+        ReadNodesWithDescendantsItem baseItem = new ReadNodesWithDescendantsItem(nodes, parentNode, breadcrumbPath, null);
         int omittedChildCount = 0;
         int omittedDescendantCount = 0;
         for (int index = 0; index < allNodes.size(); index += 1) {
@@ -145,11 +180,11 @@ public class ReadNodeWithContextTool {
             ? new Omissions(null, omittedChildCount, omittedDescendantCount, null,
                 Collections.singletonList(OmissionReason.TEXT_BUDGET))
             : null;
-        return new ReadNodesWithContextItem(nodes, parentNode, breadcrumbPath, omissions);
+        return new ReadNodesWithDescendantsItem(nodes, parentNode, breadcrumbPath, omissions);
     }
 
     private List<NodeDepthItem> buildNodeDepthItems(NodeModel focusNode,
-                                                    ReadNodesWithContextRequest request,
+                                                    ReadNodesWithDescendantsRequest request,
                                                     boolean includeQualifiers) {
         int maximumDepth = request.getFullContentDepth() + request.getSummaryDepth();
         List<NodeDepthItem> nodes = new ArrayList<>();
@@ -180,29 +215,25 @@ public class ReadNodeWithContextTool {
         return nodes;
     }
 
-    private NodeDepthItem buildNodeDepthItem(NodeModel nodeModel, int depth, ReadNodesWithContextRequest request,
+    private NodeDepthItem buildNodeDepthItem(NodeModel nodeModel, int depth, ReadNodesWithDescendantsRequest request,
                                              boolean includeQualifiers) {
         int fullContentDepth = request.getFullContentDepth();
-        NodeContent content;
-        if (depth == 0) {
-            content = nodeContentItemReader.readNodeContent(
+        String unformattedText;
+        if (depth <= fullContentDepth) {
+            NodeContentResponse content = nodeContentItemReader.readNodeContent(
                 nodeModel,
-                request.getFocusNodeContentRequest(),
+                FULL_CONTENT_REQUEST,
                 NodeContentPreset.FULL);
-        } else if (depth <= fullContentDepth) {
-            content = nodeContentItemReader.readNodeContent(
-                nodeModel,
-                request.getChildNodeContentRequest(),
-                NodeContentPreset.FULL);
+            unformattedText = buildUnformattedText(content);
         } else {
-            content = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
+            unformattedText = readBriefText(nodeModel);
         }
         List<String> qualifiers = includeQualifiers ? buildQualifiers(nodeModel) : null;
-        return new NodeDepthItem(nodeModel.createID(), depth, content, qualifiers);
+        return new NodeDepthItem(nodeModel.createID(), depth, unformattedText, qualifiers);
     }
 
-    private NodeContentItem buildParentNodeItem(NodeModel focusNode, List<ContextSection> sections,
-                                                boolean includeQualifiers, NodeContentRequest parentNodeContentRequest) {
+    private NodeDepthItem buildParentNodeItem(NodeModel focusNode, List<ContextSection> sections,
+                                              boolean includeQualifiers) {
         if (!sections.contains(ContextSection.PARENT_SUMMARY)) {
             return null;
         }
@@ -210,9 +241,9 @@ public class ReadNodeWithContextTool {
         if (parentNode == null) {
             return null;
         }
-        NodeContent content = nodeContentItemReader.readNodeContent(
-            parentNode, parentNodeContentRequest, NodeContentPreset.BRIEF);
-        return nodeContentItemReader.readNodeContentItem(parentNode, content, true, includeQualifiers);
+        String unformattedText = readBriefText(parentNode);
+        List<String> qualifiers = includeQualifiers ? buildQualifiers(parentNode) : null;
+        return new NodeDepthItem(parentNode.createID(), -1, unformattedText, qualifiers);
     }
 
     private String buildBreadcrumbPath(NodeModel nodeModel) {
@@ -220,8 +251,7 @@ public class ReadNodeWithContextTool {
         NodeModel current = nodeModel;
         while (current != null) {
             if (!SummaryNode.isHidden(current)) {
-                NodeContent briefContent = nodeContentItemReader.readNodeContent(current, null, NodeContentPreset.BRIEF);
-                String text = briefContent == null ? null : briefContent.getBriefText();
+                String text = readBriefText(current);
                 if (text != null && !text.isEmpty()) {
                     pathSegments.add(text);
                 }
@@ -302,9 +332,62 @@ public class ReadNodeWithContextTool {
         }
     }
 
-    ToolCallSummary buildToolCallSummary(ReadNodesWithContextRequest request, ReadNodesWithContextResponse response) {
+    private String readBriefText(NodeModel nodeModel) {
+        if (nodeModel == null) {
+            return null;
+        }
+        return textController.getShortPlainText(nodeModel);
+    }
+
+    private String buildUnformattedText(NodeContentResponse content) {
+        if (content == null) {
+            return null;
+        }
+        List<String> lines = new ArrayList<>();
+        TextualContent textualContent = content.getTextualContent();
+        if (textualContent != null) {
+            appendLabeledLine(lines, "Text", textualContent.getText());
+            appendLabeledLine(lines, "Details", textualContent.getDetails());
+            appendLabeledLine(lines, "Note", textualContent.getNote());
+        }
+        AttributesContent attributesContent = content.getAttributesContent();
+        if (attributesContent != null && attributesContent.getAttributes() != null
+            && !attributesContent.getAttributes().isEmpty()) {
+            List<String> entries = new ArrayList<>(attributesContent.getAttributes().size());
+            for (AttributeEntry attribute : attributesContent.getAttributes()) {
+                if (attribute == null) {
+                    continue;
+                }
+                String value = HtmlUtils.htmlToPlain(attribute.getValue());
+                String name = attribute.getName();
+                entries.add(name + "=" + (value == null ? "" : value));
+            }
+            appendLabeledLine(lines, "Attributes", String.join("; ", entries));
+        }
+        TagsContent tagsContent = content.getTagsContent();
+        if (tagsContent != null && tagsContent.getTags() != null && !tagsContent.getTags().isEmpty()) {
+            appendLabeledLine(lines, "Tags", String.join(", ", tagsContent.getTags()));
+        }
+        IconsContent iconsContent = content.getIconsContent();
+        if (iconsContent != null && iconsContent.getDescriptions() != null && !iconsContent.getDescriptions().isEmpty()) {
+            appendLabeledLine(lines, "Icons", String.join(", ", iconsContent.getDescriptions()));
+        }
+        if (lines.isEmpty()) {
+            return null;
+        }
+        return String.join("\n", lines);
+    }
+
+    private void appendLabeledLine(List<String> lines, String label, String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+        lines.add(label + ": " + value);
+    }
+
+    ToolCallSummary buildToolCallSummary(ReadNodesWithDescendantsRequest request, ReadNodesWithDescendantsResponse response) {
         int itemCount = response == null || response.getItems() == null ? 0 : response.getItems().size();
-        String summaryText = "readNodeWithContext: items=" + itemCount;
+        String summaryText = "readNodesWithDescendants: items=" + itemCount;
         String focusNodeTexts = ToolCallSummaryFormatter.joinTextValues(
             response == null ? null : response.getFocusNodePreviewTexts(), "; ");
         if (!focusNodeTexts.isEmpty()) {
@@ -323,15 +406,30 @@ public class ReadNodeWithContextTool {
                 summaryText = summaryText + ", sections=" + sectionsText;
             }
         }
-        return new ToolCallSummary("readNodeWithContext", summaryText, false);
+        return new ToolCallSummary("readNodesWithDescendants", summaryText, false);
     }
 
-    ToolCallSummary buildToolCallErrorSummary(ReadNodesWithContextRequest request, RuntimeException error) {
+    ToolCallSummary buildToolCallErrorSummary(ReadNodesWithDescendantsRequest request, RuntimeException error) {
         String message = error == null ? "Unknown error" : error.getMessage();
         String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
             ? error.getClass().getSimpleName()
             : message);
-        return new ToolCallSummary("readNodeWithContext", "readNodeWithContext error: " + safeMessage, true);
+        return new ToolCallSummary("readNodesWithDescendants",
+            "readNodesWithDescendants error: " + safeMessage, true);
+    }
+
+    ToolCallSummary buildFetchToolCallSummary(FetchNodesForEditingRequest request, FetchNodesForEditingResponse response) {
+        int itemCount = response == null || response.getItems() == null ? 0 : response.getItems().size();
+        String summaryText = "fetchNodesForEditing: items=" + itemCount;
+        return new ToolCallSummary("fetchNodesForEditing", summaryText, false);
+    }
+
+    ToolCallSummary buildFetchToolCallErrorSummary(FetchNodesForEditingRequest request, RuntimeException error) {
+        String message = error == null ? "Unknown error" : error.getMessage();
+        String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
+            ? error.getClass().getSimpleName()
+            : message);
+        return new ToolCallSummary("fetchNodesForEditing", "fetchNodesForEditing error: " + safeMessage, true);
     }
 
     private List<String> buildQualifiers(NodeModel nodeModel) {

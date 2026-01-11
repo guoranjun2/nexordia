@@ -32,16 +32,21 @@ public class NodeContentApplierTest {
         NodeModel childNode = new NodeModel("child", mapModel);
         parentNode.insert(childNode, 0);
 
-        TextualContent parentTextual = new TextualContent("root", "details", "note");
-        AttributesContent parentAttributes = new AttributesContent(
-            Collections.singletonList(new AttributeEntry("key", "value")));
-        TagsContent parentTags = new TagsContent(Collections.singletonList("tag"));
         NamedIcon sampleIcon = new MindIcon("node-icon", "/images/node.svg", "node", 0);
-        IconsContent parentIcons = new IconsContent(Collections.singletonList(sampleIcon.getName()));
-        NodeContent parentContent = new NodeContent(null, parentTextual, parentAttributes, parentTags, parentIcons, null);
-
-        TextualContent childTextual = new TextualContent("child-text", null, null);
-        NodeContent childContent = new NodeContent(null, childTextual, null, null, null, null);
+        NodeContentWriteRequest parentContent = new NodeContentWriteRequest(
+            "root",
+            "details",
+            "note",
+            Collections.singletonList(new AttributeEntry("key", "value")),
+            Collections.singletonList("tag"),
+            Collections.singletonList(sampleIcon.getName()));
+        NodeContentWriteRequest childContent = new NodeContentWriteRequest(
+            "child-text",
+            null,
+            null,
+            null,
+            null,
+            null);
         NodeCreationItem childItem = new NodeCreationItem(childContent, Collections.emptyList());
         NodeCreationItem parentItem = new NodeCreationItem(parentContent, Collections.singletonList(childItem));
 

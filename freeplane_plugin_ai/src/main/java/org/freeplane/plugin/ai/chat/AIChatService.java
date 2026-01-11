@@ -1,5 +1,11 @@
 package org.freeplane.plugin.ai.chat;
 
+import static dev.langchain4j.internal.Utils.isNullOrBlank;
+
+import java.util.Objects;
+
+import org.freeplane.plugin.ai.tools.AIToolSet;
+
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.observability.api.event.AiServiceErrorEvent;
@@ -7,12 +13,18 @@ import dev.langchain4j.observability.api.event.AiServiceResponseReceivedEvent;
 import dev.langchain4j.observability.api.event.ToolExecutedEvent;
 import dev.langchain4j.observability.api.listener.AiServiceListener;
 import dev.langchain4j.service.AiServices;
-
-import java.util.Objects;
-
-import org.freeplane.plugin.ai.tools.AIToolSet;
+import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
+import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 
 public class AIChatService {
+    private static final ToolArgumentsErrorHandler TOOL_ARGUMENTS_ERROR_HANDLER = (error, context) -> {
+        String errorMessage = isNullOrBlank(error.getMessage()) ? error.getClass().getName() : error.getMessage();
+        String toolName = context == null ? null : context.toolExecutionRequest().name();
+        if (isNullOrBlank(toolName)) {
+            toolName = "unknown tool";
+        }
+        return ToolErrorHandlerResult.text("Tool arguments error for " + toolName + ": " + errorMessage);
+    };
 
     private final AIAssistant assistant;
 
@@ -20,6 +32,7 @@ public class AIChatService {
                          ChatTokenUsageTracker chatTokenUsageTracker) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
+        	.toolArgumentsErrorHandler(TOOL_ARGUMENTS_ERROR_HANDLER)
             .chatModel(chatLanguageModel)
             .systemMessageProvider(toolSet::systemMessageForChat)
             .registerListener(new AiServiceListener<AiServiceErrorEvent>() {

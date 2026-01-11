@@ -10,13 +10,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class EditableContentRequest {
     private final Set<EditableContentField> fields;
-    private final Set<EditableContentRepresentation> representations;
 
     @JsonCreator
-    public EditableContentRequest(@JsonProperty("fields") List<EditableContentField> fields,
-                                  @JsonProperty("representations") List<EditableContentRepresentation> representations) {
-        this.fields = fields == null ? Collections.emptySet() : EnumSet.copyOf(fields);
-        this.representations = representations == null ? Collections.emptySet() : EnumSet.copyOf(representations);
+    public EditableContentRequest(@JsonProperty("fields") List<EditableContentField> fields) {
+        this.fields = fields == null || fields.isEmpty() ? Collections.emptySet() : EnumSet.copyOf(fields);
     }
 
     public boolean includesField(EditableContentField field) {
@@ -24,12 +21,5 @@ public class EditableContentRequest {
             return false;
         }
         return fields.isEmpty() || fields.contains(field);
-    }
-
-    public boolean includesRepresentation(EditableContentRepresentation representation) {
-        if (representation == null) {
-            return false;
-        }
-        return representations.isEmpty() || representations.contains(representation);
     }
 }

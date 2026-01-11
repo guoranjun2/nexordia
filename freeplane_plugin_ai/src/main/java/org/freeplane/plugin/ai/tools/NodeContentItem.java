@@ -10,14 +10,14 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentItem {
     private final String nodeIdentifier;
-    private final NodeContent content;
+    private final NodeContentResponse content;
     @Description("Optional qualifiers when requested: summary_node for summary group nodes, first_group_node for the "
         + "first node of a summary group.")
     private final List<String> qualifiers;
 
     @JsonCreator
     public NodeContentItem(@JsonProperty("nodeIdentifier") String nodeIdentifier,
-                           @JsonProperty("content") NodeContent content,
+                           @JsonProperty("content") NodeContentResponse content,
                            @JsonProperty("qualifiers") List<String> qualifiers) {
         this.nodeIdentifier = nodeIdentifier;
         this.content = content;
@@ -28,7 +28,7 @@ public class NodeContentItem {
         return nodeIdentifier;
     }
 
-    public NodeContent getContent() {
+    public NodeContentResponse getContent() {
         return content;
     }
 

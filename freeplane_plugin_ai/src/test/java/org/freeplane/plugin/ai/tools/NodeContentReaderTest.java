@@ -26,7 +26,7 @@ public class NodeContentReaderTest {
         NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
 
-        NodeContent content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF);
+        NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF);
 
         assertThat(content.getBriefText()).isEqualTo("Brief text");
         assertThat(content.getTextualContent()).isNull();
@@ -56,7 +56,7 @@ public class NodeContentReaderTest {
         NodeContentReader nodeContentReader = new NodeContentReader(
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
 
-        NodeContent content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.FULL);
+        NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.FULL);
 
         assertThat(content.getBriefText()).isNull();
         assertThat(content.getTextualContent()).isSameAs(textualContent);
@@ -106,13 +106,12 @@ public class NodeContentReaderTest {
             textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
         NodeModel nodeModel = mock(NodeModel.class);
         EditableContentRequest editableContentRequest = new EditableContentRequest(
-            Collections.singletonList(EditableContentField.TEXT),
-            Collections.singletonList(EditableContentRepresentation.METADATA));
+            Collections.singletonList(EditableContentField.TEXT));
         EditableContent editableContent = mock(EditableContent.class);
         when(editableContentReader.readEditableContent(nodeModel, editableContentRequest)).thenReturn(editableContent);
         NodeContentRequest request = new NodeContentRequest(null, null, null, null, editableContentRequest);
 
-        NodeContent content = nodeContentReader.readNodeContent(nodeModel, request, NodeContentPreset.BRIEF);
+        NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, request, NodeContentPreset.BRIEF);
 
         assertThat(content.getEditableContent()).isSameAs(editableContent);
     }

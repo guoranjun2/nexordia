@@ -8,30 +8,34 @@ public class SystemMessageBuilderTest {
     @Test
     public void buildForChat_returnsConfiguredMessage() {
         SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> "Use tools when needed.";
-        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
+        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
 
-        String message = uut.buildForChat();
+        String message = builder.buildForChat();
 
-        assertThat(message).isEqualTo("Use tools when needed.");
+        assertThat(message).isEqualTo("Use tools when needed.\n\n"
+            + "Any tool calls in this chat require arguments wrapped under the single parameter named request. "
+            + "Example: tool({ \"request\": { ... } })");
     }
 
     @Test
     public void buildForChat_returnsEmptyWhenBlank() {
         SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> "  ";
-        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
+        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
 
-        String message = uut.buildForChat();
+        String message = builder.buildForChat();
 
-        assertThat(message).isNull();
+        assertThat(message).isEqualTo("Any tool calls in this chat require arguments wrapped under the single parameter named request. "
+            + "Example: tool({ \"request\": { ... } })");
     }
 
     @Test
     public void buildForChat_returnsEmptyWhenNull() {
         SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> null;
-        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
+        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
 
-        String message = uut.buildForChat();
+        String message = builder.buildForChat();
 
-        assertThat(message).isNull();
+        assertThat(message).isEqualTo("Any tool calls in this chat require arguments wrapped under the single parameter named request. "
+            + "Example: tool({ \"request\": { ... } })");
     }
 }

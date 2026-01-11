@@ -23,7 +23,7 @@ import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
-    private final ReadNodeWithContextTool readNodeWithContextTool;
+    private final ReadNodesWithDescendantsTool readNodesWithDescendantsTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
     private final SearchNodesTool searchNodesTool;
     private final CreateNodesTool createNodesTool;
@@ -64,7 +64,7 @@ public class AIToolSet {
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
             textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor);
         SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
-        ReadNodeWithContextTool readNodeWithContextTool = new ReadNodeWithContextTool(
+        ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, nodeContentFactories.nodeContentItemReader, textController);
         SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool = new SelectedMapAndNodeIdentifiersTool(
             availableMaps);
@@ -78,7 +78,8 @@ public class AIToolSet {
         MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
             summaryNodeCreator);
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
-        this.readNodeWithContextTool = Objects.requireNonNull(readNodeWithContextTool, "readNodeWithContextTool");
+        this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
+            "readNodesWithDescendantsTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
         this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
@@ -97,14 +98,26 @@ public class AIToolSet {
         return systemMessageBuilder.buildForChat();
     }
 
-    @Tool("Read nodes with context.")
-    public ReadNodesWithContextResponse readNodeWithContext(ReadNodesWithContextRequest request) {
+    @Tool("Read nodes with descendants.")
+    public ReadNodesWithDescendantsResponse readNodesWithDescendants(ReadNodesWithDescendantsRequest request) {
         try {
-            ReadNodesWithContextResponse response = readNodeWithContextTool.readNodeWithContext(request);
-            publishToolCallSummary(readNodeWithContextTool.buildToolCallSummary(request, response));
+            ReadNodesWithDescendantsResponse response = readNodesWithDescendantsTool.readNodesWithDescendants(request);
+            publishToolCallSummary(readNodesWithDescendantsTool.buildToolCallSummary(request, response));
             return response;
         } catch (RuntimeException error) {
-            publishToolCallSummary(readNodeWithContextTool.buildToolCallErrorSummary(request, error));
+            publishToolCallSummary(readNodesWithDescendantsTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("Fetch nodes for editing. Returns editable content only.")
+    public FetchNodesForEditingResponse fetchNodesForEditing(FetchNodesForEditingRequest request) {
+        try {
+            FetchNodesForEditingResponse response = readNodesWithDescendantsTool.fetchNodesForEditing(request);
+            publishToolCallSummary(readNodesWithDescendantsTool.buildFetchToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(readNodesWithDescendantsTool.buildFetchToolCallErrorSummary(request, error));
             throw error;
         }
     }
@@ -133,7 +146,9 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Edit node content safely through undo-aware controllers. Formula edits are rejected. Formatting: use HTML unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
+    @Tool("Edit node content safely through undo-aware controllers.\n"
+    		+ "IMPORTANT RULE: Before editing, you must call fetchNodesForEditing tool to get the real edited node content and content type.\n "
+    		+ "Formatting: use HTML unless originalContentType is MARKDOWN or LATEX")
     public NodeContentItem editNodeContent(NodeContentEditRequest request) {
         try {
             NodeContentItem response = nodeContentEditor.edit(resolveNode(request), request);

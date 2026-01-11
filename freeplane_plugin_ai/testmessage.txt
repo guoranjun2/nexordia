@@ -1,0 +1,1 @@
+I am working on tools for mind map editing. Can you please mark all important words in core and details bold in this mind map?

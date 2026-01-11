@@ -7,11 +7,11 @@ import java.util.Map;
 
 public class SearchResult {
     private final String nodeIdentifier;
-    private final NodeContent content;
+    private final NodeContentResponse content;
 
     @JsonCreator
     public SearchResult(@JsonProperty("nodeIdentifier") String nodeIdentifier,
-                        @JsonProperty("content") NodeContent content) {
+                        @JsonProperty("content") NodeContentResponse content) {
         this.nodeIdentifier = nodeIdentifier;
         this.content = content;
     }
@@ -20,7 +20,7 @@ public class SearchResult {
         return nodeIdentifier;
     }
 
-    public NodeContent getContent() {
+    public NodeContentResponse getContent() {
         return content;
     }
 }

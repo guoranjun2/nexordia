@@ -23,22 +23,23 @@ public class NodeContentReader {
         this.editableContentReader = Objects.requireNonNull(editableContentReader, "editableContentReader");
     }
 
-    public NodeContent readNodeContent(NodeModel nodeModel, NodeContentPreset preset) {
+    public NodeContentResponse readNodeContent(NodeModel nodeModel, NodeContentPreset preset) {
         if (nodeModel == null) {
             return null;
         }
         if (preset == NodeContentPreset.BRIEF) {
             String briefText = textualContentReader.readBriefText(nodeModel);
-            return new NodeContent(briefText, null, null, null, null, null);
+            return new NodeContentResponse(briefText, null, null, null, null, null);
         }
         TextualContent textualContent = textualContentReader.readTextualContent(nodeModel, preset);
         AttributesContent attributesContent = attributesContentReader.readAttributesContent(nodeModel, preset);
         TagsContent tagsContent = tagsContentReader.readTagsContent(nodeModel, preset);
         IconsContent iconsContent = iconsContentReader.readIconsContent(nodeModel, preset);
-        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent, null);
+        return new NodeContentResponse(null, textualContent, attributesContent, tagsContent, iconsContent, null);
     }
 
-    public NodeContent readNodeContent(NodeModel nodeModel, NodeContentRequest request, NodeContentPreset fallbackPreset) {
+    public NodeContentResponse readNodeContent(NodeModel nodeModel, NodeContentRequest request,
+                                               NodeContentPreset fallbackPreset) {
         if (nodeModel == null) {
             return null;
         }
@@ -59,7 +60,7 @@ public class NodeContentReader {
             && editableContent == null) {
             return null;
         }
-        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent, editableContent);
+        return new NodeContentResponse(null, textualContent, attributesContent, tagsContent, iconsContent, editableContent);
     }
 
     public boolean matches(NodeModel nodeModel, NodeContentRequest request, NodeContentValueMatcher valueMatcher) {

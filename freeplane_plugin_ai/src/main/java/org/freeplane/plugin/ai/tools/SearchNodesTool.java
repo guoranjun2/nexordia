@@ -156,7 +156,7 @@ public class SearchNodesTool {
 
     private SearchResultItem buildSearchResultItem(NodeModel nodeModel, boolean includesBreadcrumbPath) {
         String nodeIdentifier = nodeModel.createID();
-        NodeContent briefContent = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
+        NodeContentResponse briefContent = nodeContentItemReader.readNodeContent(nodeModel, null, NodeContentPreset.BRIEF);
         String briefText = briefContent == null ? null : briefContent.getBriefText();
         String breadcrumbPath = includesBreadcrumbPath ? buildBreadcrumbPath(nodeModel) : null;
         return new SearchResultItem(nodeIdentifier, briefText, breadcrumbPath);
@@ -166,7 +166,7 @@ public class SearchNodesTool {
         List<String> pathSegments = new ArrayList<>();
         NodeModel current = nodeModel;
         while (current != null) {
-            NodeContent briefContent = nodeContentItemReader.readNodeContent(current, null, NodeContentPreset.BRIEF);
+            NodeContentResponse briefContent = nodeContentItemReader.readNodeContent(current, null, NodeContentPreset.BRIEF);
             String text = briefContent == null ? null : briefContent.getBriefText();
             if (text != null && !text.isEmpty()) {
                 pathSegments.add(text);

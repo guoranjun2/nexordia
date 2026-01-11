@@ -8,7 +8,8 @@ Established abbreviations like "ai", "uuid", and "llm" are valid terms and are n
 1.  **Task files as source of truth**: All tasks, design, and execution status live as individual Markdown files under `specs/tasks/<status>/`. Backlog and ideas are historical artifacts.
 2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
-4.  **Status updates**: Move task files between status folders to reflect progress.
+4.  **Status updates**: Move task files between status folders to reflect the current work focus (for example, from finished back to in-progress). Keep the existing numeric prefix in the file name to preserve traceability. Avoid moving unrelated tasks; move them only when they are actively being worked on.
+5.  **Move workflow for diffs**: When moving task files, use `git mv` and stage the move immediately before editing. This keeps rename tracking intact in diff tools that are not rename-aware (for example, Visual Studio Code). Do not unstage the rename until you are ready to review and commit.
 5.  **Information gathering**: Reading commands do not require plan approval.
 6.  **Finished task cleanup**: Keep finished tasks in `specs/tasks/finished/` with a three digit prefix in the file name based on the order they are moved into finished. Delete them from the working tree after a release tag is created.
 

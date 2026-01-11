@@ -42,7 +42,7 @@ end note
 @enduml
 ```
 - **Design:**
-  - Add `iconsContent` to NodeContent with a single field `descriptions`, a list of human-friendly strings in the icon order returned by `IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)`.
+  - Add `iconsContent` to NodeContentResponse with a single field `descriptions`, a list of human-friendly strings in the icon order returned by `IconController.getIcons(node, StyleOption.FOR_UNSELECTED_NODE)`.
   - Use English descriptions derived from `TextUtils.getOriginalRawText` for built-in icons (no mnemonic stripping) and update `Resources_en.properties` `icon_*` entries when descriptions do not match the icon meaning.
   - Document that icon descriptions are always English; any icon search should match English descriptions by default, with optional inclusion of current UI language descriptions if needed later.
   - For emoji icons, decode the emoji character from the icon name (for example `emoji-1f4d9`) and use the Unicode character as the description; fall back to the description key if decoding fails.

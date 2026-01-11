@@ -6,17 +6,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class NodeCreationItem {
-    private final NodeContent content;
+    private final NodeContentWriteRequest content;
     private final List<NodeCreationItem> children;
 
     @JsonCreator
-    public NodeCreationItem(@JsonProperty("content") NodeContent content,
+    public NodeCreationItem(@JsonProperty("content") NodeContentWriteRequest content,
                             @JsonProperty("children") List<NodeCreationItem> children) {
         this.content = content;
         this.children = children;
     }
 
-    public NodeContent getContent() {
+    public NodeContentWriteRequest getContent() {
         return content;
     }
 

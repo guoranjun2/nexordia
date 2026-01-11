@@ -10,8 +10,7 @@ public class EditableAttribute {
     private final String rawValue;
     private final String transformedValue;
     private final String plainValue;
-    private final Boolean hasMarkup;
-    private final Boolean isFormula;
+    private final Boolean isEditable;
     private final Integer index;
 
     @JsonCreator
@@ -19,15 +18,13 @@ public class EditableAttribute {
                              @JsonProperty("rawValue") String rawValue,
                              @JsonProperty("transformedValue") String transformedValue,
                              @JsonProperty("plainValue") String plainValue,
-                             @JsonProperty("hasMarkup") Boolean hasMarkup,
-                             @JsonProperty("isFormula") Boolean isFormula,
+                             @JsonProperty("isEditable") Boolean isEditable,
                              @JsonProperty("index") Integer index) {
         this.name = name;
         this.rawValue = rawValue;
         this.transformedValue = transformedValue;
         this.plainValue = plainValue;
-        this.hasMarkup = hasMarkup;
-        this.isFormula = isFormula;
+        this.isEditable = isEditable;
         this.index = index;
     }
 
@@ -47,12 +44,8 @@ public class EditableAttribute {
         return plainValue;
     }
 
-    public Boolean getHasMarkup() {
-        return hasMarkup;
-    }
-
-    public Boolean getIsFormula() {
-        return isFormula;
+    public Boolean getIsEditable() {
+        return isEditable;
     }
 
     public Integer getIndex() {

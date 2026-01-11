@@ -4,6 +4,9 @@ import org.freeplane.core.resources.ResourceController;
 
 public class SystemMessageBuilder {
 	public static final String SYSTEM_MESSAGE_PROPERTY = "ai_system_message";
+    private static final String TOOL_CALL_REQUEST_WRAPPER_GUIDANCE =
+        "Any tool calls in this chat require arguments wrapped under the single parameter named request. "
+            + "Example: tool({ \"request\": { ... } })";
     @FunctionalInterface
     interface SystemMessageTextProvider {
         String getSystemMessageText();
@@ -22,10 +25,13 @@ public class SystemMessageBuilder {
     public String buildForChat() {
         String message = systemMessageTextProvider.getSystemMessageText();
         if (message == null) {
-            return null;
+            return TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
         }
         String trimmed = message.trim();
-        return trimmed.isEmpty() ? null : message;
+        if (trimmed.isEmpty()) {
+            return TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+        }
+        return trimmed + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
     }
 
     private static class ResourceControllerSystemMessageTextProvider implements SystemMessageTextProvider {

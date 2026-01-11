@@ -1,9 +1,9 @@
 # Task: Implement reading methods
-- **Scope:** Implement read_node_content with a request that requires only map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old read context request and response types.
+- **Scope:** Implement read_node_content with a request that requires only map identifier and node identifier, always include node identifiers in the response, and return focus, parent, and child nodes with preset content; update AIToolSet to use the new method and remove the old read context request and response types. Information reads now return concatenated unformattedText, while structured NodeContentResponse is reserved for fetchNodesForEditing and edit responses.
 - **Modified production files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AttributesContentReader.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContent.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentResponse.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItem.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentItemReader.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/NodeContentReader.java
@@ -54,7 +54,7 @@ Request accepts only map identifier and node identifier.
 Response includes focus, parent, children only.
 Selected node identifiers stay in the system message.
 BRIEF uses TextController.getShortPlainText; node.getText is forbidden.
-BRIEF uses NodeContent.briefText to avoid confusion with full content.
+BRIEF uses NodeContentResponse.briefText to avoid confusion with full content.
 FULL uses transformed text and transformed objects as shown to users.
 Use TextController.getTransformedTextForClipboard for full node, details, and note content to avoid latex icon rendering.
 Attributes use transformed object values and then convert to string values.
@@ -81,7 +81,7 @@ class NodeModel
 class TextController
 class AttributeController
 class IconController
-class NodeContent {
+class NodeContentResponse {
 briefText
 textualContent
 attributesContent
@@ -94,7 +94,7 @@ TagsContentReader --> IconController
 NodeContentReader o--> TextualContentReader
 NodeContentReader o--> AttributesContentReader
 NodeContentReader o--> TagsContentReader
-NodeContentReader --> NodeContent : briefText
+NodeContentReader --> NodeContentResponse : briefText
 NodeContentItemReader o--> NodeContentReader
 NodeContentItemReader --> NodeModel : createID
 NodeContentItemReader --> NodeContentItem
@@ -116,7 +116,7 @@ FULL uses TextController.getTransformedTextForClipboard for focus text, details,
 FULL uses transformed attribute values from TextController.getTransformedObjectNoFormattingNoThrow.
 ReadNodeContentTool always requests node identifiers.
 NodeContentItemReader calls createID only when identifiers are requested.
-NodeContent.briefText is populated only for BRIEF responses.
+NodeContentResponse.briefText is populated only for BRIEF responses.
 TextualContent is populated only for FULL responses.
 end note
 @enduml

@@ -30,17 +30,17 @@ public class NodeContentItemReader {
             return null;
         }
         String nodeIdentifier = includesNodeIdentifiers ? nodeModel.createID() : null;
-        NodeContent content = nodeContentReader.readNodeContent(nodeModel, preset);
+        NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, preset);
         List<String> qualifiers = includesQualifiers ? buildQualifiers(nodeModel) : null;
         return new NodeContentItem(nodeIdentifier, content, qualifiers);
     }
 
-    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContent content,
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentResponse content,
                                                boolean includesNodeIdentifiers) {
         return readNodeContentItem(nodeModel, content, includesNodeIdentifiers, true);
     }
 
-    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContent content,
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentResponse content,
                                                boolean includesNodeIdentifiers, boolean includesQualifiers) {
         if (nodeModel == null) {
             return null;
@@ -50,7 +50,8 @@ public class NodeContentItemReader {
         return new NodeContentItem(nodeIdentifier, content, qualifiers);
     }
 
-    public NodeContent readNodeContent(NodeModel nodeModel, NodeContentRequest request, NodeContentPreset fallbackPreset) {
+    public NodeContentResponse readNodeContent(NodeModel nodeModel, NodeContentRequest request,
+                                               NodeContentPreset fallbackPreset) {
         return nodeContentReader.readNodeContent(nodeModel, request, fallbackPreset);
     }
 

@@ -12,7 +12,7 @@
 ```plantuml
 @startuml
 class AIToolSet
-class ReadNodeWithContextTool
+class ReadNodesWithDescendantsTool
 class AvailableMaps
 class ModelContextProtocolServer
 class ModelContextProtocolToolRegistry
@@ -23,8 +23,8 @@ class DefaultToolExecutor
 class HTTPServer
 class ResourceController
 
-AIToolSet --> ReadNodeWithContextTool
-ReadNodeWithContextTool --> AvailableMaps
+AIToolSet --> ReadNodesWithDescendantsTool
+ReadNodesWithDescendantsTool --> AvailableMaps
 ModelContextProtocolServer --> ModelContextProtocolToolRegistry
 ModelContextProtocolServer --> ModelContextProtocolToolDispatcher
 ModelContextProtocolToolDispatcher --> AIToolSet
