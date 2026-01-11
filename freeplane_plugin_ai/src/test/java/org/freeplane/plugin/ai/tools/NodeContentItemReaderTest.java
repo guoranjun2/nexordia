@@ -18,7 +18,7 @@ public class NodeContentItemReaderTest {
         NodeContentReader nodeContentReader = mock(NodeContentReader.class);
         when(nodeModel.createID()).thenReturn("ID_1");
         when(nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Brief", null, null, null, null));
+            .thenReturn(new NodeContent("Brief", null, null, null, null, null));
         when(nodeModel.containsExtension(SummaryNodeFlag.class)).thenReturn(true);
         when(nodeModel.containsExtension(FirstGroupNodeFlag.class)).thenReturn(false);
         NodeContentItemReader uut = new NodeContentItemReader(nodeContentReader);
@@ -34,7 +34,7 @@ public class NodeContentItemReaderTest {
         NodeContentReader nodeContentReader = mock(NodeContentReader.class);
         when(nodeModel.createID()).thenReturn("ID_2");
         when(nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Brief", null, null, null, null));
+            .thenReturn(new NodeContent("Brief", null, null, null, null, null));
         when(nodeModel.containsExtension(SummaryNodeFlag.class)).thenReturn(false);
         when(nodeModel.containsExtension(FirstGroupNodeFlag.class)).thenReturn(true);
         NodeContentItemReader uut = new NodeContentItemReader(nodeContentReader);
@@ -50,7 +50,7 @@ public class NodeContentItemReaderTest {
         NodeContentReader nodeContentReader = mock(NodeContentReader.class);
         when(nodeModel.createID()).thenReturn("ID_3");
         when(nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Brief", null, null, null, null));
+            .thenReturn(new NodeContent("Brief", null, null, null, null, null));
         when(nodeModel.containsExtension(SummaryNodeFlag.class)).thenReturn(false);
         when(nodeModel.containsExtension(FirstGroupNodeFlag.class)).thenReturn(false);
         NodeContentItemReader uut = new NodeContentItemReader(nodeContentReader);
@@ -65,7 +65,7 @@ public class NodeContentItemReaderTest {
         NodeModel nodeModel = mock(NodeModel.class);
         NodeContentReader nodeContentReader = mock(NodeContentReader.class);
         when(nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Brief", null, null, null, null));
+            .thenReturn(new NodeContent("Brief", null, null, null, null, null));
         NodeContentItemReader uut = new NodeContentItemReader(nodeContentReader);
 
         NodeContentItem item = uut.readNodeContentItem(nodeModel, NodeContentPreset.BRIEF, false);

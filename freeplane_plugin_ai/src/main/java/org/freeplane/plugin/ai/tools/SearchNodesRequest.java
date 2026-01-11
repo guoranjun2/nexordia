@@ -18,6 +18,7 @@ public class SearchNodesRequest {
         new TextualContentRequest(true, false, false),
         null,
         null,
+        null,
         null);
     @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
     private final String mapIdentifier;

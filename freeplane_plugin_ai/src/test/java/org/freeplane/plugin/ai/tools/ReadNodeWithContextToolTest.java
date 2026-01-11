@@ -41,11 +41,11 @@ public class ReadNodeWithContextToolTest {
         when(secondChildNode.createID()).thenReturn("ID_child_2");
         when(focusNode.getText()).thenReturn("Focus");
         when(parentNode.getText()).thenReturn("Parent");
-        NodeContent focusContent = new NodeContent(null, new TextualContent("Focus full", null, null), null, null, null);
-        NodeContent firstChildBrief = new NodeContent("Child 1", null, null, null, null);
-        NodeContent secondChildBrief = new NodeContent("Child 2", null, null, null, null);
-        NodeContent focusBreadcrumb = new NodeContent("Focus", null, null, null, null);
-        NodeContent parentBreadcrumb = new NodeContent("Parent", null, null, null, null);
+        NodeContent focusContent = new NodeContent(null, new TextualContent("Focus full", null, null), null, null, null, null);
+        NodeContent firstChildBrief = new NodeContent("Child 1", null, null, null, null, null);
+        NodeContent secondChildBrief = new NodeContent("Child 2", null, null, null, null, null);
+        NodeContent focusBreadcrumb = new NodeContent("Focus", null, null, null, null, null);
+        NodeContent parentBreadcrumb = new NodeContent("Parent", null, null, null, null, null);
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.FULL)).thenReturn(focusContent);
         when(nodeContentItemReader.readNodeContent(firstChildNode, null, NodeContentPreset.BRIEF)).thenReturn(firstChildBrief);
         when(nodeContentItemReader.readNodeContent(secondChildNode, null, NodeContentPreset.BRIEF)).thenReturn(secondChildBrief);
@@ -154,9 +154,9 @@ public class ReadNodeWithContextToolTest {
         when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         when(secondFocusNode.getChildren()).thenReturn(Collections.emptyList());
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.FULL))
-            .thenReturn(new NodeContent(null, new TextualContent("Focus", null, null), null, null, null));
+            .thenReturn(new NodeContent(null, new TextualContent("Focus", null, null), null, null, null, null));
         when(nodeContentItemReader.readNodeContent(secondFocusNode, null, NodeContentPreset.FULL))
-            .thenReturn(new NodeContent(null, new TextualContent("Focus 2", null, null), null, null, null));
+            .thenReturn(new NodeContent(null, new TextualContent("Focus 2", null, null), null, null, null, null));
         TextController textController = mock(TextController.class);
         ReadNodeWithContextTool uut = new ReadNodeWithContextTool(
             availableMaps, nodeContentItemReader, textController, objectMapper);
@@ -197,9 +197,9 @@ public class ReadNodeWithContextToolTest {
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
         when(focusNode.createID()).thenReturn("ID_focus");
         when(childNode.createID()).thenReturn("ID_child");
-        NodeContent focusFullContent = new NodeContent(null, new TextualContent("Focus full", null, null), null, null, null);
-        NodeContent childFullContent = new NodeContent(null, new TextualContent("Child full", null, null), null, null, null);
-        NodeContent focusBriefContent = new NodeContent("Focus", null, null, null, null);
+        NodeContent focusFullContent = new NodeContent(null, new TextualContent("Focus full", null, null), null, null, null, null);
+        NodeContent childFullContent = new NodeContent(null, new TextualContent("Child full", null, null), null, null, null, null);
+        NodeContent focusBriefContent = new NodeContent("Focus", null, null, null, null, null);
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.FULL)).thenReturn(focusFullContent);
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.FULL)).thenReturn(childFullContent);
         when(nodeContentItemReader.readNodeContent(focusNode, null, NodeContentPreset.BRIEF)).thenReturn(focusBriefContent);

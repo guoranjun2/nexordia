@@ -31,10 +31,11 @@
   - Explicit node icons are stored on the node (`NodeModel.getIcons()`), which excludes style icons. This is the icon set that should be editable.
 - **Design:**
   - Add `EditableContentRequest` to `NodeContentRequest` to opt in to editable content.
-  - `EditableContentRequest` selects fields (`TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`) and representations (`RAW`, `TRANSFORMED`, `PLAIN`, `METADATA`).
+  - `EditableContentRequest` selects fields (`TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`, `TAGS`, `ICONS`) and representations (`RAW`, `TRANSFORMED`, `PLAIN`, `METADATA`).
   - `EditableContent` appears only when requested to reduce token usage.
   - Each editable field includes raw content, transformed content, plain text, and metadata for format and formula detection.
-  - Add `editableIcons` to `EditableContent`, sourced only from `NodeModel.getIcons()` and described with the same English description rules used elsewhere (resources, emoji decoding, user icon relative path).
+  - Add `editableTags` and `editableIcons` to `EditableContent`, sourced from `Tags.getTagReferences(node)` and `NodeModel.getIcons()`. Use the same English description rules used elsewhere for icon descriptions (resources, emoji decoding, user icon relative path).
+  - Each editable collection item includes an `index` so duplicates can be targeted in later edit requests.
 - **Design diagram:**
 ```plantuml
 @startuml
@@ -47,6 +48,7 @@ class EditableContent {
   editableDetails
   editableNote
   editableAttributes[]
+  editableTags[]
   editableIcons[]
 }
 class EditableText {
@@ -64,13 +66,23 @@ class EditableAttribute {
   plainValue
   hasMarkup
   isFormula
+  index
+}
+class EditableTag {
+  value
+  index
+}
+class EditableIcon {
+  description
+  index
 }
 
 NodeContentRequest --> EditableContentRequest
 NodeContent --> EditableContent
 EditableContent --> EditableText
 EditableContent --> EditableAttribute
-EditableContent --> editableIcons
+EditableContent --> EditableTag
+EditableContent --> EditableIcon
 @enduml
 ```
 - **Test specification:**
@@ -119,18 +131,22 @@ EditableContent --> editableIcons
 
 ### Subtask: Define edit request/response structure
 - **Status:** Plan Review
-- **Scope:** Define the enums and DTOs that describe which node element is being edited, its `ContentType`, the value the model edits, and the structure returned by the edit tool so multiple elements per node can be updated in one request while still returning per-element metadata.
-- **Motivation:** The edit tool needs to know which element was read (text, details, note, attributes, tags, icons) and what `ContentType` the model saw (plain text, HTML, Markdown, LaTeX, formula) so it can reject mismatches and keep formula editing out of scope. Returning the edited element, content type, and new value gives the caller confirmation that the change was applied.
+- **Scope:** Define the enums and data transfer objects that describe which node element is being edited, its `ContentType`, the value the model edits, and the structure returned by the edit tool so multiple elements per node can be updated in one request while still returning the updated node content.
+- **Motivation:** The edit tool needs to know which element was read (text, details, note, attributes, tags, icons) and what `ContentType` the model saw (plain text, HTML, Markdown, LaTeX, formula) so it can reject mismatches and keep formula editing out of scope. Returning the updated node content gives the caller confirmation that the change was applied.
 - **Research summary:**
   - The tool must already know if a field contains markup or a formula from the editable content metadata; exposing `ContentType` makes it explicit what the LLM expects before every edit.
   - Freeplane’s formula detection is built into the node editors, so we should reject edits when `isFormula` is true before or after the update to avoid corrupting formulas.
 - **Design:**
   - Introduce an `EditedElement` enum with values such as `TEXT`, `DETAILS`, `NOTE`, `ATTRIBUTES`, `TAGS`, and `ICONS` so the tool request names the specific node field being edited.
   - Introduce a `ContentType` enum that distinguishes plain text, HTML, Markdown, LaTeX, and formula so the tool can validate that the model hasn’t switched formats.
-  - The `NodeContentEditRequest` includes `mapIdentifier`, `nodeIdentifier`, `userSummary`, and a list of `NodeContentEditItem` entries. Each entry carries the `EditedElement`, the `ContentType` the model edited, and the new raw value to write.
-  - The response returns the edited `NodeContentItem`, including the identifier, edited content, and brief text, so the caller can verify the current node state.
+  - The `NodeContentEditRequest` includes `mapIdentifier`, `nodeIdentifier`, `userSummary`, and a list of `NodeContentEditItem` entries. Each entry carries the `EditedElement`, the original `ContentType` the model edited, and the new raw value to write.
+  - The response returns the edited `NodeContentItem`, including the identifier, edited content, and brief text, so the caller can verify the current node state. It does not repeat the request items.
   - When editing collection-like elements (tags, icons, attributes), include the optional `index` from the editable content so duplicates can be targeted; the helper can also fall back to matching by value when the index is absent.
-  - The edit helper must compare the node’s current `ContentType`/`isFormula` metadata against the request and reject the edit if the node currently contains a formula or if applying the new value would make it appear to be a formula (`isFormula` would become true).
+  - The edit helper must compare the node’s current `ContentType` and formula metadata against the request and reject the edit if the node currently contains a formula or if applying the new value would make it appear to be a formula.
+  - For text edits, determine the current content type from a `\\latex` or `\\unparsedlatex` prefix first, then from node format when it is markdown or latex, otherwise use HTML detection on the raw text.
+  - For plain text or html node text, allow the new value to be either plain text or html without conversion.
+  - For latex node text, strip any `\\latex` or `\\unparsedlatex` prefix from the edit value and reapply the original prefix; for details and note latex content types, strip any prefix but do not reapply.
+  - Reject `ContentType` values that indicate a formula for any edit, and reject html content for markdown or latex edits.
 - **Test specification:**
   - Not yet implemented; future tests should cover request validation, formula rejection, and the response shape.
 

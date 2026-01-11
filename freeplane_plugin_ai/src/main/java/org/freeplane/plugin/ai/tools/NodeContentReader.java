@@ -9,15 +9,18 @@ public class NodeContentReader {
     private final AttributesContentReader attributesContentReader;
     private final TagsContentReader tagsContentReader;
     private final IconsContentReader iconsContentReader;
+    private final EditableContentReader editableContentReader;
 
     public NodeContentReader(TextualContentReader textualContentReader,
                              AttributesContentReader attributesContentReader,
                              TagsContentReader tagsContentReader,
-                             IconsContentReader iconsContentReader) {
+                             IconsContentReader iconsContentReader,
+                             EditableContentReader editableContentReader) {
         this.textualContentReader = Objects.requireNonNull(textualContentReader, "textualContentReader");
         this.attributesContentReader = Objects.requireNonNull(attributesContentReader, "attributesContentReader");
         this.tagsContentReader = Objects.requireNonNull(tagsContentReader, "tagsContentReader");
         this.iconsContentReader = Objects.requireNonNull(iconsContentReader, "iconsContentReader");
+        this.editableContentReader = Objects.requireNonNull(editableContentReader, "editableContentReader");
     }
 
     public NodeContent readNodeContent(NodeModel nodeModel, NodeContentPreset preset) {
@@ -26,13 +29,13 @@ public class NodeContentReader {
         }
         if (preset == NodeContentPreset.BRIEF) {
             String briefText = textualContentReader.readBriefText(nodeModel);
-            return new NodeContent(briefText, null, null, null, null);
+            return new NodeContent(briefText, null, null, null, null, null);
         }
         TextualContent textualContent = textualContentReader.readTextualContent(nodeModel, preset);
         AttributesContent attributesContent = attributesContentReader.readAttributesContent(nodeModel, preset);
         TagsContent tagsContent = tagsContentReader.readTagsContent(nodeModel, preset);
         IconsContent iconsContent = iconsContentReader.readIconsContent(nodeModel, preset);
-        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent);
+        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent, null);
     }
 
     public NodeContent readNodeContent(NodeModel nodeModel, NodeContentRequest request, NodeContentPreset fallbackPreset) {
@@ -50,10 +53,13 @@ public class NodeContentReader {
             nodeModel, request.getTagsContentRequest());
         IconsContent iconsContent = iconsContentReader.readIconsContent(
             nodeModel, request.getIconsContentRequest());
-        if (textualContent == null && attributesContent == null && tagsContent == null && iconsContent == null) {
+        EditableContent editableContent = editableContentReader.readEditableContent(
+            nodeModel, request.getEditableContentRequest());
+        if (textualContent == null && attributesContent == null && tagsContent == null && iconsContent == null
+            && editableContent == null) {
             return null;
         }
-        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent);
+        return new NodeContent(null, textualContent, attributesContent, tagsContent, iconsContent, editableContent);
     }
 
     public boolean matches(NodeModel nodeModel, NodeContentRequest request, NodeContentValueMatcher valueMatcher) {

@@ -26,7 +26,7 @@ public class NodeContentEditorTest {
             attributesContentEditor, tagsContentEditor, iconsContentEditor);
         NodeModel nodeModel = mock(NodeModel.class);
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContent("text", null, null, null, null), Collections.emptyList());
+            new NodeContent("text", null, null, null, null, null), Collections.emptyList());
         when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
         NodeContentEditRequest request = new NodeContentEditRequest("map-identifier", "node-identifier", null,
             Collections.emptyList());
@@ -75,7 +75,7 @@ public class NodeContentEditorTest {
         NodeContentEditRequest request = new NodeContentEditRequest("map-identifier", "node-identifier", null,
             Collections.singletonList(editItem));
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContent("updated", null, null, null, null), Collections.emptyList());
+            new NodeContent("updated", null, null, null, null, null), Collections.emptyList());
         when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
 
         NodeContentItem result = uut.edit(nodeModel, request);

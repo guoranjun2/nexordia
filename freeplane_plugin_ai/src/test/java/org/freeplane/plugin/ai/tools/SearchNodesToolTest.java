@@ -40,8 +40,8 @@ public class SearchNodesToolTest {
         when(rootNode.createID()).thenReturn("ID_root");
         when(childNode.createID()).thenReturn("ID_child");
         when(otherNode.createID()).thenReturn("ID_other");
-        NodeContent rootBriefContent = new NodeContent("Root", null, null, null, null);
-        NodeContent childBriefContent = new NodeContent("Alpha", null, null, null, null);
+        NodeContent rootBriefContent = new NodeContent("Root", null, null, null, null, null);
+        NodeContent childBriefContent = new NodeContent("Alpha", null, null, null, null, null);
         when(nodeContentItemReader.matchesNodeContent(eq(childNode), any(NodeContentRequest.class),
             any(NodeContentValueMatcher.class)))
             .thenReturn(true);
@@ -161,9 +161,9 @@ public class SearchNodesToolTest {
                 return matcher.matchesValue("Priority 3");
             });
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Root", null, null, null, null));
+            .thenReturn(new NodeContent("Root", null, null, null, null, null));
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContent("Alpha", null, null, null, null));
+            .thenReturn(new NodeContent("Alpha", null, null, null, null, null));
         TextController textController = mock(TextController.class);
         SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
@@ -174,7 +174,8 @@ public class SearchNodesToolTest {
                 new TextualContentRequest(true, false, false),
                 null,
                 null,
-                new IconsContentRequest(true)),
+                new IconsContentRequest(true),
+                null),
             SearchMatchingMode.CONTAINS,
             SearchCaseSensitivity.CASE_INSENSITIVE,
             Collections.singletonList(SearchResultSection.BREADCRUMB_PATH),

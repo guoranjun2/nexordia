@@ -135,8 +135,10 @@ public class AIToolSetBuilder {
         AttributesContentReader attributesContentReader = new AttributesContentReader(attributeController, textController);
         TagsContentReader tagsContentReader = new TagsContentReader(iconController);
         IconsContentReader iconsContentReader = new IconsContentReader(iconDescriptionResolver, iconController);
+        EditableContentReader editableContentReader = new EditableContentReader(
+            textController, iconDescriptionResolver, new ContentTypeConverter());
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
         return new NodeContentItemReader(nodeContentReader);
     }
 }

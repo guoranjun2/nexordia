@@ -2,8 +2,10 @@ package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.map.MapModel;
@@ -36,8 +38,10 @@ public class TextualContentEditorTest {
         TextualContentEditor uut = new TextualContentEditor(textContentWriteController, noteContentWriteController);
         NodeModel nodeModel = mock(NodeModel.class);
         TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
 
-        uut.editExistingTextualContent(nodeModel, EditedElement.TEXT, ContentType.PLAIN_TEXT, "value", textController);
+        uut.editExistingTextualContent(nodeModel, EditedElement.TEXT, ContentType.PLAIN_TEXT, "value",
+            textController);
 
         verify(textContentWriteController).setNodeText(nodeModel, "value");
     }
@@ -53,5 +57,84 @@ public class TextualContentEditorTest {
             nodeModel, EditedElement.TEXT, ContentType.FORMULA, "value", textController))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Formula content edits are not allowed.");
+    }
+
+    @Test
+    public void editExistingTextualContent_allowsDetailsEditWhenContentTypeMatches() {
+        TextContentWriteController textContentWriteController = mock(TextContentWriteController.class);
+        NoteContentWriteController noteContentWriteController = mock(NoteContentWriteController.class);
+        TextualContentEditor uut = new TextualContentEditor(textContentWriteController, noteContentWriteController);
+        TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
+        NodeModel nodeModel = mock(NodeModel.class);
+
+        uut.editExistingTextualContent(nodeModel, EditedElement.DETAILS, ContentType.PLAIN_TEXT,
+            "value", textController);
+
+        verify(textContentWriteController).setDetails(nodeModel, "value");
+    }
+
+    @Test
+    public void editExistingTextualContent_rejectsHtmlForMarkdownText() {
+        TextualContentEditor uut = new TextualContentEditor(
+            mock(TextContentWriteController.class), mock(NoteContentWriteController.class));
+        NodeModel nodeModel = mock(NodeModel.class);
+        TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
+        when(textController.getNodeFormat(nodeModel)).thenReturn("markdown");
+
+        assertThatThrownBy(() -> uut.editExistingTextualContent(
+            nodeModel, EditedElement.TEXT, ContentType.MARKDOWN, "<html><body>value</body></html>", textController))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Markdown text content does not allow html.");
+    }
+
+    @Test
+    public void editExistingTextualContent_allowsTextHtmlUpdateWhenContentTypeIsPlain() {
+        TextContentWriteController textContentWriteController = mock(TextContentWriteController.class);
+        NoteContentWriteController noteContentWriteController = mock(NoteContentWriteController.class);
+        TextualContentEditor uut = new TextualContentEditor(textContentWriteController, noteContentWriteController);
+        NodeModel nodeModel = mock(NodeModel.class);
+        when(nodeModel.getUserObject()).thenReturn("plain");
+        TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
+        when(textController.getNodeFormat(nodeModel)).thenReturn(null);
+
+        uut.editExistingTextualContent(nodeModel, EditedElement.TEXT, ContentType.PLAIN_TEXT,
+            "<html><body>value</body></html>", textController);
+
+        verify(textContentWriteController).setNodeText(nodeModel, "<html><body>value</body></html>");
+    }
+
+    @Test
+    public void editExistingTextualContent_allowsLatexTextEditsWithPrefix() {
+        TextContentWriteController textContentWriteController = mock(TextContentWriteController.class);
+        NoteContentWriteController noteContentWriteController = mock(NoteContentWriteController.class);
+        TextualContentEditor uut = new TextualContentEditor(textContentWriteController, noteContentWriteController);
+        NodeModel nodeModel = mock(NodeModel.class);
+        when(nodeModel.getUserObject()).thenReturn("\\latex x+1");
+        TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
+        when(textController.getNodeFormat(nodeModel)).thenReturn(null);
+
+        uut.editExistingTextualContent(nodeModel, EditedElement.TEXT, ContentType.LATEX, "x+2", textController);
+
+        verify(textContentWriteController).setNodeText(nodeModel, "\\latex x+2");
+    }
+
+    @Test
+    public void editExistingTextualContent_rejectsHtmlLatexTextEdits() {
+        TextualContentEditor uut = new TextualContentEditor(
+            mock(TextContentWriteController.class), mock(NoteContentWriteController.class));
+        NodeModel nodeModel = mock(NodeModel.class);
+        when(nodeModel.getUserObject()).thenReturn("\\latex x+1");
+        TextController textController = mock(TextController.class);
+        when(textController.isFormula(any())).thenReturn(false);
+        when(textController.getNodeFormat(nodeModel)).thenReturn(null);
+
+        assertThatThrownBy(() -> uut.editExistingTextualContent(
+            nodeModel, EditedElement.TEXT, ContentType.LATEX, "<html><body>x+2</body></html>", textController))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Latex content does not allow html.");
     }
 }

@@ -7,21 +7,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentEditItem {
     private final EditedElement editedElement;
-    private final ContentType contentType;
+    @JsonProperty("originalContentType")
+    private final ContentType originalContentType;
+    @JsonProperty(required = false)
     private final String value;
+    @JsonProperty(required = false)
     private final Integer index;
+    @JsonProperty(required = false)
     private final EditOperation operation;
+    @JsonProperty(required = false)
     private final String targetKey;
 
     @JsonCreator
     public NodeContentEditItem(@JsonProperty("editedElement") EditedElement editedElement,
-                               @JsonProperty("contentType") ContentType contentType,
+                               @JsonProperty("originalContentType") ContentType originalContentType,
                                @JsonProperty("value") String value,
                                @JsonProperty("index") Integer index,
                                @JsonProperty("operation") EditOperation operation,
                                @JsonProperty("targetKey") String targetKey) {
         this.editedElement = editedElement;
-        this.contentType = contentType;
+        this.originalContentType = originalContentType;
         this.value = value;
         this.index = index;
         this.operation = operation == null ? EditOperation.REPLACE : operation;
@@ -32,8 +37,8 @@ public class NodeContentEditItem {
         return editedElement;
     }
 
-    public ContentType getContentType() {
-        return contentType;
+    public ContentType getOriginalContentType() {
+        return originalContentType;
     }
 
     public String getValue() {
@@ -51,4 +56,5 @@ public class NodeContentEditItem {
     public String getTargetKey() {
         return targetKey;
     }
+
 }

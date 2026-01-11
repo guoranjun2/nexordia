@@ -80,7 +80,7 @@ public class NodeContentEditor {
         textualContentEditor.editExistingTextualContent(
             nodeModel,
             edit.getEditedElement(),
-            edit.getContentType(),
+            edit.getOriginalContentType(),
             edit.getValue(),
             textController);
     }
