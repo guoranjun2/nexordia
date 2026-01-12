@@ -125,10 +125,11 @@ public class AIChatPanel extends JPanel {
         TranslatedElementFactory.createTooltip(menuButton, "preferences");
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
         toolbar.add(menuButton);
-        JButton newChatButton = new JButton("New chat");
+        toolbar.add(modelSelectionController.getModelSelectionComboBox());
+        String clearIconPath = "/images/generic_trash.svg?useAccentColor=true";
+        JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_clear");
         newChatButton.addActionListener(event -> startNewChat());
         toolbar.add(newChatButton);
-        toolbar.add(modelSelectionController.getModelSelectionComboBox());
     }
 
     private JPopupMenu buildMenuPopup() {
