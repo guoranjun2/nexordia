@@ -155,10 +155,10 @@ public class AIToolSet {
     public List<NodeContentItem> edit(EditRequest request) {
         try {
             List<NodeContentItem> response = editNodes(request);
-            publishToolCallSummary(buildEditToolSummary(request, response, false));
+            publishToolCallSummary(buildEditToolSummary(request, response, false, null));
             return response;
         } catch (RuntimeException error) {
-            publishToolCallSummary(buildEditToolSummary(request, null, true));
+            publishToolCallSummary(buildEditToolSummary(request, null, true, error.getMessage()));
             throw error;
         }
     }
@@ -229,7 +229,7 @@ public class AIToolSet {
     }
 
     private ToolCallSummary buildEditToolSummary(EditRequest request, List<NodeContentItem> response,
-                                                 boolean hasError) {
+                                                 boolean hasError, String errorMessage) {
         if (request == null) {
             return null;
         }
@@ -238,6 +238,14 @@ public class AIToolSet {
         String summaryText = "edit: nodes=" + nodeCount + ", items=" + itemCount;
         if (request.getUserSummary() != null && !request.getUserSummary().isEmpty()) {
             summaryText = summaryText + ", userSummary=\"" + request.getUserSummary() + "\"";
+        }
+        if (hasError) {
+            String safeMessage = ToolCallSummaryFormatter.sanitizeValue(errorMessage);
+            if (!safeMessage.isEmpty()) {
+                summaryText = summaryText + ", error=\"" + safeMessage + "\"";
+            } else {
+                summaryText = summaryText + ", error=true";
+            }
         }
         return new ToolCallSummary("edit", summaryText, hasError);
     }

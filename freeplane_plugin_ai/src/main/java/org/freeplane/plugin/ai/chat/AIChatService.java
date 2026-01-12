@@ -15,24 +15,25 @@ import dev.langchain4j.observability.api.listener.AiServiceListener;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
+import org.freeplane.plugin.ai.tools.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.ToolCaller;
+import org.freeplane.core.util.LogUtils;
 
 public class AIChatService {
-    private static final ToolArgumentsErrorHandler TOOL_ARGUMENTS_ERROR_HANDLER = (error, context) -> {
-        String errorMessage = isNullOrBlank(error.getMessage()) ? error.getClass().getName() : error.getMessage();
-        String toolName = context == null ? null : context.toolExecutionRequest().name();
-        if (isNullOrBlank(toolName)) {
-            toolName = "unknown tool";
-        }
-        return ToolErrorHandlerResult.text("Tool arguments error for " + toolName + ": " + errorMessage);
-    };
+    private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
 
     private final AIAssistant assistant;
+    private final ToolCallSummaryHandler toolCallSummaryHandler;
+    private final ToolArgumentsErrorHandler toolArgumentsErrorHandler;
 
     public AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
-                         ChatTokenUsageTracker chatTokenUsageTracker) {
+                         ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
+        this.toolCallSummaryHandler = toolCallSummaryHandler;
+        this.toolArgumentsErrorHandler = buildToolArgumentsErrorHandler();
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
-        	.toolArgumentsErrorHandler(TOOL_ARGUMENTS_ERROR_HANDLER)
+            .toolArgumentsErrorHandler(toolArgumentsErrorHandler)
             .chatModel(chatLanguageModel)
             .systemMessageProvider(toolSet::systemMessageForChat)
             .registerListener(new AiServiceListener<AiServiceErrorEvent>() {
@@ -86,5 +87,54 @@ public class AIChatService {
 
     public interface AIAssistant {
         String chat(String message);
+    }
+
+    private ToolArgumentsErrorHandler buildToolArgumentsErrorHandler() {
+        return (error, context) -> {
+            String errorMessage = isNullOrBlank(error.getMessage()) ? error.getClass().getName() : error.getMessage();
+            String toolName = context == null ? null : context.toolExecutionRequest().name();
+            String arguments = context == null ? null : context.toolExecutionRequest().arguments();
+            if (isNullOrBlank(toolName)) {
+                toolName = "unknown tool";
+            }
+            publishToolArgumentsErrorSummary(toolName, arguments, errorMessage);
+            return ToolErrorHandlerResult.text("Tool arguments error for " + toolName + ": " + errorMessage);
+        };
+    }
+
+    private void publishToolArgumentsErrorSummary(String toolName, String arguments, String errorMessage) {
+        if (toolCallSummaryHandler == null) {
+            return;
+        }
+        LogUtils.info(buildToolArgumentsErrorLog(toolName, arguments, errorMessage));
+        String summaryText = "tool arguments error: tool=" + sanitizeSummaryValue(toolName);
+        String safeArguments = sanitizeSummaryValue(arguments);
+        if (!safeArguments.isEmpty()) {
+            summaryText = summaryText + ", arguments=" + safeArguments;
+        }
+        String safeErrorMessage = sanitizeSummaryValue(errorMessage);
+        if (!safeErrorMessage.isEmpty()) {
+            summaryText = summaryText + ", error=" + safeErrorMessage;
+        }
+        ToolCallSummary summary = new ToolCallSummary("toolArgumentsError", summaryText, true, ToolCaller.CHAT);
+        toolCallSummaryHandler.handleToolCallSummary(summary);
+    }
+
+    private String buildToolArgumentsErrorLog(String toolName, String arguments, String errorMessage) {
+        String safeToolName = toolName == null ? "unknown tool" : toolName;
+        String safeArguments = arguments == null ? "" : arguments;
+        String safeError = errorMessage == null ? "" : errorMessage;
+        return "Tool arguments error: tool=" + safeToolName + ", arguments=" + safeArguments + ", error=" + safeError;
+    }
+
+    private String sanitizeSummaryValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").trim();
+        if (normalized.length() <= MAXIMUM_SUMMARY_TEXT_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, MAXIMUM_SUMMARY_TEXT_LENGTH - 3) + "...";
     }
 }

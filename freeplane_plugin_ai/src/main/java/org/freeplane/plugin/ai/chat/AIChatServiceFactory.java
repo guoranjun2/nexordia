@@ -1,7 +1,9 @@
 package org.freeplane.plugin.ai.chat;
 
-import dev.langchain4j.model.chat.ChatModel;
 import org.freeplane.plugin.ai.tools.AIToolSet;
+import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
+
+import dev.langchain4j.model.chat.ChatModel;
 
 public class AIChatServiceFactory {
 
@@ -9,10 +11,11 @@ public class AIChatServiceFactory {
     }
 
     public static AIChatService createService(AIToolSet toolSet, ChatSessionMemoryController chatSessionMemoryController,
-                                              ChatTokenUsageTracker chatTokenUsageTracker) {
+                                              ChatTokenUsageTracker chatTokenUsageTracker,
+                                              ToolCallSummaryHandler toolCallSummaryHandler) {
         AIProviderConfiguration configuration = new AIProviderConfiguration();
         ChatModel chatLanguageModel = AIChatModelFactory.createChatLanguageModel(configuration);
         return new AIChatService(chatLanguageModel, toolSet, chatSessionMemoryController.getChatMemory(),
-            chatTokenUsageTracker);
+            chatTokenUsageTracker, toolCallSummaryHandler);
     }
 }

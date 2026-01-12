@@ -215,7 +215,8 @@ public class AIChatPanel extends JPanel {
                 .toolCallSummaryHandler(this::handleToolCallSummary)
                 .build(),
             chatSessionMemoryController,
-            chatTokenUsageTracker);
+            chatTokenUsageTracker,
+            this::handleToolCallSummary);
     }
 
     private void appendChatMessage(String text, ChatMessageCategory category) {

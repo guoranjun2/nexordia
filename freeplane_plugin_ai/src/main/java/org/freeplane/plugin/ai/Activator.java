@@ -84,10 +84,10 @@ public class Activator implements BundleActivator {
 
 					private void startModelContextProtocolServer(AIChatPanel aiChatPanel) {
 						if (modelContextProtocolServer == null) {
-							modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
-							    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
-							    .toolCaller(ToolCaller.MCP)
-							    .build());
+						modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
+						    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
+						    .toolCaller(ToolCaller.MCP)
+						    .build());
 							ResourceController.getResourceController()
 								.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
 						}

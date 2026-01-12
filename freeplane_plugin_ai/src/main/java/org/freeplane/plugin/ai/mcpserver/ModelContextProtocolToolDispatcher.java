@@ -20,6 +20,7 @@ import org.freeplane.features.ui.ViewController;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.freeplane.core.util.LogUtils;
 
 public class ModelContextProtocolToolDispatcher {
     private final Object toolSet;
@@ -33,23 +34,6 @@ public class ModelContextProtocolToolDispatcher {
     }
 
     public ToolExecutionResult dispatch(String toolName, JsonNode argumentsNode) {
-        Method method = toolMethods.get(toolName);
-        if (method == null) {
-            throw new IllegalArgumentException("Unknown tool name: " + toolName);
-        }
-        String arguments = "{}";
-        if (argumentsNode != null && !argumentsNode.isNull()) {
-            try {
-                arguments = objectMapper.writeValueAsString(argumentsNode);
-            } catch (Exception error) {
-                throw new IllegalArgumentException("Invalid tool arguments.", error);
-            }
-        }
-        ToolExecutionRequest request = ToolExecutionRequest.builder()
-            .name(toolName)
-            .arguments(arguments)
-            .build();
-        DefaultToolExecutor executor = new DefaultToolExecutor(toolSet, method);
         Controller controller = Controller.getCurrentController();
         if (controller == null) {
             throw new IllegalStateException("No current controller is available.");
@@ -62,7 +46,7 @@ public class ModelContextProtocolToolDispatcher {
         AtomicReference<Throwable> executionError = new AtomicReference<>();
         Runnable runnable = () -> {
             try {
-                resultRef.set(executor.executeWithContext(request, InvocationContext.builder().build()));
+                resultRef.set(executeTool(toolName, argumentsNode));
             } catch (Throwable throwable) {
                 executionError.set(throwable);
             }
@@ -91,6 +75,40 @@ public class ModelContextProtocolToolDispatcher {
             throw new IllegalStateException("Tool execution did not return a result.");
         }
         return result;
+    }
+
+    private ToolExecutionResult executeTool(String toolName, JsonNode argumentsNode) {
+        Method method = toolMethods.get(toolName);
+        if (method == null) {
+            LogUtils.info(buildToolCallLog(toolName, null, "Unknown tool name: " + toolName));
+            throw new IllegalArgumentException("Unknown tool name: " + toolName);
+        }
+        String arguments = "{}";
+        if (argumentsNode != null && !argumentsNode.isNull()) {
+            try {
+                arguments = objectMapper.writeValueAsString(argumentsNode);
+            } catch (Exception error) {
+                LogUtils.info(buildToolCallLog(toolName, null, "Invalid tool arguments."));
+                throw new IllegalArgumentException("Invalid tool arguments.", error);
+            }
+        }
+        ToolExecutionRequest request = ToolExecutionRequest.builder()
+            .name(toolName)
+            .arguments(arguments)
+            .build();
+        DefaultToolExecutor executor = new DefaultToolExecutor(toolSet, method);
+        ToolExecutionResult result = executor.executeWithContext(request, InvocationContext.builder().build());
+        if (result != null && result.isError()) {
+            LogUtils.info(buildToolCallLog(toolName, arguments, result.resultText()));
+        }
+        return result;
+    }
+
+    private String buildToolCallLog(String toolName, String arguments, String errorMessage) {
+        String safeToolName = toolName == null ? "unknown tool" : toolName;
+        String safeArguments = arguments == null ? "" : arguments;
+        String safeError = errorMessage == null ? "" : errorMessage;
+        return "MCP tool error: tool=" + safeToolName + ", arguments=" + safeArguments + ", error=" + safeError;
     }
 
     private static Map<String, Method> buildToolMethods(Object toolSet) {
