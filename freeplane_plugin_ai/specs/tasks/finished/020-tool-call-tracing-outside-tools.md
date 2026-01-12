@@ -1,7 +1,7 @@
 # Task: Emit tool call summaries from service listeners
 
 ## Status
-In Progress
+Finished
 
 ## Scope
 Emit tool call summaries for argument parsing failures by enhancing the LangChain4j tool arguments error handler and by adding an equivalent trace in the MCP server wrapper.
