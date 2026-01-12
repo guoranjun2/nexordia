@@ -41,15 +41,16 @@ class IconDescriptionResolver {
         if (icon == null || TextUtils.isEmpty(description)) {
             return false;
         }
-        String normalizedDescription = description.trim();
+        String normalizedDescription = normalizeEmojiPresentation(description.trim());
         if (normalizedDescription.equalsIgnoreCase(icon.getName())) {
             return true;
         }
         String resolved = resolveDescription(icon);
-        if (normalizedDescription.equals(resolved)) {
+        String normalizedResolved = normalizeEmojiPresentation(resolved);
+        if (normalizedDescription.equals(normalizedResolved)) {
             return true;
         }
-        return normalizedDescription.equalsIgnoreCase(resolved);
+        return normalizedDescription.equalsIgnoreCase(normalizedResolved);
     }
 
     private String resolveEnglishDescription(NamedIcon icon) {
@@ -95,5 +96,12 @@ class IconDescriptionResolver {
             }
         }
         return null;
+    }
+
+    private String normalizeEmojiPresentation(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+        return value.replace("\uFE0F", "").replace("\uFE0E", "");
     }
 }

@@ -32,6 +32,7 @@ public class AIToolSet {
     private final MoveNodesTool moveNodesTool;
     private final CreateSummaryTool createSummaryTool;
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
+    private final ListAvailableIconsTool listAvailableIconsTool;
     private final NodeContentEditor nodeContentEditor;
     private final AvailableMaps availableMaps;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
@@ -79,6 +80,8 @@ public class AIToolSet {
             summaryNodeCreator, modifiedNodeSummaryBuilder, nodeContentApplier);
         MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
             summaryNodeCreator);
+        ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(
+            nodeContentFactories.iconDescriptionResolver);
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
             "readNodesWithDescendantsTool");
@@ -89,6 +92,7 @@ public class AIToolSet {
         this.moveNodesTool = Objects.requireNonNull(moveNodesTool, "moveNodesTool");
         this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
+        this.listAvailableIconsTool = Objects.requireNonNull(listAvailableIconsTool, "listAvailableIconsTool");
         this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolCaller = toolCaller == null
@@ -144,6 +148,19 @@ public class AIToolSet {
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(searchNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("List available built-in and user-defined icons. Emoji icons are referenced by the emoji character itself "
+        + "and are not listed here.")
+    public ListAvailableIconsResponse listAvailableIcons() {
+        try {
+            ListAvailableIconsResponse response = listAvailableIconsTool.listAvailableIcons();
+            publishToolCallSummary(listAvailableIconsTool.buildToolCallSummary(response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(listAvailableIconsTool.buildToolCallErrorSummary(error));
             throw error;
         }
     }

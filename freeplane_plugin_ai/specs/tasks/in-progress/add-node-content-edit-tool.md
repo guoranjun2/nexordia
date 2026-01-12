@@ -181,3 +181,29 @@ EditableContent --> EditableIcon
   - Keep tool descriptions short and rely on the minimal formatting guidance already added.
 - **Test specification:**
   - Existing tests should still pass; add targeted tests only if schema generation or request parsing changes.
+
+### Subtask: Allow plain text to HTML conversion for node core
+- **Status:** Plan Review
+- **Scope:** Permit edits that convert node core text between plain text and HTML without rejecting the change.
+- **Motivation:** Core text already supports HTML formatting; blocking conversions causes unnecessary edit failures and forces the model to guess.
+- **Design:**
+  - Treat plain text and HTML as compatible for node core text edits.
+  - Do not reject edits that switch between plain text and HTML for node core text.
+  - Keep existing content type checks for details, notes, markdown, and latex.
+- **Test specification:**
+  - Add tests that allow a plain text node core to accept HTML-wrapped edits and that still reject markdown or latex mismatches.
+
+### Subtask: Provide icon catalog guidance for edits
+- **Status:** Plan Review
+- **Scope:** Ensure the model can discover valid icon names without enumerating every icon in tool descriptions.
+- **Motivation:** Icon names are long and the model hallucinates when it cannot access the catalog; we need a scalable way to surface valid icon names.
+- **Research:**
+  - `IconStoreFactory.ICON_STORE` holds the built-in and user icon catalog; `IconStore.getMindIcons()` returns all mind icons, including user icons, while `IconStore.getUserIcons()` returns user icons explicitly (`freeplane/src/main/java/org/freeplane/features/icon/IconStore.java`, `freeplane/src/main/java/org/freeplane/features/icon/factory/IconStoreFactory.java`).
+  - Emoji icons are loaded into a separate emoji group (`IconStore.EMOJI_GROUP`) via `IconStoreFactory.createEmojiIcons()` from the generated `emojientries.xml` catalog (`freeplane/src/main/java/org/freeplane/features/icon/factory/IconStoreFactory.java`).
+  - `IconDescriptionResolver.resolveDescription` yields the values accepted by edits (emoji character, user icon file, or translated description), so a catalog tool should reuse this resolver for consistency (`freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/IconDescriptionResolver.java`).
+- **Design:**
+  - Add a `listAvailableIcons` tool that returns the catalog of built-in and user icons.
+  - The response should explicitly note: "This list includes built-in and user-defined Freeplane icons only; emoji icons are referenced by the emoji character itself and are not listed here."
+  - Avoid embedding the full catalog in other tool schemas to keep token usage low.
+- **Test specification:**
+  - Add tests that validate the icon catalog response and that edit errors still report unknown icon descriptions.
