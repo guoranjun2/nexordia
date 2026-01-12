@@ -13,7 +13,7 @@
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TagsContent.java
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/ReadNodesWithDescendantsToolTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 rectangle "Feedback" as Feedback

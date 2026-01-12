@@ -1,6 +1,6 @@
 # Task: Node content qualifiers for summary nodes
 - **Scope:** Add node qualifiers so AI can recognize summary and first group nodes without filtering them out; explain qualifiers in the system message.
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 class SummaryNode

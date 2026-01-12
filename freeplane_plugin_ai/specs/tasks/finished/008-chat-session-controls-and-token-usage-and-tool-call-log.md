@@ -12,7 +12,7 @@
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/ChatSessionMemoryControllerTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/ChatTokenUsageTrackerTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 class AIChatPanel

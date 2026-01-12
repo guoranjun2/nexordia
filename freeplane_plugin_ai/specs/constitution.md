@@ -6,7 +6,7 @@ Established abbreviations like "ai", "uuid", and "llm" are valid terms and are n
 
 ## Workflow
 1.  **Task files as source of truth**: All tasks, design, and execution status live as individual Markdown files under `specs/tasks/<status>/`. Backlog and ideas are historical artifacts.
-2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research summary**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
+2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 4.  **Status updates**: Move task files between status folders to reflect the current work focus (for example, from finished back to in-progress). Keep the existing numeric prefix in the file name to preserve traceability. Avoid moving unrelated tasks; move them only when they are actively being worked on.
 5.  **Move workflow for diffs**: When moving task files, use `git mv` and stage the move immediately before editing. This keeps rename tracking intact in diff tools that are not rename-aware (for example, Visual Studio Code). Do not unstage the rename until you are ready to review and commit.
@@ -39,7 +39,7 @@ If there is confusion, contradictory instructions, or an unexpected failure that
 Each task includes the following sections in this exact order:
 *   **Scope**: what the task will deliver.
 *   **Motivation**: explain why the task exists (backlog tasks or in-progress design stages only).
-*   **Research summary**: facts and observations, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
+*   **Research**: facts and observations, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
 *   **Design**: structure, data flow, constraints, and decisions, preferably captured as PlantUML diagrams with notes; use text when a diagram is not sufficient.
 *   **Test specification**: brief description of planned tests before implementation.
 *   **Modified files**: production and test files touched (required for in-progress work; optional for backlog designs). Use either the task level or the subtask level, not both. If a change belongs to a subtask, list it there; otherwise list it at the task level.

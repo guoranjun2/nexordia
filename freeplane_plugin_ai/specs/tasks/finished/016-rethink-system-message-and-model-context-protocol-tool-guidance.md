@@ -1,7 +1,7 @@
 # Task: Rethink system message and model context protocol tool guidance
 - **Scope:** Decide whether to keep, remove, or minimize the system message in LangChain4j chat; move tool guidance and qualifier explanations into tool schemas; and define a user configurable system message option. Defer chat memory compaction and automatic retry behavior as a later optimization.
 - **Motivation:** The current system message mixes dynamic state with guidance, while Model Context Protocol clients do not receive it at all. This creates divergent behavior between Model Context Protocol and LangChain4j. A consistent approach improves tool discoverability and reduces reliance on static chat state.
-- **Research summary:**
+- **Research:**
   - `ResourceController.setDefaultProperty` sets defaults without overwriting user values; it is used to populate computed defaults such as spotlight background color in `freeplane/src/main/java/org/freeplane/view/swing/map/MapView.java`, monitor size in `freeplane/src/main/java/org/freeplane/core/ui/components/UITools.java`, and hidden preference flags in `freeplane/src/main/java/org/freeplane/core/resources/components/OptionPanelBuilder.java`.
   - LangChain4j chat supports a system message, while Model Context Protocol tool calls rely on schema metadata only.
   - Current system message includes selection identifiers and qualifier explanations that are not available in Model Context Protocol.

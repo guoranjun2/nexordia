@@ -7,6 +7,8 @@ import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentEditItem {
+    @Description("Node identifier to edit.")
+    private final String nodeIdentifier;
     private final EditedElement editedElement;
     @JsonProperty("originalContentType")
     @Description(
@@ -24,12 +26,14 @@ public class NodeContentEditItem {
     private final String targetKey;
 
     @JsonCreator
-    public NodeContentEditItem(@JsonProperty("editedElement") EditedElement editedElement,
+    public NodeContentEditItem(@JsonProperty("nodeIdentifier") String nodeIdentifier,
+                               @JsonProperty("editedElement") EditedElement editedElement,
                                @JsonProperty("originalContentType") ContentType originalContentType,
                                @JsonProperty("value") String value,
                                @JsonProperty("index") Integer index,
                                @JsonProperty("operation") EditOperation operation,
                                @JsonProperty("targetKey") String targetKey) {
+        this.nodeIdentifier = nodeIdentifier;
         this.editedElement = editedElement;
         this.originalContentType = originalContentType;
         this.value = value;
@@ -40,6 +44,10 @@ public class NodeContentEditItem {
 
     public EditedElement getEditedElement() {
         return editedElement;
+    }
+
+    public String getNodeIdentifier() {
+        return nodeIdentifier;
     }
 
     public ContentType getOriginalContentType() {

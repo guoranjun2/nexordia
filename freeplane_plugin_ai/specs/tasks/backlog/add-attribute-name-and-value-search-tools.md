@@ -1,7 +1,7 @@
 # Task: Add attribute name and value search tools
 - **Scope:** Add tools to list attribute names for a map and to search nodes by attribute name and value.
 - **Motivation:** Attribute search needs a map specific attribute name list so the model can search reliably.
-- **Research summary:**
+- **Research:**
   - Review how attribute names are stored on map nodes and whether there is a central registry.
   - Review how attribute values are compared for search and how case sensitivity or matching modes apply.
 - **Design:**

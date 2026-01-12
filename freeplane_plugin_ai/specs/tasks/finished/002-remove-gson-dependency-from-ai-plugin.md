@@ -5,7 +5,7 @@
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIModelCatalog.java
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/AIModelCatalogTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 class AIModelCatalog

@@ -1,6 +1,6 @@
 # Task: Extend readNodesWithDescendants content selection and optional qualifiers
 - **Scope:** Redesign the read tool to accept list-only node identifiers and return list-only responses in the same order, add depth control for full content and summaries, return concatenated unformatted text only, enforce a total text budget by omitting nodes instead of truncating values, and make qualifiers optional.
-- **Research summary:**
+- **Research:**
   - AI map exploration benefits from list-only requests to reduce round trips.
   - Total text budget control is more reliable than per node limits for tool safety.
   - Omitting nodes preserves full values while keeping responses within budget.

@@ -1,6 +1,6 @@
 # Task: Search nodes using NodeContentRequest scope
 - **Scope:** Add a search tool that accepts subtree roots and pagination, scopes search using NodeContentRequest, and enforces a total text budget by omitting results instead of truncating values.
-- **Research summary:**
+- **Research:**
   - Search should be independent from map filter state to avoid hidden scope changes.
   - Subtree roots allow targeted search without additional filter tools.
   - Pagination controls reduce payload size and support incremental browsing.

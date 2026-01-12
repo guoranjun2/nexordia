@@ -1,7 +1,9 @@
 package org.freeplane.plugin.ai.tools;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -147,11 +149,12 @@ public class AIToolSet {
     }
 
     @Tool("Edit node content safely through undo-aware controllers.\n"
-    		+ "IMPORTANT RULE: Before editing, you must call fetchNodesForEditing tool to get the real edited node content and content type.\n "
-    		+ "Formatting: use HTML unless originalContentType is MARKDOWN or LATEX")
-    public NodeContentItem editNodeContent(NodeContentEditRequest request) {
+        + "IMPORTANT RULE: Before editing, you must call fetchNodesForEditing tool to get the real edited node content "
+        + "and content type.\n "
+        + "Formatting: use HTML unless originalContentType is MARKDOWN or LATEX")
+    public List<NodeContentItem> edit(EditRequest request) {
         try {
-            NodeContentItem response = nodeContentEditor.edit(resolveNode(request), request);
+            List<NodeContentItem> response = editNodes(request);
             publishToolCallSummary(buildEditToolSummary(request, response, false));
             return response;
         } catch (RuntimeException error) {
@@ -171,7 +174,7 @@ public class AIToolSet {
         }
     }
 
-    private NodeModel resolveNode(NodeContentEditRequest request) {
+    private List<NodeContentItem> editNodes(EditRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Missing request");
         }
@@ -181,12 +184,33 @@ public class AIToolSet {
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }
-        String nodeIdentifier = requireValue(request.getNodeIdentifier(), "nodeIdentifier");
-        NodeModel nodeModel = mapModel.getNodeForID(nodeIdentifier);
-        if (nodeModel == null) {
-            throw new IllegalArgumentException("Invalid node identifier: " + nodeIdentifier);
+        List<NodeContentEditItem> items = request.getItems();
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Missing edit items");
         }
-        return nodeModel;
+        Map<String, List<NodeContentEditItem>> itemsByNode = new LinkedHashMap<>();
+        for (NodeContentEditItem item : items) {
+            if (item == null) {
+                continue;
+            }
+            String nodeIdentifier = requireValue(item.getNodeIdentifier(), "nodeIdentifier");
+            itemsByNode.computeIfAbsent(nodeIdentifier, key -> new ArrayList<>()).add(item);
+        }
+        List<NodeContentItem> results = new ArrayList<>(itemsByNode.size());
+        List<String> unknownNodeIdentifiers = new ArrayList<>();
+        for (Map.Entry<String, List<NodeContentEditItem>> entry : itemsByNode.entrySet()) {
+            String nodeIdentifier = entry.getKey();
+            NodeModel nodeModel = mapModel.getNodeForID(nodeIdentifier);
+            if (nodeModel == null) {
+                unknownNodeIdentifiers.add(nodeIdentifier);
+                continue;
+            }
+            results.add(nodeContentEditor.edit(nodeModel, entry.getValue()));
+        }
+        if (!unknownNodeIdentifiers.isEmpty()) {
+            throw new IllegalArgumentException("Invalid node identifiers: " + String.join(", ", unknownNodeIdentifiers));
+        }
+        return results;
     }
 
     private String requireValue(String value, String fieldName) {
@@ -204,16 +228,18 @@ public class AIToolSet {
         }
     }
 
-    private ToolCallSummary buildEditToolSummary(NodeContentEditRequest request, NodeContentItem response,
+    private ToolCallSummary buildEditToolSummary(EditRequest request, List<NodeContentItem> response,
                                                  boolean hasError) {
         if (request == null) {
             return null;
         }
-        String summaryText = "editNodeContent: node=" + request.getNodeIdentifier();
+        int itemCount = request.getItems() == null ? 0 : request.getItems().size();
+        int nodeCount = response == null ? 0 : response.size();
+        String summaryText = "edit: nodes=" + nodeCount + ", items=" + itemCount;
         if (request.getUserSummary() != null && !request.getUserSummary().isEmpty()) {
             summaryText = summaryText + ", userSummary=\"" + request.getUserSummary() + "\"";
         }
-        return new ToolCallSummary("editNodeContent", summaryText, hasError);
+        return new ToolCallSummary("edit", summaryText, hasError);
     }
 
     @Tool("Create nodes and subtrees relative to an anchor node. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")

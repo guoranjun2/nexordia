@@ -1,7 +1,7 @@
 # Task: Add node delete tool
 - **Scope:** Add a tool to delete nodes and return identifiers and short texts for all deleted nodes. Run only on specific user requests.
 - **Motivation:** Deleting nodes is a core editing action that must still provide identifiers and short texts so the model can track the change.
-- **Research summary:**
+- **Research:**
   - Review map controller APIs for deleting nodes and handling selection changes.
   - Review constraints such as root node deletion behavior and summary node effects.
 - **Design:**

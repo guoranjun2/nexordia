@@ -26,18 +26,14 @@ public class NodeContentEditor {
         this.iconsContentEditor = iconsContentEditor;
     }
 
-    public NodeContentItem edit(NodeModel nodeModel, NodeContentEditRequest request) {
+    public NodeContentItem edit(NodeModel nodeModel, List<NodeContentEditItem> items) {
         if (nodeModel == null) {
             throw new IllegalArgumentException("Missing node model.");
         }
-        if (request == null) {
-            throw new IllegalArgumentException("Missing request.");
-        }
-        List<NodeContentEditItem> edits = request.getEdits();
-        if (edits == null || edits.isEmpty()) {
+        if (items == null || items.isEmpty()) {
             return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL);
         }
-        for (NodeContentEditItem edit : edits) {
+        for (NodeContentEditItem edit : items) {
             applyEdit(nodeModel, edit);
         }
         return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL);

@@ -1,7 +1,7 @@
 # Task: Remove failed tool messages from chat memory
 - **Scope:** Remove tool execution request and tool execution result messages from LangChain4j chat memory when a tool call fails, and replace them with a short assistant hint to reduce context size on retries.
 - **Motivation:** Failed tool calls add context without producing a usable response. Removing them keeps the next retry within the context window and avoids repeating failures.
-- **Research summary:**
+- **Research:**
   - LangChain4j stores tool execution messages in ChatMemory during a tool call.
   - ChatMemory exposes `messages()`, `add(...)`, and `clear()` so the memory can be rebuilt.
   - The chat user interface shows tool call summaries separately from chat memory content.

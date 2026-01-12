@@ -1,7 +1,7 @@
 # Task: Preserve copy line breaks with TransferHandler
 - **Scope:** Preserve line breaks when copying assistant responses from the chat pane using a custom TransferHandler.
 - **Motivation:** Copying responses without line breaks makes the output hard to reuse in external editors. A dedicated copy path preserves readability without affecting on screen rendering. This fixes a direct usability issue in daily workflows.
-- **Research summary:**
+- **Research:**
   - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`, and default clipboard export can drop line breaks when pasted into plain text targets.
   - Assistant responses currently display as plain text or rendered Markdown, but the copy pipeline does not guarantee plain text line breaks are preserved.
 - **Design:**

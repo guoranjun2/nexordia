@@ -1,7 +1,7 @@
 # Task: Add node selection tools for ai
 - **Scope:** Add tools to query the full set of selected nodes and to allow ai driven selection with user visible feedback.
 - **Motivation:** The model needs access to all selected nodes and the ability to select nodes to support editing workflows.
-- **Research summary:**
+- **Research:**
   - Review how multi selection is represented in the current map view and how selections are applied.
   - Review how selection changes are surfaced to the user interface.
 - **Design:**

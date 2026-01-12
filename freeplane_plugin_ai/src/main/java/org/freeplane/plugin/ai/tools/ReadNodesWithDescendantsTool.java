@@ -116,10 +116,7 @@ public class ReadNodesWithDescendantsTool {
         List<String> nodeIdentifiers = resolveNodeIdentifiers(mapModel, request.getNodeIdentifiers());
         validateDuplicateNodeIdentifiers(nodeIdentifiers);
         List<NodeModel> focusNodes = resolveFocusNodes(mapModel, nodeIdentifiers);
-        EditableContentRequest editableContentRequest = request.getEditableContentRequest();
-        if (editableContentRequest == null) {
-            editableContentRequest = new EditableContentRequest(null);
-        }
+        EditableContentRequest editableContentRequest = new EditableContentRequest(request.getEditableContentFields());
         NodeContentRequest contentRequest = new NodeContentRequest(null, null, null, null, editableContentRequest);
         List<NodeContentItem> items = new ArrayList<>();
         for (NodeModel focusNode : focusNodes) {

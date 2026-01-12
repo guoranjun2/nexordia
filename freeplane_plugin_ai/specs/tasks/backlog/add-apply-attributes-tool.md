@@ -1,7 +1,7 @@
 # Task: Add apply attributes tool
 - **Scope:** Add a tool to apply attributes to nodes with merge and remove missing behavior, returning identifiers and short texts for modified nodes. Run only on specific user requests.
 - **Motivation:** Attribute updates are a core edit operation and must return identifiers and short texts so the model can continue edits without an extra read.
-- **Research summary:**
+- **Research:**
   - Review how attribute updates are applied through AttributeController and how name collisions are handled.
   - Review how short text is derived for tool responses to keep response size stable.
 - **Design:**

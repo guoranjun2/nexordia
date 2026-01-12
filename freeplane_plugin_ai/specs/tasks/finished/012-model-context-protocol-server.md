@@ -8,7 +8,7 @@
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/mcpserver/ModelContextProtocolToolRegistry.java
   - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
   - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 class AIToolSet

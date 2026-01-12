@@ -9,7 +9,7 @@
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/SystemMessageBuilderTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/maps/AvailableMapsTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 note "AIToolSet.systemMessageForChat is the system message provider for AIChatService.\nAIChatPanel creates AIToolSet directly; builder must be constructed inside AIToolSet or provided there.\nController.getCurrentController().getMap() returns the current MapModel; MapModel.getRootNode().getID() provides the root node identifier.\nAvailableMaps provides uuid values for maps.\nSystem message is plain text with map identifier, root node identifier, and selected node identifier; missing values use not available." as Research

@@ -1,7 +1,7 @@
 # Task: Add search overview tool
 - **Scope:** Add a tool that generates a compact map overview and index for targeted search using a configurable model.
 - **Motivation:** Large maps need a low cost overview and index to guide targeted reads and searches.
-- **Research summary:**
+- **Research:**
   - Review how to traverse a map to build sections and keyword lists within size limits.
   - Review how model selection is handled for existing chat calls and whether a cheaper model can be used.
 - **Design:**

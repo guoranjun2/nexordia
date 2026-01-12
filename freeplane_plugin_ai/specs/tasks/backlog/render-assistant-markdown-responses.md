@@ -1,7 +1,7 @@
 # Task: Render assistant responses as Markdown
 - **Scope:** Render assistant responses as Markdown in the chat pane and define the expected message format for assistant output.
 - **Motivation:** Assistant output already uses Markdown syntax, but it is currently displayed as plain text. Rendering Markdown improves readability and reduces friction when reviewing structured responses. It also aligns output formatting with user expectations.
-- **Research summary:**
+- **Research:**
   - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`.
   - The Freeplane Markdown plugin already contains a Markdown to HyperText Markup Language converter that can be exported for reuse by the AI plugin.
   - Assistant responses currently display as plain text, so Markdown markers remain visible and line breaks depend on direct newline rendering.

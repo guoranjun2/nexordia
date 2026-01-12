@@ -1,7 +1,7 @@
 # Task: Review deferred ai feature ideas
 - **Scope:** Capture and later evaluate deferred ai feature ideas for the plugin.
 - **Motivation:** These ideas are out of scope for current work but should be preserved for later evaluation.
-- **Research summary:**
+- **Research:**
   - Identify constraints for each deferred feature before prioritization.
 - **Design:**
   - Inline proofreading with color coded suggestions and accept or reject controls.

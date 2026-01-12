@@ -1,7 +1,7 @@
 # Task: Add MCP tool calls to AI panel logging
 - **Scope:** Ensure MCP tool invocations are reported inside the AI panel like the other tool calls, while distinguishing them visually and using the same non-null callback wiring we already rely on in the LangChain4j session.
 - **Motivation:** AI operators expect every MCP tool call to appear in the panel for traceability; the current wiring only logs the LangChain4j tool list. Using a distinct style class keeps the panel layout consistent while signaling external tool calls.
-- **Research summary:**
+- **Research:**
   - `AIToolSet` publishes summaries through the `ToolCallSummaryHandler` that the panel registers when building the tool set (`AIToolSetBuilder.toolCallSummaryHandler(...)` and `AIChatPanel.handleToolCallSummary` call out to the panel’s logging component).
   - Every tool currently instantiates a `ToolCallSummary` with `toolName` and `summaryText`, and `AIChatPanel` already displays those in the chat log.
   - The LangChain4j session always supplies a non-null handler/callback; MCP tool callers need the same guarantee so the panel sees their invocations as soon as they happen.

@@ -1,7 +1,7 @@
 # Task: Review ai edit confirmation and undo modes
 - **Scope:** Document and evaluate confirmation and undo modes for ai editing, including optional icon marking for ai modified nodes.
 - **Motivation:** The plugin needs a clear policy for confirmation and undo behavior, and a way to signal ai edited nodes if chosen.
-- **Research summary:**
+- **Research:**
   - Review how node icons can be attached using IExtension and how they are stored on nodes.
   - Review existing confirmation and undo flows for map edits.
 - **Design:**

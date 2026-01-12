@@ -1,6 +1,6 @@
 # Task: Add icon content to node responses
 - **Scope:** Expose node icons in read responses as human-friendly descriptions only, aligned with localized icon translations and emoji characters, while keeping an internal mapping to icon identifiers for future edit tools.
-- **Research summary:**
+- **Research:**
   - `TextUtils.getText` uses the current UI language. `TextUtils.getOriginalRawText` reads the default `Resources_en.properties` entry and bypasses the UI language.
   - `IconRegistry` tracks icons that are used on a map during the session (used by icon filtering UI). It is not a full icon catalog and may include state icons from providers that opt into registry inclusion.
 ```plantuml

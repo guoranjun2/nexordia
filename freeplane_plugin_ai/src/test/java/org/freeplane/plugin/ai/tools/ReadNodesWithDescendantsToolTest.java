@@ -225,7 +225,7 @@ public class ReadNodesWithDescendantsToolTest {
         FetchNodesForEditingRequest request = new FetchNodesForEditingRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),
-            new EditableContentRequest(Collections.singletonList(EditableContentField.TEXT)));
+            Collections.singletonList(EditableContentField.TEXT));
 
         FetchNodesForEditingResponse response = readTool.fetchNodesForEditing(request);
 

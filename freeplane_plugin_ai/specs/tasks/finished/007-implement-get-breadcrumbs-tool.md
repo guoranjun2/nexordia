@@ -7,7 +7,7 @@
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/BreadcrumbsToolTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeContentItemReaderTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 class BreadcrumbLayout

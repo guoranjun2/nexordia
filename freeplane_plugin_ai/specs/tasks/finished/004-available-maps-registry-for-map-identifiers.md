@@ -6,7 +6,7 @@
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/MapModelProvider.java
 - **Modified test files:**
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/maps/AvailableMapsTest.java
-- **Research summary:**
+- **Research:**
 ```plantuml
 @startuml
 note "AvailableMaps can lazily enumerate maps and assign uuid values.\nWeak references avoid retaining closed maps; lifecycle listeners are optional.\nMap identifiers are uuid values in system messages.\nController.getCurrentController().getMapViewManager().getMaps().values() provides open maps; getMap provides current map.\nControllerProxy.getOpenMindMaps de-duplicates map views." as Research

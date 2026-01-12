@@ -28,7 +28,7 @@
 - **Status:** Finished
 - **Scope:** Define request fields, response shape, and modified node summaries for create, move, create summary, and move into summary operations, including shared anchor and ordering structures.
 - **Motivation:** Clear contracts are required before implementation and testing, especially for ordered groups, summaries, and user facing confirmation text.
-- **Research summary:**
+- **Research:**
   - Review existing request and response structures for read and search tools to align field naming and default handling.
   - Review existing InsertPosition usage and whether a shared anchor placement enum already exists.
 - **Design:**
@@ -68,7 +68,7 @@
 - **Status:** Finished
 - **Scope:** Create new NodeModel elements for a request group and place them relative to the anchor before applying content.
 - **Motivation:** Separate structural creation from content updates so creation order and placement are deterministic.
-- **Research summary:**
+- **Research:**
   - MMapController addNewNode/insertNewNode checks writeability, rejects clone cycles via subtreeContainsCloneOf, inserts into all parent clones, and uses undo actors (insertSingleNewNode).
   - MMapController insertNodeIntoWithoutUndo bypasses undo and only inserts into a single parent; clone propagation must be handled explicitly if needed.
   - MMapController insertNode supports InsertionRelation (as child, sibling before, sibling after) and uses parent index calculations similar to MNodeDropListener drag and drop mappings.
@@ -102,7 +102,7 @@
 - **Status:** Finished
 - **Scope:** Apply content values directly to newly created nodes using shared editor helpers so the creation path mirrors later edit tools while staying undo-free.
 - **Motivation:** Consistent editors for text, attributes, tags, and icons reduce duplication and make future edit tools easier to build.
-- **Research summary:**
+- **Research:**
 -  - Examine `TextController`/`MTextController` to understand how text, details, and note fields are written (including HTML/plain-text transformers and `TextualContentTransformer` utilities).
 -  - Review how `AttributeController` stores attribute values on `NodeModel` and which helpers normalize or validate attribute entries.
 -  - Study the tag handling helpers (e.g., `TagsContentReader`, `TagController`) to learn how to apply sanitized tag lists.
@@ -124,7 +124,7 @@
 - **Status:** Finished
 - **Scope:** Implement placement for first child, last child, sibling before, and sibling after with strict group ordering for moved nodes.
 - **Motivation:** Deterministic placement is needed to keep edits predictable.
-- **Research summary:**
+- **Research:**
   - Review insertion helpers that support child and sibling placement for existing nodes.
 - **Design:**
   - Apply insertion for the entire moved group relative to the anchor node.
@@ -141,7 +141,7 @@
 - **Status:** Finished
 - **Scope:** Allow callers to observe every “not allowed” failure reported by `MMapController` instead of only triggering `UITools.errorMessage`, so AI tools and FCP can relay structured errors while UI callers continue to show popups.
 - **Motivation:** The current UI-only error popups are invisible to the tools, so move/create failures look like silent crashes from the AI perspective; we need a callback-driven path so tools can report the same errors back to the agent without regressing existing UI behavior.
-- **Research summary:**
+- **Research:**
   - `MMapController.insertNewNode()` and `moveNodeAndItsClones()` currently call `UITools.errorMessage("not allowed")` when clone cycles or write protections are detected (e.g., at lines 342, 612, 617).
   - The `moveNodes()` and `insertNode()` APIs funnel through these helpers, so any move or clone failure bubbles up as a popup without a programmatic signal.
   - LangChain4j tools already wrap map controller calls; adding an error handler parameter lets us inject tool-friendly callbacks while preserving existing method signatures via default handlers that still call `UITools`.
@@ -162,7 +162,7 @@
 - **Status:** Finished
 - **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
-- **Research summary:**
+- **Research:**
   - MMapController.addNewSummaryNodeStartEditing uses SummaryLevels.canInsertSummaryNode to validate range and side, then inserts a summary node at end + 1, activates SummaryNode and AlwaysUnfoldedNode hooks, and ensures a FirstGroupNode at the start of the summarized range.
   - SummaryLevels computes summary levels per child and side, finds summary nodes for a node index, and validates ranges with canInsertSummaryNode (same level, no overlapping summary, same side, optional prompt when nodes on other side are included).
   - SummaryGroupEdgeListAdder expands move/delete groups to include summary edge nodes when a summarized range is moved or deleted.
@@ -194,7 +194,7 @@
 - **Status:** Finished
 - **Scope:** Return identifiers and short texts for all modified nodes after creation or move.
 - **Motivation:** The model needs identifiers for follow up edits, especially for newly created nodes.
-- **Research summary:**
+- **Research:**
   - Review short text generation rules used by read tools.
 - **Design:**
   - Return modified node identifiers and short texts in tool order.
