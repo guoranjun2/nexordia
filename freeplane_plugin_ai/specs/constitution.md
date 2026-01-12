@@ -1,18 +1,19 @@
 # Constitution
 
-## Purpose
-Keep work verifiable with a light, repeatable workflow that avoids surprises.
-Established abbreviations like "ai", "uuid", and "llm" are valid terms and are not treated as abbreviations.
+When uncertain or before changing behavior, propose next steps, ask for approval, then act.
 
 ## Workflow
-1.  **Task files as source of truth**: All tasks, design, and execution status live as individual Markdown files under `specs/tasks/<status>/`. Backlog and ideas are historical artifacts.
+1.  **Task files as source of truth**: All tasks, design, and execution status live as individual Markdown files under `specs/tasks/<status>/`.
 2.  **Research first**: Start with research unless the user explicitly waives it. Record findings in the task **Research**. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 3.  **Design and approval**: Draft the design while research is in progress, then request approval. Do not modify code, tests, or configuration until the design is approved. Prefer PlantUML diagrams and place notes inside diagrams; use text when a diagram is not sufficient.
 4.  **Status updates**: Move task files between status folders to reflect the current work focus (for example, from finished back to in-progress). Keep any existing numeric prefix to preserve traceability; new tasks must not use numeric prefixes until they move to finished. Avoid moving unrelated tasks; move them only when they are actively being worked on.
 4.  **Status validation before commits**: Before each commit, check the relevant task files and propose any status or folder changes needed for consistency. Apply those status changes only after explicit user confirmation, then proceed with the commit.
 5.  **Move workflow for diffs**: When moving task files, use `git mv` and stage the move immediately before editing. This keeps rename tracking intact in diff tools that are not rename-aware (for example, Visual Studio Code). Do not unstage the rename until you are ready to review and commit.
-5.  **Information gathering**: Reading commands do not require plan approval.
 6.  **Finished task cleanup**: Keep finished tasks in `specs/tasks/finished/` with a three digit prefix in the file name based on the order they are moved into finished. Delete them from the working tree after a release tag is created.
+
+## Workflow Checklist
+- Before commit: verify task status and folder changes, stage renames, confirm with user.
+- After signature changes: run the relevant module tests before reporting completion.
 
 ## Task States
 Tasks must use one of these status folders:
@@ -25,16 +26,6 @@ Tasks must use one of these status folders:
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
 *   **Track modified production files**: List them in the task file.
 *   **Refactor tracking**: When refactoring, document it by updating the design section of the existing task or creating a new task.
-*   **Task placement**: Add new tasks as individual files in `specs/tasks/backlog/`.
-
-## Stop and Ask
-If there is confusion, contradictory instructions, or an unexpected failure that would require unplanned changes to behavior or signatures, stop and ask for guidance.
-
-## Reverse Pair Programming
-1.  **Propose** the next step at a high level.
-2.  **No code snippets** during proposal.
-3.  **Align** and get approval.
-4.  **Act** after approval.
 
 ## Task Structure
 Each task includes the following sections in this exact order:
@@ -48,7 +39,7 @@ Each task includes the following sections in this exact order:
 
 Subtasks should only use the statuses `Planning`, `Plan Review`, `Implementing`, `Implementation Review`, or `Finished`; the parent folder (Backlog/In-Progress/Finished) provides the broader lifecycle context.
 
-**Status** is implied by the folder and is not a task section.
+**Status** is implied by the folder for main tasks; subtasks still include explicit status lines.
 
 ## Architecture Decision Records
 *   Record architecture decisions in `specs/architecture-decisions/` as one file per decision with meaningful names.
