@@ -63,7 +63,7 @@ public class TextualContentEditor {
                 ensureFormulaIsNotUsed(currentTextValue, value, originalContentType, textController);
                 NodeTextContentType nodeTextContentType = resolveNodeTextContentType(
                     nodeModel, currentTextValue, textController);
-                validateContentType(nodeTextContentType.contentType, originalContentType);
+                validateContentType(nodeTextContentType.contentType, originalContentType, true);
                 String updatedTextValue = prepareTextValue(nodeTextContentType, value);
                 textContentWriteController.setNodeText(nodeModel, updatedTextValue);
                 break;
@@ -73,7 +73,7 @@ public class TextualContentEditor {
                 ensureFormulaIsNotUsed(currentDetails, value, originalContentType, textController);
                 ContentType currentDetailsContentType = resolveContentType(
                     currentDetails, DetailModel.getDetailContentType(nodeModel), textController);
-                validateContentType(currentDetailsContentType, originalContentType);
+                validateContentType(currentDetailsContentType, originalContentType, false);
                 String updatedDetailsValue = prepareRichTextValue(currentDetailsContentType, value, editedElement);
                 textContentWriteController.setDetails(nodeModel, updatedDetailsValue);
                 break;
@@ -83,7 +83,7 @@ public class TextualContentEditor {
                 ensureFormulaIsNotUsed(currentNote, value, originalContentType, textController);
                 ContentType currentNoteContentType = resolveContentType(
                     currentNote, NoteModel.getNoteContentType(nodeModel), textController);
-                validateContentType(currentNoteContentType, originalContentType);
+                validateContentType(currentNoteContentType, originalContentType, false);
                 String updatedNoteValue = prepareRichTextValue(currentNoteContentType, value, editedElement);
                 noteContentWriteController.setNoteText(nodeModel, updatedNoteValue);
                 break;
@@ -105,13 +105,26 @@ public class TextualContentEditor {
         }
     }
 
-    private void validateContentType(ContentType currentContentType, ContentType originalContentType) {
+    private void validateContentType(ContentType currentContentType, ContentType originalContentType,
+                                     boolean allowPlainTextHtmlSwitch) {
         if (originalContentType == null) {
+            return;
+        }
+        if (currentContentType == originalContentType) {
+            return;
+        }
+        if (allowPlainTextHtmlSwitch
+            && isPlainTextOrHtml(currentContentType)
+            && isPlainTextOrHtml(originalContentType)) {
             return;
         }
         if (currentContentType != originalContentType) {
             throw new IllegalArgumentException("Content type has changed; read editable content again.");
         }
+    }
+
+    private boolean isPlainTextOrHtml(ContentType contentType) {
+        return contentType == ContentType.PLAIN_TEXT || contentType == ContentType.HTML;
     }
 
     private ContentType resolveContentType(Object currentValue, String freeplaneContentType,
