@@ -193,6 +193,24 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Add tests that allow a plain text node core to accept HTML-wrapped edits and that still reject markdown or latex mismatches.
 
+### Subtask: Allow content type selection for new nodes
+- **Status:** Implementation Review
+- **Scope:** Allow node creation to specify content types so new nodes can be created as Markdown or LaTeX when appropriate.
+- **Motivation:** The model should be able to generate Markdown and LaTeX content at creation time without post-edit conversions.
+- **Research:**
+  - Node core text content type is derived from node format and optional LaTeX prefixes, not a stored explicit type; details and notes store content type separately.
+  - `NodeStyleModel.setNodeFormat` can set node format directly when creating content, which avoids undo and works before the node is attached.
+  - Details and notes store content type on the `DetailModel` and `NoteModel` via `setContentType`, so initial content can set both text and content type.
+- **Design:**
+  - Extend the create nodes request content to include optional content type fields for text, details, and note.
+  - For node core text, allow `PLAIN_TEXT`, `HTML`, `MARKDOWN`, and `LATEX`; treat `LATEX` as a content prefix if needed.
+  - For details and note, allow `PLAIN_TEXT`, `HTML`, `MARKDOWN`, and `LATEX` and set the underlying content type accordingly.
+  - Set node format directly for markdown or latex content types without using undo-aware controllers.
+  - Only set content type fields when the user explicitly requests Markdown or LaTeX (or formatting that requires it); otherwise omit them so defaults stay plain text.
+  - Default behavior remains unchanged when content type is omitted.
+- **Test specification:**
+  - Add tests that create nodes with Markdown and LaTeX content types and verify stored formats for text, details, and note.
+
 ### Subtask: Provide icon catalog guidance for edits
 - **Status:** Plan Review
 - **Scope:** Ensure the model can discover valid icon names without enumerating every icon in tool descriptions.

@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.nodestyle.NodeStyleModel;
 import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.text.DetailModel;
 import org.freeplane.features.text.TextController;
@@ -22,27 +23,129 @@ public class TextualContentEditor {
         this.contentTypeConverter = new ContentTypeConverter();
     }
 
-    public void setInitialContent(NodeModel nodeModel, TextualContent textualContent) {
-        if (nodeModel == null || textualContent == null) {
+    public void setInitialContent(NodeModel nodeModel, NodeContentWriteRequest content) {
+        if (nodeModel == null || content == null) {
             return;
         }
-        if (textualContent.getText() != null) {
-            nodeModel.setText(textualContent.getText());
+        applyInitialText(nodeModel, content.getText(), content.getTextContentType());
+        applyInitialDetails(nodeModel, content.getDetails(), content.getDetailsContentType());
+        applyInitialNote(nodeModel, content.getNote(), content.getNoteContentType());
+    }
+
+    private void applyInitialText(NodeModel nodeModel, String text, ContentType contentType) {
+        if (text == null) {
+            return;
         }
-        String detailsContent = textualContent.getDetails();
-		if (detailsContent != null && ! detailsContent.isEmpty()) {
-            DetailModel details = DetailModel.createDetailText(nodeModel);
-            details.setText(htmlOf(detailsContent)) ;
+        ensureNotFormula(contentType);
+        String updatedText = prepareInitialTextValue(contentType, text);
+        if (updatedText != null) {
+            nodeModel.setText(updatedText);
         }
-        String noteContent = textualContent.getNote();
-		if (noteContent != null && ! noteContent.isEmpty()) {
-            NoteModel note = NoteModel.createNote(nodeModel);
-            note.setText(htmlOf(noteContent));
+        String nodeFormat = toNodeFormat(contentType);
+        if (nodeFormat != null) {
+            NodeStyleModel.setNodeFormat(nodeModel, nodeFormat);
+        }
+    }
+
+    private void applyInitialDetails(NodeModel nodeModel, String details, ContentType contentType) {
+        if (details == null || details.isEmpty()) {
+            return;
+        }
+        ensureNotFormula(contentType);
+        DetailModel detailModel = DetailModel.createDetailText(nodeModel);
+        String updatedDetails = prepareInitialRichTextValue(contentType, details);
+        detailModel.setText(updatedDetails);
+        String freeplaneContentType = toFreeplaneContentType(contentType);
+        if (freeplaneContentType != null) {
+            detailModel.setContentType(freeplaneContentType);
+        }
+    }
+
+    private void applyInitialNote(NodeModel nodeModel, String note, ContentType contentType) {
+        if (note == null || note.isEmpty()) {
+            return;
+        }
+        ensureNotFormula(contentType);
+        NoteModel noteModel = NoteModel.createNote(nodeModel);
+        String updatedNote = prepareInitialRichTextValue(contentType, note);
+        noteModel.setText(updatedNote);
+        String freeplaneContentType = toFreeplaneContentType(contentType);
+        if (freeplaneContentType != null) {
+            noteModel.setContentType(freeplaneContentType);
+        }
+    }
+
+    private void ensureNotFormula(ContentType contentType) {
+        if (contentType == ContentType.FORMULA) {
+            throw new IllegalArgumentException("Formula content is not allowed.");
+        }
+    }
+
+    private String prepareInitialTextValue(ContentType contentType, String value) {
+        if (contentType == null) {
+            return value;
+        }
+        switch (contentType) {
+            case HTML:
+                return htmlOf(value);
+            case MARKDOWN:
+                rejectHtml(value, "Markdown content does not allow html; use markdown syntax.");
+                return value;
+            case LATEX:
+                rejectHtml(value, "Latex content does not allow html.");
+                return contentTypeConverter.stripLatexPrefix(value);
+            case PLAIN_TEXT:
+                return HtmlUtils.isHtml(value) ? HtmlUtils.htmlToPlain(value) : value;
+            default:
+                return value;
+        }
+    }
+
+    private String prepareInitialRichTextValue(ContentType contentType, String value) {
+        if (contentType == null) {
+            return htmlOf(value);
+        }
+        switch (contentType) {
+            case HTML:
+                return htmlOf(value);
+            case MARKDOWN:
+                rejectHtml(value, "Markdown content does not allow html; use markdown syntax.");
+                return value;
+            case LATEX:
+                rejectHtml(value, "Latex content does not allow html.");
+                return contentTypeConverter.stripLatexPrefix(value);
+            case PLAIN_TEXT:
+                return HtmlUtils.isHtml(value) ? HtmlUtils.htmlToPlain(value) : value;
+            default:
+                return value;
         }
     }
 
     private String htmlOf(String text) {
         return HtmlUtils.isHtml(text) ? text : HtmlUtils.plainToHTML(text);
+    }
+
+    private String toNodeFormat(ContentType contentType) {
+        if (contentType == ContentType.MARKDOWN) {
+            return "markdown";
+        }
+        if (contentType == ContentType.LATEX) {
+            return "latex";
+        }
+        return null;
+    }
+
+    private String toFreeplaneContentType(ContentType contentType) {
+        if (contentType == ContentType.MARKDOWN) {
+            return "markdown";
+        }
+        if (contentType == ContentType.LATEX) {
+            return "latex";
+        }
+        if (contentType == ContentType.HTML) {
+            return TextController.CONTENT_TYPE_HTML;
+        }
+        return null;
     }
 
     public void editExistingTextualContent(NodeModel nodeModel, EditedElement editedElement,

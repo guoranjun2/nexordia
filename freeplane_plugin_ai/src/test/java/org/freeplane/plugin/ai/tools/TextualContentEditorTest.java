@@ -20,11 +20,20 @@ public class TextualContentEditorTest {
     public void setInitialContent_setsTextDetailsAndNote() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
-        TextualContent textualContent = new TextualContent("text", "details", "note");
+        NodeContentWriteRequest content = new NodeContentWriteRequest(
+            "text",
+            null,
+            "details",
+            null,
+            "note",
+            null,
+            null,
+            null,
+            null);
         TextualContentEditor uut = new TextualContentEditor(
             mock(TextContentWriteController.class), mock(NoteContentWriteController.class));
 
-        uut.setInitialContent(nodeModel, textualContent);
+        uut.setInitialContent(nodeModel, content);
 
         assertThat(nodeModel.getText()).isEqualTo("text");
         assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(nodeModel))).isEqualTo("details");

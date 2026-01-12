@@ -43,17 +43,10 @@ public class NodeContentApplier {
         if (content == null) {
             return;
         }
-        textualContentEditor.setInitialContent(nodeModel, toTextualContent(content));
+        textualContentEditor.setInitialContent(nodeModel, content);
         attributesContentEditor.setInitialContent(nodeModel, toAttributesContent(content));
         tagsContentEditor.setInitialContent(nodeModel, toTagsContent(content));
         iconsContentEditor.setInitialContent(nodeModel, toIconsContent(content));
-    }
-
-    private TextualContent toTextualContent(NodeContentWriteRequest content) {
-        if (content.getText() == null && content.getDetails() == null && content.getNote() == null) {
-            return null;
-        }
-        return new TextualContent(content.getText(), content.getDetails(), content.getNote());
     }
 
     private AttributesContent toAttributesContent(NodeContentWriteRequest content) {
