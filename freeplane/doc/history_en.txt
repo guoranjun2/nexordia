@@ -1,4 +1,9 @@
 ==============================
+1.13.0
+==============================
+AI integration (open router API key, Gemini API key, ollama, as local MCP server)
+
+==============================
 1.12.16
 ==============================
 Bug fix: deactivate outline for file mode
