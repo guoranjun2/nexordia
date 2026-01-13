@@ -18,6 +18,8 @@ import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
 import org.freeplane.plugin.ai.tools.ToolCaller;
+import org.freeplane.plugin.ai.tools.ToolExecutorFactory;
+import org.freeplane.plugin.ai.tools.ToolExecutorRegistry;
 import org.freeplane.core.util.LogUtils;
 
 public class AIChatService {
@@ -32,10 +34,13 @@ public class AIChatService {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolArgumentsErrorHandler = buildToolArgumentsErrorHandler();
+        ToolExecutorFactory toolExecutorFactory = new ToolExecutorFactory(true, true);
+        ToolExecutorRegistry toolExecutorRegistry = toolExecutorFactory.createRegistry(toolSet);
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
             .toolArgumentsErrorHandler(toolArgumentsErrorHandler)
             .chatModel(chatLanguageModel)
             .systemMessageProvider(toolSet::systemMessageForChat)
+            .tools(toolExecutorRegistry.getExecutorsBySpecification())
             .registerListener(new AiServiceListener<AiServiceErrorEvent>() {
 
                 @Override
@@ -73,8 +78,7 @@ public class AIChatService {
                 public void onEvent(ToolExecutedEvent event) {
                     chatTokenUsageTracker.logToolExecuted(event);
                 }
-            })
-            .tools(toolSet);
+            });
         if (chatMemory != null) {
             builder.chatMemory(chatMemory);
         }
