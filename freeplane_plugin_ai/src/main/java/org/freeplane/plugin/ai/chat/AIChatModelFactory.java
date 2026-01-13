@@ -1,6 +1,7 @@
 package org.freeplane.plugin.ai.chat;
 
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.googleai.GeminiThinkingConfig;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -11,7 +12,6 @@ public class AIChatModelFactory {
     public static final String PROVIDER_NAME_GEMINI = "gemini";
     public static final String PROVIDER_NAME_OLLAMA = "ollama";
     public static final String DEFAULT_OPENROUTER_SERVICE_ADDRESS = "https://openrouter.ai/api/v1";
-    public static final String DEFAULT_GEMINI_SERVICE_ADDRESS = "https://generativelanguage.googleapis.com";
     public static final String DEFAULT_OLLAMA_SERVICE_ADDRESS = "http://localhost:11434";
 
     private AIChatModelFactory() {
@@ -32,11 +32,22 @@ public class AIChatModelFactory {
                 .build();
         }
         if (PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
-            return GoogleAiGeminiChatModel.builder()
-                .baseUrl(getGeminiServiceAddress(configuration))
+            GoogleAiGeminiChatModel.GoogleAiGeminiChatModelBuilder builder = GoogleAiGeminiChatModel.builder()
                 .apiKey(configuration.getGeminiKey())
-                .modelName(modelName)
-                .build();
+                .modelName(modelName);
+            String serviceAddress = configuration.getGeminiServiceAddress();
+            if (serviceAddress != null && !serviceAddress.isEmpty()) {
+                builder.baseUrl(serviceAddress);
+            }
+            if (modelName != null && modelName.startsWith("gemini-3-")) {
+                GeminiThinkingConfig thinkingConfig = GeminiThinkingConfig.builder()
+                    .includeThoughts(true)
+                    .build();
+                builder.thinkingConfig(thinkingConfig)
+                    .returnThinking(true)
+                    .sendThinking(true);
+            }
+            return builder.build();
         }
         if (PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
             return OllamaChatModel.builder()
@@ -51,14 +62,6 @@ public class AIChatModelFactory {
         String serviceAddress = configuration.getOpenrouterServiceAddress();
         if (serviceAddress == null || serviceAddress.isEmpty()) {
             return DEFAULT_OPENROUTER_SERVICE_ADDRESS;
-        }
-        return serviceAddress;
-    }
-
-    private static String getGeminiServiceAddress(AIProviderConfiguration configuration) {
-        String serviceAddress = configuration.getGeminiServiceAddress();
-        if (serviceAddress == null || serviceAddress.isEmpty()) {
-            return DEFAULT_GEMINI_SERVICE_ADDRESS;
         }
         return serviceAddress;
     }
