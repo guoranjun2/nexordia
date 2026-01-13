@@ -23,15 +23,14 @@ public class CreateSummaryToolTest {
     @Test
     public void createSummary_returnsSummaryNodeIdentifier() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
-        NodeModelCreator nodeModelCreator = mock(NodeModelCreator.class);
+        NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder = mock(NodeCreationHierarchyBuilder.class);
         NodeInserter nodeInserter = mock(NodeInserter.class);
         SummaryNodeCreator summaryNodeCreator = mock(SummaryNodeCreator.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
-        NodeContentApplier nodeContentApplier = mock(NodeContentApplier.class);
-        CreateSummaryTool unitUnderTest = new CreateSummaryTool(availableMaps, nodeModelCreator, nodeInserter,
+        CreateSummaryTool unitUnderTest = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
             summaryNodeCreator,
-            modifiedNodeSummaryBuilder, nodeContentApplier);
+            modifiedNodeSummaryBuilder);
         UUID mapIdentifier = UUID.fromString("2d872386-bb55-4c6c-9da0-d600b7400b10");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel rootNode = new NodeModel("root", mapModel);
@@ -44,10 +43,12 @@ public class CreateSummaryToolTest {
         summaryNode.setID("ID_summary");
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
         when(summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode)).thenReturn(summaryNode);
-        NodeCreationItem childItem = new NodeCreationItem(null, Collections.emptyList());
+        NodeCreationItem childItem = new NodeCreationItem(0, -1, null);
         NodeModel childNodeModel = new NodeModel("child", mapModel);
         childNodeModel.setID("ID_child");
-        when(nodeModelCreator.createNodeModelTree(childItem, mapModel)).thenReturn(childNodeModel);
+        when(nodeCreationHierarchyBuilder.buildHierarchy(Collections.singletonList(childItem), mapModel))
+            .thenReturn(new NodeCreationHierarchy(Collections.singletonList(childNodeModel),
+                Collections.singletonList(childNodeModel)));
         when(nodeInserter.insertNodes(anyList(), eq(summaryNode), eq(AnchorPlacementMode.LAST_CHILD),
             any(OperationErrorHandler.class)))
             .thenReturn(Collections.singletonList(childNodeModel));
@@ -65,6 +66,6 @@ public class CreateSummaryToolTest {
         assertThat(response.getModifiedNodes()).hasSize(2);
         verify(nodeInserter).insertNodes(anyList(), eq(summaryNode), eq(AnchorPlacementMode.LAST_CHILD),
             any(OperationErrorHandler.class));
-        verify(nodeContentApplier).apply(childNodeModel, childItem);
+        verify(nodeCreationHierarchyBuilder).buildHierarchy(Collections.singletonList(childItem), mapModel);
     }
 }

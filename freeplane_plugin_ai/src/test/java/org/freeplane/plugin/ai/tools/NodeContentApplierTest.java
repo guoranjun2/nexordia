@@ -26,15 +26,13 @@ import org.junit.Test;
 
 public class NodeContentApplierTest {
     @Test
-    public void apply_outputsContentOnAllNodes() {
+    public void apply_outputsContentOnNode() {
         MapModel mapModel = new MapModel(
             (source, targetMap, withChildren) -> null, iconRegistry(), null);
-        NodeModel parentNode = new NodeModel("parent", mapModel);
-        NodeModel childNode = new NodeModel("child", mapModel);
-        parentNode.insert(childNode, 0);
+        NodeModel node = new NodeModel("parent", mapModel);
 
         NamedIcon sampleIcon = new MindIcon("node-icon", "/images/node.svg", "node", 0);
-        NodeContentWriteRequest parentContent = new NodeContentWriteRequest(
+        NodeContentWriteRequest content = new NodeContentWriteRequest(
             "root",
             null,
             "details",
@@ -44,18 +42,6 @@ public class NodeContentApplierTest {
             Collections.singletonList(new AttributeEntry("key", "value")),
             Collections.singletonList("tag"),
             Collections.singletonList(sampleIcon.getName()));
-        NodeContentWriteRequest childContent = new NodeContentWriteRequest(
-            "child-text",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
-        NodeCreationItem childItem = new NodeCreationItem(childContent, Collections.emptyList());
-        NodeCreationItem parentItem = new NodeCreationItem(parentContent, Collections.singletonList(childItem));
 
         IconDescriptionResolver resolver = new IconDescriptionResolver(new DefaultEnglishTextProvider());
         NodeContentApplier uut = new NodeContentApplier(
@@ -65,21 +51,20 @@ public class NodeContentApplierTest {
             new TagsContentEditor(mock(MIconController.class)),
             new IconsContentEditor(resolver, Collections.singletonList(sampleIcon), mock(MIconController.class)));
 
-        uut.apply(parentNode, parentItem);
+        uut.apply(node, content);
 
-        assertThat(parentNode.getText()).isEqualTo("root");
-        assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(parentNode))).isEqualTo("details");
-        assertThat(HtmlUtils.htmlToPlain(NoteModel.getNoteText(parentNode))).isEqualTo("note");
-        NodeAttributeTableModel parentAttributesModel = NodeAttributeTableModel.getModel(parentNode);
-        assertThat(parentAttributesModel.getRowCount()).isEqualTo(1);
-        assertThat(parentAttributesModel.getName(0)).isEqualTo("key");
-        assertThat(parentAttributesModel.getValue(0)).isEqualTo("value");
-        assertThat(Tags.getTagReferences(parentNode)).hasSize(1);
-        TagReference tagReference = Tags.getTagReferences(parentNode).get(0);
+        assertThat(node.getText()).isEqualTo("root");
+        assertThat(HtmlUtils.htmlToPlain(DetailModel.getDetailText(node))).isEqualTo("details");
+        assertThat(HtmlUtils.htmlToPlain(NoteModel.getNoteText(node))).isEqualTo("note");
+        NodeAttributeTableModel attributesModel = NodeAttributeTableModel.getModel(node);
+        assertThat(attributesModel.getRowCount()).isEqualTo(1);
+        assertThat(attributesModel.getName(0)).isEqualTo("key");
+        assertThat(attributesModel.getValue(0)).isEqualTo("value");
+        assertThat(Tags.getTagReferences(node)).hasSize(1);
+        TagReference tagReference = Tags.getTagReferences(node).get(0);
         assertThat(tagReference.getContent()).isEqualTo("tag");
-        assertThat(parentNode.getIcons()).hasSize(1);
-        assertThat(parentNode.getIcons().get(0)).isSameAs(sampleIcon);
-        assertThat(childNode.getText()).isEqualTo("child-text");
+        assertThat(node.getIcons()).hasSize(1);
+        assertThat(node.getIcons().get(0)).isSameAs(sampleIcon);
     }
 
     @Test
@@ -98,8 +83,6 @@ public class NodeContentApplierTest {
             null,
             null,
             null);
-        NodeCreationItem item = new NodeCreationItem(content, Collections.emptyList());
-
         IconDescriptionResolver resolver = new IconDescriptionResolver(new DefaultEnglishTextProvider());
         NodeContentApplier applier = new NodeContentApplier(
             new TextualContentEditor(
@@ -108,7 +91,7 @@ public class NodeContentApplierTest {
             new TagsContentEditor(mock(MIconController.class)),
             new IconsContentEditor(resolver, Collections.emptyList(), mock(MIconController.class)));
 
-        applier.apply(node, item);
+        applier.apply(node, content);
 
         assertThat(NodeStyleModel.getNodeFormat(node)).isEqualTo("markdown");
         assertThat(DetailModel.getDetailContentType(node)).isEqualTo("latex");

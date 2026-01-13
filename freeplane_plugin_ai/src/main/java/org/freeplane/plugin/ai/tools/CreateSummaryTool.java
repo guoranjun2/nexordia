@@ -12,22 +12,20 @@ import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class CreateSummaryTool {
     private final AvailableMaps availableMaps;
-    private final NodeModelCreator nodeModelCreator;
+    private final NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder;
     private final NodeInserter nodeInserter;
     private final SummaryNodeCreator summaryNodeCreator;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
-    private final NodeContentApplier nodeContentApplier;
 
-    public CreateSummaryTool(AvailableMaps availableMaps, NodeModelCreator nodeModelCreator, NodeInserter nodeInserter,
-                             SummaryNodeCreator summaryNodeCreator,
-                             ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
-                             NodeContentApplier nodeContentApplier) {
+    public CreateSummaryTool(AvailableMaps availableMaps, NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
+                             NodeInserter nodeInserter, SummaryNodeCreator summaryNodeCreator,
+                             ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
-        this.nodeModelCreator = Objects.requireNonNull(nodeModelCreator, "nodeModelCreator");
+        this.nodeCreationHierarchyBuilder = Objects.requireNonNull(nodeCreationHierarchyBuilder,
+            "nodeCreationHierarchyBuilder");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
         this.summaryNodeCreator = Objects.requireNonNull(summaryNodeCreator, "summaryNodeCreator");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
-        this.nodeContentApplier = Objects.requireNonNull(nodeContentApplier, "nodeContentApplier");
     }
 
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
@@ -50,17 +48,13 @@ public class CreateSummaryTool {
         List<NodeCreationItem> nodes = requireNodes(request.getNodes());
         NodeModel rootNode = mapModel.getRootNode();
         NodeModel summaryNode = summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode);
-        List<NodeModel> createdNodes = new ArrayList<>(nodes.size());
-        for (NodeCreationItem nodeItem : nodes) {
-            NodeModel nodeModel = nodeModelCreator.createNodeModelTree(nodeItem, mapModel);
-            nodeContentApplier.apply(nodeModel, nodeItem);
-            createdNodes.add(nodeModel);
-        }
+        NodeCreationHierarchy hierarchy = nodeCreationHierarchyBuilder.buildHierarchy(nodes, mapModel);
         nodeInserter.insertNodes(
-            createdNodes, summaryNode, AnchorPlacementMode.LAST_CHILD, new ToolErrorHandler("Summary creation failure: "));
+            hierarchy.getRootNodes(), summaryNode, AnchorPlacementMode.LAST_CHILD,
+            new ToolErrorHandler("Summary creation failure: "));
         List<ModifiedNodeSummary> modifiedNodes = new ArrayList<>();
         modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(Collections.singletonList(summaryNode), false));
-        modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(createdNodes, true));
+        modifiedNodes.addAll(modifiedNodeSummaryBuilder.buildSummaries(hierarchy.getRootNodes(), true));
         String summaryNodeIdentifier = summaryNode.createID();
         return new CreateSummaryResponse(mapIdentifierValue, userSummary, modifiedNodes, summaryNodeIdentifier);
     }

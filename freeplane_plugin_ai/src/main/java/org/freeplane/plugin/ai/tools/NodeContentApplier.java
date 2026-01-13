@@ -1,7 +1,5 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.List;
-
 import org.freeplane.features.map.NodeModel;
 
 public class NodeContentApplier {
@@ -20,23 +18,11 @@ public class NodeContentApplier {
         this.iconsContentEditor = iconsContentEditor;
     }
 
-    public void apply(NodeModel nodeModel, NodeCreationItem creationItem) {
-        if (nodeModel == null || creationItem == null) {
+    public void apply(NodeModel nodeModel, NodeContentWriteRequest content) {
+        if (nodeModel == null || content == null) {
             return;
         }
-        NodeContentWriteRequest content = creationItem.getContent();
         guardApply(nodeModel, content);
-        List<NodeCreationItem> children = creationItem.getChildren();
-        if (children == null || children.isEmpty()) {
-            return;
-        }
-        for (int index = 0; index < children.size(); index++) {
-            NodeCreationItem childItem = children.get(index);
-            if (index < nodeModel.getChildCount()) {
-                NodeModel childNode = nodeModel.getChildAt(index);
-                apply(childNode, childItem);
-            }
-        }
     }
 
     private void guardApply(NodeModel nodeModel, NodeContentWriteRequest content) {

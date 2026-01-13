@@ -64,6 +64,8 @@ public class AIToolSet {
             nodeContentFactories.iconDescriptionResolver, iconCandidates, iconController);
         NodeContentApplier nodeContentApplier = new NodeContentApplier(textualContentEditor, attributesContentEditor,
             tagsContentEditor, iconsContentEditor);
+        NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder = new NodeCreationHierarchyBuilder(
+            nodeModelCreator, nodeContentApplier);
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
             textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor);
         SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
@@ -73,11 +75,11 @@ public class AIToolSet {
             availableMaps);
         SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, nodeContentFactories.nodeContentItemReader,
             textController);
-        CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeModelCreator, nodeInserter,
-            modifiedNodeSummaryBuilder, nodeContentApplier);
+        CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
+            modifiedNodeSummaryBuilder);
         MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
-        CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeModelCreator, nodeInserter,
-            summaryNodeCreator, modifiedNodeSummaryBuilder, nodeContentApplier);
+        CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder,
+            nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
         MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
             summaryNodeCreator);
         ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(

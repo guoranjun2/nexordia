@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
@@ -23,26 +22,26 @@ public class CreateNodesToolTest {
     @Test
     public void createNodes_returnsModifiedNodeSummariesInOrder() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
-        NodeModelCreator nodeModelCreator = mock(NodeModelCreator.class);
+        NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder = mock(NodeCreationHierarchyBuilder.class);
         NodeInserter nodeInserter = mock(NodeInserter.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
-        NodeContentApplier nodeContentApplier = mock(NodeContentApplier.class);
-        CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, nodeModelCreator, nodeInserter,
-            modifiedNodeSummaryBuilder, nodeContentApplier);
+        CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
+            modifiedNodeSummaryBuilder);
         UUID mapIdentifier = UUID.fromString("f0ec8744-6a58-4b63-8e0e-9ef00b2e3c7a");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
-        NodeCreationItem firstNodeItem = new NodeCreationItem(null, Collections.emptyList());
-        NodeCreationItem secondNodeItem = new NodeCreationItem(null, Collections.emptyList());
+        NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null);
+        NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null);
         NodeModel firstNodeModel = new NodeModel("first", mapModel);
         NodeModel secondNodeModel = new NodeModel("second", mapModel);
         firstNodeModel.setID("ID_first");
         secondNodeModel.setID("ID_second");
-        when(nodeModelCreator.createNodeModelTree(firstNodeItem, mapModel)).thenReturn(firstNodeModel);
-        when(nodeModelCreator.createNodeModelTree(secondNodeItem, mapModel)).thenReturn(secondNodeModel);
+        when(nodeCreationHierarchyBuilder.buildHierarchy(Arrays.asList(firstNodeItem, secondNodeItem), mapModel))
+            .thenReturn(new NodeCreationHierarchy(Arrays.asList(firstNodeModel, secondNodeModel),
+                Arrays.asList(firstNodeModel, secondNodeModel)));
         when(nodeInserter.insertNodes(anyList(), any(NodeModel.class), eq(AnchorPlacementMode.LAST_CHILD),
             any(OperationErrorHandler.class)))
             .thenReturn(Arrays.asList(firstNodeModel, secondNodeModel));
@@ -65,7 +64,6 @@ public class CreateNodesToolTest {
         assertThat(response.getModifiedNodes().get(1).getShortText()).isEqualTo("Second");
         verify(nodeInserter).insertNodes(anyList(), eq(anchorNode), eq(AnchorPlacementMode.LAST_CHILD),
             any(OperationErrorHandler.class));
-        verify(nodeContentApplier).apply(firstNodeModel, firstNodeItem);
-        verify(nodeContentApplier).apply(secondNodeModel, secondNodeItem);
+        verify(nodeCreationHierarchyBuilder).buildHierarchy(Arrays.asList(firstNodeItem, secondNodeItem), mapModel);
     }
 }

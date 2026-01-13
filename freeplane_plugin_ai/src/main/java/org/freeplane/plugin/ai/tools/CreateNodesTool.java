@@ -1,6 +1,5 @@
 package org.freeplane.plugin.ai.tools;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -11,19 +10,17 @@ import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class CreateNodesTool {
     private final AvailableMaps availableMaps;
-    private final NodeModelCreator nodeModelCreator;
+    private final NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder;
     private final NodeInserter nodeInserter;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
-    private final NodeContentApplier nodeContentApplier;
 
-    public CreateNodesTool(AvailableMaps availableMaps, NodeModelCreator nodeModelCreator, NodeInserter nodeInserter,
-                           ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
-                           NodeContentApplier nodeContentApplier) {
+    public CreateNodesTool(AvailableMaps availableMaps, NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
+                           NodeInserter nodeInserter, ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
-        this.nodeModelCreator = Objects.requireNonNull(nodeModelCreator, "nodeModelCreator");
+        this.nodeCreationHierarchyBuilder = Objects.requireNonNull(nodeCreationHierarchyBuilder,
+            "nodeCreationHierarchyBuilder");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
-        this.nodeContentApplier = Objects.requireNonNull(nodeContentApplier, "nodeContentApplier");
     }
 
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
@@ -45,14 +42,9 @@ public class CreateNodesTool {
             throw new IllegalArgumentException("Invalid anchor node identifier: " + anchorNodeIdentifier);
         }
         List<NodeCreationItem> nodes = requireNodes(request.getNodes());
-        List<NodeModel> createdNodes = new ArrayList<>(nodes.size());
-        for (NodeCreationItem nodeItem : nodes) {
-            NodeModel nodeModel = nodeModelCreator.createNodeModelTree(nodeItem, mapModel);
-            nodeContentApplier.apply(nodeModel, nodeItem);
-            createdNodes.add(nodeModel);
-        }
+        NodeCreationHierarchy hierarchy = nodeCreationHierarchyBuilder.buildHierarchy(nodes, mapModel);
         List<NodeModel> insertedNodes = nodeInserter.insertNodes(
-            createdNodes, anchorNode, placementMode, new ToolErrorHandler("Create failure: "));
+            hierarchy.getRootNodes(), anchorNode, placementMode, new ToolErrorHandler("Create failure: "));
         List<ModifiedNodeSummary> modifiedNodes = modifiedNodeSummaryBuilder.buildSummaries(insertedNodes, true);
         return new CreateNodesResponse(mapIdentifierValue, userSummary, modifiedNodes);
     }
