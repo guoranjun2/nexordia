@@ -7,9 +7,8 @@ import java.util.Properties;
 
 import javax.swing.JTabbedPane;
 
-import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.util.TextUtils;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
@@ -18,7 +17,6 @@ import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
-import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCaller;
 import org.osgi.framework.BundleActivator;
@@ -28,7 +26,6 @@ public class Activator implements BundleActivator {
 
 	private static final String PREFERENCES_RESOURCE = "preferences.xml";
 	private static final String SYSTEM_MESSAGE_PROPERTY = SystemMessageBuilder.SYSTEM_MESSAGE_PROPERTY;
-	private static final String SYSTEM_MESSAGE_DEFAULT_TEXT_KEY = "ai_system_message_default";
 	private ModelContextProtocolServer modelContextProtocolServer;
 
 	/*
@@ -76,9 +73,6 @@ public class Activator implements BundleActivator {
 				}
 
 				private void setSystemMessageDefault(ResourceController resourceController) {
-					String defaultMessage = TextUtils.getRawText(SYSTEM_MESSAGE_DEFAULT_TEXT_KEY, "");
-					defaultMessage = TextUtils.removeTranslateComment(defaultMessage);
-					resourceController.setDefaultProperty(SYSTEM_MESSAGE_PROPERTY, defaultMessage);
 					resourceController.securePropertyForReadingAndModification(SYSTEM_MESSAGE_PROPERTY);
 				}
 

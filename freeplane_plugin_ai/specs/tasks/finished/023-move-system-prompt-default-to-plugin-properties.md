@@ -28,7 +28,9 @@
 - Verify translations no longer affect the default system prompt.
 
 ## Modified files
-- None yet.
+- freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/Activator.java
+- freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
+- freeplane/src/viewer/resources/translations/Resources_en.properties
 
 ## Subtasks
 - None.
