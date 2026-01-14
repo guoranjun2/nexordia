@@ -4,10 +4,13 @@
     <separator name="ai">
         <string name="ai_openrouter_service_address"/>
         <string name="ai_openrouter_key"/>
+        <textbox name="ai_openrouter_model_allowlist" lines="5"/>
         <string name="ai_gemini_service_address"/>
         <string name="ai_gemini_key"/>
+        <textbox name="ai_gemini_model_allowlist" lines="5"/>
         <string name="ai_ollama_service_address"/>
         <boolean name="ai_use_ollama"/>
+        <textbox name="ai_ollama_model_allowlist" lines="5"/>
         <boolean name="ai_mcp_server_enabled"/>
         <number name="ai_mcp_server_port" min="1024" max="65535" />
         <boolean name="ai_chat_show_tool_calls"/>

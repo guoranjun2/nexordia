@@ -8,10 +8,13 @@ public class AIProviderConfiguration {
     private static final String AI_SELECTED_MODEL_PROPERTY = "ai_selected_model";
     private static final String AI_OPENROUTER_SERVICE_ADDRESS_PROPERTY = "ai_openrouter_service_address";
     private static final String AI_OPENROUTER_KEY_PROPERTY = "ai_openrouter_key";
+    private static final String AI_OPENROUTER_MODEL_ALLOWLIST_PROPERTY = "ai_openrouter_model_allowlist";
     private static final String AI_GEMINI_SERVICE_ADDRESS_PROPERTY = "ai_gemini_service_address";
     private static final String AI_GEMINI_KEY_PROPERTY = "ai_gemini_key";
+    private static final String AI_GEMINI_MODEL_ALLOWLIST_PROPERTY = "ai_gemini_model_allowlist";
     private static final String AI_OLLAMA_SERVICE_ADDRESS_PROPERTY = "ai_ollama_service_address";
     private static final String AI_USE_OLLAMA_PROPERTY = "ai_use_ollama";
+    private static final String AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY = "ai_ollama_model_allowlist";
 
     private final ResourceController resourceController;
 
@@ -48,6 +51,10 @@ public class AIProviderConfiguration {
         return resourceController.getProperty(AI_OPENROUTER_KEY_PROPERTY);
     }
 
+    public String getOpenrouterModelAllowlistValue() {
+        return resourceController.getProperty(AI_OPENROUTER_MODEL_ALLOWLIST_PROPERTY);
+    }
+
     public String getGeminiServiceAddress() {
         return resourceController.getProperty(AI_GEMINI_SERVICE_ADDRESS_PROPERTY);
     }
@@ -56,11 +63,19 @@ public class AIProviderConfiguration {
         return resourceController.getProperty(AI_GEMINI_KEY_PROPERTY);
     }
 
+    public String getGeminiModelAllowlistValue() {
+        return resourceController.getProperty(AI_GEMINI_MODEL_ALLOWLIST_PROPERTY);
+    }
+
     public String getOllamaServiceAddress() {
         return resourceController.getProperty(AI_OLLAMA_SERVICE_ADDRESS_PROPERTY);
     }
 
     public boolean isOllamaEnabled() {
         return resourceController.getBooleanProperty(AI_USE_OLLAMA_PROPERTY);
+    }
+
+    public String getOllamaModelAllowlistValue() {
+        return resourceController.getProperty(AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY);
     }
 }

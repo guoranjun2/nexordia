@@ -12,7 +12,7 @@
 ## Research
 - Current model list configuration:
 - AIModelCatalog uses OPENROUTER_MODEL_ALLOWLIST for OpenRouter models.
-- AIModelCatalog uses GEMINI_MODELS for Gemini models.
+- AIModelCatalog uses GEMINI_MODELS for Gemini models; there is no Gemini model fetch.
 - Ollama models are fetched from the configured service address when ai_use_ollama is true.
 - preferences.xml exposes provider addresses, provider keys, ai_use_ollama, and other toggles, but has no provider model list entries.
 - defaults.properties defines default provider service addresses and ai_use_ollama; it does not define model lists.
@@ -27,7 +27,11 @@
 - Treat entries as white list patterns supporting `*` and `?` wildcards.
 - Behavior:
 - Use the per-provider list as a white list filter on the provider model list.
-- Fall back to current static or fetched lists when the provider preference is empty.
+- For OpenRouter and Ollama, fetch the provider model list and filter it with the preference white list.
+- For Gemini, fetch the provider model list from the Gemini models endpoint using the configured Gemini key and filter it with the preference white list.
+- Limit Gemini to models that support text generation (supported generation methods include `generateContent`).
+- Cache Gemini fetches using the same refresh interval as the other providers.
+- When the provider preference is empty, fall back to the full provider model list.
 - Keep existing provider enablement checks and selection storage unchanged.
 - Defaults:
 - Populate the new preference defaults with the current hard-coded OpenRouter and Gemini lists.
@@ -40,7 +44,24 @@
 - Verify provider list preferences do not change selection storage behavior.
 
 ## Modified files
-- None yet.
+- freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIProviderConfiguration.java
+- freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIModelCatalog.java
+- freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
+- freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
+- freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/AIModelCatalogTest.java
 
 ## Subtasks
-- None.
+- ### Subtask: Rebuild model selector when allowlist preferences change
+  - **Status:** Planning
+  - **Scope**
+    - Rebuild the model selector when any provider model allowlist preference changes.
+  - **Motivation**
+    - Model selection should reflect the latest allowlist without restarting.
+  - **Research**
+    - Entry point: `.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);`
+  - **Design**
+    - Determine where model selection refresh is triggered today, and add a property change listener that rebuilds the model list when allowlist preferences are updated.
+  - **Test specification**
+    - Verify updating a provider allowlist refreshes the model selector.
+  - **Modified files**
+    - None yet.
