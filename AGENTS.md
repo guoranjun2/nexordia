@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+Before reading the rest of this file read and memorize /freeplane_plugin_ai/specs/constitution.md. It describes our current work process.
+
 ## Project Structure & Module Organization
 - Gradle multi-project: `freeplane/` (app), `freeplane_api/`, `freeplane_framework/`, platform helpers (e.g., `freeplane_mac/`), and plugins in `freeplane_plugin_*`.
 - Build artifacts and launchers in `BIN/` (e.g., `BIN/freeplane.sh`, `BIN/freeplane.bat`, `BIN/core/...`).
