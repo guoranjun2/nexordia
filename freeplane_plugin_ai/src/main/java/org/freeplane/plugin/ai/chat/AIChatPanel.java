@@ -170,7 +170,7 @@ public class AIChatPanel extends JPanel {
 
     private boolean isModelAllowlistProperty(String propertyName) {
         return "ai_openrouter_model_allowlist".equals(propertyName)
-            || "ai_gemini_model_allowlist".equals(propertyName)
+            || "ai_gemini_model_list".equals(propertyName)
             || "ai_ollama_model_allowlist".equals(propertyName);
     }
 

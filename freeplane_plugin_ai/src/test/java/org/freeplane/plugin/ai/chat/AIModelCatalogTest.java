@@ -51,22 +51,19 @@ public class AIModelCatalogTest {
     }
 
     @Test
-    public void parseGeminiModelsResponse_returnsTextModels() throws Exception {
+    public void parseGeminiModelList_parsesLiteralEntries() {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         AIModelCatalog uut = new AIModelCatalog(configuration);
-        String responsePayload = "{\"models\":["
-            + "{\"name\":\"models/gemini-2.5-pro\",\"supportedGenerationMethods\":[\"generateContent\"]},"
-            + "{\"name\":\"models/gemini-vision\",\"supportedGenerationMethods\":[\"countTokens\"]},"
-            + "{\"name\":null},"
-            + "null"
-            + "]}";
+        String modelListValue = "gemini-3-pro-preview\n"
+            + "gemini-3-flash-preview\n"
+            + "placeholder-model";
 
-        List<AIModelDescriptor> modelDescriptors = uut.parseGeminiModelsResponse(new StringReader(responsePayload));
+        List<AIModelDescriptor> modelDescriptors = uut.parseGeminiModelList(modelListValue);
 
-        assertThat(modelDescriptors).hasSize(1);
+        assertThat(modelDescriptors).hasSize(3);
         AIModelDescriptor descriptor = modelDescriptors.get(0);
         assertThat(descriptor.getProviderName()).isEqualTo(AIChatModelFactory.PROVIDER_NAME_GEMINI);
-        assertThat(descriptor.getModelName()).isEqualTo("gemini-2.5-pro");
+        assertThat(descriptor.getModelName()).isEqualTo("gemini-3-pro-preview");
     }
 
     @Test

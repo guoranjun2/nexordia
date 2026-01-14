@@ -11,7 +11,7 @@ public class AIProviderConfiguration {
     private static final String AI_OPENROUTER_MODEL_ALLOWLIST_PROPERTY = "ai_openrouter_model_allowlist";
     private static final String AI_GEMINI_SERVICE_ADDRESS_PROPERTY = "ai_gemini_service_address";
     private static final String AI_GEMINI_KEY_PROPERTY = "ai_gemini_key";
-    private static final String AI_GEMINI_MODEL_ALLOWLIST_PROPERTY = "ai_gemini_model_allowlist";
+    private static final String AI_GEMINI_MODEL_LIST_PROPERTY = "ai_gemini_model_list";
     private static final String AI_OLLAMA_SERVICE_ADDRESS_PROPERTY = "ai_ollama_service_address";
     private static final String AI_USE_OLLAMA_PROPERTY = "ai_use_ollama";
     private static final String AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY = "ai_ollama_model_allowlist";
@@ -63,8 +63,8 @@ public class AIProviderConfiguration {
         return resourceController.getProperty(AI_GEMINI_KEY_PROPERTY);
     }
 
-    public String getGeminiModelAllowlistValue() {
-        return resourceController.getProperty(AI_GEMINI_MODEL_ALLOWLIST_PROPERTY);
+    public String getGeminiModelListValue() {
+        return resourceController.getProperty(AI_GEMINI_MODEL_LIST_PROPERTY);
     }
 
     public String getOllamaServiceAddress() {
