@@ -4,6 +4,8 @@ import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.resources.IFreeplanePropertyListener;
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
@@ -118,6 +120,7 @@ public class AIChatPanel extends JPanel {
             }
         });
         modelSelectionController.loadInitialModelSelectionList();
+        registerModelAllowlistRefreshListener();
     }
 
     private void configureToolbar(FreeplaneToolBar toolbar) {
@@ -150,6 +153,25 @@ public class AIChatPanel extends JPanel {
         Controller controller = Controller.getCurrentController();
         MModeController modeController = (MModeController) controller.getModeController(MModeController.MODENAME);
         modeController.showPreferences("plugins", "ai");
+    }
+
+    private void registerModelAllowlistRefreshListener() {
+        ResourceController.getResourceController().addPropertyChangeListener(
+            new IFreeplanePropertyListener() {
+                @Override
+                public void propertyChanged(String propertyName, String newValue, String oldValue) {
+                    if (!isModelAllowlistProperty(propertyName)) {
+                        return;
+                    }
+                    SwingUtilities.invokeLater(() -> modelSelectionController.loadInitialModelSelectionList());
+                }
+            });
+    }
+
+    private boolean isModelAllowlistProperty(String propertyName) {
+        return "ai_openrouter_model_allowlist".equals(propertyName)
+            || "ai_gemini_model_allowlist".equals(propertyName)
+            || "ai_ollama_model_allowlist".equals(propertyName);
     }
 
     private void sendMessage() {
