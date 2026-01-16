@@ -5,11 +5,29 @@ java {
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-parameters'
 }
+sourceSets {
+    test {
+        resources {
+            srcDir '../freeplane/src/viewer/resources'
+        }
+    }
+}
 dependencies {
     implementation project(':freeplane')
     lib 'dev.langchain4j:langchain4j:1.10.0'
     lib 'dev.langchain4j:langchain4j-open-ai:1.10.0'
     lib 'dev.langchain4j:langchain4j-ollama:1.10.0'
     lib 'dev.langchain4j:langchain4j-google-ai-gemini:1.10.0'
-    lib 'io.fusionauth:java-http:1.4.0'
+}
+
+eclipse {
+    jdt {
+        file {
+            withProperties { properties ->
+                properties.setProperty('org.eclipse.jdt.core.compiler.codegen.targetPlatform', '21')
+                properties.setProperty('org.eclipse.jdt.core.compiler.compliance', '21')
+                properties.setProperty('org.eclipse.jdt.core.compiler.source', '21')
+            }
+        }
+    }
 }

@@ -3,15 +3,9 @@ package org.freeplane.plugin.ai.mcpserver;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.fusionauth.http.BodyException;
-import io.fusionauth.http.HTTPMethod;
-import io.fusionauth.http.HTTPValues.ContentTypes;
-import io.fusionauth.http.server.HTTPHandler;
-import io.fusionauth.http.server.HTTPListenerConfiguration;
-import io.fusionauth.http.server.HTTPRequest;
-import io.fusionauth.http.server.HTTPResponse;
-import io.fusionauth.http.server.HTTPServer;
-import io.fusionauth.http.server.HTTPServerConfiguration;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
@@ -22,6 +16,7 @@ import org.freeplane.plugin.ai.tools.AIToolSet;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -43,7 +38,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     private final ModelContextProtocolToolRegistry toolRegistry;
     private final ModelContextProtocolToolDispatcher toolDispatcher;
     private final AtomicBoolean running;
-    private volatile HTTPServer server;
+    private volatile HttpServer server;
 
     public ModelContextProtocolServer(AIToolSet toolSet) {
         this(toolSet, new ObjectMapper());
@@ -76,12 +71,10 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
             return;
         }
         try {
-            HTTPServerConfiguration configuration = new HTTPServerConfiguration()
-                .withCompressByDefault(false)
-                .withHandler(new ModelContextProtocolHandler())
-                .withListener(new HTTPListenerConfiguration(InetAddress.getByName("127.0.0.1"), port));
             @SuppressWarnings("resource")
-			HTTPServer httpServer = new HTTPServer().withConfiguration(configuration);
+            HttpServer httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+            httpServer.createContext("/", new ModelContextProtocolHandler());
+            httpServer.setExecutor(null);
             httpServer.start();
             server = httpServer;
             LogUtils.info("MCP server started on port " + port);
@@ -96,7 +89,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
             return;
         }
         if (server != null) {
-            server.close();
+            server.stop(0);
             server = null;
         }
         LogUtils.info("MCP server stopped.");
@@ -125,42 +118,39 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
         }
     }
 
-    private class ModelContextProtocolHandler implements HTTPHandler {
+    private class ModelContextProtocolHandler implements HttpHandler {
         @Override
-        public void handle(HTTPRequest request, HTTPResponse response) throws Exception {
-            if (request.getMethod() == null || !request.getMethod().is(HTTPMethod.POST)) {
-                sendStatus(response, 405);
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equals(exchange.getRequestMethod())) {
+                sendStatus(exchange, 405);
                 return;
             }
             JsonNode requestNode;
             try {
-                byte[] bodyBytes = request.getBodyBytes();
+                byte[] bodyBytes = exchange.getRequestBody().readAllBytes();
                 if (bodyBytes == null || bodyBytes.length == 0) {
-                    writeJsonResponse(response, buildErrorResponse(null, -32600, "Invalid request"));
+                    writeJsonResponse(exchange, buildErrorResponse(null, -32600, "Invalid request"));
                     return;
                 }
                 requestNode = objectMapper.readTree(bodyBytes);
             } catch (JsonProcessingException error) {
-                writeJsonResponse(response, buildErrorResponse(null, -32700, "Parse error"));
-                return;
-            } catch (BodyException error) {
-                writeJsonResponse(response, buildErrorResponse(null, -32700, "Parse error"));
+                writeJsonResponse(exchange, buildErrorResponse(null, -32700, "Parse error"));
                 return;
             }
             if (requestNode == null || requestNode.isNull() || requestNode.isMissingNode()) {
-                writeJsonResponse(response, buildErrorResponse(null, -32600, "Invalid request"));
+                writeJsonResponse(exchange, buildErrorResponse(null, -32600, "Invalid request"));
                 return;
             }
             if (requestNode.isArray()) {
-                writeJsonResponse(response, buildErrorResponse(null, -32600, "Batch requests are not supported"));
+                writeJsonResponse(exchange, buildErrorResponse(null, -32600, "Batch requests are not supported"));
                 return;
             }
             Object responsePayload = handleRequest(requestNode);
             if (responsePayload == null) {
-                sendStatus(response, 204);
+                sendStatus(exchange, 204);
                 return;
             }
-            writeJsonResponse(response, responsePayload);
+            writeJsonResponse(exchange, responsePayload);
         }
 
         private Object handleRequest(JsonNode requestNode) {
@@ -314,22 +304,20 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
             return node == null || node.isNull() ? null : node.asText();
         }
 
-        private void writeJsonResponse(HTTPResponse response, Object responseBody) throws IOException {
-        	LogUtils.info("MCP response " + objectMapper.writeValueAsString(responseBody));
+        private void writeJsonResponse(HttpExchange exchange, Object responseBody) throws IOException {
+            LogUtils.info("MCP response " + objectMapper.writeValueAsString(responseBody));
             byte[] responseBytes = objectMapper.writeValueAsBytes(responseBody);
-            response.setStatus(200);
-            response.setContentType(ContentTypes.ApplicationJson);
-            response.setContentLength(responseBytes.length);
-            try (OutputStream outputStream = response.getOutputStream()) {
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            try (OutputStream outputStream = exchange.getResponseBody()) {
                 outputStream.write(responseBytes);
             }
-            response.close();
+            exchange.close();
         }
 
-        private void sendStatus(HTTPResponse response, int status) throws IOException {
-            response.setStatus(status);
-            response.setContentLength(0);
-            response.close();
+        private void sendStatus(HttpExchange exchange, int status) throws IOException {
+            exchange.sendResponseHeaders(status, -1);
+            exchange.close();
         }
     }
 }
