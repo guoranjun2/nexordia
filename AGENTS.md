@@ -1,6 +1,13 @@
+
+---
+**MANDATORY:**
+Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [freeplane_plugin_ai/specs/constitution.md](./freeplane_plugin_ai/specs/constitution.md). This requirement applies universally to all AI assistants, not just agents.
+---
+
 # Repository Guidelines
 
-Before reading the rest of this file read and memorize /freeplane_plugin_ai/specs/constitution.md. It describes our current work process.
+All agent activity in this repository must obey the rules and workflows defined in [freeplane_plugin_ai/specs/constitution.md](freeplane_plugin_ai/specs/constitution.md). Always open and read the linked file at session start.
+In case of workflow ambiguity, the constitution is the source of truth, including the rule that task files may be edited without prior approval while code or configuration changes require explicit review and approval after task file edits.
 
 ## Project Structure & Module Organization
 - Gradle multi-project: `freeplane/` (app), `freeplane_api/`, `freeplane_framework/`, platform helpers (e.g., `freeplane_mac/`), and plugins in `freeplane_plugin_*`.
@@ -9,6 +16,8 @@ Before reading the rest of this file read and memorize /freeplane_plugin_ai/spec
 - Packaging helpers live in `*.dist.gradle` and `DIST/`.
 
 ## Build, Test, and Development Commands
+- For build use `java` from Java from `~/.sdkman/candidates/java/21.0.5-zulu`
+- Run: `gradle` with escalation.
 - Use `gradle` (not `gradlew`/`maven`). Examples:
   - Compile app: `gradle :freeplane:compileJava`
   - Test all or module: `gradle test` / `gradle :freeplane:test`
@@ -24,7 +33,7 @@ Before reading the rest of this file read and memorize /freeplane_plugin_ai/spec
 
 ## Testing Guidelines
 - JUnit 4, AssertJ, Mockito. Name tests `*Test` or behavior-style (e.g., `RuleReferenceShould`).
-- Run: `gradle test` (add `-PTestLoggingFull` for verbose failures).
+- Add `-PTestLoggingFull` for verbose failures
 
 ## Translations & i18n
 - Files: `freeplane/src/editor/resources/translations/Resources_*.properties`.
