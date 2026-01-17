@@ -33,17 +33,22 @@ Tasks must use one of these status folders:
 ## Task Structure
 The purpose of this rigorous structure is to capture all relevant context (current state, future design, verification plan) within the task file itself. This ensures that the coding agent has immediate access to all necessary information during the implementation phase without needing to re-derive context.
 
-Each task includes the following sections in this exact order:
-*   **Scope**: what the task will deliver.
-*   **Motivation**: explain why the task exists (backlog tasks or in-progress design stages only).
-*   **Research**: facts and observations describing the *current state* of the code. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
-*   **Design**: structure, data flow, constraints, and decisions describing the *future state* to be achieved. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
-*   **Test specification**: brief description of planned tests before implementation.
-*   **Modified files**: production and test files touched (required for in-progress work; optional for backlog designs). Use either the task level or the subtask level, not both. If a change belongs to a subtask, list it there; otherwise list it at the task level.
-*   **Subtasks**: allowed inside tasks at the end; each subtask appears as its own `## Subtask: <name>` section and follows the same structure as the main task with a status line first.
+Each task uses the following exact order and layout:
+*   Title line: `# Task: <title>`.
+*   Main task sections are list items with bold labels in this exact order:
+    *   `- **Scope:**` what the task will deliver.
+    *   `- **Motivation:**` explain why the task exists (backlog tasks or in-progress design stages only).
+    *   `- **Research:**` facts and observations describing the *current state* of the code. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
+    *   `- **Design:**` structure, data flow, constraints, and decisions describing the *future state* to be achieved. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
+    *   `- **Test specification:**` brief description of planned tests before implementation.
+    *   `- **Modified files:**` production and test files touched (required for in-progress work; optional for backlog designs). Use either the task level or the subtask level, not both. If a change belongs to a subtask, list it there; otherwise list it at the task level.
+*   Subtasks, if any, appear only at the end as their own `## Subtask: <title>` sections, with no `## Subtasks` section.
+    *   Each subtask starts with `- **Status:** <status>`.
+    *   Each subtask uses the same list item labels and ordering as the main task: Scope, Motivation, Research, Design, Test specification, Modified files.
     *   **Functional increments**: Subtasks must generally be vertical slices of functionality (increments that include their own research, design, and implementation).
     *   **Research/Design subtasks**: Pure "Research" or "Design" subtasks are permitted **only** if they produce distinct artifacts outside the task file itself (e.g., creating a separate documentation file in `docs/`, a proof-of-concept prototype, or an Architecture Decision Record). Otherwise, research and design findings must be recorded in the `Research` and `Design` sections of the relevant functional subtask or the main task.
     *   Explicitly include **Design** (preferably with PlantUML) and **Test specification** sections in every subtask.
+*   Do not use colon-style section headers like `Scope:` or `Motivation:`.
 
 Subtasks should only use the statuses `Planning`, `Plan Review`, `Implementing`, `Implementation Review`, or `Finished`; the parent folder (Backlog/In-Progress/Finished) provides the broader lifecycle context.
 
