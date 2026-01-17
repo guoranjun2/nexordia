@@ -8,11 +8,13 @@ import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
-import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
 import org.freeplane.plugin.ai.tools.ToolCaller;
+
+import io.github.gitbucket.markedj.Marked;
+import io.github.gitbucket.markedj.Options;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -59,6 +61,7 @@ public class AIChatPanel extends JPanel {
     private final ChatSessionMemoryController chatSessionMemoryController;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
+    private final Options markdownOptions;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -85,6 +88,7 @@ public class AIChatPanel extends JPanel {
         tokenUsageLabel = new JLabel();
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
+        markdownOptions = createMarkdownOptions();
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -255,7 +259,7 @@ public class AIChatPanel extends JPanel {
             return;
         }
         HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
-        String messageText = formatMessageText(text);
+        String messageText = formatMessageText(text, category);
         String messageMarkup = "<div class=\"" + category.getStyleClassName() + "\">" + messageText + "</div>";
         try {
             messageHistoryEditorKit.insertHTML(document, document.getLength(), messageMarkup, 0, 0, null);
@@ -296,7 +300,33 @@ public class AIChatPanel extends JPanel {
             + " border-left: 8px solid #5c79bd; }");
     }
 
-    private String formatMessageText(String text) {
+    private Options createMarkdownOptions() {
+        Options options = new Options();
+        options.setSafelist(null);
+        return options;
+    }
+
+    private String formatMessageText(String text, ChatMessageCategory category) {
+        if (category == ChatMessageCategory.ASSISTANT) {
+            return renderMarkdownMessage(text);
+        }
+        return formatPlainText(text);
+    }
+
+    private String renderMarkdownMessage(String text) {
+        try {
+            String renderedMarkup = Marked.marked(text, markdownOptions);
+            if (renderedMarkup == null) {
+                return formatPlainText(text);
+            }
+            return renderedMarkup;
+        } catch (RuntimeException exception) {
+            LogUtils.severe(exception);
+            return formatPlainText(text);
+        }
+    }
+
+    private String formatPlainText(String text) {
         String escaped = HtmlUtils.toXMLEscapedText(text);
         String normalized = escaped.replace("\r\n", "\n").replace("\r", "\n");
         return normalized.replace("\n", "<br>");

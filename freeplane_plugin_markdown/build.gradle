@@ -6,3 +6,8 @@ dependencies {
 }
 
 ext.bundleImports = 'de.sciss.syntaxpane.*'
+
+ext.bundleExports = """\
+             io.github.gitbucket.markedj,
+             io.github.gitbucket.markedj.extension
+             """

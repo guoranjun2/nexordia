@@ -3,11 +3,14 @@
 - **Motivation:** Assistant output already uses Markdown syntax, but it is currently displayed as plain text. Rendering Markdown improves readability and reduces friction when reviewing structured responses. It also aligns output formatting with user expectations.
 - **Research:**
   - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`.
-  - The Freeplane Markdown plugin already contains a Markdown to HyperText Markup Language converter that can be exported for reuse by the AI plugin.
+  - The Markdown plugin depends on `io.github.gitbucket:markedj` and currently only sets `ext.bundleImports` in `freeplane_plugin_markdown/build.gradle`, so its bundle does not export the markdown library packages.
+  - The `bundleExports` property is used in `build.gradle` to populate the OSGi `Export-Package` manifest entry for plugins (for example in `freeplane_plugin_jsyntaxpane/build.gradle`).
   - Assistant responses currently display as plain text, so Markdown markers remain visible and line breaks depend on direct newline rendering.
 - **Design:**
-  - Request Markdown for assistant responses in the system message and document that the output format is Markdown by default.
-  - Convert Markdown to HyperText Markup Language for display using the Markdown plugin converter and fall back to escaped plain text if conversion fails.
+  - Update the system message so the assistant is instructed to respond in Markdown by default.
+  - Document that the output format is Markdown by default.
+  - Render assistant messages by calling the markdown library directly (without reusing the Markdown plugin renderer) and fall back to escaped plain text if conversion fails.
+  - Re-export the markdown library packages from the Markdown plugin bundle by defining `ext.bundleExports` in `freeplane_plugin_markdown/build.gradle` so the AI plugin can depend on the exported packages without bundling its own copy.
   - Keep each message wrapped in a single HyperText Markup Language element with the existing message class to maintain styling.
 - **Test specification:**
   - Verify Markdown headers, lists, and emphasis render as expected in the output HyperText Markup Language.
