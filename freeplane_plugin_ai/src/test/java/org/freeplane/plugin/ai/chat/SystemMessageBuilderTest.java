@@ -5,37 +5,46 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 
 public class SystemMessageBuilderTest {
+    private static final String MARKDOWN_RESPONSE_GUIDANCE = "Respond in Markdown.";
+    private static final String TOOL_CALL_GUIDANCE_TEXT =
+        "Any tool calls in this chat require arguments wrapped under the single parameter named request. ";
+    private static final String TOOL_CALL_EXAMPLE_TEXT = "Example: tool({ \"request\": { ... } })";
+
     @Test
     public void buildForChat_returnsConfiguredMessage() {
-        SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> "Use tools when needed.";
-        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
+        String configuredMessage = "Use tools when needed.";
+        SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> configuredMessage;
+        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
 
-        String message = builder.buildForChat();
+        String message = uut.buildForChat();
 
-        assertThat(message).isEqualTo("Use tools when needed.\n\n"
-            + "Any tool calls in this chat require arguments wrapped under the single parameter named request. "
-            + "Example: tool({ \"request\": { ... } })");
+        assertThat(message).contains(configuredMessage);
+        assertThat(message).contains(MARKDOWN_RESPONSE_GUIDANCE);
+        assertThat(message).contains(TOOL_CALL_GUIDANCE_TEXT);
+        assertThat(message).contains(TOOL_CALL_EXAMPLE_TEXT);
     }
 
     @Test
     public void buildForChat_returnsEmptyWhenBlank() {
         SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> "  ";
-        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
+        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
 
-        String message = builder.buildForChat();
+        String message = uut.buildForChat();
 
-        assertThat(message).isEqualTo("Any tool calls in this chat require arguments wrapped under the single parameter named request. "
-            + "Example: tool({ \"request\": { ... } })");
+        assertThat(message).contains(MARKDOWN_RESPONSE_GUIDANCE);
+        assertThat(message).contains(TOOL_CALL_GUIDANCE_TEXT);
+        assertThat(message).contains(TOOL_CALL_EXAMPLE_TEXT);
     }
 
     @Test
     public void buildForChat_returnsEmptyWhenNull() {
         SystemMessageBuilder.SystemMessageTextProvider textProvider = () -> null;
-        SystemMessageBuilder builder = new SystemMessageBuilder(textProvider);
+        SystemMessageBuilder uut = new SystemMessageBuilder(textProvider);
 
-        String message = builder.buildForChat();
+        String message = uut.buildForChat();
 
-        assertThat(message).isEqualTo("Any tool calls in this chat require arguments wrapped under the single parameter named request. "
-            + "Example: tool({ \"request\": { ... } })");
+        assertThat(message).contains(MARKDOWN_RESPONSE_GUIDANCE);
+        assertThat(message).contains(TOOL_CALL_GUIDANCE_TEXT);
+        assertThat(message).contains(TOOL_CALL_EXAMPLE_TEXT);
     }
 }

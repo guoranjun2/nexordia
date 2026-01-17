@@ -15,3 +15,17 @@
 - **Test specification:**
   - Verify Markdown headers, lists, and emphasis render as expected in the output HyperText Markup Language.
   - Verify disabling Markdown rendering falls back to plain text output.
+- **Subtasks:**
+  - **Status:** Finished
+  - **Scope:** Make SystemMessageBuilder tests assert on guidance fragments rather than full string equality.
+  - **Motivation:** System message guidance evolves, so exact string equality comparisons are brittle.
+  - **Research:**
+    - `SystemMessageBuilderTest` asserts exact equality for the full system message string.
+    - `SystemMessageBuilder` now appends Markdown guidance before tool call guidance.
+  - **Design:**
+    - For configured messages, assert that the result contains the configured message, the Markdown guidance, and the tool call guidance.
+    - For blank or null messages, assert that the result contains the Markdown guidance and the tool call guidance.
+  - **Test specification:**
+    - Run `SystemMessageBuilderTest` after updating assertions.
+  - **Modified files:**
+    - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/SystemMessageBuilderTest.java`

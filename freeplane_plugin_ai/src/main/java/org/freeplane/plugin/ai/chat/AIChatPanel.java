@@ -2,8 +2,6 @@ package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
-import org.freeplane.core.util.HtmlUtils;
-import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.mode.Controller;
@@ -12,9 +10,6 @@ import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
 import org.freeplane.plugin.ai.tools.ToolCaller;
-
-import io.github.gitbucket.markedj.Marked;
-import io.github.gitbucket.markedj.Options;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -32,15 +27,12 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
 
 public class AIChatPanel extends JPanel {
 
@@ -61,7 +53,8 @@ public class AIChatPanel extends JPanel {
     private final ChatSessionMemoryController chatSessionMemoryController;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
-    private final Options markdownOptions;
+    private final ChatMessageRenderer messageRenderer;
+    private final ChatMessageHistory messageHistory;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -73,6 +66,7 @@ public class AIChatPanel extends JPanel {
         messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
         configureMessageHistoryStyles();
         resetMessageHistory();
+        messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         inputArea = new JTextArea(3, 20);
@@ -88,7 +82,7 @@ public class AIChatPanel extends JPanel {
         tokenUsageLabel = new JLabel();
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
-        markdownOptions = createMarkdownOptions();
+        messageRenderer = new ChatMessageRenderer();
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -258,15 +252,8 @@ public class AIChatPanel extends JPanel {
         if (text == null || category == null) {
             return;
         }
-        HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
-        String messageText = formatMessageText(text, category);
-        String messageMarkup = "<div class=\"" + category.getStyleClassName() + "\">" + messageText + "</div>";
-        try {
-            messageHistoryEditorKit.insertHTML(document, document.getLength(), messageMarkup, 0, 0, null);
-        } catch (BadLocationException | IOException error) {
-            LogUtils.severe(error);
-        }
-        scrollToBottom();
+        String messageText = messageRenderer.renderMessage(text, category == ChatMessageCategory.ASSISTANT);
+        messageHistory.appendMessage(messageText, category.getStyleClassName());
     }
 
     public ToolCallSummaryHandler toolCallSummaryHandler() {
@@ -300,38 +287,6 @@ public class AIChatPanel extends JPanel {
             + " border-left: 8px solid #5c79bd; }");
     }
 
-    private Options createMarkdownOptions() {
-        Options options = new Options();
-        options.setSafelist(null);
-        return options;
-    }
-
-    private String formatMessageText(String text, ChatMessageCategory category) {
-        if (category == ChatMessageCategory.ASSISTANT) {
-            return renderMarkdownMessage(text);
-        }
-        return formatPlainText(text);
-    }
-
-    private String renderMarkdownMessage(String text) {
-        try {
-            String renderedMarkup = Marked.marked(text, markdownOptions);
-            if (renderedMarkup == null) {
-                return formatPlainText(text);
-            }
-            return renderedMarkup;
-        } catch (RuntimeException exception) {
-            LogUtils.severe(exception);
-            return formatPlainText(text);
-        }
-    }
-
-    private String formatPlainText(String text) {
-        String escaped = HtmlUtils.toXMLEscapedText(text);
-        String normalized = escaped.replace("\r\n", "\n").replace("\r", "\n");
-        return normalized.replace("\n", "<br>");
-    }
-
     private void resetMessageHistory() {
         messageHistoryPane.setText("<html><body></body></html>");
         messageHistoryPane.setCaretPosition(0);
@@ -345,10 +300,6 @@ public class AIChatPanel extends JPanel {
 
     private void updateTokenUsageLabel(ChatUsageTotals totals) {
         SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
-    }
-
-    private void scrollToBottom() {
-        messageHistoryPane.setCaretPosition(messageHistoryPane.getDocument().getLength());
     }
 
     private enum ChatMessageCategory {
