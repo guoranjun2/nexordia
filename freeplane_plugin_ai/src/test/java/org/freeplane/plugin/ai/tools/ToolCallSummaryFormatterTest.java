@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 
+import org.freeplane.plugin.ai.tools.read.ContextSection;
 import org.junit.Test;
 
 public class ToolCallSummaryFormatterTest {

@@ -3,13 +3,13 @@ package org.freeplane.plugin.ai.tools;
 import java.util.Collection;
 import java.util.Iterator;
 
-class ToolCallSummaryFormatter {
+public class ToolCallSummaryFormatter {
     private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
 
     private ToolCallSummaryFormatter() {
     }
 
-    static String sanitizeValue(String value) {
+    public static String sanitizeValue(String value) {
         if (value == null) {
             return "";
         }
@@ -20,7 +20,7 @@ class ToolCallSummaryFormatter {
         return normalized.substring(0, MAXIMUM_SUMMARY_TEXT_LENGTH - 3) + "...";
     }
 
-    static String joinEnumValues(Collection<? extends Enum<?>> values) {
+    public static String joinEnumValues(Collection<? extends Enum<?>> values) {
         if (values == null || values.isEmpty()) {
             return "";
         }
@@ -35,7 +35,7 @@ class ToolCallSummaryFormatter {
         return builder.toString();
     }
 
-    static String joinTextValues(Collection<String> values, String separator) {
+    public static String joinTextValues(Collection<String> values, String separator) {
         if (values == null || values.isEmpty()) {
             return "";
         }

@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.tools;
 
+import java.util.Objects;
+
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.map.MapController;
@@ -9,8 +11,18 @@ import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
-
-import java.util.Objects;
+import org.freeplane.plugin.ai.tools.content.AttributesContentReader;
+import org.freeplane.plugin.ai.tools.content.ContentTypeConverter;
+import org.freeplane.plugin.ai.tools.content.EditableContentReader;
+import org.freeplane.plugin.ai.tools.content.IconDescriptionResolver;
+import org.freeplane.plugin.ai.tools.content.IconsContentReader;
+import org.freeplane.plugin.ai.tools.content.NodeContentFactories;
+import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
+import org.freeplane.plugin.ai.tools.content.NodeContentReader;
+import org.freeplane.plugin.ai.tools.content.TagsContentReader;
+import org.freeplane.plugin.ai.tools.content.TextualContentReader;
+import org.freeplane.plugin.ai.tools.text.DefaultEnglishTextProvider;
+import org.freeplane.plugin.ai.tools.text.EnglishTextProvider;
 
 public class AIToolSetBuilder {
     private ToolCallSummaryHandler toolCallSummaryHandler;
