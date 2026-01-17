@@ -16,6 +16,7 @@ When uncertain or before changing behavior, propose next steps, ask for approval
 
 ## Workflow Checklist
 - Before commit: verify task status and folder changes, stage renames, confirm with user.
+- Before commit: confirm the commit message starts with the Task Identifier unless there is no task.
 - After signature changes: run the relevant module tests before reporting completion.
 
 ## Task States
@@ -27,7 +28,7 @@ Tasks must use one of these status folders:
 ## Scope and Safeguards
 *   **Clarity**: Designs may describe file scope broadly when it stays unambiguous.
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
-*   **Track modified production files**: List them in the task file.
+*   **Task to commit linking**: Every commit message must include the Task Identifier.
 *   **Refactor tracking**: When refactoring, document it by updating the design section of the existing task or creating a new task.
 
 ## Task Structure
@@ -35,16 +36,17 @@ The purpose of this rigorous structure is to capture all relevant context (curre
 
 Each task uses the following exact order and layout:
 *   Title line: `# Task: <title>`.
+*   `- **Task Identifier:**` stable identifier used in commit messages (for example, `2025-01-15-consent`).
+    *   Build the Task Identifier as `YYYY-MM-DD-<short-slug>`, where the date is the task file creation date and the slug is a brief, lowercase, hyphenated phrase.
 *   Main task sections are list items with bold labels in this exact order:
     *   `- **Scope:**` what the task will deliver.
     *   `- **Motivation:**` explain why the task exists (backlog tasks or in-progress design stages only).
     *   `- **Research:**` facts and observations describing the *current state* of the code. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
     *   `- **Design:**` structure, data flow, constraints, and decisions describing the *future state* to be achieved. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
     *   `- **Test specification:**` brief description of planned tests before implementation.
-    *   `- **Modified files:**` production and test files touched (required for in-progress work; optional for backlog designs). Use either the task level or the subtask level, not both. If a change belongs to a subtask, list it there; otherwise list it at the task level.
 *   Subtasks, if any, appear only at the end as their own `## Subtask: <title>` sections, with no `## Subtasks` section.
     *   Each subtask starts with `- **Status:** <status>`.
-    *   Each subtask uses the same list item labels and ordering as the main task: Scope, Motivation, Research, Design, Test specification, Modified files.
+    *   Each subtask uses the same list item labels and ordering as the main task: Scope, Motivation, Research, Design, Test specification.
     *   **Functional increments**: Subtasks must generally be vertical slices of functionality (increments that include their own research, design, and implementation).
     *   **Research/Design subtasks**: Pure "Research" or "Design" subtasks are permitted **only** if they produce distinct artifacts outside the task file itself (e.g., creating a separate documentation file in `docs/`, a proof-of-concept prototype, or an Architecture Decision Record). Otherwise, research and design findings must be recorded in the `Research` and `Design` sections of the relevant functional subtask or the main task.
     *   Explicitly include **Design** (preferably with PlantUML) and **Test specification** sections in every subtask.

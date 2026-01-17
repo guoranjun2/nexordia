@@ -1,4 +1,5 @@
 # Task: Indicate nodes created or modified by AI
+- **Task Identifier:** 2026-01-17-ai-edits
 - **Scope:** Define and apply an AI edits marker extension on nodes created or modified by AI tools, expose undoable actions to clear those markers, add a state icon indicator for marked nodes, and add preferences to control persistence and icon visibility.
 - **Motivation:** **Goal:** make artificial intelligence edits **transparent, optional, and reversible** so users can trust what changed and decide how long the signal should stay.
   
