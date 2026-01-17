@@ -3,27 +3,31 @@ package org.freeplane.plugin.ai.tools;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.MapModel;
-import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class SelectedMapAndNodeIdentifiersTool {
     private final AvailableMaps availableMaps;
+    private final SelectionIdentifiersBuilder selectionIdentifiersBuilder;
 
-    public SelectedMapAndNodeIdentifiersTool(AvailableMaps availableMaps) {
+    public SelectedMapAndNodeIdentifiersTool(AvailableMaps availableMaps, TextController textController) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.selectionIdentifiersBuilder = new SelectionIdentifiersBuilder(textController);
     }
 
-    public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers() {
+    public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers(SelectionIdentifiersRequest request) {
         UUID mapIdentifier = availableMaps.getCurrentMapIdentifier();
         MapModel mapModel = availableMaps.getCurrentMapModel();
-        NodeModel selectedNode = availableMaps.getCurrentSelectedNodeModel();
-        String nodeIdentifier = selectedNode == null ? null : selectedNode.getID();
         String mapIdentifierValue = mapIdentifier == null ? null : mapIdentifier.toString();
-        String rootNodeIdentifier = mapModel == null || mapModel.getRootNode() == null
+        IMapSelection selection = Controller.getCurrentController().getSelection();
+        SelectionCollectionMode selectionCollectionMode = request == null
             ? null
-            : mapModel.getRootNode().getID();
-        return new SelectionIdentifiersResponse(mapIdentifierValue, nodeIdentifier, rootNodeIdentifier);
+            : request.getSelectionCollectionMode();
+        return selectionIdentifiersBuilder.buildSelectionIdentifiersResponse(
+            mapIdentifierValue, mapModel, selection, selectionCollectionMode);
     }
 
     ToolCallSummary buildToolCallSummary(SelectionIdentifiersResponse response) {

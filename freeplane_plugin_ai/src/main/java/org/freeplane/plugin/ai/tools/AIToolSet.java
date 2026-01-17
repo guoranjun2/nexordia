@@ -27,6 +27,7 @@ public class AIToolSet {
     private final SystemMessageBuilder systemMessageBuilder;
     private final ReadNodesWithDescendantsTool readNodesWithDescendantsTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
+    private final SelectSingleNodeTool selectSingleNodeTool;
     private final SearchNodesTool searchNodesTool;
     private final CreateNodesTool createNodesTool;
     private final MoveNodesTool moveNodesTool;
@@ -72,7 +73,9 @@ public class AIToolSet {
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, nodeContentFactories.nodeContentItemReader, textController);
         SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool = new SelectedMapAndNodeIdentifiersTool(
-            availableMaps);
+            availableMaps, textController);
+        SelectSingleNodeTool selectSingleNodeTool = new SelectSingleNodeTool(
+            availableMaps, mapController, selectedMapAndNodeIdentifiersTool);
         SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, nodeContentFactories.nodeContentItemReader,
             textController);
         CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
@@ -89,6 +92,7 @@ public class AIToolSet {
             "readNodesWithDescendantsTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
+        this.selectSingleNodeTool = Objects.requireNonNull(selectSingleNodeTool, "selectSingleNodeTool");
         this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
         this.createNodesTool = Objects.requireNonNull(createNodesTool, "createNodesTool");
         this.moveNodesTool = Objects.requireNonNull(moveNodesTool, "moveNodesTool");
@@ -130,14 +134,28 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Get identifiers for the currently selected map and node.")
-    public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers() {
+    @Tool("Get identifiers for the currently selected map and node, with configurable selection collection mode.")
+    public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers(SelectionIdentifiersRequest request) {
         try {
-            SelectionIdentifiersResponse response = selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers();
+            SelectionIdentifiersResponse response = selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers(request);
             publishToolCallSummary(selectedMapAndNodeIdentifiersTool.buildToolCallSummary(response));
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(selectedMapAndNodeIdentifiersTool.buildToolCallErrorSummary(error));
+            throw error;
+        }
+    }
+
+    @Tool("Select a single node by identifier and make it visible in the current view. This updates the node shown "
+        + "to the user in the UI and should be used only for user communication; unexpected use can disrupt user "
+        + "workflow and reduce AI acceptance.")
+    public SelectionIdentifiersResponse selectSingleNode(SelectSingleNodeRequest request) {
+        try {
+            SelectionIdentifiersResponse response = selectSingleNodeTool.selectSingleNode(request);
+            publishToolCallSummary(selectSingleNodeTool.buildToolCallSummary(response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(selectSingleNodeTool.buildToolCallErrorSummary(request, error));
             throw error;
         }
     }
