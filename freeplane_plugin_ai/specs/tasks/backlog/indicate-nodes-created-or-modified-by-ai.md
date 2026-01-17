@@ -23,7 +23,16 @@
   - Fast review workflows where users quickly verify and then clear markers.
   - Long term auditing workflows where markers remain available across sessions.
   - Shared team conventions without forcing a single visual style or storage policy.
-- **Research:** Current tool flow and extension persistence patterns.
+- **Research:** Detailed findings live in the subtasks.
+- **Design:** Detailed design decisions live in the subtasks.
+- **Test specification:** Planned tests are defined per subtask.
+- **Modified files:** Tracked per subtask.
+
+## Subtask: Mark AI edits in tools
+- **Status:** Planning
+- **Scope:** Add the `AIEdits` extension and attach it to nodes created or edited by AI tools. No persistence or icon behavior yet.
+- **Motivation:** Provide immediate AI edit tracking in data without changing storage or user interface.
+- **Research:** Tool edit and create paths already support undoable changes.
   ```plantuml
   @startuml
   class AIToolSet
@@ -48,81 +57,6 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/CreateNodesTool.java` inserts nodes using `NodeInserter`.
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/NodeInserter.java` calls `MMapController.insertNode`, which is undoable in `freeplane/src/main/java/org/freeplane/features/map/mindmapmode/MMapController.java`.
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/edit/NodeContentEditor.java` edits nodes through controllers that are already undo-aware.
-  ```plantuml
-  @startuml
-  class IconController
-  interface IStateIconProvider
-  class NoteController
-
-  IconController o--> IStateIconProvider
-  NoteController ..> IStateIconProvider
-
-  note right of IconController
-  getStateIcons asks providers
-  and registers returned user interface icons
-  end note
-  @enduml
-  ```
-  - State icons are provided through `IStateIconProvider` implementations registered in `IconController`.
-  - `freeplane/src/viewer/resources/freeplane.properties` defines the `icons.state` list and `stateIcon.*` mappings for state icons.
-  - `freeplane/src/viewer/resources/images/ai.svg` already exists and can be referenced by a state icon entry.
-  - `WriteManager` supports extension attribute writers and extension element writers that can be used instead of `PersistentNodeHook`.
-- **Design:** Add an AI edits marker extension, undoable actions, optional state icon visibility, and optional persistence without using `PersistentNodeHook`.
-  ```plantuml
-  @startuml
-  class AIEdits
-  class AiEditsPersistenceBuilder
-  class AiEditsSettings
-  class AiEditsStateIconProvider
-  class ResetAiEditsForMapAction
-  class ResetAiEditsForNodeAction
-
-  AiEditsPersistenceBuilder --> AIEdits
-  AiEditsStateIconProvider --> AiEditsSettings
-  ResetAiEditsForMapAction --> AIEdits
-  ResetAiEditsForNodeAction --> AIEdits
-
-  note right of AiEditsPersistenceBuilder
-  Writes extension attributes only when
-  persistence setting is enabled
-  end note
-  @enduml
-  ```
-  - Add `AIEdits` as a marker class implementing `IExtension` and attach it to nodes created or edited by AI tools.
-  - Add `AiEditsPersistenceBuilder` that registers:
-    - a `ReadManager` attribute handler for a node attribute (for example, `AI_EDITS`) that installs the `AIEdits` extension
-    - a `WriteManager` extension attribute writer that writes the attribute only when persistence is enabled
-  - Add `AiEditsSettings` to read boolean properties for:
-    - whether the AI edits extension is persisted
-    - whether the AI edits state icon is shown
-  - Add `AiEditsStateIconProvider` to return `ai.svg` as a state icon when a node has `AIEdits` and icon visibility is enabled.
-  - Register the state icon provider and persistence builder during plugin startup in the AI plugin activator.
-  - Add a preference entry and default value for each new setting.
-  - Add two undoable actions:
-    - `ResetAiEditsForMapAction` clears the extension from all nodes in the active map.
-    - `ResetAiEditsForNodeAction` clears the extension from the current selection.
-    Both actions should use undoable actors that restore the extensions on undo and call `nodeChanged` for refresh.
-  - Update `CreateNodesTool` so created nodes receive `AIEdits` without adding a separate undo step.
-  - Update the edit tool flow so nodes edited by AI receive `AIEdits` in an undoable way, using a mode controller actor.
-  - Add `ai.svg` to the state icon list in `freeplane.properties` with a `stateIcon.ai.svg` mapping.
-- **Test specification:** Add tool tests for create and edit markers, a settings test for persistence output, a state icon provider test for visibility, and action tests that verify undo restoration.
-- **Modified files:** Tracked per subtask.
-
-## Subtask: Mark AI edits in tools
-- **Status:** Planning
-- **Scope:** Add the `AIEdits` extension and attach it to nodes created or edited by AI tools. No persistence or icon behavior yet.
-- **Motivation:** Provide immediate AI edit tracking in data without changing storage or user interface.
-- **Research:** Tool edit and create paths already support undoable changes.
-  ```plantuml
-  @startuml
-  class AIToolSet
-  class CreateNodesTool
-  class NodeContentEditor
-
-  AIToolSet --> CreateNodesTool
-  AIToolSet --> NodeContentEditor
-  @enduml
-  ```
 - **Design:** Attach `AIEdits` during creation and edits.
   ```plantuml
   @startuml
@@ -154,11 +88,20 @@
   @startuml
   class IconController
   interface IStateIconProvider
-  class MapController
+  class NoteController
 
   IconController o--> IStateIconProvider
+  NoteController ..> IStateIconProvider
+
+  note right of IconController
+  getStateIcons asks providers
+  and registers returned user interface icons
+  end note
   @enduml
   ```
+  - State icons are provided through `IStateIconProvider` implementations registered in `IconController`.
+  - `freeplane/src/viewer/resources/freeplane.properties` defines the `icons.state` list and `stateIcon.*` mappings for state icons.
+  - `freeplane/src/viewer/resources/images/ai.svg` already exists and can be referenced by a state icon entry.
 - **Design:** Add visibility settings, state icon provider, and undoable actions.
   ```plantuml
   @startuml
@@ -203,6 +146,7 @@
   ReadManager ..> IExtensionAttributeWriter
   @enduml
   ```
+  - `WriteManager` supports extension attribute writers and extension element writers that can be used instead of `PersistentNodeHook`.
 - **Design:** Add persistence builder and settings.
   ```plantuml
   @startuml
