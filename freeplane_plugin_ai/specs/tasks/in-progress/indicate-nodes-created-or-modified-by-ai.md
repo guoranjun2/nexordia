@@ -14,7 +14,6 @@
   - **Reset for node:** One action clears markers for selected nodes when only specific items are approved.
   - **Show or hide the icon:** Visibility can be turned on or off without removing the marker.
   - **Persist or not:** The marker can be saved with the map or kept as a session only signal.
-  - **Navigate or filter:** Jump between all nodes with the marker or filter them in search or selection tools.
   
   **Suggestions for future enhancements (not part of this task yet)**
   - **Edit summary:** Store a short summary of the artificial intelligence edits and show it in a tooltip or in a dedicated node area.
@@ -29,7 +28,7 @@
 - **Modified files:** Tracked per subtask.
 
 ## Subtask: Mark AI edits in tools
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Add the `AIEdits` extension and attach it to nodes created or edited by AI tools. No persistence or icon behavior yet.
 - **Motivation:** Provide immediate AI edit tracking in data without changing storage or user interface.
 - **Research:** Tool edit and create paths already support undoable changes.
@@ -71,16 +70,18 @@
   - Add `AIEdits` marker implementing `IExtension`.
   - When `CreateNodesTool` creates nodes, attach `AIEdits` to the created nodes without adding a separate undo step.
   - When `NodeContentEditor` applies edits, attach `AIEdits` to the edited nodes using an undoable actor.
+  - Do not attach `AIEdits` to hidden summary helper nodes; only the visible summary node should be marked when it is created or edited.
 - **Test specification:** Tool tests confirm `createNodes` and `edit` attach `AIEdits` to their target nodes.
 - **Modified files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/CreateNodesTool.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/NodeModelCreator.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/edit/NodeContentEditor.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AIEdits.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/create/CreateNodesToolTest.java
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/edit/NodeContentEditorTest.java
 
 ## Subtask: Actions and state icon visibility setting
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Add undoable actions to clear AI edits from a node or from the whole map, plus a state icon provider controlled by a visibility setting.
 - **Motivation:** Make AI edits visible and reversible without persisting them yet.
 - **Research:** State icons are registered through `IconController` providers.
@@ -107,29 +108,39 @@
   @startuml
   class AiEditsSettings
   class AiEditsStateIconProvider
-  class ResetAiEditsForMapAction
-  class ResetAiEditsForNodeAction
+  class ClearAiMarkersInMapAction
+  class ClearAiMarkersInSelectionAction
 
   AiEditsStateIconProvider --> AiEditsSettings
-  ResetAiEditsForMapAction --> AIEdits
-  ResetAiEditsForNodeAction --> AIEdits
+  ClearAiMarkersInMapAction --> AIEdits
+  ClearAiMarkersInSelectionAction --> AIEdits
   @enduml
   ```
   - Add `AiEditsSettings` with a boolean property for state icon visibility.
   - Add `AiEditsStateIconProvider` returning `ai.svg` when `AIEdits` is present and icon visibility is enabled.
   - Add undoable actions:
-    - `ResetAiEditsForMapAction` clears `AIEdits` for all nodes in the active map.
-    - `ResetAiEditsForNodeAction` clears `AIEdits` for the current selection.
+    - `ClearAiMarkersInMapAction` clears `AIEdits` for all nodes in the active map.
+    - `ClearAiMarkersInSelectionAction` clears `AIEdits` for the current selection.
   - Register the state icon provider and actions in the AI plugin activator.
+  - Add a `SetBooleanPropertyAction` for the visibility property and include it alongside the actions in the AI panel menu.
+  - Add labels and tooltips for the actions and the visibility option.
+  - Refresh node state icons when the visibility property changes.
   - Add the state icon entry for `ai.svg` in `freeplane.properties`.
 - **Test specification:** State icon provider returns `ai.svg` only when `AIEdits` exists and visibility is enabled; action tests confirm undo restores removed extensions.
 - **Modified files:**
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/Activator.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsSettings.java
   - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsStateIconProvider.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ResetAiEditsForMapAction.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ResetAiEditsForNodeAction.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ClearAiMarkersInMapAction.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ClearAiMarkersInSelectionAction.java
+  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
+  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
   - freeplane/src/viewer/resources/freeplane.properties
+  - freeplane/src/viewer/resources/images/ai.svg
+  - freeplane/src/viewer/resources/translations/Resources_en.properties
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/edits/AiEditsStateIconProviderTest.java
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/edits/ClearAiMarkersActionsTest.java
 
 ## Subtask: Persistence setting and serialization
 - **Status:** Planning

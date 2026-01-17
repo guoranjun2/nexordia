@@ -9,8 +9,11 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 
+import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.SummaryNodeFlag;
 import org.freeplane.features.text.TextController;
+import org.freeplane.plugin.ai.edits.AIEdits;
 import org.freeplane.plugin.ai.tools.content.ContentType;
 import org.freeplane.plugin.ai.tools.content.NodeContentItem;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
@@ -82,5 +85,53 @@ public class NodeContentEditorTest {
         assertThat(result).isSameAs(contentItem);
         verify(textualContentEditor).editExistingTextualContent(
             nodeModel, EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", textController);
+    }
+
+    @Test
+    public void edit_addsAiEditsMarkerWhenEditsAreApplied() {
+        TextController textController = mock(TextController.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextualContentEditor textualContentEditor = mock(TextualContentEditor.class);
+        AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
+        TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
+        IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        NodeContentEditor uut = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
+            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+        MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
+        NodeModel nodeModel = new NodeModel("node", mapModel);
+        NodeContentEditItem editItem = new NodeContentEditItem(
+            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.REPLACE, null);
+        NodeContentItem contentItem = new NodeContentItem("node-identifier",
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList());
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
+
+        uut.edit(nodeModel, Collections.singletonList(editItem));
+
+        assertThat(nodeModel.getExtension(AIEdits.class)).isNotNull();
+    }
+
+    @Test
+    public void edit_skipsAiEditsMarkerForHiddenSummaryNodes() {
+        TextController textController = mock(TextController.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextualContentEditor textualContentEditor = mock(TextualContentEditor.class);
+        AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
+        TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
+        IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        NodeContentEditor uut = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
+            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+        MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
+        NodeModel summaryNode = new NodeModel("", mapModel);
+        summaryNode.addExtension(SummaryNodeFlag.SUMMARY);
+        summaryNode.insert(new NodeModel("child", mapModel), 0);
+        NodeContentEditItem editItem = new NodeContentEditItem(
+            "node-identifier", EditedElement.TAGS, ContentType.PLAIN_TEXT, "tag", null, EditOperation.ADD, null);
+        NodeContentItem contentItem = new NodeContentItem("node-identifier",
+            new NodeContentResponse("", null, null, null, null, null), Collections.emptyList());
+        when(nodeContentItemReader.readNodeContentItem(summaryNode, NodeContentPreset.FULL)).thenReturn(contentItem);
+
+        uut.edit(summaryNode, Collections.singletonList(editItem));
+
+        assertThat(summaryNode.getExtension(AIEdits.class)).isNull();
     }
 }

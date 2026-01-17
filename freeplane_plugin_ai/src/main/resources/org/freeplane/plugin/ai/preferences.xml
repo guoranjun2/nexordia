@@ -14,6 +14,7 @@
         <boolean name="ai_mcp_server_enabled"/>
         <number name="ai_mcp_server_port" min="1024" max="65535" />
         <boolean name="ai_chat_show_tool_calls"/>
+        <boolean name="ai_edits_state_icon_visible"/>
         <textbox name="ai_system_message" lines="5"/>
     </separator>
 </tab>

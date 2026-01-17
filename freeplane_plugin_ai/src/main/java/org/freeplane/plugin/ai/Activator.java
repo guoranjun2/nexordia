@@ -9,7 +9,13 @@ import javax.swing.JTabbedPane;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.resources.IFreeplanePropertyListener;
+import org.freeplane.core.resources.SetBooleanPropertyAction;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.icon.IconController;
+import org.freeplane.features.map.MapController;
+import org.freeplane.features.map.NodeIterator;
+import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
@@ -17,6 +23,11 @@ import org.freeplane.main.application.CommandLineOptions;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
+import org.freeplane.plugin.ai.edits.AIEdits;
+import org.freeplane.plugin.ai.edits.AiEditsSettings;
+import org.freeplane.plugin.ai.edits.AiEditsStateIconProvider;
+import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
+import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCaller;
@@ -45,11 +56,12 @@ public class Activator implements BundleActivator {
 		    new IModeControllerExtensionProvider() {
 			    @Override
 				public void installExtension(final ModeController modeController, CommandLineOptions options) {
+				    addPluginDefaults();
+				    registerAiEditsFeatures(modeController);
 				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
 				    AIChatPanel aiChatPanel = new AIChatPanel();
 				    tabs.addTab("", ResourceController.getResourceController().getIcon("/images/panelTabs/aiTab.svg?useAccentColor=true"),
 				        aiChatPanel, TextUtils.getText("ai_panel"));
-				    addPluginDefaults();
 				    startModelContextProtocolServer(aiChatPanel);
 				    addPreferencesToOptionPanel();
 				}
@@ -78,16 +90,63 @@ public class Activator implements BundleActivator {
 					resourceController.securePropertyForReadingAndModification(SYSTEM_MESSAGE_PROPERTY);
 				}
 
-					private void startModelContextProtocolServer(AIChatPanel aiChatPanel) {
-						if (modelContextProtocolServer == null) {
+				private void registerAiEditsFeatures(ModeController modeController) {
+					IconController iconController = modeController.getExtension(IconController.class);
+					if (iconController != null) {
+						AiEditsSettings aiEditsSettings = new AiEditsSettings();
+						iconController.addStateIconProvider(new AiEditsStateIconProvider(aiEditsSettings));
+					}
+					modeController.addAction(new ClearAiMarkersInMapAction());
+					modeController.addAction(new ClearAiMarkersInSelectionAction());
+					modeController.addAction(new SetBooleanPropertyAction(
+						AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY));
+					registerAiEditsIconRefreshListener();
+				}
+
+				private void registerAiEditsIconRefreshListener() {
+					ResourceController.getResourceController().addPropertyChangeListener(
+						new IFreeplanePropertyListener() {
+							@Override
+							public void propertyChanged(String propertyName, String newValue, String oldValue) {
+								if (!AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY.equals(propertyName)) {
+									return;
+								}
+								refreshAiEditsStateIcons();
+							}
+						});
+				}
+
+				private void refreshAiEditsStateIcons() {
+					Controller controller = Controller.getCurrentController();
+					if (controller == null || controller.getModeController() == null) {
+						return;
+					}
+					if (controller.getMap() == null || controller.getMap().getRootNode() == null) {
+						return;
+					}
+					IconController iconController = controller.getModeController().getExtension(IconController.class);
+					if (iconController == null) {
+						return;
+					}
+					MapController mapController = controller.getModeController().getMapController();
+					NodeModel rootNode = controller.getMap().getRootNode();
+					NodeIterator<NodeModel> iterator = NodeIterator.of(rootNode, NodeModel::getChildren);
+					while (iterator.hasNext()) {
+						NodeModel node = iterator.next();
+						mapController.nodeRefresh(node, AIEdits.class, null, null);
+					}
+				}
+
+				private void startModelContextProtocolServer(AIChatPanel aiChatPanel) {
+					if (modelContextProtocolServer == null) {
 						modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
 						    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
 						    .toolCaller(ToolCaller.MCP)
 						    .build());
-							ResourceController.getResourceController()
-								.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
-						}
+						ResourceController.getResourceController()
+							.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
 					}
+				}
 		    }, properties);
 	}
 

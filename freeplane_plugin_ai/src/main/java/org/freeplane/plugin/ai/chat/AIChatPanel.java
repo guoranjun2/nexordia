@@ -1,11 +1,20 @@
 package org.freeplane.plugin.ai.chat;
 
-import org.freeplane.core.ui.components.FreeplaneToolBar;
-import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.resources.SetBooleanPropertyAction;
+import org.freeplane.core.ui.AFreeplaneAction;
+import org.freeplane.core.ui.LabelAndMnemonicSetter;
+import org.freeplane.core.ui.components.FreeplaneToolBar;
+import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
+import org.freeplane.core.ui.textchanger.TranslatedElement;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.mindmapmode.MModeController;
+import org.freeplane.plugin.ai.edits.AiEditsSettings;
+import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
+import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
@@ -16,6 +25,7 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -145,7 +155,46 @@ public class AIChatPanel extends JPanel {
             }
         };
         menuPopup.add(TranslatedElementFactory.createMenuItem(openPreferencesAction, "preferences"));
+        addAiEditsMenuItems(menuPopup);
         return menuPopup;
+    }
+
+    private void addAiEditsMenuItems(JPopupMenu menuPopup) {
+        if (Controller.getCurrentModeController() == null) {
+            return;
+        }
+        AFreeplaneAction clearMapAction = Controller.getCurrentModeController()
+            .getAction(ClearAiMarkersInMapAction.ACTION_KEY);
+        AFreeplaneAction clearSelectionAction = Controller.getCurrentModeController()
+            .getAction(ClearAiMarkersInSelectionAction.ACTION_KEY);
+        AFreeplaneAction showIconAction = Controller.getCurrentModeController()
+            .getAction(SetBooleanPropertyAction.actionKey(AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY));
+        if (clearMapAction == null && clearSelectionAction == null && showIconAction == null) {
+            return;
+        }
+        menuPopup.addSeparator();
+        addMenuItem(menuPopup, clearMapAction);
+        addMenuItem(menuPopup, clearSelectionAction);
+        addToggleMenuItem(menuPopup, showIconAction);
+    }
+
+    private void addMenuItem(JPopupMenu menuPopup, AFreeplaneAction action) {
+        if (action == null) {
+            return;
+        }
+        menuPopup.add(TranslatedElementFactory.createMenuItem(action, action.getTextKey()));
+    }
+
+    private void addToggleMenuItem(JPopupMenu menuPopup, AFreeplaneAction action) {
+        if (action == null) {
+            return;
+        }
+        String labelKey = action.getTextKey();
+        JCheckBoxMenuItem menuItem = new JAutoCheckBoxMenuItem(action);
+        LabelAndMnemonicSetter.setLabelAndMnemonic(menuItem, TextUtils.getRawText(labelKey));
+        TranslatedElement.TEXT.setKey(menuItem, labelKey);
+        TranslatedElementFactory.createTooltip(menuItem, action.getTooltipKey());
+        menuPopup.add(menuItem);
     }
 
     private void openPreferences() {
