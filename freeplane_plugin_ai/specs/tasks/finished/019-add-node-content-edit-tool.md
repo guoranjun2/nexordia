@@ -18,9 +18,7 @@
   - Verify invalid edits return an error without partial changes.
   - Verify responses include identifiers and short texts for all modified nodes.
 
-## Subtasks
-
-### Subtask: Add editable content for safe edits
+## Subtask: Add editable content for safe edits
 - **Status:** Finished
 - **Scope:** Add an optional editable content block that exposes raw values and format metadata for text, details, note, attributes, and explicit node icons so a large language model can edit safely without losing formulas or markup.
 - **Motivation:** Editing with transformed output risks data loss for formulas, markup, or raw attribute values. Providing editable representations makes safe edits possible without changing how the map renders. This is needed before adding editing tools to avoid corrupting node content.
@@ -90,7 +88,7 @@ EditableContent --> EditableIcon
   - Verify formula detection sets `isEditable` false for formula content and true for normal text.
   - Verify editable icons only include explicit node icons and exclude style icons.
 
-### Subtask: Rename creation helpers to `setInitialContent`
+## Subtask: Rename creation helpers to `setInitialContent`
 - **Status:** Finished
 - **Scope:** Rename `TextualContentEditor`, `AttributesContentEditor`, `TagsContentEditor`, and `IconsContentEditor` to expose `setInitialContent(NodeModel, ...)` so the creation path is explicitly labeled and a new edit path can later coexist. Update `NodeContentApplier` to call the new method so the helper names align with their current usage.
 - **Motivation:** Making the creation helpers’ intent explicit prevents confusion with future editing helpers, as discussed in finished task 017’s editor design, and frees the `apply` name for actual edit methods that integrate undo/redo.
@@ -108,7 +106,7 @@ EditableContent --> EditableIcon
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/TagsContentEditor.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/IconsContentEditor.java`
 
-### Subtask: Define edit request/response structure
+## Subtask: Define edit request/response structure
 - **Status:** Finished
 - **Scope:** Define the enums and data transfer objects that describe which node element is being edited, its `ContentType`, the value the model edits, and the structure returned by the edit tool so multiple elements per node can be updated in one request while still returning the updated node content.
 - **Motivation:** The edit tool needs to know which element was read (text, details, note, attributes, tags, icons) and what `ContentType` the model saw (plain text, HTML, Markdown, LaTeX, formula) so it can reject mismatches and keep formula editing out of scope. Returning the updated node content gives the caller confirmation that the change was applied.
@@ -130,7 +128,7 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Not yet implemented; future tests should cover request validation, formula rejection, and the response shape.
 
-### Subtask: Implement undo-aware edit helpers for textual content
+## Subtask: Implement undo-aware edit helpers for textual content
 - **Status:** Finished
 - **Scope:** Build edit helpers that rely on `MTextController` and `MNoteController` so node text, details, and notes are updated through the existing undo `IActor`s and content-type metadata.
 - **Motivation:** Those editors already wrap writes in `IActor`s, fire `nodeChanged`, and expose `TextController.isFormula`, so reusing them keeps formulas guarded and the undo stack consistent; the `isEditable` metadata is derived from the same formula checks.
@@ -141,7 +139,7 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Confirm the helper uses the controllers’ actors, respects the `isEditable` guard, and results in updated `NodeContentItem` content for text/details/note edits.
 
-### Subtask: Implement undo-aware edit helpers for collections
+## Subtask: Implement undo-aware edit helpers for collections
 - **Status:** Finished
 - **Scope:** Use `MAttributeController` and `MIconController` to implement add/delete/replace flows for attributes, tags, and explicit icons, honoring the optional `index`/selector and keeping all changes undoable.
 - **Motivation:** Collection edits already execute inside `IActor`s (`SetAttributeValueActor`, `RemoveAttributeActor`, `addIcon`/`removeIcon`, etc.), so reusing them keeps the map consistent while allowing precise targeting of duplicates.
@@ -153,7 +151,7 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Verify collection edits trigger the correct controller actors, the index/selector resolves the intended entry, and the returned `NodeContentItem` reflects the new attributes/tags/icons.
 
-### Subtask: Allow plain text to HTML conversion for node core
+## Subtask: Allow plain text to HTML conversion for node core
 - **Status:** Finished
 - **Scope:** Permit edits that convert node core text between plain text and HTML without rejecting the change.
 - **Motivation:** Core text already supports HTML formatting; blocking conversions causes unnecessary edit failures and forces the model to guess.
@@ -164,7 +162,7 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Add tests that allow a plain text node core to accept HTML-wrapped edits and that still reject markdown or latex mismatches.
 
-### Subtask: Allow content type selection for new nodes
+## Subtask: Allow content type selection for new nodes
 - **Status:** Finished
 - **Scope:** Allow node creation to specify content types so new nodes can be created as Markdown or LaTeX when appropriate.
 - **Motivation:** The model should be able to generate Markdown and LaTeX content at creation time without post-edit conversions.
@@ -182,7 +180,7 @@ EditableContent --> EditableIcon
 - **Test specification:**
   - Add tests that create nodes with Markdown and LaTeX content types and verify stored formats for text, details, and note.
 
-### Subtask: Provide icon catalog guidance for edits
+## Subtask: Provide icon catalog guidance for edits
 - **Status:** Finished
 - **Scope:** Ensure the model can discover valid icon names without enumerating every icon in tool descriptions.
 - **Motivation:** Icon names are long and the model hallucinates when it cannot access the catalog; we need a scalable way to surface valid icon names.

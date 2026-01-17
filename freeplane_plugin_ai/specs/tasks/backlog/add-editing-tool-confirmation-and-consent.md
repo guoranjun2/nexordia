@@ -24,6 +24,3 @@ Editing operations need explicit user consent that is specific to each tool and 
 
 ## Modified files
 None yet.
-
-## Subtasks
-None.

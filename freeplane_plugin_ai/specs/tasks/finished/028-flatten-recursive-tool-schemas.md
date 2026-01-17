@@ -37,6 +37,3 @@ Gemini and Ollama do not accept recursive JSON schema in tool parameters, which 
 - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeContentApplierTest.java
 - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeCreationHierarchyBuilderTest.java
 - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeModelCreatorTest.java
-
-## Subtasks
-None.

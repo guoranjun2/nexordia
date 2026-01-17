@@ -32,6 +32,3 @@ Freeplane tool access must happen on the event-dispatch thread. The current LC4J
 - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatService.java`
 - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/mcpserver/ModelContextProtocolToolDispatcher.java`
 - Deleted: `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/ToolExecutorSettings.java`
-
-## Subtasks
-None.

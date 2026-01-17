@@ -47,42 +47,42 @@
 ## Modified files
 - See subtasks.
 
-## Subtasks
-- ### Subtask: Provider allowlist preferences and Gemini model list
-  - **Status:** Finished
-  - **Scope**
-    - Add provider allowlist preferences with wildcard filtering.
-    - Use the Gemini model list preference as the sole source of Gemini models.
-  - **Motivation**
-    - Provider model lists should be configurable and stay aligned with available models.
-  - **Research**
-    - AIModelCatalog previously used static OpenRouter and Gemini lists, and fetched Ollama models.
-  - **Design**
-    - Fetch provider model lists and apply allowlist filtering per provider.
-    - Build Gemini model descriptors directly from the configured list without fetching.
-  - **Test specification**
-    - Verify allowlist filtering, Gemini list parsing, and updated OpenRouter parsing behavior.
-  - **Modified files**
-    - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIProviderConfiguration.java
-    - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIModelCatalog.java
-    - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
-    - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
-    - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/AIModelCatalogTest.java
-- ### Subtask: Rebuild model selector when allowlist preferences change
-  - **Status:** Implementation Review
-  - **Scope**
-    - Rebuild the model selector when any provider model list preference changes.
-  - **Motivation**
-    - Model selection should reflect the latest model list without restarting.
-  - **Research**
-    - Entry point: `.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);`
-    - Comparable pattern: `AntiAliasingConfigurator` registers a property change listener via `ResourceController.getResourceController().addPropertyChangeListenerAndPropagate(...)` and updates runtime behavior when `antialias` changes.
-    - Model selector lifecycle: `AIChatPanel` constructs `AIModelSelectionController` and calls `loadInitialModelSelectionList()` once during panel initialization; there is no listener that rebuilds the list when preferences change.
-  - **Design**
-    - Add a property change listener in `AIChatPanel` (or a small helper owned by it) using `ResourceController.addPropertyChangeListener(...)` to avoid an immediate refresh on registration.
-    - When any of the model list preference keys changes (`ai_openrouter_model_allowlist`, `ai_gemini_model_list`, `ai_ollama_model_allowlist`), call `modelSelectionController.loadInitialModelSelectionList()` to rebuild the model selector with refreshed provider lists.
-    - Keep the refresh scoped to allowlist changes only to avoid unintended reloads from unrelated preference updates.
-  - **Test specification**
-    - Verify updating a provider model list refreshes the model selector.
-  - **Modified files**
-    - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java
+## Subtask: Provider allowlist preferences and Gemini model list
+- **Status:** Finished
+- **Scope:**
+  - Add provider allowlist preferences with wildcard filtering.
+  - Use the Gemini model list preference as the sole source of Gemini models.
+- **Motivation:**
+  - Provider model lists should be configurable and stay aligned with available models.
+- **Research:**
+  - AIModelCatalog previously used static OpenRouter and Gemini lists, and fetched Ollama models.
+- **Design:**
+  - Fetch provider model lists and apply allowlist filtering per provider.
+  - Build Gemini model descriptors directly from the configured list without fetching.
+- **Test specification:**
+  - Verify allowlist filtering, Gemini list parsing, and updated OpenRouter parsing behavior.
+- **Modified files:**
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIProviderConfiguration.java
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIModelCatalog.java
+  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
+  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
+  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/AIModelCatalogTest.java
+
+## Subtask: Rebuild model selector when allowlist preferences change
+- **Status:** Implementation Review
+- **Scope:**
+  - Rebuild the model selector when any provider model list preference changes.
+- **Motivation:**
+  - Model selection should reflect the latest model list without restarting.
+- **Research:**
+  - Entry point: `.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);`
+  - Comparable pattern: `AntiAliasingConfigurator` registers a property change listener via `ResourceController.getResourceController().addPropertyChangeListenerAndPropagate(...)` and updates runtime behavior when `antialias` changes.
+  - Model selector lifecycle: `AIChatPanel` constructs `AIModelSelectionController` and calls `loadInitialModelSelectionList()` once during panel initialization; there is no listener that rebuilds the list when preferences change.
+- **Design:**
+  - Add a property change listener in `AIChatPanel` (or a small helper owned by it) using `ResourceController.addPropertyChangeListener(...)` to avoid an immediate refresh on registration.
+  - When any of the model list preference keys changes (`ai_openrouter_model_allowlist`, `ai_gemini_model_list`, `ai_ollama_model_allowlist`), call `modelSelectionController.loadInitialModelSelectionList()` to rebuild the model selector with refreshed provider lists.
+  - Keep the refresh scoped to allowlist changes only to avoid unintended reloads from unrelated preference updates.
+- **Test specification:**
+  - Verify updating a provider model list refreshes the model selector.
+- **Modified files:**
+  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java
