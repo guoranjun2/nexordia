@@ -26,7 +26,6 @@
 - **Research:** Detailed findings live in the subtasks.
 - **Design:** Detailed design decisions live in the subtasks.
 - **Test specification:** Planned tests are defined per subtask.
-- **Modified files:** Tracked per subtask.
 
 ## Subtask: Mark AI edits in tools
 - **Status:** Implementation Review
@@ -73,16 +72,9 @@
   - When `NodeContentEditor` applies edits, attach `AIEdits` to the edited nodes using an undoable actor.
   - Do not attach `AIEdits` to hidden summary helper nodes; only the visible summary node should be marked when it is created or edited.
 - **Test specification:** Tool tests confirm `createNodes` and `edit` attach `AIEdits` to their target nodes.
-- **Modified files:**
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/CreateNodesTool.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/create/NodeModelCreator.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/edit/NodeContentEditor.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AIEdits.java
-  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/create/CreateNodesToolTest.java
-  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/edit/NodeContentEditorTest.java
 
 ## Subtask: Actions and state icon visibility setting
-- **Status:** Implementation Review
+- **Status:** Finished
 - **Scope:** Add undoable actions to clear AI edits from a node or from the whole map, plus a state icon provider controlled by a visibility setting.
 - **Motivation:** Make AI edits visible and reversible without persisting them yet.
 - **Research:** State icons are registered through `IconController` providers.
@@ -104,6 +96,8 @@
   - State icons are provided through `IStateIconProvider` implementations registered in `IconController`.
   - `freeplane/src/viewer/resources/freeplane.properties` defines the `icons.state` list and `stateIcon.*` mappings for state icons.
   - `freeplane/src/viewer/resources/images/ai.svg` already exists and can be referenced by a state icon entry.
+  - `IconStoreFactory.ICON_STORE` initializes from `ResourceController` at class load time, which is not available in unit tests without framework initialization.
+  - The clear marker actions depend on `Controller.getCurrentController()` and `MapController`, which are also not available without additional framework setup in unit tests.
 - **Design:** Add visibility settings, state icon provider, and undoable actions.
   ```plantuml
   @startuml
@@ -119,6 +113,8 @@
   ```
   - Add `AiEditsSettings` with a boolean property for state icon visibility.
   - Add `AiEditsStateIconProvider` returning `ai.svg` when `AIEdits` is present and icon visibility is enabled.
+  - Move state icon decision logic into a test friendly helper that accepts visibility and marker state, while the provider only supplies the icon when needed.
+  - Move marker removal and undo logic into a helper that operates on `NodeModel` collections and `MapController` callbacks, with actions only responsible for wiring the selection and executing the undoable actor.
   - Add undoable actions:
     - `ClearAiMarkersInMapAction` clears `AIEdits` for all nodes in the active map.
     - `ClearAiMarkersInSelectionAction` clears `AIEdits` for the current selection.
@@ -127,21 +123,7 @@
   - Add labels and tooltips for the actions and the visibility option.
   - Refresh node state icons when the visibility property changes.
   - Add the state icon entry for `ai.svg` in `freeplane.properties`.
-- **Test specification:** State icon provider returns `ai.svg` only when `AIEdits` exists and visibility is enabled; action tests confirm undo restores removed extensions.
-- **Modified files:**
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/Activator.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsSettings.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsStateIconProvider.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ClearAiMarkersInMapAction.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/ClearAiMarkersInSelectionAction.java
-  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
-  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties
-  - freeplane/src/viewer/resources/freeplane.properties
-  - freeplane/src/viewer/resources/images/ai.svg
-  - freeplane/src/viewer/resources/translations/Resources_en.properties
-  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/edits/AiEditsStateIconProviderTest.java
-  - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/edits/ClearAiMarkersActionsTest.java
+- **Test specification:** Helper tests cover icon visibility decisions and marker removal with undo without requiring `ResourceController` or `Controller` initialization; provider tests verify icon presence when visibility is enabled and the marker is set.
 
 ## Subtask: Persistence setting and serialization
 - **Status:** Planning
@@ -175,9 +157,3 @@
   - Add a persistence boolean setting with preference and defaults.
   - Register the persistence builder during AI plugin startup.
 - **Test specification:** Persistence writer skips output when persistence is disabled and writes when enabled.
-- **Modified files:**
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/Activator.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsPersistenceBuilder.java
-  - freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/edits/AiEditsSettings.java
-  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/preferences.xml
-  - freeplane_plugin_ai/src/main/resources/org/freeplane/plugin/ai/defaults.properties

@@ -1,5 +1,8 @@
 package org.freeplane.plugin.ai.edits;
 
+import java.util.Objects;
+import java.util.function.Supplier;
+
 import org.freeplane.features.icon.IStateIconProvider;
 import org.freeplane.features.icon.UIIcon;
 import org.freeplane.features.icon.factory.IconStoreFactory;
@@ -7,22 +10,28 @@ import org.freeplane.features.map.NodeModel;
 
 public class AiEditsStateIconProvider implements IStateIconProvider {
     private final AiEditsSettings aiEditsSettings;
-    private final UIIcon aiEditsIcon;
+    private final AiEditsStateIconDecision stateIconDecision;
+    private final Supplier<UIIcon> iconSupplier;
 
     public AiEditsStateIconProvider(AiEditsSettings aiEditsSettings) {
-        this.aiEditsSettings = aiEditsSettings;
-        this.aiEditsIcon = IconStoreFactory.ICON_STORE.getUIIcon("ai.svg");
+        this(aiEditsSettings, new AiEditsStateIconDecision(), () -> IconStoreFactory.ICON_STORE.getUIIcon("ai.svg"));
+    }
+
+    AiEditsStateIconProvider(AiEditsSettings aiEditsSettings, AiEditsStateIconDecision stateIconDecision,
+                             Supplier<UIIcon> iconSupplier) {
+        this.aiEditsSettings = Objects.requireNonNull(aiEditsSettings, "aiEditsSettings");
+        this.stateIconDecision = Objects.requireNonNull(stateIconDecision, "stateIconDecision");
+        this.iconSupplier = Objects.requireNonNull(iconSupplier, "iconSupplier");
     }
 
     @Override
     public UIIcon getStateIcon(NodeModel node) {
-        if (!aiEditsSettings.isStateIconVisible()) {
+        boolean isStateIconVisible = aiEditsSettings.isStateIconVisible();
+        boolean hasAiEditsMarker = node.getExtension(AIEdits.class) != null;
+        if (!stateIconDecision.shouldShowIcon(isStateIconVisible, hasAiEditsMarker)) {
             return null;
         }
-        if (node.getExtension(AIEdits.class) == null) {
-            return null;
-        }
-        return aiEditsIcon;
+        return iconSupplier.get();
     }
 
     @Override

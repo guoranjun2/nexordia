@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.features.icon.UIIcon;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.junit.Test;
@@ -15,12 +16,14 @@ public class AiEditsStateIconProviderTest {
         ResourceController resourceController = mock(ResourceController.class);
         when(resourceController.getBooleanProperty(AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY)).thenReturn(true);
         AiEditsSettings aiEditsSettings = new AiEditsSettings(resourceController);
-        AiEditsStateIconProvider uut = new AiEditsStateIconProvider(aiEditsSettings);
+        UIIcon icon = mock(UIIcon.class);
+        AiEditsStateIconDecision decision = new AiEditsStateIconDecision();
+        AiEditsStateIconProvider uut = new AiEditsStateIconProvider(aiEditsSettings, decision, () -> icon);
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         nodeModel.addExtension(new AIEdits());
 
-        assertThat(uut.getStateIcon(nodeModel)).isNotNull();
+        assertThat(uut.getStateIcon(nodeModel)).isSameAs(icon);
     }
 
     @Test
@@ -28,7 +31,9 @@ public class AiEditsStateIconProviderTest {
         ResourceController resourceController = mock(ResourceController.class);
         when(resourceController.getBooleanProperty(AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY)).thenReturn(false);
         AiEditsSettings aiEditsSettings = new AiEditsSettings(resourceController);
-        AiEditsStateIconProvider uut = new AiEditsStateIconProvider(aiEditsSettings);
+        UIIcon icon = mock(UIIcon.class);
+        AiEditsStateIconDecision decision = new AiEditsStateIconDecision();
+        AiEditsStateIconProvider uut = new AiEditsStateIconProvider(aiEditsSettings, decision, () -> icon);
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         nodeModel.addExtension(new AIEdits());
