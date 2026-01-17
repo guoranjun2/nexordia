@@ -67,6 +67,7 @@ public class AIChatPanel extends JPanel {
         configureMessageHistoryStyles();
         resetMessageHistory();
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
+        messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));
         scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         inputArea = new JTextArea(3, 20);
@@ -253,7 +254,7 @@ public class AIChatPanel extends JPanel {
             return;
         }
         String messageText = messageRenderer.renderMessage(text, category == ChatMessageCategory.ASSISTANT);
-        messageHistory.appendMessage(messageText, category.getStyleClassName());
+        messageHistory.appendMessage(text, messageText, category.getStyleClassName());
     }
 
     public ToolCallSummaryHandler toolCallSummaryHandler() {

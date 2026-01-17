@@ -4,9 +4,15 @@
 - **Research:**
   - `JEditorPane` renders HyperText Markup Language using `HTMLEditorKit`, and default clipboard export can drop line breaks when pasted into plain text targets.
   - Assistant responses currently display as plain text or rendered Markdown, but the copy pipeline does not guarantee plain text line breaks are preserved.
+  - The AI chat panel uses a `JEditorPane` for message history and does not configure a custom `TransferHandler` yet.
 - **Design:**
-  - Preserve the original message text per response and use a custom `TransferHandler` to copy a plain text rendering with line breaks intact.
+  - Preserve the original message text per response and use a custom `TransferHandler` to provide both plain text (with line breaks intact) and HyperText Markup Language clipboard flavors.
   - Keep each message wrapped in a single HyperText Markup Language element with the existing message class to maintain styling.
 - **Test specification:**
   - Verify copying a message yields plain text with line breaks preserved.
   - Verify copying still works when Markdown rendering is enabled or disabled.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatMessageHistory.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatMessageTransferHandler.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/ChatMessageTransferHandlerTest.java`
