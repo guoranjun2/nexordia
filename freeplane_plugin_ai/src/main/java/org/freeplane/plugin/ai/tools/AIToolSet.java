@@ -377,7 +377,11 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Create summary content and a summary bracket for a summarized range. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")
+    @Tool("Create summary content and a summary bracket for a summarized range. "
+        + "Summary anchor nodes must share the same parent node. Omit optional textual fields such as details and note "
+        + "when they are empty instead of sending empty strings so the tool leaves those values untouched. Tip: to "
+        + "create a summary of summaries, choose summary anchor nodes that already exist at the same summary level "
+        + "under the same parent node, regardless of how those summary nodes were created.")
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
         try {
             CreateSummaryResponse response = createSummaryTool.createSummary(request);
