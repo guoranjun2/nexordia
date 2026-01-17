@@ -9,6 +9,7 @@ import javax.swing.JTabbedPane;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
@@ -46,7 +47,8 @@ public class Activator implements BundleActivator {
 				public void installExtension(final ModeController modeController, CommandLineOptions options) {
 				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
 				    AIChatPanel aiChatPanel = new AIChatPanel();
-				    tabs.addTab("AI", aiChatPanel);
+				    tabs.addTab("", ResourceController.getResourceController().getIcon("/images/panelTabs/aiTab.svg?useAccentColor=true"),
+				        aiChatPanel, TextUtils.getText("ai_panel"));
 				    addPluginDefaults();
 				    startModelContextProtocolServer(aiChatPanel);
 				    addPreferencesToOptionPanel();
