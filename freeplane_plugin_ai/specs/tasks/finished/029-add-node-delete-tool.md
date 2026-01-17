@@ -1,0 +1,27 @@
+# Task: Add node delete tool
+- **Scope:** Add a tool to delete nodes and return identifiers and short texts for all deleted nodes. Run only on specific user requests.
+- **Motivation:** Deleting nodes is a core editing action that must still provide identifiers and short texts so the model can track the change.
+- **Research:**
+  - Review map controller APIs for deleting nodes and handling selection changes.
+  - Review constraints such as root node deletion behavior and summary node effects.
+  - `MMapController.deleteNodes(List<NodeModel>)` deletes each node after expanding summary group edges and handles clone deletion via `deleteSingleNodeWithClones`.
+  - `DeleteAction` uses `selection.getSortedSelection(true)` (unique subtree roots) before deleting.
+  - `MapController.displayNode` ensures visibility but is not part of deletion; selection updates are handled by map controller listeners.
+  - Deleting the root node is not supported because `deleteSingleNode` requires a parent node.
+- **Design:**
+  - Accept a list of node identifiers to delete and delete in deterministic map order after filtering to unique subtree roots.
+  - Require a user summary string in the request and return it in the response for display.
+  - Resolve node identifiers against the map; return errors for unknown map identifiers, unknown node identifiers, or root node deletion attempts.
+  - Use `getSortedSelection(true)` style semantics (unique subtree roots) when deleting multiple nodes to avoid redundant descendant deletions.
+  - Return identifiers and short texts for deleted subtree roots only (after unique subtree filtering), plus counts for total deleted nodes and deleted subtree roots. Do not enumerate every descendant in the response.
+  - Formatting and style manipulation are out of scope for this tool.
+- **Test specification:**
+  - Verify multiple nodes are deleted in deterministic map order and counts reflect deleted subtree roots and total deleted nodes.
+  - Verify deletion errors are returned for invalid or unavailable operations.
+  - Verify responses include identifiers and short texts for deleted subtree roots only.
+- **Modified files:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/DeleteNodesRequest.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/DeleteNodesResponse.java`
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/DeleteNodesTool.java`
+  - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/DeleteNodesToolTest.java`

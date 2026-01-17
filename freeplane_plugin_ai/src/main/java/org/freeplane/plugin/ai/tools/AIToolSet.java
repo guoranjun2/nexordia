@@ -31,6 +31,7 @@ public class AIToolSet {
     private final SearchNodesTool searchNodesTool;
     private final CreateNodesTool createNodesTool;
     private final MoveNodesTool moveNodesTool;
+    private final DeleteNodesTool deleteNodesTool;
     private final CreateSummaryTool createSummaryTool;
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ListAvailableIconsTool listAvailableIconsTool;
@@ -81,6 +82,7 @@ public class AIToolSet {
         CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
             modifiedNodeSummaryBuilder);
         MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
+        DeleteNodesTool deleteNodesTool = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
         CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder,
             nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
         MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
@@ -96,6 +98,7 @@ public class AIToolSet {
         this.searchNodesTool = Objects.requireNonNull(searchNodesTool, "searchNodesTool");
         this.createNodesTool = Objects.requireNonNull(createNodesTool, "createNodesTool");
         this.moveNodesTool = Objects.requireNonNull(moveNodesTool, "moveNodesTool");
+        this.deleteNodesTool = Objects.requireNonNull(deleteNodesTool, "deleteNodesTool");
         this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
         this.listAvailableIconsTool = Objects.requireNonNull(listAvailableIconsTool, "listAvailableIconsTool");
@@ -168,6 +171,18 @@ public class AIToolSet {
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(searchNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("Delete nodes by identifier.")
+    public DeleteNodesResponse deleteNodes(DeleteNodesRequest request) {
+        try {
+            DeleteNodesResponse response = deleteNodesTool.deleteNodes(request);
+            publishToolCallSummary(deleteNodesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(deleteNodesTool.buildToolCallErrorSummary(request, error));
             throw error;
         }
     }
