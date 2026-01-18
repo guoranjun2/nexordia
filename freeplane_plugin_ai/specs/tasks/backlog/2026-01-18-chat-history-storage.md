@@ -1,0 +1,27 @@
+# Task: Persist and manage chat history
+- **Task Identifier:** 2026-01-18-chat-history-storage
+- **Scope:** Persist chat history under the user configuration directory in an `ai-chats` folder as gzip compressed JavaScript Object Notation files, list saved chats, allow loading and deletion, identify chats by timestamp and first user message text, and store a map identifier to map URL mapping so related maps are reopened on load.
+- **Motivation:** Users need to revisit and manage prior conversations, with the correct maps reopened to preserve context.
+- **Research:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java` keeps chat history in memory and does not persist it.
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatMessageHistory.java` only stores messages for display and copy operations.
+  - `freeplane/src/main/java/org/freeplane/core/resources/ResourceController.java` provides `getFreeplaneUserDirectory()` to locate the user configuration directory.
+  - `freeplane/src/main/java/org/freeplane/features/map/MapModel.java` exposes `getURL()` for retrieving a map URL.
+- **Design:**
+  - Introduce a chat history store that writes and reads gzip compressed JavaScript Object Notation files under `${freeplaneUserDirectory}/ai-chats`.
+  - Define a chat history record with:
+    - `timestamp` for the chat start time.
+    - `firstUserMessageText` for identification and listing.
+    - `messages` containing user and assistant text content in order.
+    - `mapReferences` containing map identifier to map URL mappings for maps referenced during the chat.
+  - Use a deterministic filename format that embeds the timestamp and a sanitized prefix of the first user message text to aid manual inspection.
+  - Provide list, load, and delete operations that read metadata from each stored file and populate a user interface for selecting prior chats.
+  - When loading a chat, reopen any referenced maps that are not already open, then restore the chat panel history and memory state.
+  - If a stored map identifier is not currently loaded, reuse it for the reopened map. If a map is already loaded with the same identifier, reattach the stored URL to confirm it matches the same map.
+  - If a map URL cannot be loaded, still restore the chat content; tool calls that rely on that identifier will fail until the map is available again.
+  - A chat can reference multiple maps; store and reload all map references captured during the conversation.
+  - Ensure deletion removes the stored file and updates the list view without requiring an application restart.
+- **Test specification:**
+  - Add tests for history serialization and deserialization to ensure messages and map references round trip correctly.
+  - Add tests for listing and deletion to ensure the file system state matches the in application list.
+  - Perform a manual check that loading a saved chat restores the history and reopens related maps.
