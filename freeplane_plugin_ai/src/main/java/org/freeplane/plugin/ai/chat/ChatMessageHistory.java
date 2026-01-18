@@ -9,9 +9,13 @@ import javax.swing.JEditorPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.HTMLWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class ChatMessageHistory {
     private final JEditorPane messageHistoryPane;
@@ -34,7 +38,7 @@ class ChatMessageHistory {
             LogUtils.severe(error);
         }
         int endOffset = document.getLength();
-        messageEntries.add(new MessageEntry(startOffset, endOffset, sourceText, messageMarkup));
+        messageEntries.add(new MessageEntry(startOffset, endOffset, sourceText, messageMarkup, styleClassName));
         scrollToBottom();
     }
 
@@ -42,6 +46,54 @@ class ChatMessageHistory {
         if (selectionStart == selectionEnd) {
             return null;
         }
+        int documentLength = messageHistoryPane.getDocument().getLength();
+        if (selectionStart <= 0 && selectionEnd >= documentLength) {
+            return createEntryTransferable(selectionStart, selectionEnd);
+        }
+        Transferable selectionTransferable = createSelectionTransferable(selectionStart, selectionEnd);
+        if (selectionTransferable != null) {
+            return selectionTransferable;
+        }
+        return createEntryTransferable(selectionStart, selectionEnd);
+    }
+
+    private Transferable createSelectionTransferable(int selectionStart, int selectionEnd) {
+        HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
+        int selectionLength = selectionEnd - selectionStart;
+        try {
+            String selectedPlainText = document.getText(selectionStart, selectionLength);
+            MessageEntry containingEntry = findContainingEntry(selectionStart, selectionEnd);
+            String selectedMarkupText = buildSelectionMarkup(document, selectionStart, selectionLength, containingEntry);
+            if (selectedMarkupText == null) {
+                return null;
+            }
+            return new ChatMessageTransferable(selectedPlainText, wrapMarkup(selectedMarkupText));
+        } catch (BadLocationException error) {
+            return null;
+        }
+    }
+
+    private String buildSelectionMarkup(HTMLDocument document, int selectionStart, int selectionLength,
+                                        MessageEntry containingEntry) {
+        try {
+            StringWriter stringWriter = new StringWriter();
+            HTMLWriter markupWriter = new HTMLWriter(
+                stringWriter,
+                document,
+                selectionStart,
+                selectionLength);
+            markupWriter.write();
+            String markup = stringWriter.toString();
+            if (containingEntry == null) {
+                return markup;
+            }
+            return stripOuterMessageDiv(markup, containingEntry);
+        } catch (IOException | BadLocationException error) {
+            return null;
+        }
+    }
+
+    private Transferable createEntryTransferable(int selectionStart, int selectionEnd) {
         List<MessageEntry> selectedEntries = new ArrayList<>();
         for (MessageEntry entry : messageEntries) {
             if (selectionStart < entry.endOffset && selectionEnd > entry.startOffset) {
@@ -54,6 +106,39 @@ class ChatMessageHistory {
         String plainText = joinSourceText(selectedEntries);
         String markupText = wrapMarkup(joinMarkup(selectedEntries));
         return new ChatMessageTransferable(plainText, markupText);
+    }
+
+    private MessageEntry findContainingEntry(int selectionStart, int selectionEnd) {
+        for (MessageEntry entry : messageEntries) {
+            if (selectionStart >= entry.startOffset && selectionEnd <= entry.endOffset) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    private String stripOuterMessageDiv(String markup, MessageEntry entry) {
+        if (markup == null || entry == null || entry.styleClassName == null) {
+            return markup;
+        }
+        String closingTag = "</div>";
+        Pattern openingPattern = Pattern.compile("<div\\s+[^>]*class=(\"|')?[^>]*\\b"
+            + Pattern.quote(entry.styleClassName) + "\\b[^>]*>",
+            Pattern.CASE_INSENSITIVE);
+        Matcher openingMatcher = openingPattern.matcher(markup);
+        if (!openingMatcher.find()) {
+            return markup;
+        }
+        int openingIndex = openingMatcher.start();
+        int openingEndIndex = openingMatcher.end();
+        int closingIndex = markup.lastIndexOf(closingTag);
+        if (closingIndex < 0 || closingIndex <= openingIndex) {
+            return markup;
+        }
+        String before = markup.substring(0, openingIndex);
+        String inner = markup.substring(openingEndIndex, closingIndex);
+        String after = markup.substring(closingIndex + closingTag.length());
+        return before + inner + after;
     }
 
     private String joinSourceText(List<MessageEntry> selectedEntries) {
@@ -88,12 +173,14 @@ class ChatMessageHistory {
         private final int endOffset;
         private final String sourceText;
         private final String messageMarkup;
+        private final String styleClassName;
 
-        MessageEntry(int startOffset, int endOffset, String sourceText, String messageMarkup) {
+        MessageEntry(int startOffset, int endOffset, String sourceText, String messageMarkup, String styleClassName) {
             this.startOffset = startOffset;
             this.endOffset = endOffset;
             this.sourceText = sourceText;
             this.messageMarkup = messageMarkup;
+            this.styleClassName = styleClassName;
         }
     }
 

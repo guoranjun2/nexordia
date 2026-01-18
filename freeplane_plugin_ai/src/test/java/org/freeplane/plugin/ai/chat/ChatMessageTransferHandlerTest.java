@@ -59,6 +59,54 @@ public class ChatMessageTransferHandlerTest {
         assertThat(plainText).isEqualTo("First line\nSecond line\n\nThird line");
     }
 
+    @Test
+    public void createTransferable_returnsSelectedSnippetForSingleMessage() throws Exception {
+        JEditorPane messageHistoryPane = new JEditorPane();
+        messageHistoryPane.setContentType("text/html");
+        HTMLEditorKit messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
+        ChatMessageHistory messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
+        messageHistory.appendMessage("Alpha Beta Gamma", "Alpha Beta Gamma", "message-assistant");
+        ChatMessageTransferHandler transferHandler = new ChatMessageTransferHandler(messageHistoryPane, messageHistory);
+
+        String documentText = messageHistoryPane.getDocument().getText(0, messageHistoryPane.getDocument().getLength());
+        int selectionStart = documentText.indexOf("Beta");
+        int selectionEnd = selectionStart + "Beta".length();
+        messageHistoryPane.setSelectionStart(selectionStart);
+        messageHistoryPane.setSelectionEnd(selectionEnd);
+
+        Transferable transferable = transferHandler.createTransferable(messageHistoryPane);
+
+        Object plainText = transferable.getTransferData(DataFlavor.stringFlavor);
+        assertThat(plainText).isEqualTo("Beta");
+
+        DataFlavor markupFlavor = findMarkupFlavor(transferable.getTransferDataFlavors());
+        Object markupText = transferable.getTransferData(markupFlavor);
+        assertThat((String) markupText).doesNotContain("message-assistant");
+    }
+
+    @Test
+    public void createTransferable_returnsSelectedRangeAcrossMessages() throws Exception {
+        JEditorPane messageHistoryPane = new JEditorPane();
+        messageHistoryPane.setContentType("text/html");
+        HTMLEditorKit messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
+        ChatMessageHistory messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
+        messageHistory.appendMessage("First line\nSecond line", "First line<br>Second line", "message-user");
+        messageHistory.appendMessage("Third line\nFourth line", "Third line<br>Fourth line", "message-user");
+        ChatMessageTransferHandler transferHandler = new ChatMessageTransferHandler(messageHistoryPane, messageHistory);
+
+        String documentText = messageHistoryPane.getDocument().getText(0, messageHistoryPane.getDocument().getLength());
+        int selectionStart = documentText.indexOf("Second");
+        int selectionEnd = documentText.indexOf("Fourth") + "Fourth".length();
+        messageHistoryPane.setSelectionStart(selectionStart);
+        messageHistoryPane.setSelectionEnd(selectionEnd);
+
+        Transferable transferable = transferHandler.createTransferable(messageHistoryPane);
+
+        Object plainText = transferable.getTransferData(DataFlavor.stringFlavor);
+        String expectedText = documentText.substring(selectionStart, selectionEnd);
+        assertThat(plainText).isEqualTo(expectedText);
+    }
+
     private DataFlavor findMarkupFlavor(DataFlavor[] dataFlavors) {
         for (DataFlavor dataFlavor : dataFlavors) {
             if (dataFlavor.getMimeType().startsWith("text/html")) {
