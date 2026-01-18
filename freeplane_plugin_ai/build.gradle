@@ -12,6 +12,9 @@ sourceSets {
         }
     }
 }
+
+ext.bundleImports = 'io.github.gitbucket.markedj.*'
+
 dependencies {
     implementation project(':freeplane')
     implementation project(':freeplane_plugin_markdown')
