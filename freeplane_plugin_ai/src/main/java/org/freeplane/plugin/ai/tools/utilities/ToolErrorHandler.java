@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.tools;
+package org.freeplane.plugin.ai.tools.utilities;
 
 import java.util.List;
 import java.util.Objects;

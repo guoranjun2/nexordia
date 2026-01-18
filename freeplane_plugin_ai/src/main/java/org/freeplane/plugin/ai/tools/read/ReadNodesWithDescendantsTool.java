@@ -17,8 +17,6 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.SummaryNode;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryFormatter;
 import org.freeplane.plugin.ai.tools.content.AttributeEntry;
 import org.freeplane.plugin.ai.tools.content.AttributesContent;
 import org.freeplane.plugin.ai.tools.content.AttributesContentRequest;
@@ -36,6 +34,8 @@ import org.freeplane.plugin.ai.tools.content.TextualContent;
 import org.freeplane.plugin.ai.tools.content.TextualContentRequest;
 import org.freeplane.plugin.ai.tools.search.OmissionReason;
 import org.freeplane.plugin.ai.tools.search.Omissions;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

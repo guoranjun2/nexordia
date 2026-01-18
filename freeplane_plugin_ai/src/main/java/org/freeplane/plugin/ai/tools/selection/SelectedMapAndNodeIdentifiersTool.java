@@ -8,8 +8,8 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryFormatter;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class SelectedMapAndNodeIdentifiersTool {
     private final AvailableMaps availableMaps;

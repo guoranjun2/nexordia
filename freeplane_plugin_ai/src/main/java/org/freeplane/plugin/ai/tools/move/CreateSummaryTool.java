@@ -9,8 +9,6 @@ import java.util.UUID;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolErrorHandler;
 import org.freeplane.plugin.ai.tools.content.ModifiedNodeSummary;
 import org.freeplane.plugin.ai.tools.content.ModifiedNodeSummaryBuilder;
 import org.freeplane.plugin.ai.tools.create.AnchorPlacementMode;
@@ -18,6 +16,8 @@ import org.freeplane.plugin.ai.tools.create.NodeCreationHierarchy;
 import org.freeplane.plugin.ai.tools.create.NodeCreationHierarchyBuilder;
 import org.freeplane.plugin.ai.tools.create.NodeCreationItem;
 import org.freeplane.plugin.ai.tools.create.NodeInserter;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolErrorHandler;
 
 public class CreateSummaryTool {
     private final AvailableMaps availableMaps;

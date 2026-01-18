@@ -8,8 +8,8 @@ import java.util.List;
 
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.junit.Test;
 
 public class SearchNodesToolSummaryTest {

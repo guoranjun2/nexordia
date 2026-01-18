@@ -1,7 +1,7 @@
 package org.freeplane.plugin.ai.chat;
 
 import org.freeplane.plugin.ai.tools.AIToolSet;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
 import dev.langchain4j.model.chat.ChatModel;
 

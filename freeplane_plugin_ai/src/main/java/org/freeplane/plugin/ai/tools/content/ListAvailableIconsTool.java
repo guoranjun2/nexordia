@@ -10,8 +10,8 @@ import java.util.Set;
 import org.freeplane.features.icon.MindIcon;
 import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.icon.factory.IconStoreFactory;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryFormatter;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class ListAvailableIconsTool {
     private static final String NOTE_MESSAGE = "This list includes built-in and user-defined Freeplane icons only; "

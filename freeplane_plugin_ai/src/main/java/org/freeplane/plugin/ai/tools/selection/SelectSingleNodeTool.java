@@ -7,8 +7,8 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryFormatter;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class SelectSingleNodeTool {
     private final AvailableMaps availableMaps;

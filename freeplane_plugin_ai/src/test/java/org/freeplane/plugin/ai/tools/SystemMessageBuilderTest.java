@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

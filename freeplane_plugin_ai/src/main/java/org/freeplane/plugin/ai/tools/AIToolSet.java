@@ -19,7 +19,6 @@ import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.text.mindmapmode.MTextController;
-import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.tools.content.ListAvailableIconsResponse;
 import org.freeplane.plugin.ai.tools.content.ListAvailableIconsTool;
@@ -71,6 +70,10 @@ import org.freeplane.plugin.ai.tools.selection.SelectSingleNodeTool;
 import org.freeplane.plugin.ai.tools.selection.SelectedMapAndNodeIdentifiersTool;
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersRequest;
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersResponse;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
 import dev.langchain4j.agent.tool.Tool;
 

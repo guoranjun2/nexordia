@@ -16,13 +16,13 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryFormatter;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
 import org.freeplane.plugin.ai.tools.content.NodeContentPreset;
 import org.freeplane.plugin.ai.tools.content.NodeContentRequest;
 import org.freeplane.plugin.ai.tools.content.NodeContentResponse;
 import org.freeplane.plugin.ai.tools.content.NodeContentValueMatcher;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.tools;
+package org.freeplane.plugin.ai.tools.utilities;
 
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.service.tool.ToolExecutor;

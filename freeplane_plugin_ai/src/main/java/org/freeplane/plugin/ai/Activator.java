@@ -22,7 +22,6 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.application.CommandLineOptions;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
-import org.freeplane.plugin.ai.chat.SystemMessageBuilder;
 import org.freeplane.plugin.ai.edits.AIEdits;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.AiEditsStateIconProvider;
@@ -30,7 +29,8 @@ import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
-import org.freeplane.plugin.ai.tools.ToolCaller;
+import org.freeplane.plugin.ai.tools.SystemMessageBuilder;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 

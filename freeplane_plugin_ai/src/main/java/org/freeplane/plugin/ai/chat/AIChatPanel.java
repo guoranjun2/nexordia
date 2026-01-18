@@ -16,9 +16,9 @@ import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
-import org.freeplane.plugin.ai.tools.ToolCaller;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;

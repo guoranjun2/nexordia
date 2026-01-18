@@ -11,8 +11,8 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.plugin.ai.tools.ToolExecutorFactory;
-import org.freeplane.plugin.ai.tools.ToolExecutorRegistry;
+import org.freeplane.plugin.ai.tools.utilities.ToolExecutorFactory;
+import org.freeplane.plugin.ai.tools.utilities.ToolExecutorRegistry;
 
 public class ModelContextProtocolToolDispatcher {
     private final ObjectMapper objectMapper;

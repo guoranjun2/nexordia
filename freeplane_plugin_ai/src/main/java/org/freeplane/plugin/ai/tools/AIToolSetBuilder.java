@@ -23,6 +23,8 @@ import org.freeplane.plugin.ai.tools.content.TagsContentReader;
 import org.freeplane.plugin.ai.tools.content.TextualContentReader;
 import org.freeplane.plugin.ai.tools.text.DefaultEnglishTextProvider;
 import org.freeplane.plugin.ai.tools.text.EnglishTextProvider;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
 public class AIToolSetBuilder {
     private ToolCallSummaryHandler toolCallSummaryHandler;

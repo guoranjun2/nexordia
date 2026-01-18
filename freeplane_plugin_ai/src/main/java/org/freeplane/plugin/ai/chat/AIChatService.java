@@ -5,6 +5,11 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import java.util.Objects;
 
 import org.freeplane.plugin.ai.tools.AIToolSet;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
+import org.freeplane.plugin.ai.tools.utilities.ToolExecutorFactory;
+import org.freeplane.plugin.ai.tools.utilities.ToolExecutorRegistry;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -15,11 +20,7 @@ import dev.langchain4j.observability.api.listener.AiServiceListener;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
-import org.freeplane.plugin.ai.tools.ToolCallSummary;
-import org.freeplane.plugin.ai.tools.ToolCallSummaryHandler;
-import org.freeplane.plugin.ai.tools.ToolCaller;
-import org.freeplane.plugin.ai.tools.ToolExecutorFactory;
-import org.freeplane.plugin.ai.tools.ToolExecutorRegistry;
+
 import org.freeplane.core.util.LogUtils;
 
 public class AIChatService {

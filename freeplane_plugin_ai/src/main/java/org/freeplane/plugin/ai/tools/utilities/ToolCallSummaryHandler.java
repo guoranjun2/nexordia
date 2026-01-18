@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.tools;
+package org.freeplane.plugin.ai.tools.utilities;
 
 @FunctionalInterface
 public interface ToolCallSummaryHandler {
