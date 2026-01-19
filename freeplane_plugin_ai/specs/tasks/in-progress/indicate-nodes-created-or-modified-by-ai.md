@@ -23,14 +23,16 @@
   - Fast review workflows where users quickly verify and then clear markers.
   - Long term auditing workflows where markers remain available across sessions.
   - Shared team conventions without forcing a single visual style or storage policy.
-- **Research:** Detailed findings live in the subtasks.
-- **Design:** Detailed design decisions live in the subtasks.
-- **Test specification:** Planned tests are defined per subtask.
+- **Developer Briefing:** AI tools in the plugin already create and edit nodes through undo-aware paths. This task adds an `AIEdits` marker extension, uses AI tooling to attach it on create/edit, and layers user controls (clear actions, icon visibility, persistence) without changing existing AI tool behavior. The subtasks split data marking, UI visibility, and persistence so each increment can be implemented and verified independently.
+- **Research:** AI tool flows are already undo-aware and route through `CreateNodesTool`/`NodeInserter` and `NodeContentEditor`. State icon providers are registered in `IconController`, and `ai.svg` already exists. Persistence can be implemented via `ReadManager`/`WriteManager` attribute handlers instead of `PersistentNodeHook`.
+- **Design:** Add an `AIEdits` extension that is attached during AI create/edit flows; add undoable actions to clear markers; add a state icon provider gated by a visibility setting; and add persistence that is controlled by a preference and writes the attribute only when enabled.
+- **Test specification:** For each subtask, add focused tests: marker attachment on AI create/edit, icon visibility and marker clearing logic, and persistence writer behavior when enabled/disabled.
 
 ## Subtask: Mark AI edits in tools
 - **Status:** Implementation Review
 - **Scope:** Add the `AIEdits` extension and attach it to nodes created or edited by AI tools. No persistence or icon behavior yet.
 - **Motivation:** Provide immediate AI edit tracking in data without changing storage or user interface.
+- **Developer Briefing:** The AI tools already call undo-aware create and edit paths, so the marker can be attached at the end of those flows. Keep the marker attachment minimal and avoid adding extra undo steps beyond existing create/edit actions.
 - **Research:** Tool edit and create paths already support undoable changes.
   ```plantuml
   @startuml
@@ -77,6 +79,7 @@
 - **Status:** Finished
 - **Scope:** Add undoable actions to clear AI edits from a node or from the whole map, plus a state icon provider controlled by a visibility setting.
 - **Motivation:** Make AI edits visible and reversible without persisting them yet.
+- **Developer Briefing:** This subtask adds reversible user actions and a UI indicator without changing persistence. The state icon provider should be a thin wrapper over a testable decision helper, and marker removal should be centralized in a helper so the actions stay focused on wiring selections and undo.
 - **Research:** State icons are registered through `IconController` providers.
   ```plantuml
   @startuml
@@ -129,6 +132,7 @@
 - **Status:** Planning
 - **Scope:** Add persistence of `AIEdits` using attribute handlers and extension writers, controlled by a persistence setting.
 - **Motivation:** Allow optional storage of AI edit indicators across saves.
+- **Developer Briefing:** Persist the marker via attribute handlers registered with `ReadManager`/`WriteManager`, and gate writes on a preference. This should allow opt-in storage without altering existing save formats when disabled.
 - **Research:** `WriteManager` and `ReadManager` support attribute handlers and extension writers.
   ```plantuml
   @startuml

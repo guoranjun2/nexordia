@@ -2,6 +2,7 @@
 - **Task Identifier:** 2026-01-18-chat-copy-selection
 - **Scope:** Update the chat copy and drag and drop behavior so a selected snippet is transferred instead of the full response, while keeping full message transfer when no selection exists. Add a select all shortcut for the chat history pane.
 - **Motivation:** Users expect the copy shortcut and drag actions to use the selected text, not the full assistant response, especially for long replies.
+- **Developer Briefing:** The chat transfer handler currently passes selection offsets, but `ChatMessageHistory.createTransferable` ignores them and returns full message text. This task makes transfer logic selection-aware for both copy and drag, while preserving the full message fallback when nothing is selected, and adds a select-all shortcut for the history pane.
 - **Research:**
   ```plantuml
   @startuml
