@@ -129,10 +129,10 @@
 - **Test specification:** Helper tests cover icon visibility decisions and marker removal with undo without requiring `ResourceController` or `Controller` initialization; provider tests verify icon presence when visibility is enabled and the marker is set.
 
 ## Subtask: Persistence setting and serialization
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:** Add persistence of `AIEdits` using attribute handlers and extension writers, controlled by a persistence setting.
 - **Motivation:** Allow optional storage of AI edit indicators across saves.
-- **Developer Briefing:** Persist the marker via attribute handlers registered with `ReadManager`/`WriteManager`, and gate writes on a preference. This should allow opt-in storage without altering existing save formats when disabled.
+- **Developer Briefing:** Persist the marker via attribute handlers registered with `ReadManager`/`WriteManager`, and gate writes on a preference. Reading should always hydrate stored markers from maps so user data is preserved, while the preference only controls whether new saves emit the attribute.
 - **Research:** `WriteManager` and `ReadManager` support attribute handlers and extension writers.
   ```plantuml
   @startuml
@@ -144,6 +144,8 @@
   ReadManager ..> IExtensionAttributeWriter
   @enduml
   ```
+  - `TagBuilder` registers `ReadManager` attribute handlers on `NodeBuilder.XML_NODE` and `NodeBuilder.XML_STYLENODE`, then adds a `WriteManager` extension attribute writer for `Tags`.
+  - `NodeEnumerationAttributeHandler` combines `IAttributeHandler` and `IExtensionAttributeWriter` to read/write a simple node attribute through `ReadManager`/`WriteManager`.
   - `WriteManager` supports extension attribute writers and extension element writers that can be used instead of `PersistentNodeHook`.
 - **Design:** Add persistence builder and settings.
   ```plantuml
@@ -156,8 +158,13 @@
   @enduml
   ```
   - Add `AiEditsPersistenceBuilder` that registers:
-    - a `ReadManager` attribute handler for a node attribute (for example, `AI_EDITS`) to install `AIEdits`
-    - a `WriteManager` extension attribute writer that writes the attribute only when persistence is enabled
-  - Add a persistence boolean setting with preference and defaults.
-  - Register the persistence builder during AI plugin startup.
-- **Test specification:** Persistence writer skips output when persistence is disabled and writes when enabled.
+    - a `ReadManager` attribute handler for a node attribute (for example, `AI_EDITS`) on `NodeBuilder.XML_NODE` and `NodeBuilder.XML_STYLENODE` that installs `AIEdits` when the attribute is present
+    - a `WriteManager` extension attribute writer for `AIEdits` that writes the attribute only when persistence is enabled and the marker is present
+  - Keep read behavior unconditional so maps containing `AI_EDITS` always rehydrate markers, even when persistence is disabled.
+  - When persistence is disabled, do not emit `AI_EDITS` on save even if markers were read from the map file.
+  - Add a persistence boolean setting with preference and defaults (default off), scoped under the AI plugin settings class.
+  - Register the persistence builder during AI plugin startup alongside other AI edit wiring.
+- **Test specification:**
+  - Verify the attribute handler attaches `AIEdits` when the `AI_EDITS` attribute is read on both `XML_NODE` and `XML_STYLENODE`.
+  - Verify the attribute writer emits `AI_EDITS` only when persistence is enabled and the marker is present, even if the marker came from a prior read.
+  - Verify that disabling persistence does not remove existing `AIEdits` markers in memory after a read.

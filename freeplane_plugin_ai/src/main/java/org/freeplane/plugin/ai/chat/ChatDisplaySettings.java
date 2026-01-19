@@ -3,7 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import org.freeplane.core.resources.ResourceController;
 
 public class ChatDisplaySettings {
-    private static final String CHAT_SHOW_TOOL_CALLS_PROPERTY = "ai_chat_show_tool_calls";
+    private static final String CHAT_SHOWS_TOOL_CALLS_PROPERTY = "ai_chat_shows_tool_calls";
 
     private final ResourceController resourceController;
 
@@ -12,6 +12,6 @@ public class ChatDisplaySettings {
     }
 
     public boolean isToolCallHistoryVisible() {
-        return resourceController.getBooleanProperty(CHAT_SHOW_TOOL_CALLS_PROPERTY);
+        return resourceController.getBooleanProperty(CHAT_SHOWS_TOOL_CALLS_PROPERTY);
     }
 }

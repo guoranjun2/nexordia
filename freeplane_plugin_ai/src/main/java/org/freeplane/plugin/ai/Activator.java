@@ -23,6 +23,7 @@ import org.freeplane.main.application.CommandLineOptions;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.plugin.ai.edits.AIEdits;
+import org.freeplane.plugin.ai.edits.AiEditsPersistenceBuilder;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.AiEditsStateIconProvider;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
@@ -91,10 +92,15 @@ public class Activator implements BundleActivator {
 				}
 
 				private void registerAiEditsFeatures(ModeController modeController) {
+					AiEditsSettings aiEditsSettings = new AiEditsSettings();
 					IconController iconController = modeController.getExtension(IconController.class);
 					if (iconController != null) {
-						AiEditsSettings aiEditsSettings = new AiEditsSettings();
 						iconController.addStateIconProvider(new AiEditsStateIconProvider(aiEditsSettings));
+					}
+					MapController mapController = modeController.getMapController();
+					if (mapController != null) {
+						AiEditsPersistenceBuilder persistenceBuilder = new AiEditsPersistenceBuilder(aiEditsSettings);
+						persistenceBuilder.registerBy(mapController.getReadManager(), mapController.getWriteManager());
 					}
 					modeController.addAction(new ClearAiMarkersInMapAction());
 					modeController.addAction(new ClearAiMarkersInSelectionAction());

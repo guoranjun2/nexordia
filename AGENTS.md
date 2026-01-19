@@ -36,7 +36,7 @@ In case of workflow ambiguity, the constitution is the source of truth, includin
 - Add `-PTestLoggingFull` for verbose failures
 
 ## Translations & i18n
-- Files: `freeplane/src/editor/resources/translations/Resources_*.properties`.
+- Files: `freeplane/src/editor/resources/translations/Resources_*.properties`, `freeplane/src/viewer/resources/translations/Resources_en.properties`.
 - Encoding: ISO-8859-1 with `\uXXXX` escapes. Convert using `native2ascii`.
 - Always run: `gradle format_translation` after edits.
 - Quick validation:

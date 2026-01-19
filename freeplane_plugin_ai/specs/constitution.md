@@ -15,7 +15,9 @@ When uncertain or before changing behavior, propose next steps, ask for approval
 10. **Finished task cleanup**: Keep finished tasks in the project task directory under the finished status folder with a three digit prefix in the file name based on the order they are moved into finished. Delete them from the working tree after a release tag is created.
 
 ## Workflow Checklist
-- Before commit: verify task status and folder changes, stage renames, confirm with user.
+- Before any task file edit, update subtask status if it changes (Planning or Implementing) before editing.
+- Before reporting to the user, update subtask status if it changes (Planning -> Plan Review, Implementing -> Implementation Review).
+- Before commit: verify task status and folder changes, stage renames; confirm with user unless they explicitly instructed to commit.
 - Before commit: confirm the commit message starts with the **Primary Identifier**:
     - If a Ticket ID exists, use it alone (e.g., `TICKET-123: ...`).
     - If no Ticket ID exists, use the full Task Identifier (e.g., `2025-01-15-research: ...`).
