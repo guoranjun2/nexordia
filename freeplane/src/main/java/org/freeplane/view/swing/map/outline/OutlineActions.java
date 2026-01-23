@@ -6,6 +6,9 @@ import javax.swing.ActionMap;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JPopupMenu;
+
+import org.freeplane.core.ui.AFreeplaneAction;
+import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import javax.swing.KeyStroke;
 import java.awt.event.ActionEvent;
@@ -142,6 +145,8 @@ class OutlineActions {
         menu.add(TranslatedElementFactory.createMenuItem(toggleExpand, "outline.toggle.expand"));
         menu.addSeparator();
         menu.add(TranslatedElementFactory.createMenuItem(openPreferences, "preferences"));
+        AFreeplaneAction toggleOutlineAction = Controller.getCurrentController().getAction("ToggleOutlineAction");
+		menu.add(new JAutoCheckBoxMenuItem(toggleOutlineAction));
         return menu;
     }
 }

@@ -23,6 +23,7 @@ import javax.swing.Timer;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.features.mode.Controller;
 
 class OutlinePane extends JPanel implements OutlineActionTargetProvider {
 	private static final long serialVersionUID = 1L;
@@ -113,6 +114,7 @@ class OutlinePane extends JPanel implements OutlineActionTargetProvider {
             actions.goLeft.setEnabled(hasParent);
             actions.goRight.setEnabled(hasChild);
             actions.toggleExpand.setEnabled(canToggle);
+            Controller.getCurrentController().getAction("ToggleOutlineAction").setSelected();
             actionMenu.show(menuButton, 0, menuButton.getHeight());
         });
         toolbar.add(menuButton);
