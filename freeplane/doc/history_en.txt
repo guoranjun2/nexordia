@@ -3,6 +3,7 @@
 ==============================
 AI integration (open router API key, Gemini API key, ollama, as local MCP server)
 
+==============================
 1.12.17
 ==============================
 Bug fix: opening bookmark as root
