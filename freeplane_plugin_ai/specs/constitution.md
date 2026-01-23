@@ -51,7 +51,7 @@ Each task uses the following exact order and layout:
 *   Main task sections are list items with bold labels in this exact order:
     *   `- **Scope:**` what the task will deliver.
     *   `- **Motivation:**` explain why the task exists (backlog tasks or in-progress design stages only).
-    *   `- **Developer Briefing:**` a concise technical overview enabling a developer unfamiliar with the codebase to understand the task's context, legacy constraints, and architectural approach. This section summarizes the key findings from Research and Design; you must update it whenever the Research or Design sections are modified.
+    *   `- **Developer Briefing:**` a concise technical overview enabling a developer unfamiliar with the codebase to understand the task's context, legacy constraints, and architectural approach. This section summarizes the key findings from Research and Design and must not introduce new findings; you must update it whenever the Research or Design sections are modified.
     *   `- **Research:**` facts and observations describing the *current state* of the code. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
     *   `- **Design:**` structure, data flow, constraints, and decisions describing the *future state* to be achieved. Use PlantUML diagrams when they add clarity (class, sequence, or similar); do not use note-only diagrams. Otherwise use text. When using PlantUML, wrap it in fenced code blocks with the `plantuml` info string.
     *   `- **Test specification:**` brief description of planned tests before implementation.
