@@ -88,8 +88,6 @@ class ApplicationViewController extends FrameController {
 	 */
 	@Override
 	public void changeNoteWindowLocation(String location) {
-		final ResourceController resourceController = ResourceController.getResourceController();
-		resourceController.setProperty("note_location", location);
 		final AuxiliarySplitPanes splitPanes = getSplitPanes();
 		if (splitPanes != null) {
 			splitPanes.changeAuxComponentSide(0, location);
@@ -116,7 +114,7 @@ class ApplicationViewController extends FrameController {
 		else
 			return null;
 	}
-	
+
 	/**
 	 * Gets the AuxiliarySplitPanes manager for note operations.
 	 */

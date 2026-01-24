@@ -16,6 +16,7 @@ class AuxiliarySplitPaneController {
     private final String positionPropertyKey;
     private String location;
     private final ApplicationResourceController resourceController;
+	private final boolean usesLocationProperty;
 
     /**
      * Creates a controller with custom property keys.
@@ -24,19 +25,23 @@ class AuxiliarySplitPaneController {
      * @param locationPropertyKey key for storing location preference (e.g., "note_location")
      * @param defaultLocation default location if no preference is set (e.g., "bottom")
      */
-    public AuxiliarySplitPaneController(String positionPropertyKey, String defaultLocation) {
+    public AuxiliarySplitPaneController(String positionPropertyKey, String defaultLocation, boolean usesLocationProperty) {
         this.positionPropertyKey = positionPropertyKey;
         this.location = defaultLocation;
+		this.usesLocationProperty = usesLocationProperty;
         this.resourceController = (ApplicationResourceController) ResourceController.getResourceController();
     }
 
 
     public String getLocation() {
-        return location;
+        return usesLocationProperty ? resourceController.getProperty(location) : location;
     }
 
     public void setLocation(String location) {
-        this.location = location;
+    	if(usesLocationProperty)
+    		resourceController.setProperty(this.location, location);
+    	else
+    		this.location = location;
     }
 
     public double getPosition(double defaultValue) {

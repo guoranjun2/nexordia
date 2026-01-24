@@ -589,14 +589,12 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         }
 
         private void updateSelectedNode() {
-            if(selectedNode != null && ! selectedSet.contains(selectedNode)) {
-                if (size() > 0) {
+            if(! selectedSet.contains(selectedNode) && size() > 0) {
                 	selectedNode = selectedSet.iterator().next();
                 	addSelectionForHooks();
-                }
-                else{
-                	selectedNode = null;
-                }
+            }
+            else{
+            	selectedNode = null;
             }
         }
 
@@ -1974,7 +1972,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
                         return true;
                     }
                 }
-                if(newSelected == newSelectedAncestor)
+                if(newSelected == newSelectedAncestor || newSelected == newSelectedSummary)
                     select(newSelected, continious);
                 else
                     selectPreservingSiblingMaxLevel(newSelected, continious);
@@ -2053,7 +2051,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     		if(nextVisibleSiblingOrSame == nextSelectedSibling)
     			return oldSelected;
     		nextSelectedSibling = nextVisibleSiblingOrSame;
-    	} while(nextSelectedSibling != null && nextSelectedSibling.getNode().getNodeLevel(filter) < siblingMaxLevel);
+    	} while(nextSelectedSibling != null && nextSelectedSibling.getNode().getNodeLevel(filter) != siblingMaxLevel);
     	return nextSelectedSibling;
     }
 
