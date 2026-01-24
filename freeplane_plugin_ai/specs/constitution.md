@@ -87,6 +87,11 @@ Subtasks should only use the statuses `Planning`, `Plan Review`, `Implementing`,
     3.  **Cleanliness**: Code is free of "TODOs", placeholders, temporary comments, and unused imports.
     4.  **Documentation**: Any deviations from the original design are documented in the task file.
 
+**Testing Policy:**
+*   Tests are always part of the same subtask as the implementation. Do not create separate subtasks solely for writing tests.
+*   **Plan Review** requires a complete **Test specification** for each subtask.
+*   **Implementation Review** requires tests to be implemented and passing as described in the subtask Test specification.
+
 **Status** is implied by the folder for main tasks; subtasks still include explicit status lines.
 
 ## Architecture Decision Records
