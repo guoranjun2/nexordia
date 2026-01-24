@@ -84,12 +84,12 @@ class AuxiliarySplitPanes {
         if (level == 0) {
             // Level 0 (innermost) uses original property keys for backward compatibility
             return new AuxiliarySplitPaneController(
-                "aux_split_pane_last_position", "bottom");
+                "aux_split_pane_last_position", "note_location", true);
         } else {
             // Other levels use generated property keys
             String positionKey = "aux_split_pane_level_" + level + "_position";
             String defaultLocation = level == 1 ? "right" : "bottom";
-            return new AuxiliarySplitPaneController(positionKey, defaultLocation);
+            return new AuxiliarySplitPaneController(positionKey, defaultLocation, false);
         }
     }
 
