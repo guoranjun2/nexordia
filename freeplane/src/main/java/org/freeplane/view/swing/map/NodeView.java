@@ -757,15 +757,20 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     private NodeView getNextVisibleSiblingSameParent(SiblingSelection siblingSelection) {
         LinkedList<NodeView> v = getSiblingViews();
         final int index = v.indexOf(this);
+        boolean isOutlineLayoutSet = map.isOutlineLayoutSet();
+        boolean skipUntilSummaryEnd = ! isOutlineLayoutSet && isSummary();
         for (int i = index + 1; i < v.size(); i++) {
             final NodeView nextView = v.get(i);
             if(this.isTopOrLeft() != nextView.isTopOrLeft())
                 continue;
+            if(skipUntilSummaryEnd && nextView.isSummary())
+                break;
+            skipUntilSummaryEnd = false;
             final NodeModel node = nextView.getNode();
             if (node.hasVisibleContent(map.getFilter())) {
                 return nextView;
             }
-			else {
+            else if (isOutlineLayoutSet || ! node.isHiddenSummary()){
                 final NodeView first = nextView.getFirstVisible(null, this.isTopOrLeft(),
                         !this.isTopOrLeft());
                 if (first != null) {
@@ -954,15 +959,20 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     private NodeView getPreviousVisibleSiblingSameParent(SiblingSelection siblingSelection) {
         LinkedList<NodeView> v = getSiblingViews();
         final int index = v.indexOf(this);
+        boolean skipUntilFirstGroupNode = ! map.isOutlineLayoutSet() && isSummary();
         for (int i = index - 1; i >= 0; i--) {
             final NodeView nextView = v.get(i);
+             if(skipUntilFirstGroupNode) {
+                 skipUntilFirstGroupNode = !nextView.isFirstGroupNode();
+                 continue;
+             }
             if(this.isTopOrLeft() != nextView.isTopOrLeft())
                 continue;
             final NodeModel node = nextView.getNode();
             if (node.hasVisibleContent(map.getFilter())) {
                 return nextView;
             }
-			else {
+            else if (! node.isHiddenSummary()){
                 final NodeView last = nextView.getLastVisible(null, this.isTopOrLeft(),
                         !this.isTopOrLeft());
                 if (last != null) {
