@@ -707,7 +707,6 @@
 		<Entry name="ToggleMapOverviewAction" />
         <Entry name="ToggleBookmarksToolbarAction" />
 		<Entry name="ToggleOutlineAction" />
-		<Entry builder="separator" />
 		<Entry name="ShowFormatPanel" />
 		<Entry name="ShowHideNoteAction" accelerator="control GREATER" />
 		<Entry builder="separator" />
