@@ -21,6 +21,7 @@ When uncertain or before changing behavior, propose next steps, ask for approval
 - Before commit: confirm the commit message starts with the **Primary Identifier**:
     - If a Ticket ID exists, use it alone (e.g., `TICKET-123: ...`).
     - If no Ticket ID exists, use the full Task Identifier (e.g., `2025-01-15-research: ...`).
+- If the user explicitly requests skipping task or ticket identifiers for a specific commit, honor the request and use a message without identifiers for that commit.
 - After signature changes: run the relevant module tests before reporting completion.
 
 ## Context Preservation
