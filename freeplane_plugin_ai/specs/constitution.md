@@ -18,9 +18,10 @@ When uncertain or before changing behavior, propose next steps, ask for approval
 - Before any task file edit, update subtask status if it changes (Planning or Implementing) before editing.
 - Before reporting to the user, update subtask status if it changes (Planning -> Plan Review, Implementing -> Implementation Review).
 - Before commit: verify task status and folder changes, stage renames; confirm with user unless they explicitly instructed to commit.
-- Before commit: confirm the commit message starts with the **Primary Identifier**:
+- Before commit: confirm the commit message starts with the **Primary Identifier** for task-related changes:
     - If a Ticket ID exists, use it alone (e.g., `TICKET-123: ...`).
     - If no Ticket ID exists, use the full Task Identifier (e.g., `2025-01-15-research: ...`).
+- For updates not related to any task, commit messages may omit task identifiers when the repository policy (defined in `AGENTS.md`) allows it.
 - If the user explicitly requests skipping task or ticket identifiers for a specific commit, honor the request and use a message without identifiers for that commit.
 - After signature changes: run the relevant module tests before reporting completion.
 
@@ -36,7 +37,7 @@ Tasks must use one of these status folders within the project task directory:
 ## Scope and Safeguards
 *   **Clarity**: Designs may describe file scope broadly when it stays unambiguous.
 *   **No unapproved logic changes**: Do not change business logic unless explicitly instructed.
-*   **Task to commit linking**: Every commit message must include the Task Identifier.
+*   **Task to commit linking**: Every task-related commit message must include the Task Identifier (or Ticket ID when used). Updates not related to any task may omit task or ticket identifiers when allowed by repository policy in `AGENTS.md`.
 *   **Refactor tracking**: When refactoring, document it by updating the design section of the existing task or creating a new task.
 
 ## Task Structure

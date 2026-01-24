@@ -45,7 +45,7 @@ In case of workflow ambiguity, the constitution is the source of truth, includin
 
 ## Commit & Pull Request Guidelines
 - Commits: imperative subject (e.g., "Fix outline scroll stutter"), link issues (`#123`). Verify diffs: `git diff`, `git diff --cached`.
-- Commit identifiers: by default, follow the constitution rule requiring the Primary Identifier at the start of the commit message. If the user explicitly requests skipping task or ticket identifiers, honor the request and use a message without identifiers for that commit.
+- Commit identifiers (repository policy): task-related commits must include a Ticket ID when one exists. If no Ticket ID exists, use the Task Identifier. Updates not related to any task may omit identifiers. This repository policy informs the constitution's "non-task updates" exception.
 - PRs: clear description, rationale, tests/coverage notes, and screenshots/gifs for UI changes. Keep scope focused to one feature/module.
 
 ## Agent-Specific Instructions
