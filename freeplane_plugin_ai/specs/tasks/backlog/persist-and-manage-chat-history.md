@@ -2,6 +2,7 @@
 - **Task Identifier:** 2026-01-18-chat-history-storage
 - **Scope:** Persist chat history under the user configuration directory in an `ai-chats` folder as gzip compressed JavaScript Object Notation files, list saved chats, allow loading and deletion, identify chats by timestamp and first user message text, and store a map identifier to map URL mapping so related maps are reopened on load.
 - **Motivation:** Users need to revisit and manage prior conversations, with the correct maps reopened to preserve context.
+- **Developer Briefing:** The current chat panel and message history are in-memory only. This task adds a gzip JSON storage layer under the user configuration directory, captures message history plus map identifier to URL references, and provides list/load/delete operations tied to the chat panel so prior chats can be restored alongside related maps.
 - **Research:**
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java` keeps chat history in memory and does not persist it.
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatMessageHistory.java` only stores messages for display and copy operations.
@@ -25,3 +26,65 @@
   - Add tests for history serialization and deserialization to ensure messages and map references round trip correctly.
   - Add tests for listing and deletion to ensure the file system state matches the in application list.
   - Perform a manual check that loading a saved chat restores the history and reopens related maps.
+
+## Subtask: Chat history storage format and persistence
+- **Status:** Planning
+- **Scope:** Define the chat history record, implement gzip JSON serialization, deterministic filenames, and list/load/delete operations against `${freeplaneUserDirectory}/ai-chats`.
+- **Motivation:** A stable on-disk format and file management layer is required before the UI can list or restore chats.
+- **Developer Briefing:** Define a serializable history schema, a gzip JSON storage format, and a small file system API that the chat panel can call to save, list, load, and delete chat histories.
+- **Research:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java` appends messages to `ChatMessageHistory` and resets the UI on new chat; there is no persistence hook.
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatMessageHistory.java` stores messages in an in-memory list of entries (source text, markup, style class) but exposes no persistence API.
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/ChatSessionMemoryController.java` owns LangChain4j `ChatMemory` and clears it for new chats; it is separate from the UI history.
+  - `freeplane/src/main/java/org/freeplane/core/resources/ResourceController.java` provides `getFreeplaneUserDirectory()` for user-level storage roots.
+  - Jackson `ObjectMapper` is already used in the plugin (for example in `AIModelCatalog` and MCP server classes), so JSON serialization support exists in the codebase.
+- **Design:**
+  - Introduce a `ChatHistoryStore` that reads and writes gzip-compressed JSON files under `${freeplaneUserDirectory}/ai-chats`.
+  - Define a `ChatHistoryRecord` with `timestamp`, `firstUserMessageText`, `messages` (role/category + plain text), and `mapReferences` (map identifier string to map URL string).
+  - Implement deterministic filenames using timestamp plus a sanitized prefix of the first user message (fallback to a safe placeholder if empty).
+  - Write files atomically (temporary file + rename) and handle unreadable or corrupted files by skipping them in listings with a log entry.
+  - Provide list/load/delete operations that return the metadata needed to populate a chat selection UI.
+- **Test specification:**
+  - Verify gzip JSON round-trips preserve message order, categories, and map references.
+  - Verify list returns histories sorted by timestamp and skips malformed files.
+  - Verify delete removes the file and list reflects the removal.
+
+## Subtask: Chat history list, load, and delete integration
+- **Status:** Planning
+- **Scope:** Surface stored chats in the chat panel, allow selecting a prior chat to load, and support deletion with immediate UI refresh.
+- **Motivation:** Users need UI controls to manage saved chats without restarting the app.
+- **Developer Briefing:** Add user interface actions in the chat panel to list saved histories, load a selection into the message view and chat memory, and delete saved histories with immediate feedback.
+- **Research:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java` builds a toolbar and popup menu but currently only exposes preferences and AI edits actions.
+  - The message view is a `JEditorPane` updated by `ChatMessageHistory`, and `startNewChat()` resets both the UI history and LangChain4j chat memory.
+  - `org.freeplane.core.ui.textchanger.TranslatedElementFactory` is used elsewhere in `AIChatPanel` to create buttons and tooltips for localized UI labels.
+  - `org.freeplane.core.resources.ResourceController` is available for reading UI and preference settings used by the chat panel.
+  - `org.freeplane.core.util.TextUtils` is used in the chat panel for localized label text.
+- **Design:**
+  - Add a chat history action (toolbar button or menu item) that opens a simple list dialog/popup backed by `ChatHistoryStore.list`.
+  - When a history is loaded: clear the existing UI history, rehydrate messages into `ChatMessageHistory`, and rebuild LangChain4j `ChatMemory` from the saved message sequence.
+  - When a history is deleted: remove the file via the store and refresh the list without restarting the panel.
+  - Save new history entries at consistent boundaries (for example after each assistant response or on explicit "save" action) so the list stays current.
+  - Use `TranslatedElementFactory` and `TextUtils` for all new UI labels, tooltips, and menu text, and read any toggle preferences via `ResourceController` to stay consistent with existing chat panel localization and settings patterns.
+- **Test specification:**
+  - Manual checklist: list shows saved chats, load replaces current chat content, delete removes entries immediately.
+  - If UI automation hooks exist, add tests for list selection and delete actions.
+
+## Subtask: Map reference capture and reopen on load
+- **Status:** Planning
+- **Scope:** Capture map identifier to URL mappings during a chat, store them with the history record, and reopen maps on load using the stored identifiers when possible.
+- **Motivation:** Restoring chat context requires reopening the maps referenced by the conversation.
+- **Developer Briefing:** Track map identifier to URL mappings during a chat and, when loading a saved history, attempt to reopen those maps and re-associate the stored identifiers.
+- **Research:**
+  - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/maps/AvailableMaps.java` assigns UUID identifiers to open `MapModel` instances but does not persist or allow explicit identifier assignment.
+  - `freeplane/src/main/java/org/freeplane/features/map/MapModel.java` exposes `getURL()` for maps with a backing file or resource.
+  - `freeplane/src/main/java/org/freeplane/features/map/mindmapmode/MMapController.java` provides `openMap(URL)` to load and open a map view.
+- **Design:**
+  - Introduce a map reference tracker that records map identifier to URL whenever a tool request or selection response includes a map identifier.
+  - Extend `AvailableMaps` (or add a companion registry) with a method to register a specific identifier for an existing `MapModel`, handling conflicts by generating a new identifier only when necessary.
+  - On history load, for each stored reference, attempt to open the map URL if it is not already open; then register the stored identifier for the loaded map model so tool calls continue to work.
+  - If a map URL fails to load, still restore the chat history and keep the reference for later recovery.
+- **Test specification:**
+  - Verify map identifier to URL mappings are captured and stored with the history record.
+  - Verify loading a history attempts to reopen missing maps and assigns the stored identifiers when successful.
+  - Manual check for failure cases where a map URL is missing or invalid.
