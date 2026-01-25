@@ -30,6 +30,7 @@ public class NodeCreationHierarchyBuilder {
         }
         Map<Integer, NodeModel> nodesByIndex = new HashMap<>();
         Set<Integer> indices = new HashSet<>();
+        Set<Integer> parentIndices = new HashSet<>();
         List<NodeModel> createdNodes = new ArrayList<>(items.size());
         for (NodeCreationItem item : items) {
             if (item == null) {
@@ -49,29 +50,39 @@ public class NodeCreationHierarchyBuilder {
             nodesByIndex.put(index, nodeModel);
             createdNodes.add(nodeModel);
             nodeContentApplier.apply(nodeModel, item.getContent());
+            Integer parentIndex = item.getParentIndex();
+            if (parentIndex != null && parentIndex >= 0) {
+                parentIndices.add(parentIndex);
+            }
         }
 
         List<NodeModel> rootNodes = new ArrayList<>();
+        Map<NodeModel, NodeFoldingState> foldingStates = new HashMap<>();
         for (NodeCreationItem item : items) {
             Integer parentIndex = item.getParentIndex();
             NodeModel nodeModel = nodesByIndex.get(item.getIndex());
             if (parentIndex == null || parentIndex == -1) {
                 rootNodes.add(nodeModel);
-                continue;
+            } else {
+                if (parentIndex < 0) {
+                    throw new IllegalArgumentException("Invalid parentIndex: " + parentIndex);
+                }
+                if (parentIndex.equals(item.getIndex())) {
+                    throw new IllegalArgumentException("parentIndex must differ from index: " + parentIndex);
+                }
+                NodeModel parentNode = nodesByIndex.get(parentIndex);
+                if (parentNode == null) {
+                    throw new IllegalArgumentException("Unknown parentIndex: " + parentIndex);
+                }
+                parentNode.insert(nodeModel, parentNode.getChildCount());
             }
-            if (parentIndex < 0) {
-                throw new IllegalArgumentException("Invalid parentIndex: " + parentIndex);
+            if (parentIndices.contains(item.getIndex())) {
+                NodeFoldingState foldingState = item.getFoldingState();
+                foldingStates.put(nodeModel,
+                    foldingState == null ? NodeFoldingState.UNFOLD : foldingState);
             }
-            if (parentIndex.equals(item.getIndex())) {
-                throw new IllegalArgumentException("parentIndex must differ from index: " + parentIndex);
-            }
-            NodeModel parentNode = nodesByIndex.get(parentIndex);
-            if (parentNode == null) {
-                throw new IllegalArgumentException("Unknown parentIndex: " + parentIndex);
-            }
-            parentNode.insert(nodeModel, parentNode.getChildCount());
         }
 
-        return new NodeCreationHierarchy(rootNodes, createdNodes);
+        return new NodeCreationHierarchy(rootNodes, createdNodes, foldingStates);
     }
 }

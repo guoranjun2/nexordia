@@ -6,9 +6,9 @@ import dev.langchain4j.model.output.structured.Description;
 import org.freeplane.plugin.ai.tools.edit.EditOperation;
 
 public class ConnectorEditRequestItem {
-    @Description("Source node identifier for the connector.")
+    @Description("Source node ID.")
     private final String sourceNodeIdentifier;
-    @Description("Target node identifier for the connector.")
+    @Description("Target node ID.")
     private final String targetNodeIdentifier;
     private final EditOperation operation;
     private final String sourceLabel;

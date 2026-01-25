@@ -97,6 +97,60 @@ public class NodeContentEditorTest {
     }
 
     @Test
+    public void edit_allowsDeleteForDetails() {
+        TextController textController = mock(TextController.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextualContentEditor textualContentEditor = mock(TextualContentEditor.class);
+        AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
+        TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
+        IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
+        NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
+        NodeModel nodeModel = mock(NodeModel.class);
+        NodeContentEditItem editItem = new NodeContentEditItem(
+            "node-identifier", EditedElement.DETAILS, ContentType.PLAIN_TEXT, null, null, EditOperation.DELETE, null,
+            null);
+        NodeContentItem contentItem = new NodeContentItem("node-identifier",
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
+
+        editor.edit(nodeModel, Collections.singletonList(editItem));
+
+        verify(textualContentEditor).editExistingTextualContent(
+            nodeModel, EditedElement.DETAILS, ContentType.PLAIN_TEXT, "", textController);
+    }
+
+    @Test
+    public void edit_allowsDeleteForNote() {
+        TextController textController = mock(TextController.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextualContentEditor textualContentEditor = mock(TextualContentEditor.class);
+        AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
+        TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
+        IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
+        NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
+        NodeModel nodeModel = mock(NodeModel.class);
+        NodeContentEditItem editItem = new NodeContentEditItem(
+            "node-identifier", EditedElement.NOTE, ContentType.PLAIN_TEXT, null, null, EditOperation.DELETE, null,
+            null);
+        NodeContentItem contentItem = new NodeContentItem("node-identifier",
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
+
+        editor.edit(nodeModel, Collections.singletonList(editItem));
+
+        verify(textualContentEditor).editExistingTextualContent(
+            nodeModel, EditedElement.NOTE, ContentType.PLAIN_TEXT, "", textController);
+    }
+
+    @Test
     public void edit_delegatesHyperlinkEditsToHyperlinkContentEditor() {
         TextController textController = mock(TextController.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);

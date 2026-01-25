@@ -9,8 +9,7 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IconsContent {
-    @Description("Icon descriptions for the node. Use listAvailableIcons to discover built-in and user icons. "
-        + "Emoji icons are referenced by the emoji character itself and are not listed there.")
+    @Description("Icon names; use listAvailableIcons. Emoji characters are valid icon names (use the emoji itself).")
     private final List<String> descriptions;
 
     @JsonCreator

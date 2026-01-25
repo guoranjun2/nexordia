@@ -10,31 +10,36 @@ import dev.langchain4j.model.output.structured.Description;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentWriteRequest {
     private final String text;
-    @Description("Optional content type for new node text. Only set when the user explicitly requests Markdown or LaTeX (or formatting that requires it); otherwise omit to keep the default plain text.")
+    @Description("Optional text format (ContentType, default: PLAIN_TEXT).")
     private final ContentType textContentType;
+    @Description("Optional details text.")
     private final String details;
-    @Description("Optional content type for new node details. Only set when the user explicitly requests Markdown or LaTeX (or formatting that requires it); otherwise omit to keep the default plain text.")
+    @Description("Optional details format (ContentType, default: PLAIN_TEXT).")
     private final ContentType detailsContentType;
+    @Description("Optional note text.")
     private final String note;
-    @Description("Optional content type for new node note. Only set when the user explicitly requests Markdown or LaTeX (or formatting that requires it); otherwise omit to keep the default plain text.")
+    @Description("Optional note format (ContentType, default: PLAIN_TEXT).")
     private final ContentType noteContentType;
+    @Description("Optional attributes.")
     private final List<AttributeEntry> attributes;
+    @Description("Optional tags.")
     private final List<String> tags;
+    @Description("Optional icons.")
     private final List<String> icons;
-    @Description("Optional hyperlink to set on the new node.")
+    @Description("Optional hyperlink for the new node.")
     private final String hyperlink;
 
     @JsonCreator
     public NodeContentWriteRequest(@JsonProperty("text") String text,
-                                   @JsonProperty("textContentType") ContentType textContentType,
-                                   @JsonProperty("details") String details,
-                                   @JsonProperty("detailsContentType") ContentType detailsContentType,
-                                   @JsonProperty("note") String note,
-                                   @JsonProperty("noteContentType") ContentType noteContentType,
-                                   @JsonProperty("attributes") List<AttributeEntry> attributes,
-                                   @JsonProperty("tags") List<String> tags,
-                                   @JsonProperty("icons") List<String> icons,
-                                   @JsonProperty("hyperlink") String hyperlink) {
+                                   @JsonProperty(value = "textContentType", required = false) ContentType textContentType,
+                                   @JsonProperty(value = "details", required = false) String details,
+                                   @JsonProperty(value = "detailsContentType", required = false) ContentType detailsContentType,
+                                   @JsonProperty(value = "note", required = false) String note,
+                                   @JsonProperty(value = "noteContentType", required = false) ContentType noteContentType,
+                                   @JsonProperty(value = "attributes", required = false) List<AttributeEntry> attributes,
+                                   @JsonProperty(value = "tags", required = false) List<String> tags,
+                                   @JsonProperty(value = "icons", required = false) List<String> icons,
+                                   @JsonProperty(value = "hyperlink", required = false) String hyperlink) {
         this.text = text;
         this.textContentType = textContentType;
         this.details = details;

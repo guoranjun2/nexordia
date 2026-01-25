@@ -7,15 +7,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class MoveNodesIntoSummaryRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
-    @Description("Short user facing summary for confirmations.")
+    @Description("Short summary for confirmations.")
     private final String userSummary;
-    @Description("Summary anchor placement with first and last summarized node identifiers. Both identifiers must "
-        + "reference existing sibling nodes.")
+    @Description("Summary anchor placement (first/last summarized siblings).")
     private final SummaryAnchorPlacement summaryAnchorPlacement;
-    @Description("Ordered list of existing node identifiers to move into summary content. All nodes become children "
-        + "of a new summary node created by the tool. Must be non-empty.")
+    @Description("Ordered node IDs to move into summary content (non-empty).")
     private final List<String> nodeIdentifiers;
 
     @JsonCreator

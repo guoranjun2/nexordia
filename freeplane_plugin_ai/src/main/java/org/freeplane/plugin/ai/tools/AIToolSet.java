@@ -31,6 +31,7 @@ import org.freeplane.plugin.ai.tools.content.NodeContentApplier;
 import org.freeplane.plugin.ai.tools.content.NodeContentFactories;
 import org.freeplane.plugin.ai.tools.content.NodeContentItem;
 import org.freeplane.plugin.ai.tools.create.AnchorPlacementCalculator;
+import org.freeplane.plugin.ai.tools.create.CreateNodesPreferences;
 import org.freeplane.plugin.ai.tools.create.CreateNodesRequest;
 import org.freeplane.plugin.ai.tools.create.CreateNodesResponse;
 import org.freeplane.plugin.ai.tools.create.CreateNodesTool;
@@ -144,8 +145,9 @@ public class AIToolSet {
             availableMaps, mapController, selectedMapAndNodeIdentifiersTool);
         SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, nodeContentFactories.nodeContentItemReader,
             textController);
+        CreateNodesPreferences createNodesPreferences = new CreateNodesPreferences();
         CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            modifiedNodeSummaryBuilder);
+            modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
         MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
         DeleteNodesTool deleteNodesTool = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
         CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder,

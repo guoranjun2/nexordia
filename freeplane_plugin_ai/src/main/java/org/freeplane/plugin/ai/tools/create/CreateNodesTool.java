@@ -1,9 +1,11 @@
 package org.freeplane.plugin.ai.tools.create;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
@@ -17,14 +19,19 @@ public class CreateNodesTool {
     private final NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder;
     private final NodeInserter nodeInserter;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
+    private final MapController mapController;
+    private final CreateNodesPreferences createNodesPreferences;
 
     public CreateNodesTool(AvailableMaps availableMaps, NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
-                           NodeInserter nodeInserter, ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
+                           NodeInserter nodeInserter, ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
+                           MapController mapController, CreateNodesPreferences createNodesPreferences) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.nodeCreationHierarchyBuilder = Objects.requireNonNull(nodeCreationHierarchyBuilder,
             "nodeCreationHierarchyBuilder");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
+        this.mapController = mapController;
+        this.createNodesPreferences = Objects.requireNonNull(createNodesPreferences, "createNodesPreferences");
     }
 
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
@@ -47,8 +54,10 @@ public class CreateNodesTool {
         }
         List<NodeCreationItem> nodes = requireNodes(request.getNodes());
         NodeCreationHierarchy hierarchy = nodeCreationHierarchyBuilder.buildHierarchy(nodes, mapModel);
+        NodeModel parentNode = resolveParentNode(anchorNode, placementMode);
         List<NodeModel> insertedNodes = nodeInserter.insertNodes(
             hierarchy.getRootNodes(), anchorNode, placementMode, new ToolErrorHandler("Create failure: "));
+        applyFoldingPreferences(parentNode, hierarchy.getFoldingStates());
         List<ModifiedNodeSummary> modifiedNodes = modifiedNodeSummaryBuilder.buildSummaries(insertedNodes, true);
         return new CreateNodesResponse(mapIdentifierValue, userSummary, modifiedNodes);
     }
@@ -96,6 +105,37 @@ public class CreateNodesTool {
             return UUID.fromString(mapIdentifier);
         } catch (IllegalArgumentException error) {
             throw new IllegalArgumentException("Invalid map identifier: " + mapIdentifier);
+        }
+    }
+
+    private NodeModel resolveParentNode(NodeModel anchorNode, AnchorPlacementMode placementMode) {
+        AnchorPlacementCalculator calculator = new AnchorPlacementCalculator();
+        return calculator.calculatePlacement(anchorNode, placementMode).getParentNode();
+    }
+
+    private void applyFoldingPreferences(NodeModel parentNode, Map<NodeModel, NodeFoldingState> foldingStates) {
+        boolean unfoldsParent = createNodesPreferences.unfoldsParentsOnCreate();
+        if (unfoldsParent && parentNode != null && parentNode.isFolded()) {
+            if (mapController != null) {
+                mapController.unfold(parentNode, null);
+            } else {
+                parentNode.setFolded(false);
+            }
+        }
+        if (foldingStates == null || foldingStates.isEmpty()) {
+            return;
+        }
+        for (java.util.Map.Entry<NodeModel, NodeFoldingState> entry : foldingStates.entrySet()) {
+            NodeModel nodeModel = entry.getKey();
+            if (nodeModel == null || nodeModel.getChildCount() == 0) {
+                continue;
+            }
+            boolean shouldFold = entry.getValue() == NodeFoldingState.FOLD;
+            if (mapController != null) {
+                mapController.setFolded(nodeModel, shouldFold, null);
+            } else {
+                nodeModel.setFolded(shouldFold);
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.OperationErrorHandler;
 import org.freeplane.features.text.TextController;
@@ -28,15 +29,18 @@ public class CreateNodesToolTest {
         NodeInserter nodeInserter = mock(NodeInserter.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
+        CreateNodesPreferences createNodesPreferences = mock(CreateNodesPreferences.class);
+        MapController mapController = mock(MapController.class);
+        when(createNodesPreferences.unfoldsParentsOnCreate()).thenReturn(false);
         CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            modifiedNodeSummaryBuilder);
+            modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
         UUID mapIdentifier = UUID.fromString("f0ec8744-6a58-4b63-8e0e-9ef00b2e3c7a");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
-        NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null);
-        NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null);
+        NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null, null);
+        NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null, null);
         NodeModel firstNodeModel = new NodeModel("first", mapModel);
         NodeModel secondNodeModel = new NodeModel("second", mapModel);
         firstNodeModel.setID("ID_first");
@@ -76,14 +80,17 @@ public class CreateNodesToolTest {
         NodeInserter nodeInserter = mock(NodeInserter.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
+        CreateNodesPreferences createNodesPreferences = mock(CreateNodesPreferences.class);
+        MapController mapController = mock(MapController.class);
+        when(createNodesPreferences.unfoldsParentsOnCreate()).thenReturn(false);
         CreateNodesTool uut = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            modifiedNodeSummaryBuilder);
+            modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
         UUID mapIdentifier = UUID.fromString("0f0bbef5-e1ff-4ae7-8de7-5d07fca9110f");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
-        NodeCreationItem nodeItem = new NodeCreationItem(0, -1, null);
+        NodeCreationItem nodeItem = new NodeCreationItem(0, -1, null, null);
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         NodeModel nodeModel = nodeModelCreator.createNodeModel(mapModel);
         nodeModel.setText("node");

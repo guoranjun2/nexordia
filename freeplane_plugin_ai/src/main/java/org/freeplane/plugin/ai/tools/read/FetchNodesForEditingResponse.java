@@ -12,7 +12,7 @@ import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FetchNodesForEditingResponse {
-    @Description("Map identifier string.")
+    @Description("Map ID.")
     private final String mapIdentifier;
     @Description("Node content items with editable content.")
     private final List<NodeContentItem> items;

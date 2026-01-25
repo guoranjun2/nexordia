@@ -7,11 +7,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class DeleteNodesRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
-    @Description("List of node identifiers to delete.")
+    @Description("Node IDs to delete.")
     private final List<String> nodeIdentifiers;
-    @Description("Short user facing summary for confirmations.")
+    @Description("Short summary for confirmations.")
     private final String userSummary;
 
     @JsonCreator

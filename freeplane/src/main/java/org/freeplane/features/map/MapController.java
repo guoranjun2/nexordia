@@ -579,7 +579,7 @@ implements IExtension, NodeChangeAnnouncer{
 	public boolean canBeUnfoldedOnCurrentView(final NodeModel node, Filter filter) {
 		final IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
 		final boolean isFolded = mapViewManager.isFoldedOnCurrentView(node) ||  mapViewManager.hasHiddenChildren(node);
-		boolean canBeAncestor = filter.getFilterInfo(node).canBeAncestor();
+		boolean canBeAncestor = filter == null || filter.getFilterInfo(node).canBeAncestor();
 		for(int i = 0; i < node.getChildCount(); i++){
 			final NodeModel child = node.getChildAt(i);
 			if (isFolded && child.subtreeHasVisibleContent(filter)

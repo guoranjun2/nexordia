@@ -49,7 +49,7 @@ public class CreateSummaryToolTest {
         summaryNode.setID("ID_summary");
         when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
         when(summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode)).thenReturn(summaryNode);
-        NodeCreationItem childItem = new NodeCreationItem(0, -1, null);
+        NodeCreationItem childItem = new NodeCreationItem(0, -1, null, null);
         NodeModel childNodeModel = new NodeModel("child", mapModel);
         childNodeModel.setID("ID_child");
         when(nodeCreationHierarchyBuilder.buildHierarchy(Collections.singletonList(childItem), mapModel))

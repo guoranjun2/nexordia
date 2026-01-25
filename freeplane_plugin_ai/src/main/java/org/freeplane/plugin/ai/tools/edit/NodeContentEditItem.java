@@ -10,26 +10,25 @@ import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentEditItem {
-    @Description("Node identifier to edit.")
+    @Description("Node ID to edit.")
     private final String nodeIdentifier;
     private final EditedElement editedElement;
     @JsonProperty("originalContentType")
-    @Description(
-        "Original content type read from editableContent. Use MARKDOWN only when the node is already Markdown.")
+    @Description("Original content type from fetchNodesForEditing.")
     private final ContentType originalContentType;
     @JsonProperty(required = false)
-    @Description("New content value. For PLAIN_TEXT nodes, formatted text must be wrapped in <html><body>...</body></html>. Use HTML for formatting unless originalContentType is MARKDOWN; Markdown is literal for PLAIN_TEXT.")
+    @Description("New value. For PLAIN_TEXT formatting use HTML; Markdown is literal unless originalContentType is MARKDOWN.")
     private final String value;
     @JsonProperty(required = false)
     private final Integer index;
     @JsonProperty(required = false)
-    @Description("Operation for collection edits (ATTRIBUTES, TAGS, ICONS). For HYPERLINK use REPLACE to set or "
-        + "DELETE to clear. Omit for TEXT, DETAILS, or NOTE edits.")
+    @Description("Operations: TEXT=REPLACE; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; "
+        + "HYPERLINK=REPLACE/DELETE.")
     private final EditOperation operation;
     @JsonProperty(required = false)
     private final String targetKey;
     @JsonProperty(required = false)
-    @Description("New hyperlink value when editedElement is HYPERLINK.")
+    @Description("Hyperlink value when editedElement is HYPERLINK.")
     private final String hyperlink;
 
     @JsonCreator

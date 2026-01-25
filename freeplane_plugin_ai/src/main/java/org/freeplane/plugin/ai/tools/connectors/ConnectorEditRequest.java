@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class ConnectorEditRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
     @JsonProperty(required = false)
     private final List<ConnectorEditRequestItem> items;

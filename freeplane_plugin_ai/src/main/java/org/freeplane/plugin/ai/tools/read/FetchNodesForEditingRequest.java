@@ -10,13 +10,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class FetchNodesForEditingRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
     @JsonProperty(required = false)
-    @Description("List of node identifiers. Default: root node. Use another tool call to refresh identifiers if needed.")
+    @Description("Node IDs to fetch (default: root).")
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
-    @Description("Editable content fields to include. All representations are returned.")
+    @Description("Editable content fields to include (all representations returned).")
     private final List<EditableContentField> editableContentFields;
 
     @JsonCreator

@@ -12,25 +12,22 @@ public class ReadNodesWithDescendantsRequest {
     private static final int DEFAULT_FULL_CONTENT_DEPTH = 0;
     private static final int DEFAULT_SUMMARY_DEPTH = 1;
     private static final int DEFAULT_MAXIMUM_TOTAL_TEXT_CHARACTERS = 65536;
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
     @JsonProperty(required = false)
-    @Description("List of node identifiers. Default: root node. Use another tool call to refresh identifiers "
-        + "if needed.")
+    @Description("Node IDs to read (default: root).")
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
-    @Description("Context sections to include. Default: empty list. QUALIFIERS adds qualifier strings such as "
-        + "summary_node and first_group_node. HYPERLINK, OUTGOING_CONNECTORS, INCOMING_CONNECTORS, and CLONE_METADATA "
-        + "opt in to additional link and clone metadata.")
+    @Description("Extra sections (default: none). QUALIFIERS adds summary_node/first_group_node.")
     private final List<ContextSection> contextSections;
     @JsonProperty(required = false)
-    @Description("Depth of full content. Default: 0.")
+    @Description("Depth of full content (default: 0).")
     private final Integer fullContentDepth;
     @JsonProperty(required = false)
-    @Description("Depth of brief summaries beyond fullContentDepth. Default: 1.")
+    @Description("Summary depth beyond fullContentDepth (default: 1).")
     private final Integer summaryDepth;
     @JsonProperty(required = false)
-    @Description("Maximum total response length in characters. Default: 65536.")
+    @Description("Maximum response length in characters (default: 65536).")
     private final Integer maximumTotalTextCharacters;
     private final boolean hasFullContentDepth;
     private final boolean hasSummaryDepth;

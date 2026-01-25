@@ -11,8 +11,7 @@ import dev.langchain4j.model.output.structured.Description;
 public class NodeContentItem {
     private final String nodeIdentifier;
     private final NodeContentResponse content;
-    @Description("Optional qualifiers when requested: summary_node for summary group nodes, first_group_node for the "
-        + "first node of a summary group.")
+    @Description("Qualifiers when requested: summary_node, first_group_node.")
     private final List<String> qualifiers;
     private final String hyperlink;
     private final List<ConnectorItem> outgoingConnectors;

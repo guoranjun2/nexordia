@@ -10,15 +10,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class DeleteNodesResponse {
-    @Description("Map identifier string.")
+    @Description("Map ID.")
     private final String mapIdentifier;
-    @Description("Short user facing summary for confirmations.")
+    @Description("Short summary for confirmations.")
     private final String userSummary;
-    @Description("Deleted subtree root node summaries.")
+    @Description("Deleted subtree root summaries.")
     private final List<ModifiedNodeSummary> deletedNodes;
-    @Description("Total number of deleted nodes.")
+    @Description("Total deleted node count.")
     private final int deletedNodeCount;
-    @Description("Total number of deleted subtree roots.")
+    @Description("Total deleted subtree root count.")
     private final int deletedSubtreeRootCount;
 
     @JsonCreator

@@ -31,11 +31,11 @@ public class NodeCreationHierarchyBuilderTest {
         NodeCreationHierarchyBuilder builder = new NodeCreationHierarchyBuilder(nodeModelCreator, nodeContentApplier);
 
         NodeCreationItem root = new NodeCreationItem(0, -1, new NodeContentWriteRequest(
-            "root", null, null, null, null, null, null, null, null, null));
+            "root", null, null, null, null, null, null, null, null, null), null);
         NodeCreationItem childTwo = new NodeCreationItem(2, 0, new NodeContentWriteRequest(
-            "childTwo", null, null, null, null, null, null, null, null, null));
+            "childTwo", null, null, null, null, null, null, null, null, null), null);
         NodeCreationItem childOne = new NodeCreationItem(1, 0, new NodeContentWriteRequest(
-            "childOne", null, null, null, null, null, null, null, null, null));
+            "childOne", null, null, null, null, null, null, null, null, null), null);
 
         NodeCreationHierarchy hierarchy = builder.buildHierarchy(Arrays.asList(root, childTwo, childOne), mapModel);
 
@@ -51,11 +51,27 @@ public class NodeCreationHierarchyBuilderTest {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         NodeCreationHierarchyBuilder builder = new NodeCreationHierarchyBuilder(nodeModelCreator, mock(NodeContentApplier.class));
-        NodeCreationItem root = new NodeCreationItem(0, -1, null);
-        NodeCreationItem orphan = new NodeCreationItem(1, 99, null);
+        NodeCreationItem root = new NodeCreationItem(0, -1, null, null);
+        NodeCreationItem orphan = new NodeCreationItem(1, 99, null, null);
 
         assertThatThrownBy(() -> builder.buildHierarchy(Arrays.asList(root, orphan), mapModel))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Unknown parentIndex: 99");
+    }
+
+    @Test
+    public void buildHierarchy_assignsFoldingStateToNonLeafNodes() {
+        MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
+        NodeModelCreator nodeModelCreator = new NodeModelCreator();
+        NodeContentApplier nodeContentApplier = mock(NodeContentApplier.class);
+        NodeCreationHierarchyBuilder builder = new NodeCreationHierarchyBuilder(nodeModelCreator, nodeContentApplier);
+        NodeCreationItem parent = new NodeCreationItem(0, -1, null, NodeFoldingState.FOLD);
+        NodeCreationItem child = new NodeCreationItem(1, 0, null, null);
+
+        NodeCreationHierarchy hierarchy = builder.buildHierarchy(Arrays.asList(parent, child), mapModel);
+
+        assertThat(hierarchy.getFoldingStates()).hasSize(1);
+        NodeModel parentNode = hierarchy.getRootNodes().get(0);
+        assertThat(hierarchy.getFoldingStates().get(parentNode)).isEqualTo(NodeFoldingState.FOLD);
     }
 }

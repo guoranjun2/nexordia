@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class SelectSingleNodeRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
-    @Description("Node identifier to select.")
+    @Description("Node ID in the target map.")
     private final String nodeIdentifier;
 
     @JsonCreator

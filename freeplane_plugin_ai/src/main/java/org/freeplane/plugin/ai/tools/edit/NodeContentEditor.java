@@ -84,12 +84,12 @@ public class NodeContentEditor {
     }
 
     private void applyTextualContent(NodeModel nodeModel, NodeContentEditItem edit) {
-        ensureReplace(edit);
+        String value = resolveTextualValue(edit);
         textualContentEditor.editExistingTextualContent(
             nodeModel,
             edit.getEditedElement(),
             edit.getOriginalContentType(),
-            edit.getValue(),
+            value,
             textController);
     }
 
@@ -124,9 +124,16 @@ public class NodeContentEditor {
         hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getHyperlink());
     }
 
-    private void ensureReplace(NodeContentEditItem edit) {
-        if (edit.getOperation() != EditOperation.REPLACE) {
+    private String resolveTextualValue(NodeContentEditItem edit) {
+        EditOperation operation = edit.getOperation();
+        EditedElement editedElement = edit.getEditedElement();
+        if (operation == EditOperation.DELETE
+            && (editedElement == EditedElement.DETAILS || editedElement == EditedElement.NOTE)) {
+            return "";
+        }
+        if (operation != EditOperation.REPLACE) {
             throw new IllegalArgumentException("Only REPLACE operations are supported for this element.");
         }
+        return edit.getValue();
     }
 }

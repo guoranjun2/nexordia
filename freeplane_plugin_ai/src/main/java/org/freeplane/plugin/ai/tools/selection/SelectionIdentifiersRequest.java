@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class SelectionIdentifiersRequest {
-    @Description("Selection collection mode. Default: ORDERED.")
+    @Description("Selection collection mode (default: ORDERED).")
     private final SelectionCollectionMode selectionCollectionMode;
 
     @JsonCreator

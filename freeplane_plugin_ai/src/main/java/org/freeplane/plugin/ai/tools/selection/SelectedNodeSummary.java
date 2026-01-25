@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class SelectedNodeSummary {
-    @Description("Selected node identifier.")
+    @Description("Selected node ID.")
     private final String nodeIdentifier;
-    @Description("Short plain text preview of the selected node.")
+    @Description("Short plain-text preview.")
     private final String shortText;
 
     @JsonCreator

@@ -10,15 +10,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class CreateSummaryRequest {
-    @Description("Map identifier string. Use another tool call to refresh identifiers if needed.")
+    @Description("Target map ID (from getSelectedMapAndNodeIdentifiers).")
     private final String mapIdentifier;
-    @Description("Short user facing summary for confirmations.")
+    @Description("Short summary for confirmations.")
     private final String userSummary;
-    @Description("Summary anchor placement with first and last summarized node identifiers. Both identifiers must "
-        + "reference existing sibling nodes.")
+    @Description("Summary anchor placement (first/last summarized siblings).")
     private final SummaryAnchorPlacement summaryAnchorPlacement;
-    @Description("Summary content nodes that become children of a new summary node. The summary node is created by the "
-        + "tool and has no content. Must be non-empty.")
+    @Description("Summary content nodes (non-empty).")
     private final List<NodeCreationItem> nodes;
 
     @JsonCreator

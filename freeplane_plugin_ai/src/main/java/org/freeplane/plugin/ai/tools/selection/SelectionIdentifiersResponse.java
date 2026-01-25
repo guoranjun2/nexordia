@@ -7,17 +7,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.model.output.structured.Description;
 
 public class SelectionIdentifiersResponse {
-    @Description("Selected map identifier string.")
+    @Description("Selected map ID.")
     private final String mapIdentifier;
-    @Description("Identifier of the primary selected node.")
+    @Description("Primary selected node ID.")
     private final String nodeIdentifier;
-    @Description("Root node identifier for the selected map.")
+    @Description("Root node ID for the selected map.")
     private final String rootNodeIdentifier;
-    @Description("Selected nodes with short text previews.")
+    @Description("Selected nodes with short previews.")
     private final List<SelectedNodeSummary> selectedNodes;
-    @Description("Total number of selected nodes.")
+    @Description("Total selected node count.")
     private final int selectedNodeCount;
-    @Description("Total number of unique selected subtrees.")
+    @Description("Total unique selected subtree count.")
     private final int selectedUniqueSubtreeCount;
 
     @JsonCreator
