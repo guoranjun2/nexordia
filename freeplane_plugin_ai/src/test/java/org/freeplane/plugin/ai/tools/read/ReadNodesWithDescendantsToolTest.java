@@ -7,15 +7,25 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
+import java.util.Optional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import org.freeplane.core.util.Hyperlink;
+import org.freeplane.features.link.ConnectorModel;
+import org.freeplane.features.link.MapLinks;
+import org.freeplane.features.link.NodeLinkModel;
+import org.freeplane.features.link.NodeLinks;
+import org.freeplane.features.map.Clones;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.plugin.ai.tools.content.CloneMetadata;
+import org.freeplane.plugin.ai.tools.content.ConnectorItem;
 import org.freeplane.plugin.ai.tools.content.EditableContent;
 import org.freeplane.plugin.ai.tools.content.EditableContentField;
 import org.freeplane.plugin.ai.tools.content.NodeContentItem;
@@ -30,6 +40,12 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ReadNodesWithDescendantsToolTest {
+    private static class TestNodeLinks extends NodeLinks {
+        private TestNodeLinks(List<NodeLinkModel> links) {
+            super(links);
+        }
+    }
+
     @Test
     public void readNodesWithDescendants_returnsFocusAndSummaryChildrenWithBreadcrumbPath() throws Exception {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
@@ -214,6 +230,95 @@ public class ReadNodesWithDescendantsToolTest {
     }
 
     @Test
+    public void readNodesWithDescendants_includesLinkAndCloneMetadataWhenRequested() throws Exception {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsBytes(any())).thenReturn(new byte[100]);
+        UUID mapIdentifier = UUID.fromString("41c2e9d7-ff86-4d64-b81c-7a6cddc69fe7");
+        MapModel mapModel = mock(MapModel.class);
+        NodeModel focusNode = mock(NodeModel.class);
+        NodeModel targetNode = mock(NodeModel.class);
+        NodeModel incomingSource = mock(NodeModel.class);
+        NodeModel cloneNode = mock(NodeModel.class);
+        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
+        when(focusNode.getChildren()).thenReturn(Collections.emptyList());
+        when(focusNode.createID()).thenReturn("ID_focus");
+        when(focusNode.getID()).thenReturn("ID_focus");
+        when(focusNode.hasID()).thenReturn(true);
+        when(focusNode.getMap()).thenReturn(mapModel);
+        when(targetNode.createID()).thenReturn("ID_target");
+        when(incomingSource.createID()).thenReturn("ID_source");
+        when(cloneNode.createID()).thenReturn("ID_clone");
+        when(focusNode.isCloneTreeRoot()).thenReturn(true);
+        when(focusNode.isCloneTreeNode()).thenReturn(false);
+        when(focusNode.allClones()).thenReturn(new TestClones(Arrays.asList(focusNode, cloneNode)));
+        NodeContentResponse focusContent = new NodeContentResponse(null,
+            new TextualContent("Focus full", null, null), null, null, null, null);
+        when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL)))
+            .thenReturn(focusContent);
+        TextController textController = mock(TextController.class);
+
+        ConnectorModel outgoingConnector = mock(ConnectorModel.class);
+        when(outgoingConnector.getSource()).thenReturn(focusNode);
+        when(outgoingConnector.getTargetID()).thenReturn("ID_target");
+        when(outgoingConnector.getSourceLabel()).thenReturn(Optional.of("out-source"));
+        when(outgoingConnector.getMiddleLabel()).thenReturn(Optional.of("out-middle"));
+        when(outgoingConnector.getTargetLabel()).thenReturn(Optional.of("out-target"));
+        when(outgoingConnector.cloneForSource(focusNode)).thenReturn(outgoingConnector);
+        List<NodeLinkModel> outgoingLinks = Arrays.asList(outgoingConnector);
+        NodeLinks nodeLinks = new TestNodeLinks(outgoingLinks);
+        nodeLinks.setHyperLink(new Hyperlink(URI.create("https://example.com")));
+        when(focusNode.getExtension(NodeLinks.class)).thenReturn(nodeLinks);
+
+        ConnectorModel incomingConnector = mock(ConnectorModel.class);
+        when(incomingConnector.getSource()).thenReturn(incomingSource);
+        when(incomingConnector.getTargetID()).thenReturn("ID_focus");
+        when(incomingConnector.getSourceLabel()).thenReturn(Optional.of("in-source"));
+        when(incomingConnector.getMiddleLabel()).thenReturn(Optional.of("in-middle"));
+        when(incomingConnector.getTargetLabel()).thenReturn(Optional.of("in-target"));
+        MapLinks mapLinks = new MapLinks();
+        mapLinks.add(incomingConnector);
+        when(mapModel.getExtension(MapLinks.class)).thenReturn(mapLinks);
+
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
+            availableMaps, nodeContentItemReader, textController, objectMapper);
+        ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
+            mapIdentifier.toString(),
+            Collections.singletonList("ID_focus"),
+            Arrays.asList(ContextSection.HYPERLINK, ContextSection.OUTGOING_CONNECTORS,
+                ContextSection.INCOMING_CONNECTORS, ContextSection.CLONE_METADATA),
+            0,
+            0,
+            null);
+
+        ReadNodesWithDescendantsResponse response = readTool.readNodesWithDescendants(request);
+
+        NodeDepthItem node = response.getItems().get(0).getNodes().get(0);
+        assertThat(node.getHyperlink()).isEqualTo("https://example.com");
+        assertThat(node.getOutgoingConnectors()).hasSize(1);
+        ConnectorItem outgoingItem = node.getOutgoingConnectors().get(0);
+        assertThat(outgoingItem.getSourceNodeIdentifier()).isEqualTo("ID_focus");
+        assertThat(outgoingItem.getTargetNodeIdentifier()).isEqualTo("ID_target");
+        assertThat(outgoingItem.getSourceLabel()).isEqualTo("out-source");
+        assertThat(outgoingItem.getMiddleLabel()).isEqualTo("out-middle");
+        assertThat(outgoingItem.getTargetLabel()).isEqualTo("out-target");
+        assertThat(node.getIncomingConnectors()).hasSize(1);
+        ConnectorItem incomingItem = node.getIncomingConnectors().get(0);
+        assertThat(incomingItem.getSourceNodeIdentifier()).isEqualTo("ID_source");
+        assertThat(incomingItem.getTargetNodeIdentifier()).isEqualTo("ID_focus");
+        assertThat(incomingItem.getSourceLabel()).isEqualTo("in-source");
+        assertThat(incomingItem.getMiddleLabel()).isEqualTo("in-middle");
+        assertThat(incomingItem.getTargetLabel()).isEqualTo("in-target");
+        CloneMetadata cloneMetadata = node.getCloneMetadata();
+        assertThat(cloneMetadata).isNotNull();
+        assertThat(cloneMetadata.getCloneNodeIdentifiers()).containsExactly("ID_clone");
+        assertThat(cloneMetadata.isCloneTreeRoot()).isTrue();
+        assertThat(cloneMetadata.isCloneTreeNode()).isFalse();
+    }
+
+    @Test
     public void fetchNodesForEditing_returnsEditableContentOnly() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
@@ -227,7 +332,7 @@ public class ReadNodesWithDescendantsToolTest {
         NodeContentResponse content = new NodeContentResponse(null, null, null, null, null, editableContent);
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL)))
             .thenReturn(content);
-        NodeContentItem item = new NodeContentItem("ID_focus", content, null);
+        NodeContentItem item = new NodeContentItem("ID_focus", content, null, null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(focusNode, content, true, false)).thenReturn(item);
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, nodeContentItemReader, textController);
@@ -240,5 +345,56 @@ public class ReadNodesWithDescendantsToolTest {
 
         assertThat(response.getMapIdentifier()).isEqualTo(mapIdentifier.toString());
         assertThat(response.getItems()).containsExactly(item);
+    }
+
+    private static class TestClones implements Clones {
+        private final List<NodeModel> nodes;
+
+        private TestClones(List<NodeModel> nodes) {
+            this.nodes = nodes;
+        }
+
+        @Override
+        public int size() {
+            return nodes.size();
+        }
+
+        @Override
+        public void attach() {
+        }
+
+        @Override
+        public void detach(NodeModel nodeModel) {
+        }
+
+        @Override
+        public Clones add(NodeModel clone) {
+            return this;
+        }
+
+        @Override
+        public java.util.Collection<NodeModel> toCollection() {
+            return nodes;
+        }
+
+        @Override
+        public boolean contains(NodeModel node) {
+            return nodes.contains(node);
+        }
+
+        @Override
+        public NodeModel head() {
+            return nodes.isEmpty() ? null : nodes.get(0);
+        }
+
+        @Override
+        public NodeModel.CloneType getCloneType() {
+            return NodeModel.CloneType.CONTENT;
+        }
+
+        @Override
+        public java.util.Iterator<NodeModel> iterator() {
+            return nodes.iterator();
+        }
     }
 }

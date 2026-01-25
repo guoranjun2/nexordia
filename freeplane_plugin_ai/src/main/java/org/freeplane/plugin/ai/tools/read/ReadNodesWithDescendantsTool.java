@@ -23,11 +23,14 @@ import org.freeplane.plugin.ai.tools.content.AttributesContentRequest;
 import org.freeplane.plugin.ai.tools.content.EditableContentRequest;
 import org.freeplane.plugin.ai.tools.content.IconsContent;
 import org.freeplane.plugin.ai.tools.content.IconsContentRequest;
+import org.freeplane.plugin.ai.tools.content.CloneMetadata;
+import org.freeplane.plugin.ai.tools.content.ConnectorItem;
 import org.freeplane.plugin.ai.tools.content.NodeContentItem;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
 import org.freeplane.plugin.ai.tools.content.NodeContentPreset;
 import org.freeplane.plugin.ai.tools.content.NodeContentRequest;
 import org.freeplane.plugin.ai.tools.content.NodeContentResponse;
+import org.freeplane.plugin.ai.tools.content.NodeLinkMetadataReader;
 import org.freeplane.plugin.ai.tools.content.TagsContent;
 import org.freeplane.plugin.ai.tools.content.TagsContentRequest;
 import org.freeplane.plugin.ai.tools.content.TextualContent;
@@ -86,6 +89,10 @@ public class ReadNodesWithDescendantsTool {
         List<NodeModel> focusNodes = resolveFocusNodes(mapModel, nodeIdentifiers);
         List<ContextSection> sections = request.getContextSections();
         boolean includeQualifiers = sections.contains(ContextSection.QUALIFIERS);
+        boolean includeHyperlink = sections.contains(ContextSection.HYPERLINK);
+        boolean includeOutgoingConnectors = sections.contains(ContextSection.OUTGOING_CONNECTORS);
+        boolean includeIncomingConnectors = sections.contains(ContextSection.INCOMING_CONNECTORS);
+        boolean includeCloneMetadata = sections.contains(ContextSection.CLONE_METADATA);
         int fullContentDepth = request.getFullContentDepth();
         int summaryDepth = request.getSummaryDepth();
         if (fullContentDepth < 0 || summaryDepth < 0) {
@@ -102,6 +109,10 @@ public class ReadNodesWithDescendantsTool {
                 focusNode,
                 request,
                 includeQualifiers,
+                includeHyperlink,
+                includeOutgoingConnectors,
+                includeIncomingConnectors,
+                includeCloneMetadata,
                 enforceBudget,
                 budgetUsed);
             if (item == null) {
@@ -152,12 +163,20 @@ public class ReadNodesWithDescendantsTool {
     private ReadNodesWithDescendantsItem buildItemForFocusNode(NodeModel focusNode,
                                                            ReadNodesWithDescendantsRequest request,
                                                            boolean includeQualifiers,
+                                                           boolean includeHyperlink,
+                                                           boolean includeOutgoingConnectors,
+                                                           boolean includeIncomingConnectors,
+                                                           boolean includeCloneMetadata,
                                                            boolean enforceBudget,
                                                            int budgetUsed) {
         List<NodeDepthItem> allNodes = buildNodeDepthItems(
             focusNode,
             request,
-            includeQualifiers);
+            includeQualifiers,
+            includeHyperlink,
+            includeOutgoingConnectors,
+            includeIncomingConnectors,
+            includeCloneMetadata);
         if (allNodes.isEmpty()) {
             return null;
         }
@@ -165,7 +184,11 @@ public class ReadNodesWithDescendantsTool {
         NodeDepthItem parentNode = buildParentNodeItem(
             focusNode,
             contextSections,
-            includeQualifiers);
+            includeQualifiers,
+            includeHyperlink,
+            includeOutgoingConnectors,
+            includeIncomingConnectors,
+            includeCloneMetadata);
         String breadcrumbPath = contextSections.contains(ContextSection.BREADCRUMB_PATH)
             ? buildBreadcrumbPath(focusNode)
             : null;
@@ -202,7 +225,11 @@ public class ReadNodesWithDescendantsTool {
 
     private List<NodeDepthItem> buildNodeDepthItems(NodeModel focusNode,
                                                     ReadNodesWithDescendantsRequest request,
-                                                    boolean includeQualifiers) {
+                                                    boolean includeQualifiers,
+                                                    boolean includeHyperlink,
+                                                    boolean includeOutgoingConnectors,
+                                                    boolean includeIncomingConnectors,
+                                                    boolean includeCloneMetadata) {
         int maximumDepth = request.getFullContentDepth() + request.getSummaryDepth();
         List<NodeDepthItem> nodes = new ArrayList<>();
         Deque<NodeModel> stack = new ArrayDeque<>();
@@ -219,7 +246,11 @@ public class ReadNodesWithDescendantsTool {
                 current,
                 depth,
                 request,
-                includeQualifiers);
+                includeQualifiers,
+                includeHyperlink,
+                includeOutgoingConnectors,
+                includeIncomingConnectors,
+                includeCloneMetadata);
             nodes.add(nodeDepthItem);
             if (depth < maximumDepth) {
                 List<NodeModel> children = current.getChildren();
@@ -233,7 +264,11 @@ public class ReadNodesWithDescendantsTool {
     }
 
     private NodeDepthItem buildNodeDepthItem(NodeModel nodeModel, int depth, ReadNodesWithDescendantsRequest request,
-                                             boolean includeQualifiers) {
+                                             boolean includeQualifiers,
+                                             boolean includeHyperlink,
+                                             boolean includeOutgoingConnectors,
+                                             boolean includeIncomingConnectors,
+                                             boolean includeCloneMetadata) {
         int fullContentDepth = request.getFullContentDepth();
         String unformattedText;
         if (depth <= fullContentDepth) {
@@ -246,11 +281,24 @@ public class ReadNodesWithDescendantsTool {
             unformattedText = readBriefText(nodeModel);
         }
         List<String> qualifiers = includeQualifiers ? buildQualifiers(nodeModel) : null;
-        return new NodeDepthItem(nodeModel.createID(), depth, unformattedText, qualifiers);
+        String hyperlink = includeHyperlink ? NodeLinkMetadataReader.readHyperlink(nodeModel) : null;
+        List<ConnectorItem> outgoingConnectors = includeOutgoingConnectors
+            ? NodeLinkMetadataReader.readOutgoingConnectors(nodeModel)
+            : null;
+        List<ConnectorItem> incomingConnectors = includeIncomingConnectors
+            ? NodeLinkMetadataReader.readIncomingConnectors(nodeModel)
+            : null;
+        CloneMetadata cloneMetadata = includeCloneMetadata ? NodeLinkMetadataReader.readCloneMetadata(nodeModel) : null;
+        return new NodeDepthItem(nodeModel.createID(), depth, unformattedText, qualifiers,
+            hyperlink, outgoingConnectors, incomingConnectors, cloneMetadata);
     }
 
     private NodeDepthItem buildParentNodeItem(NodeModel focusNode, List<ContextSection> sections,
-                                              boolean includeQualifiers) {
+                                              boolean includeQualifiers,
+                                              boolean includeHyperlink,
+                                              boolean includeOutgoingConnectors,
+                                              boolean includeIncomingConnectors,
+                                              boolean includeCloneMetadata) {
         if (!sections.contains(ContextSection.PARENT_SUMMARY)) {
             return null;
         }
@@ -260,7 +308,16 @@ public class ReadNodesWithDescendantsTool {
         }
         String unformattedText = readBriefText(parentNode);
         List<String> qualifiers = includeQualifiers ? buildQualifiers(parentNode) : null;
-        return new NodeDepthItem(parentNode.createID(), -1, unformattedText, qualifiers);
+        String hyperlink = includeHyperlink ? NodeLinkMetadataReader.readHyperlink(parentNode) : null;
+        List<ConnectorItem> outgoingConnectors = includeOutgoingConnectors
+            ? NodeLinkMetadataReader.readOutgoingConnectors(parentNode)
+            : null;
+        List<ConnectorItem> incomingConnectors = includeIncomingConnectors
+            ? NodeLinkMetadataReader.readIncomingConnectors(parentNode)
+            : null;
+        CloneMetadata cloneMetadata = includeCloneMetadata ? NodeLinkMetadataReader.readCloneMetadata(parentNode) : null;
+        return new NodeDepthItem(parentNode.createID(), -1, unformattedText, qualifiers,
+            hyperlink, outgoingConnectors, incomingConnectors, cloneMetadata);
     }
 
     private String buildBreadcrumbPath(NodeModel nodeModel) {

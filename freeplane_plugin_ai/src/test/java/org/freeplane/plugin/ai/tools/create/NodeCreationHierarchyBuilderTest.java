@@ -31,11 +31,11 @@ public class NodeCreationHierarchyBuilderTest {
         NodeCreationHierarchyBuilder builder = new NodeCreationHierarchyBuilder(nodeModelCreator, nodeContentApplier);
 
         NodeCreationItem root = new NodeCreationItem(0, -1, new NodeContentWriteRequest(
-            "root", null, null, null, null, null, null, null, null));
+            "root", null, null, null, null, null, null, null, null, null));
         NodeCreationItem childTwo = new NodeCreationItem(2, 0, new NodeContentWriteRequest(
-            "childTwo", null, null, null, null, null, null, null, null));
+            "childTwo", null, null, null, null, null, null, null, null, null));
         NodeCreationItem childOne = new NodeCreationItem(1, 0, new NodeContentWriteRequest(
-            "childOne", null, null, null, null, null, null, null, null));
+            "childOne", null, null, null, null, null, null, null, null, null));
 
         NodeCreationHierarchy hierarchy = builder.buildHierarchy(Arrays.asList(root, childTwo, childOne), mapModel);
 

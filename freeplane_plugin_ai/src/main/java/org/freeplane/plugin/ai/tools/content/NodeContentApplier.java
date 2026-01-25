@@ -1,7 +1,10 @@
 package org.freeplane.plugin.ai.tools.content;
 
+import java.util.Objects;
+
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.ai.tools.edit.AttributesContentEditor;
+import org.freeplane.plugin.ai.tools.edit.HyperlinkContentEditor;
 import org.freeplane.plugin.ai.tools.edit.IconsContentEditor;
 import org.freeplane.plugin.ai.tools.edit.TagsContentEditor;
 import org.freeplane.plugin.ai.tools.edit.TextualContentEditor;
@@ -11,15 +14,18 @@ public class NodeContentApplier {
     private final AttributesContentEditor attributesContentEditor;
     private final TagsContentEditor tagsContentEditor;
     private final IconsContentEditor iconsContentEditor;
+    private final HyperlinkContentEditor hyperlinkContentEditor;
 
     public NodeContentApplier(TextualContentEditor textualContentEditor,
                               AttributesContentEditor attributesContentEditor,
                               TagsContentEditor tagsContentEditor,
-                              IconsContentEditor iconsContentEditor) {
-        this.textualContentEditor = textualContentEditor;
-        this.attributesContentEditor = attributesContentEditor;
-        this.tagsContentEditor = tagsContentEditor;
-        this.iconsContentEditor = iconsContentEditor;
+                              IconsContentEditor iconsContentEditor,
+                              HyperlinkContentEditor hyperlinkContentEditor) {
+        this.textualContentEditor = Objects.requireNonNull(textualContentEditor, "textualContentEditor");
+        this.attributesContentEditor = Objects.requireNonNull(attributesContentEditor, "attributesContentEditor");
+        this.tagsContentEditor = Objects.requireNonNull(tagsContentEditor, "tagsContentEditor");
+        this.iconsContentEditor = Objects.requireNonNull(iconsContentEditor, "iconsContentEditor");
+        this.hyperlinkContentEditor = Objects.requireNonNull(hyperlinkContentEditor, "hyperlinkContentEditor");
     }
 
     public void apply(NodeModel nodeModel, NodeContentWriteRequest content) {
@@ -37,6 +43,7 @@ public class NodeContentApplier {
         attributesContentEditor.setInitialContent(nodeModel, toAttributesContent(content));
         tagsContentEditor.setInitialContent(nodeModel, toTagsContent(content));
         iconsContentEditor.setInitialContent(nodeModel, toIconsContent(content));
+        hyperlinkContentEditor.setInitialHyperlink(nodeModel, content.getHyperlink());
     }
 
     private AttributesContent toAttributesContent(NodeContentWriteRequest content) {

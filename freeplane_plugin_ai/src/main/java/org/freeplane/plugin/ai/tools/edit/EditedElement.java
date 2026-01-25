@@ -6,5 +6,6 @@ public enum EditedElement {
     NOTE,
     ATTRIBUTES,
     TAGS,
-    ICONS
+    ICONS,
+    HYPERLINK
 }

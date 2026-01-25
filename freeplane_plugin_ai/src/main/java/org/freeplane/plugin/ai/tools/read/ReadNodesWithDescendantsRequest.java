@@ -20,7 +20,8 @@ public class ReadNodesWithDescendantsRequest {
     private final List<String> nodeIdentifiers;
     @JsonProperty(required = false)
     @Description("Context sections to include. Default: empty list. QUALIFIERS adds qualifier strings such as "
-        + "summary_node and first_group_node.")
+        + "summary_node and first_group_node. HYPERLINK, OUTGOING_CONNECTORS, INCOMING_CONNECTORS, and CLONE_METADATA "
+        + "opt in to additional link and clone metadata.")
     private final List<ContextSection> contextSections;
     @JsonProperty(required = false)
     @Description("Depth of full content. Default: 0.")

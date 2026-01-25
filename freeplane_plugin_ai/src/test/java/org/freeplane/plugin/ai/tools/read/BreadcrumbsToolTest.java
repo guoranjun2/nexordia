@@ -38,11 +38,14 @@ public class BreadcrumbsToolTest {
         when(parentNode.getParentNode()).thenReturn(rootNode);
         when(rootNode.getParentNode()).thenReturn(null);
         NodeContentItem rootItem = new NodeContentItem("ID_root",
-            new NodeContentResponse("Root", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Root", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         NodeContentItem parentItem = new NodeContentItem("ID_parent",
-            new NodeContentResponse("Parent", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Parent", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         NodeContentItem targetItem = new NodeContentItem("ID_target",
-            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(rootNode, NodeContentPreset.BRIEF, true)).thenReturn(rootItem);
         when(nodeContentItemReader.readNodeContentItem(parentNode, NodeContentPreset.BRIEF, true)).thenReturn(parentItem);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, true)).thenReturn(targetItem);
@@ -79,9 +82,11 @@ public class BreadcrumbsToolTest {
         when(hiddenNode.containsExtension(FirstGroupNodeFlag.class)).thenReturn(false);
         when(hiddenNode.getText()).thenReturn("");
         NodeContentItem rootItem = new NodeContentItem("ID_root",
-            new NodeContentResponse("Root", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Root", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         NodeContentItem targetItem = new NodeContentItem("ID_target",
-            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(rootNode, NodeContentPreset.BRIEF, true)).thenReturn(rootItem);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, true)).thenReturn(targetItem);
         BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, nodeContentItemReader);
@@ -109,7 +114,8 @@ public class BreadcrumbsToolTest {
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(targetNode.getParentNode()).thenReturn(null);
         NodeContentItem targetItem = new NodeContentItem("ID_target",
-            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("Target", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, false))
             .thenReturn(targetItem);
         BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, nodeContentItemReader);

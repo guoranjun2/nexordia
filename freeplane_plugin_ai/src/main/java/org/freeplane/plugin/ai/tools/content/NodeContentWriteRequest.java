@@ -21,6 +21,8 @@ public class NodeContentWriteRequest {
     private final List<AttributeEntry> attributes;
     private final List<String> tags;
     private final List<String> icons;
+    @Description("Optional hyperlink to set on the new node.")
+    private final String hyperlink;
 
     @JsonCreator
     public NodeContentWriteRequest(@JsonProperty("text") String text,
@@ -31,7 +33,8 @@ public class NodeContentWriteRequest {
                                    @JsonProperty("noteContentType") ContentType noteContentType,
                                    @JsonProperty("attributes") List<AttributeEntry> attributes,
                                    @JsonProperty("tags") List<String> tags,
-                                   @JsonProperty("icons") List<String> icons) {
+                                   @JsonProperty("icons") List<String> icons,
+                                   @JsonProperty("hyperlink") String hyperlink) {
         this.text = text;
         this.textContentType = textContentType;
         this.details = details;
@@ -41,6 +44,7 @@ public class NodeContentWriteRequest {
         this.attributes = attributes;
         this.tags = tags;
         this.icons = icons;
+        this.hyperlink = hyperlink;
     }
 
     public String getText() {
@@ -77,5 +81,9 @@ public class NodeContentWriteRequest {
 
     public List<String> getIcons() {
         return icons;
+    }
+
+    public String getHyperlink() {
+        return hyperlink;
     }
 }

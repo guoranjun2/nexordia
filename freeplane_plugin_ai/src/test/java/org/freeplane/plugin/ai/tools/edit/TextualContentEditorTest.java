@@ -31,6 +31,7 @@ public class TextualContentEditorTest {
             null,
             null,
             null,
+            null,
             null);
         TextualContentEditor uut = new TextualContentEditor(
             mock(TextContentWriteController.class), mock(NoteContentWriteController.class));

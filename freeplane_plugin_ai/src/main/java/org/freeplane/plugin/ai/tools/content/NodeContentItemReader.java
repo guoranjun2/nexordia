@@ -16,38 +16,60 @@ public class NodeContentItemReader {
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset) {
-        return readNodeContentItem(nodeModel, preset, true, true);
+        return readNodeContentItem(nodeModel, preset, true, true, false);
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset,
                                                boolean includesNodeIdentifiers) {
-        return readNodeContentItem(nodeModel, preset, includesNodeIdentifiers, true);
+        return readNodeContentItem(nodeModel, preset, includesNodeIdentifiers, true, false);
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset,
                                                boolean includesNodeIdentifiers, boolean includesQualifiers) {
+        return readNodeContentItem(nodeModel, preset, includesNodeIdentifiers, includesQualifiers, false);
+    }
+
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentPreset preset,
+                                               boolean includesNodeIdentifiers, boolean includesQualifiers,
+                                               boolean includesLinkMetadata) {
         if (nodeModel == null) {
             return null;
         }
         String nodeIdentifier = includesNodeIdentifiers ? nodeModel.createID() : null;
         NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, preset);
         List<String> qualifiers = includesQualifiers ? buildQualifiers(nodeModel) : null;
-        return new NodeContentItem(nodeIdentifier, content, qualifiers);
+        LinkMetadata linkMetadata = includesLinkMetadata ? buildLinkMetadata(nodeModel) : null;
+        return new NodeContentItem(nodeIdentifier, content, qualifiers,
+            linkMetadata == null ? null : linkMetadata.hyperlink,
+            linkMetadata == null ? null : linkMetadata.outgoingConnectors,
+            linkMetadata == null ? null : linkMetadata.incomingConnectors,
+            linkMetadata == null ? null : linkMetadata.cloneMetadata);
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentResponse content,
                                                boolean includesNodeIdentifiers) {
-        return readNodeContentItem(nodeModel, content, includesNodeIdentifiers, true);
+        return readNodeContentItem(nodeModel, content, includesNodeIdentifiers, true, false);
     }
 
     public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentResponse content,
                                                boolean includesNodeIdentifiers, boolean includesQualifiers) {
+        return readNodeContentItem(nodeModel, content, includesNodeIdentifiers, includesQualifiers, false);
+    }
+
+    public NodeContentItem readNodeContentItem(NodeModel nodeModel, NodeContentResponse content,
+                                               boolean includesNodeIdentifiers, boolean includesQualifiers,
+                                               boolean includesLinkMetadata) {
         if (nodeModel == null) {
             return null;
         }
         String nodeIdentifier = includesNodeIdentifiers ? nodeModel.createID() : null;
         List<String> qualifiers = includesQualifiers ? buildQualifiers(nodeModel) : null;
-        return new NodeContentItem(nodeIdentifier, content, qualifiers);
+        LinkMetadata linkMetadata = includesLinkMetadata ? buildLinkMetadata(nodeModel) : null;
+        return new NodeContentItem(nodeIdentifier, content, qualifiers,
+            linkMetadata == null ? null : linkMetadata.hyperlink,
+            linkMetadata == null ? null : linkMetadata.outgoingConnectors,
+            linkMetadata == null ? null : linkMetadata.incomingConnectors,
+            linkMetadata == null ? null : linkMetadata.cloneMetadata);
     }
 
     public NodeContentResponse readNodeContent(NodeModel nodeModel, NodeContentRequest request,
@@ -72,5 +94,28 @@ public class NodeContentItemReader {
             return Collections.emptyList();
         }
         return Collections.unmodifiableList(qualifiers);
+    }
+
+    private LinkMetadata buildLinkMetadata(NodeModel nodeModel) {
+        String hyperlink = NodeLinkMetadataReader.readHyperlink(nodeModel);
+        List<ConnectorItem> outgoingConnectors = NodeLinkMetadataReader.readOutgoingConnectors(nodeModel);
+        List<ConnectorItem> incomingConnectors = NodeLinkMetadataReader.readIncomingConnectors(nodeModel);
+        CloneMetadata cloneMetadata = NodeLinkMetadataReader.readCloneMetadata(nodeModel);
+        return new LinkMetadata(hyperlink, outgoingConnectors, incomingConnectors, cloneMetadata);
+    }
+
+    private static class LinkMetadata {
+        private final String hyperlink;
+        private final List<ConnectorItem> outgoingConnectors;
+        private final List<ConnectorItem> incomingConnectors;
+        private final CloneMetadata cloneMetadata;
+
+        private LinkMetadata(String hyperlink, List<ConnectorItem> outgoingConnectors,
+                             List<ConnectorItem> incomingConnectors, CloneMetadata cloneMetadata) {
+            this.hyperlink = hyperlink;
+            this.outgoingConnectors = outgoingConnectors;
+            this.incomingConnectors = incomingConnectors;
+            this.cloneMetadata = cloneMetadata;
+        }
     }
 }

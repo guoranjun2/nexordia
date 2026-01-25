@@ -30,18 +30,21 @@ public class NodeContentEditorTest {
         AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
         TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
         IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
         NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
-            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         NodeModel nodeModel = mock(NodeModel.class);
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContentResponse("text", null, null, null, null, null), Collections.emptyList());
+            new NodeContentResponse("text", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
 
         NodeContentItem result = editor.edit(nodeModel, Collections.emptyList());
 
         assertThat(result).isSameAs(contentItem);
         verify(nodeContentItemReader).readNodeContentItem(nodeModel, NodeContentPreset.FULL);
-        verifyNoInteractions(textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor);
+        verifyNoInteractions(textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor,
+            hyperlinkContentEditor);
     }
 
     @Test
@@ -52,11 +55,13 @@ public class NodeContentEditorTest {
         AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
         TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
         IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
         NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
-            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         NodeModel nodeModel = mock(NodeModel.class);
         NodeContentEditItem editItem = new NodeContentEditItem(
-            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.ADD, null);
+            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.ADD, null,
+            null);
 
         assertThatThrownBy(() -> editor.edit(nodeModel, Collections.singletonList(editItem)))
             .isInstanceOf(IllegalArgumentException.class)
@@ -71,20 +76,50 @@ public class NodeContentEditorTest {
         AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
         TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
         IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
         NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
-            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         NodeModel nodeModel = mock(NodeModel.class);
         NodeContentEditItem editItem = new NodeContentEditItem(
-            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.REPLACE, null);
+            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.REPLACE, null,
+            null);
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList());
-        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
 
         NodeContentItem result = editor.edit(nodeModel, Collections.singletonList(editItem));
 
         assertThat(result).isSameAs(contentItem);
         verify(textualContentEditor).editExistingTextualContent(
             nodeModel, EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", textController);
+    }
+
+    @Test
+    public void edit_delegatesHyperlinkEditsToHyperlinkContentEditor() {
+        TextController textController = mock(TextController.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextualContentEditor textualContentEditor = mock(TextualContentEditor.class);
+        AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
+        TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
+        IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
+        NodeContentEditor editor = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
+        NodeModel nodeModel = mock(NodeModel.class);
+        NodeContentEditItem editItem = new NodeContentEditItem(
+            "node-identifier", EditedElement.HYPERLINK, null, null, null, EditOperation.REPLACE, null,
+            "https://example.com");
+        NodeContentItem contentItem = new NodeContentItem("node-identifier",
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
+
+        editor.edit(nodeModel, Collections.singletonList(editItem));
+
+        verify(hyperlinkContentEditor).editHyperlink(nodeModel, EditOperation.REPLACE, "https://example.com");
     }
 
     @Test
@@ -95,15 +130,19 @@ public class NodeContentEditorTest {
         AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
         TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
         IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
         NodeContentEditor uut = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
-            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         NodeContentEditItem editItem = new NodeContentEditItem(
-            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.REPLACE, null);
+            "node-identifier", EditedElement.TEXT, ContentType.PLAIN_TEXT, "updated", null, EditOperation.REPLACE, null,
+            null);
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList());
-        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL)).thenReturn(contentItem);
+            new NodeContentResponse("updated", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
 
         uut.edit(nodeModel, Collections.singletonList(editItem));
 
@@ -118,17 +157,20 @@ public class NodeContentEditorTest {
         AttributesContentEditor attributesContentEditor = mock(AttributesContentEditor.class);
         TagsContentEditor tagsContentEditor = mock(TagsContentEditor.class);
         IconsContentEditor iconsContentEditor = mock(IconsContentEditor.class);
+        HyperlinkContentEditor hyperlinkContentEditor = mock(HyperlinkContentEditor.class);
         NodeContentEditor uut = new NodeContentEditor(textController, nodeContentItemReader, textualContentEditor,
-            attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel summaryNode = new NodeModel("", mapModel);
         summaryNode.addExtension(SummaryNodeFlag.SUMMARY);
         summaryNode.insert(new NodeModel("child", mapModel), 0);
         NodeContentEditItem editItem = new NodeContentEditItem(
-            "node-identifier", EditedElement.TAGS, ContentType.PLAIN_TEXT, "tag", null, EditOperation.ADD, null);
+            "node-identifier", EditedElement.TAGS, ContentType.PLAIN_TEXT, "tag", null, EditOperation.ADD, null, null);
         NodeContentItem contentItem = new NodeContentItem("node-identifier",
-            new NodeContentResponse("", null, null, null, null, null), Collections.emptyList());
-        when(nodeContentItemReader.readNodeContentItem(summaryNode, NodeContentPreset.FULL)).thenReturn(contentItem);
+            new NodeContentResponse("", null, null, null, null, null), Collections.emptyList(),
+            null, null, null, null);
+        when(nodeContentItemReader.readNodeContentItem(summaryNode, NodeContentPreset.FULL, true, true, true))
+            .thenReturn(contentItem);
 
         uut.edit(summaryNode, Collections.singletonList(editItem));
 

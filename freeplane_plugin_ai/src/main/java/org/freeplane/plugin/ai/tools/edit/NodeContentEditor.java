@@ -2,12 +2,8 @@ package org.freeplane.plugin.ai.tools.edit;
 
 import java.util.List;
 
-import org.freeplane.core.undo.IActor;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.features.map.MapController;
-import org.freeplane.features.mode.Controller;
 import org.freeplane.features.text.TextController;
-import org.freeplane.plugin.ai.edits.AIEdits;
 import org.freeplane.plugin.ai.tools.content.NodeContentItem;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
 import org.freeplane.plugin.ai.tools.content.NodeContentPreset;
@@ -19,18 +15,23 @@ public class NodeContentEditor {
     private final AttributesContentEditor attributesContentEditor;
     private final TagsContentEditor tagsContentEditor;
     private final IconsContentEditor iconsContentEditor;
+    private final HyperlinkContentEditor hyperlinkContentEditor;
+    private final AiEditsMarker aiEditsMarker;
 
     public NodeContentEditor(TextController textController, NodeContentItemReader nodeContentItemReader,
                              TextualContentEditor textualContentEditor,
                              AttributesContentEditor attributesContentEditor,
                              TagsContentEditor tagsContentEditor,
-                             IconsContentEditor iconsContentEditor) {
+                             IconsContentEditor iconsContentEditor,
+                             HyperlinkContentEditor hyperlinkContentEditor) {
         this.textController = textController;
         this.nodeContentItemReader = nodeContentItemReader;
         this.textualContentEditor = textualContentEditor;
         this.attributesContentEditor = attributesContentEditor;
         this.tagsContentEditor = tagsContentEditor;
         this.iconsContentEditor = iconsContentEditor;
+        this.hyperlinkContentEditor = hyperlinkContentEditor;
+        this.aiEditsMarker = new AiEditsMarker();
     }
 
     public NodeContentItem edit(NodeModel nodeModel, List<NodeContentEditItem> items) {
@@ -43,8 +44,8 @@ public class NodeContentEditor {
         for (NodeContentEditItem edit : items) {
             applyEdit(nodeModel, edit);
         }
-        addAiEditsMarkerWithUndo(nodeModel);
-        return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL);
+        aiEditsMarker.addAiEditsMarkerWithUndo(nodeModel);
+        return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true);
     }
 
     private void applyEdit(NodeModel nodeModel, NodeContentEditItem edit) {
@@ -73,6 +74,9 @@ public class NodeContentEditor {
                 break;
             case ICONS:
                 applyIcons(nodeModel, edit);
+                break;
+            case HYPERLINK:
+                applyHyperlink(nodeModel, edit);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown edited element: " + editedElement);
@@ -116,48 +120,13 @@ public class NodeContentEditor {
             edit.getValue());
     }
 
+    private void applyHyperlink(NodeModel nodeModel, NodeContentEditItem edit) {
+        hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getHyperlink());
+    }
+
     private void ensureReplace(NodeContentEditItem edit) {
         if (edit.getOperation() != EditOperation.REPLACE) {
             throw new IllegalArgumentException("Only REPLACE operations are supported for this element.");
         }
-    }
-
-    private void addAiEditsMarkerWithUndo(NodeModel nodeModel) {
-        if (nodeModel.isHiddenSummary()) {
-            return;
-        }
-        if (nodeModel.getExtension(AIEdits.class) != null) {
-            return;
-        }
-        Controller controller = Controller.getCurrentController();
-        if (controller == null || controller.getModeController() == null) {
-            nodeModel.addExtension(new AIEdits());
-            return;
-        }
-        MapController mapController = controller.getModeController().getMapController();
-        IActor actor = new IActor() {
-            @Override
-            public void act() {
-                AIEdits aiEdits = new AIEdits();
-                nodeModel.addExtension(aiEdits);
-                mapController.nodeChanged(nodeModel, AIEdits.class, null, aiEdits);
-            }
-
-            @Override
-            public void undo() {
-                AIEdits aiEdits = nodeModel.getExtension(AIEdits.class);
-                if (aiEdits == null) {
-                    return;
-                }
-                nodeModel.removeExtension(AIEdits.class);
-                mapController.nodeChanged(nodeModel, AIEdits.class, aiEdits, null);
-            }
-
-            @Override
-            public String getDescription() {
-                return "add ai edits marker";
-            }
-        };
-        controller.getModeController().execute(actor, nodeModel.getMap());
     }
 }

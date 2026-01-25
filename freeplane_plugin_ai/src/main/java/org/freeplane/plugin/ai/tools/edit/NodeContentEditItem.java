@@ -23,10 +23,14 @@ public class NodeContentEditItem {
     @JsonProperty(required = false)
     private final Integer index;
     @JsonProperty(required = false)
-    @Description("Operation for collection edits (ATTRIBUTES, TAGS, ICONS). Omit for TEXT, DETAILS, or NOTE edits.")
+    @Description("Operation for collection edits (ATTRIBUTES, TAGS, ICONS). For HYPERLINK use REPLACE to set or "
+        + "DELETE to clear. Omit for TEXT, DETAILS, or NOTE edits.")
     private final EditOperation operation;
     @JsonProperty(required = false)
     private final String targetKey;
+    @JsonProperty(required = false)
+    @Description("New hyperlink value when editedElement is HYPERLINK.")
+    private final String hyperlink;
 
     @JsonCreator
     public NodeContentEditItem(@JsonProperty("nodeIdentifier") String nodeIdentifier,
@@ -35,7 +39,8 @@ public class NodeContentEditItem {
                                @JsonProperty("value") String value,
                                @JsonProperty("index") Integer index,
                                @JsonProperty("operation") EditOperation operation,
-                               @JsonProperty("targetKey") String targetKey) {
+                               @JsonProperty("targetKey") String targetKey,
+                               @JsonProperty("hyperlink") String hyperlink) {
         this.nodeIdentifier = nodeIdentifier;
         this.editedElement = editedElement;
         this.originalContentType = originalContentType;
@@ -43,6 +48,7 @@ public class NodeContentEditItem {
         this.index = index;
         this.operation = operation == null ? EditOperation.REPLACE : operation;
         this.targetKey = targetKey;
+        this.hyperlink = hyperlink;
     }
 
     public EditedElement getEditedElement() {
@@ -71,6 +77,10 @@ public class NodeContentEditItem {
 
     public String getTargetKey() {
         return targetKey;
+    }
+
+    public String getHyperlink() {
+        return hyperlink;
     }
 
 }

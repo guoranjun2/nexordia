@@ -13,9 +13,13 @@ import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.icon.mindmapmode.MIconController;
+import org.freeplane.features.link.LinkController;
+import org.freeplane.features.link.mindmapmode.MLinkController;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
+import org.freeplane.features.mode.Controller;
+import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.text.mindmapmode.MTextController;
@@ -38,6 +42,7 @@ import org.freeplane.plugin.ai.tools.delete.DeleteNodesResponse;
 import org.freeplane.plugin.ai.tools.delete.DeleteNodesTool;
 import org.freeplane.plugin.ai.tools.edit.AttributesContentEditor;
 import org.freeplane.plugin.ai.tools.edit.EditRequest;
+import org.freeplane.plugin.ai.tools.edit.HyperlinkContentEditor;
 import org.freeplane.plugin.ai.tools.edit.IconsContentEditor;
 import org.freeplane.plugin.ai.tools.edit.NodeContentEditItem;
 import org.freeplane.plugin.ai.tools.edit.NodeContentEditor;
@@ -74,6 +79,9 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
+import org.freeplane.plugin.ai.tools.connectors.ConnectorEditRequest;
+import org.freeplane.plugin.ai.tools.connectors.ConnectorEditResponse;
+import org.freeplane.plugin.ai.tools.connectors.ConnectorEditTool;
 
 import dev.langchain4j.agent.tool.Tool;
 
@@ -89,6 +97,7 @@ public class AIToolSet {
     private final CreateSummaryTool createSummaryTool;
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ListAvailableIconsTool listAvailableIconsTool;
+    private final ConnectorEditTool connectorEditTool;
     private final NodeContentEditor nodeContentEditor;
     private final AvailableMaps availableMaps;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
@@ -110,6 +119,7 @@ public class AIToolSet {
             MNoteController.getController());
         MAttributeController attributeController = MAttributeController.getController();
         MIconController iconController = (MIconController) IconController.getController();
+        MLinkController linkController = requireLinkController();
         TextualContentEditor textualContentEditor = new TextualContentEditor(
             textContentWriteController, noteContentWriteController);
         AttributesContentEditor attributesContentEditor = new AttributesContentEditor(attributeController);
@@ -118,12 +128,13 @@ public class AIToolSet {
         iconCandidates.addAll(IconStoreFactory.ICON_STORE.getUserIcons());
         IconsContentEditor iconsContentEditor = new IconsContentEditor(
             nodeContentFactories.iconDescriptionResolver, iconCandidates, iconController);
+        HyperlinkContentEditor hyperlinkContentEditor = new HyperlinkContentEditor(linkController);
         NodeContentApplier nodeContentApplier = new NodeContentApplier(textualContentEditor, attributesContentEditor,
-            tagsContentEditor, iconsContentEditor);
+            tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder = new NodeCreationHierarchyBuilder(
             nodeModelCreator, nodeContentApplier);
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
-            textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor);
+            textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, nodeContentFactories.nodeContentItemReader, textController);
@@ -143,6 +154,7 @@ public class AIToolSet {
             summaryNodeCreator);
         ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(
             nodeContentFactories.iconDescriptionResolver);
+        ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, linkController);
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
             "readNodesWithDescendantsTool");
@@ -156,6 +168,7 @@ public class AIToolSet {
         this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
         this.listAvailableIconsTool = Objects.requireNonNull(listAvailableIconsTool, "listAvailableIconsTool");
+        this.connectorEditTool = Objects.requireNonNull(connectorEditTool, "connectorEditTool");
         this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolCaller = toolCaller == null
@@ -163,7 +176,7 @@ public class AIToolSet {
             : toolCaller;
     }
 
-    public String systemMessageForChat(Object input) {
+    public String systemMessageForChat(@SuppressWarnings("unused") Object input) {
         return systemMessageBuilder.buildForChat();
     }
 
@@ -250,6 +263,18 @@ public class AIToolSet {
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(listAvailableIconsTool.buildToolCallErrorSummary(error));
+            throw error;
+        }
+    }
+
+    @Tool("Edit connectors by source and target node identifier.")
+    public ConnectorEditResponse editConnectors(ConnectorEditRequest request) {
+        try {
+            ConnectorEditResponse response = connectorEditTool.editConnectors(request);
+            publishToolCallSummary(connectorEditTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(connectorEditTool.buildToolCallErrorSummary(request, error));
             throw error;
         }
     }
@@ -354,6 +379,18 @@ public class AIToolSet {
             }
         }
         return new ToolCallSummary("edit", summaryText, hasError);
+    }
+
+    private MLinkController requireLinkController() {
+        ModeController modeController = Controller.getCurrentModeController();
+        if (modeController == null) {
+            throw new IllegalStateException("Current mode controller is not available.");
+        }
+        LinkController linkController = LinkController.getController(modeController);
+        if (!(linkController instanceof MLinkController)) {
+            throw new IllegalStateException("Link controller is not available.");
+        }
+        return (MLinkController) linkController;
     }
 
     @Tool("Create nodes and subtrees relative to an anchor node. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")
