@@ -50,7 +50,11 @@ import org.freeplane.view.swing.map.NodeView;
 public class NodeSelector implements MouseTimerDelegate.ActionProvider {
 	public static final NodeSelector mapNodeSelector = new NodeSelector();
 	public static final NodeSelector mapViewSelector = new NodeSelector(
-			mev -> (aev -> ((MapView)mev.getComponent()).getSelected().getMainView().requestFocusInWindow()),
+			mev -> (aev -> {
+				NodeView selected = ((MapView)mev.getComponent()).getSelected();
+				if(selected != null)
+					selected.getMainView().requestFocusInWindow();
+			}),
 			mev -> ((MapView)mev.getComponent())
 			);
 
