@@ -296,7 +296,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
 
         private void updateSide() {
             final boolean isTopOrLeft;
-            if (map.getLayoutType() == MapViewLayout.OUTLINE || viewedNode.isRoot()) {
+            if (map.getLayoutType() == MapViewLayout.OUTLINE || viewedNode.getParentNode() == null) {
                 isTopOrLeft = false;
             }
             else {
