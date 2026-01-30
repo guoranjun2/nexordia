@@ -1,13 +1,10 @@
 
 ---
 **MANDATORY:**
-Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [freeplane_plugin_ai/specs/constitution.md](./freeplane_plugin_ai/specs/constitution.md). This requirement applies universally to all AI assistants, not just agents.
+Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [CONSTITUTION.md](file:///Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md). This requirement applies universally to all AI assistants, not just agents.
 ---
 
 # Repository Guidelines
-
-All agent activity in this repository must obey the rules and workflows defined in [freeplane_plugin_ai/specs/constitution.md](freeplane_plugin_ai/specs/constitution.md). Always open and read the linked file at session start.
-In case of workflow ambiguity, the constitution is the source of truth, including the rule that task files may be edited without prior approval while code or configuration changes require explicit review and approval after task file edits.
 
 ## Project Structure & Module Organization
 - Gradle multi-project: `freeplane/` (app), `freeplane_api/`, `freeplane_framework/`, platform helpers (e.g., `freeplane_mac/`), and plugins in `freeplane_plugin_*`.
