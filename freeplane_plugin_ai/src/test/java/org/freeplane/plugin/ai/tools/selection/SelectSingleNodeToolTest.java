@@ -1,6 +1,8 @@
 package org.freeplane.plugin.ai.tools.selection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,11 +25,12 @@ public class SelectSingleNodeToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel nodeModel = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("node-1")).thenReturn(nodeModel);
         SelectionIdentifiersResponse response = mock(SelectionIdentifiersResponse.class);
         when(selectedMapAndNodeIdentifiersTool.getSelectedMapAndNodeIdentifiers(null)).thenReturn(response);
-        SelectSingleNodeTool uut = new SelectSingleNodeTool(availableMaps, mapController, selectedMapAndNodeIdentifiersTool);
+        SelectSingleNodeTool uut = new SelectSingleNodeTool(availableMaps, null, mapController,
+            selectedMapAndNodeIdentifiersTool);
 
         SelectionIdentifiersResponse result = uut.selectSingleNode(
             new SelectSingleNodeRequest(mapIdentifier.toString(), "node-1"));

@@ -101,14 +101,17 @@ public class AIToolSet {
     private final ConnectorEditTool connectorEditTool;
     private final NodeContentEditor nodeContentEditor;
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
     private final ToolCaller toolCaller;
 
-    AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps, TextController textController,
+    AIToolSet(ToolCallSummaryHandler toolCallSummaryHandler, AvailableMaps availableMaps,
+              AvailableMaps.MapAccessListener mapAccessListener, TextController textController,
               NodeContentFactories nodeContentFactories, MMapController mapController,
               ToolCaller toolCaller) {
         Objects.requireNonNull(mapController, "mapController");
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         AnchorPlacementCalculator anchorPlacementCalculator = new AnchorPlacementCalculator();
         NodeInserter nodeInserter = new NodeInserter(mapController, anchorPlacementCalculator);
@@ -138,25 +141,28 @@ public class AIToolSet {
             textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentFactories.nodeContentItemReader, textController);
+            availableMaps, mapAccessListener, nodeContentFactories.nodeContentItemReader, textController);
         SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool = new SelectedMapAndNodeIdentifiersTool(
-            availableMaps, textController);
+            availableMaps, mapAccessListener, textController);
         SelectSingleNodeTool selectSingleNodeTool = new SelectSingleNodeTool(
-            availableMaps, mapController, selectedMapAndNodeIdentifiersTool);
-        SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, nodeContentFactories.nodeContentItemReader,
-            textController);
+            availableMaps, mapAccessListener, mapController, selectedMapAndNodeIdentifiersTool);
+        SearchNodesTool searchNodesTool = new SearchNodesTool(availableMaps, mapAccessListener,
+            nodeContentFactories.nodeContentItemReader, textController);
         CreateNodesPreferences createNodesPreferences = new CreateNodesPreferences();
-        CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
-        MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
-        DeleteNodesTool deleteNodesTool = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
-        CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder,
-            nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
-        MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps, mapController,
-            summaryNodeCreator);
+        CreateNodesTool createNodesTool = new CreateNodesTool(availableMaps, mapAccessListener,
+            nodeCreationHierarchyBuilder, nodeInserter, modifiedNodeSummaryBuilder, mapController,
+            createNodesPreferences);
+        MoveNodesTool moveNodesTool = new MoveNodesTool(availableMaps, mapAccessListener, mapController,
+            anchorPlacementCalculator);
+        DeleteNodesTool deleteNodesTool = new DeleteNodesTool(availableMaps, mapAccessListener, mapController,
+            modifiedNodeSummaryBuilder);
+        CreateSummaryTool createSummaryTool = new CreateSummaryTool(availableMaps, mapAccessListener,
+            nodeCreationHierarchyBuilder, nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
+        MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps,
+            mapAccessListener, mapController, summaryNodeCreator);
         ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(
             nodeContentFactories.iconDescriptionResolver);
-        ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, linkController);
+        ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, mapAccessListener, linkController);
         this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
             "readNodesWithDescendantsTool");
@@ -313,7 +319,7 @@ public class AIToolSet {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

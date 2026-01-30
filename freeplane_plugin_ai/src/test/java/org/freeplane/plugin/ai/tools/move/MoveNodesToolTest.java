@@ -26,7 +26,7 @@ public class MoveNodesToolTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MMapController mapController = mock(MMapController.class);
         AnchorPlacementCalculator anchorPlacementCalculator = new AnchorPlacementCalculator();
-        MoveNodesTool unitUnderTest = new MoveNodesTool(availableMaps, mapController, anchorPlacementCalculator);
+        MoveNodesTool unitUnderTest = new MoveNodesTool(availableMaps, null, mapController, anchorPlacementCalculator);
         UUID mapIdentifier = UUID.fromString("c2d087aa-9470-4ab9-8dfd-45f2d9670f44");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel parentNode = new NodeModel("parent", mapModel);
@@ -38,7 +38,7 @@ public class MoveNodesToolTest {
         NodeModel secondNode = new NodeModel("second", mapModel);
         firstNode.setID("ID_first");
         secondNode.setID("ID_second");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapController.isWriteable(any(NodeModel.class))).thenReturn(true);
         MoveNodesRequest request = new MoveNodesRequest(
             mapIdentifier.toString(),

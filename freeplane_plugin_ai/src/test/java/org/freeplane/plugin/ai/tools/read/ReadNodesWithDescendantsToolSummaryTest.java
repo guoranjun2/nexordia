@@ -20,7 +20,7 @@ public class ReadNodesWithDescendantsToolSummaryTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController);
+            availableMaps, null, nodeContentItemReader, textController);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             "map-identifier",
             null,
@@ -48,7 +48,7 @@ public class ReadNodesWithDescendantsToolSummaryTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController);
+            availableMaps, null, nodeContentItemReader, textController);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             "map-identifier",
             null,
@@ -72,7 +72,7 @@ public class ReadNodesWithDescendantsToolSummaryTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController);
+            availableMaps, null, nodeContentItemReader, textController);
 
         ToolCallSummary summary = readTool.buildToolCallErrorSummary(null, new IllegalStateException("Missing\nmap"));
 

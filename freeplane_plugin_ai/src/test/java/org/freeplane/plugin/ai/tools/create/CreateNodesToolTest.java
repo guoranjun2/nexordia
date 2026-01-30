@@ -32,13 +32,13 @@ public class CreateNodesToolTest {
         CreateNodesPreferences createNodesPreferences = mock(CreateNodesPreferences.class);
         MapController mapController = mock(MapController.class);
         when(createNodesPreferences.unfoldsParentsOnCreate()).thenReturn(false);
-        CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
+        CreateNodesTool unitUnderTest = new CreateNodesTool(availableMaps, null, nodeCreationHierarchyBuilder,
+            nodeInserter, modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
         UUID mapIdentifier = UUID.fromString("f0ec8744-6a58-4b63-8e0e-9ef00b2e3c7a");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null, null);
         NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null, null);
         NodeModel firstNodeModel = new NodeModel("first", mapModel);
@@ -83,13 +83,13 @@ public class CreateNodesToolTest {
         CreateNodesPreferences createNodesPreferences = mock(CreateNodesPreferences.class);
         MapController mapController = mock(MapController.class);
         when(createNodesPreferences.unfoldsParentsOnCreate()).thenReturn(false);
-        CreateNodesTool uut = new CreateNodesTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
+        CreateNodesTool uut = new CreateNodesTool(availableMaps, null, nodeCreationHierarchyBuilder, nodeInserter,
             modifiedNodeSummaryBuilder, mapController, createNodesPreferences);
         UUID mapIdentifier = UUID.fromString("0f0bbef5-e1ff-4ae7-8de7-5d07fca9110f");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         NodeCreationItem nodeItem = new NodeCreationItem(0, -1, null, null);
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         NodeModel nodeModel = nodeModelCreator.createNodeModel(mapModel);

@@ -1,6 +1,8 @@
 package org.freeplane.plugin.ai.tools.connectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,12 +27,12 @@ public class ConnectorEditToolTest {
     public void editConnectors_addsConnectorAndAppliesLabels() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MLinkController linkController = mock(MLinkController.class);
-        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, linkController);
+        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, null, linkController);
         UUID mapIdentifier = UUID.fromString("8fd6a4f3-2297-4ac1-8a2e-1e7406228d5e");
         MapModel mapModel = mock(MapModel.class);
         NodeModel sourceNode = new NodeModel("source", mapModel);
         NodeModel targetNode = new NodeModel("target", mapModel);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_source")).thenReturn(sourceNode);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(mapModel.registryNode(sourceNode)).thenReturn("ID_source");
@@ -73,12 +75,12 @@ public class ConnectorEditToolTest {
     public void editConnectors_updatesFirstMatchingConnectorAndReportsIgnoredCount() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MLinkController linkController = mock(MLinkController.class);
-        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, linkController);
+        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, null, linkController);
         UUID mapIdentifier = UUID.fromString("c4b69b9e-7f9b-4fc8-9f2b-5e8aa1b3b7c1");
         MapModel mapModel = mock(MapModel.class);
         NodeModel sourceNode = new NodeModel("source", mapModel);
         NodeModel targetNode = new NodeModel("target", mapModel);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_source")).thenReturn(sourceNode);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(mapModel.registryNode(sourceNode)).thenReturn("ID_source");
@@ -126,12 +128,12 @@ public class ConnectorEditToolTest {
     public void editConnectors_deletesFirstMatchingConnectorAndReportsIgnoredCount() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MLinkController linkController = mock(MLinkController.class);
-        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, linkController);
+        ConnectorEditTool uut = new ConnectorEditTool(availableMaps, null, linkController);
         UUID mapIdentifier = UUID.fromString("3c5b2ec7-49f6-4e9d-9ad4-0c8cb44b9c3c");
         MapModel mapModel = mock(MapModel.class);
         NodeModel sourceNode = new NodeModel("source", mapModel);
         NodeModel targetNode = new NodeModel("target", mapModel);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_source")).thenReturn(sourceNode);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(mapModel.registryNode(sourceNode)).thenReturn("ID_source");

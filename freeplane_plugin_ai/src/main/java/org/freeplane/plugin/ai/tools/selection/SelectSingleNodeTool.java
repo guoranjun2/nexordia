@@ -12,12 +12,15 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class SelectSingleNodeTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final MMapController mapController;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
 
-    public SelectSingleNodeTool(AvailableMaps availableMaps, MMapController mapController,
+    public SelectSingleNodeTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                                MMapController mapController,
                                 SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.mapController = Objects.requireNonNull(mapController, "mapController");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
             selectedMapAndNodeIdentifiersTool, "selectedMapAndNodeIdentifiersTool");
@@ -26,7 +29,7 @@ public class SelectSingleNodeTool {
     public SelectionIdentifiersResponse selectSingleNode(SelectSingleNodeRequest request) {
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

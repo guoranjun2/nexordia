@@ -16,12 +16,15 @@ import org.freeplane.plugin.ai.tools.utilities.ToolErrorHandler;
 
 public class MoveNodesIntoSummaryTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final MMapController mapController;
     private final SummaryNodeCreator summaryNodeCreator;
 
-    public MoveNodesIntoSummaryTool(AvailableMaps availableMaps, MMapController mapController,
+    public MoveNodesIntoSummaryTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                                    MMapController mapController,
                                     SummaryNodeCreator summaryNodeCreator) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.mapController = Objects.requireNonNull(mapController, "mapController");
         this.summaryNodeCreator = Objects.requireNonNull(summaryNodeCreator, "summaryNodeCreator");
     }
@@ -32,7 +35,7 @@ public class MoveNodesIntoSummaryTool {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

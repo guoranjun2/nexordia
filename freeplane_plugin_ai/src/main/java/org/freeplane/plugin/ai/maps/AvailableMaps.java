@@ -17,7 +17,6 @@ public class AvailableMaps {
     private final MapModelProvider mapModelProvider;
     private final Map<MapModel, UUID> mapIdentifiersByMapModel = new WeakHashMap<>();
     private final Map<UUID, WeakReference<MapModel>> mapReferencesByIdentifier = new HashMap<>();
-
     public AvailableMaps(MapModelProvider mapModelProvider) {
         this.mapModelProvider = Objects.requireNonNull(mapModelProvider, "mapModelProvider");
     }
@@ -56,6 +55,10 @@ public class AvailableMaps {
     }
 
     public MapModel findMapModel(UUID mapIdentifier) {
+        return findMapModel(mapIdentifier, null);
+    }
+
+    public MapModel findMapModel(UUID mapIdentifier, MapAccessListener mapAccessListener) {
         if (mapIdentifier == null) {
             return null;
         }
@@ -66,6 +69,9 @@ public class AvailableMaps {
         MapModel mapModel = mapReference.get();
         if (mapModel == null) {
             mapReferencesByIdentifier.remove(mapIdentifier);
+        }
+        if (mapModel != null && mapAccessListener != null) {
+            mapAccessListener.onMapAccessed(mapIdentifier, mapModel);
         }
         return mapModel;
     }
@@ -94,5 +100,9 @@ public class AvailableMaps {
                 iterator.remove();
             }
         }
+    }
+
+    public interface MapAccessListener {
+        void onMapAccessed(UUID mapIdentifier, MapModel mapModel);
     }
 }

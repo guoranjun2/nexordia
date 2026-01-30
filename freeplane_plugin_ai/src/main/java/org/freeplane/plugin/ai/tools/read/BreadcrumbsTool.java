@@ -16,10 +16,13 @@ import org.freeplane.plugin.ai.tools.content.NodeContentPreset;
 
 public class BreadcrumbsTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final NodeContentItemReader nodeContentItemReader;
 
-    public BreadcrumbsTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
+    public BreadcrumbsTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                           NodeContentItemReader nodeContentItemReader) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
     }
 
@@ -28,7 +31,7 @@ public class BreadcrumbsTool {
         String mapIdentifier = requireValue(request.getMapIdentifier(), "mapIdentifier");
         String nodeIdentifier = requireValue(request.getNodeIdentifier(), "nodeIdentifier");
         UUID mapIdentifierValue = parseMapIdentifier(mapIdentifier);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifierValue);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifierValue, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifier);
         }

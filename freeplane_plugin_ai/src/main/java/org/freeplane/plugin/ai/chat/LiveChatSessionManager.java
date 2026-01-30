@@ -1,0 +1,86 @@
+package org.freeplane.plugin.ai.chat;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+final class LiveChatSessionManager {
+    private final Map<LiveChatSessionId, LiveChatSession> sessions = new LinkedHashMap<>();
+    private LiveChatSessionId currentSessionId;
+
+    LiveChatSession createSession(ChatSessionMemoryController chatMemoryController, String displayName) {
+        LiveChatSessionId id = LiveChatSessionId.create();
+        LiveChatSession session = new LiveChatSession(id, chatMemoryController, displayName);
+        sessions.put(id, session);
+        if (currentSessionId == null) {
+            currentSessionId = id;
+        }
+        return session;
+    }
+
+    LiveChatSession getCurrentSession() {
+        return currentSessionId == null ? null : sessions.get(currentSessionId);
+    }
+
+    LiveChatSessionId getCurrentSessionId() {
+        return currentSessionId;
+    }
+
+    void setCurrentSession(LiveChatSessionId sessionId) {
+        if (sessionId == null || !sessions.containsKey(sessionId)) {
+            return;
+        }
+        currentSessionId = sessionId;
+    }
+
+    List<LiveChatSessionSummary> listSessions() {
+        List<LiveChatSessionSummary> summaries = new ArrayList<>();
+        for (LiveChatSession session : sessions.values()) {
+            if (session.getMessageSnapshots().isEmpty()) {
+                continue;
+            }
+            summaries.add(new LiveChatSessionSummary(session.getId(), session.getDisplayName(),
+                new ArrayList<>(session.getMapIds())));
+        }
+        return summaries;
+    }
+
+    void rename(LiveChatSessionId sessionId, String displayName) {
+        LiveChatSession session = sessions.get(sessionId);
+        if (session == null || displayName == null) {
+            return;
+        }
+        session.setDisplayName(displayName);
+        session.setNameEdited(true);
+    }
+
+    LiveChatSession remove(LiveChatSessionId sessionId) {
+        LiveChatSession removed = sessions.remove(sessionId);
+        if (sessionId != null && sessionId.equals(currentSessionId)) {
+            currentSessionId = sessions.isEmpty() ? null : sessions.keySet().iterator().next();
+        }
+        return removed;
+    }
+
+    LiveChatSession findSession(LiveChatSessionId sessionId) {
+        return sessions.get(sessionId);
+    }
+
+    void recordMapId(String mapId) {
+        LiveChatSession session = getCurrentSession();
+        if (session == null || mapId == null || mapId.isEmpty()) {
+            return;
+        }
+        session.getMapIds().add(mapId);
+    }
+
+    void updateUserMessageName(String updatedName) {
+        LiveChatSession session = getCurrentSession();
+        if (session == null || session.isNameEdited() || session.isUserMessageNameApplied()) {
+            return;
+        }
+        session.setDisplayName(updatedName);
+        session.setUserMessageNameApplied(true);
+    }
+}

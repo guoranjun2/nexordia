@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.tools.delete;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,7 +34,7 @@ public class DeleteNodesToolTest {
         NodeModel childNode = mock(NodeModel.class);
         NodeModel childOfChildNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("parent")).thenReturn(parentNode);
         when(mapModel.getNodeForID("child")).thenReturn(childNode);
         when(childNode.getParentNode()).thenReturn(parentNode);
@@ -46,7 +47,7 @@ public class DeleteNodesToolTest {
         when(parentNode.getID()).thenReturn("parent");
         when(parentNode.createID()).thenReturn("parent");
         when(textController.getShortPlainText(parentNode, 20, " ...")).thenReturn("Parent");
-        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
+        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, null, mapController, modifiedNodeSummaryBuilder);
 
         DeleteNodesResponse response = uut.deleteNodes(
             new DeleteNodesRequest(mapIdentifier.toString(), Arrays.asList("child", "parent"), "Delete nodes"));
@@ -69,10 +70,10 @@ public class DeleteNodesToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel rootNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("root")).thenReturn(rootNode);
         when(rootNode.getParentNode()).thenReturn(null);
-        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
+        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, null, mapController, modifiedNodeSummaryBuilder);
 
         assertThatThrownBy(() -> uut.deleteNodes(
             new DeleteNodesRequest(mapIdentifier.toString(), Collections.singletonList("root"), "Delete root")))
@@ -92,7 +93,7 @@ public class DeleteNodesToolTest {
         NodeModel parentNode = mock(NodeModel.class);
         NodeModel rootNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("first")).thenReturn(firstNode);
         when(mapModel.getNodeForID("second")).thenReturn(secondNode);
         when(firstNode.getMap()).thenReturn(mapModel);
@@ -112,7 +113,7 @@ public class DeleteNodesToolTest {
         when(secondNode.getID()).thenReturn("second");
         when(textController.getShortPlainText(firstNode, 20, " ...")).thenReturn("First");
         when(textController.getShortPlainText(secondNode, 20, " ...")).thenReturn("Second");
-        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, mapController, modifiedNodeSummaryBuilder);
+        DeleteNodesTool uut = new DeleteNodesTool(availableMaps, null, mapController, modifiedNodeSummaryBuilder);
 
         uut.deleteNodes(new DeleteNodesRequest(mapIdentifier.toString(),
             Arrays.asList("second", "first"), "Delete nodes"));

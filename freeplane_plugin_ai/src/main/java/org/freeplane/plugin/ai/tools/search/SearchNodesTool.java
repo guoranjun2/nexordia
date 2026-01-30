@@ -31,22 +31,28 @@ public class SearchNodesTool {
     private static final int SUMMARY_PREVIEW_COUNT_LIMIT = 3;
 
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final NodeContentItemReader nodeContentItemReader;
     private final TextController textController;
     private final ObjectMapper objectMapper;
 
-    public SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader) {
-        this(availableMaps, nodeContentItemReader, TextController.getController(), new ObjectMapper());
+    public SearchNodesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                           NodeContentItemReader nodeContentItemReader) {
+        this(availableMaps, mapAccessListener, nodeContentItemReader, TextController.getController(),
+            new ObjectMapper());
     }
 
-    public SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+    public SearchNodesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                           NodeContentItemReader nodeContentItemReader,
                            TextController textController) {
-        this(availableMaps, nodeContentItemReader, textController, new ObjectMapper());
+        this(availableMaps, mapAccessListener, nodeContentItemReader, textController, new ObjectMapper());
     }
 
-    SearchNodesTool(AvailableMaps availableMaps, NodeContentItemReader nodeContentItemReader,
+    SearchNodesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                    NodeContentItemReader nodeContentItemReader,
                     TextController textController, ObjectMapper objectMapper) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.nodeContentItemReader = Objects.requireNonNull(nodeContentItemReader, "nodeContentItemReader");
         this.textController = Objects.requireNonNull(textController, "textController");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
@@ -58,7 +64,7 @@ public class SearchNodesTool {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

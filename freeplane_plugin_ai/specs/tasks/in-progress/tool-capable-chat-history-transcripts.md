@@ -35,41 +35,46 @@
   - Existing JSON usage (for example in `AIModelCatalog`) indicates
     Jackson is available for persistence.
 - **Design:**
-  - Persist only user and assistant messages; no tool calls, tool output,
-    or runtime identifiers are saved.
-  - Keep live sessions fully tool-capable in-memory for the current
-    application session only.
-  - Assign a default name when a live chat starts using the timestamp
-    and the first four words of the first user message once available
-    unless the user has already edited the name (fallback to timestamp
-    only if no user message exists yet).
-  - Allow users to edit the live chat name; persist the current name
-    into the transcript record when saving.
-  - Maintain a per-chat list of referenced map identifiers and compute
-    shortened root node texts (40 characters, using existing short-text
-    helpers) on demand for display; only persisted transcripts store
-    the short texts with counts.
-  - Store transcripts under `${freeplaneUserDirectory}/ai-chats` with
-    deterministic filenames based on timestamp and a sanitized name.
-  - Implement transcript persistence in
-    `org.freeplane.plugin.ai.chat.history` with:
-    - `ChatTranscriptRecord` for on-disk data.
-    - `ChatTranscriptEntry` for ordered message entries.
-    - `ChatTranscriptStore` for list/load/save/delete and file system
-      concerns.
-  - Provide list, load, delete, and rename operations that return
-    metadata without attempting to restore runtime identifiers.
-  - Capture messages from the chat panel into transcripts without
-    altering live tool execution.
-  - Persist transcripts on live chat switch and on close; there is no
-    explicit save action.
-  - Persist transcripts on chat switch and on chat close only; do not
-    write on every assistant response.
-  - When a user starts a new chat from a transcript, seed the new chat
-    memory with the transcript text and a system message that forbids
-    assuming any map context until explicitly confirmed.
-  - Require explicit user confirmation of map context before
-    tool-capable actions that depend on a specific map.
+
+  ```plantuml
+  @startuml
+  package "org.freeplane.plugin.ai.chat" {
+    class AIChatPanel
+    class LiveChatController
+    class LiveChatSessionManager
+    class LiveChatListDialog
+    class ChatMessageHistory
+    class ChatSessionMemoryController
+    class ChatMessageStyleApplier
+  }
+  package "org.freeplane.plugin.ai.chat.history" {
+    class ChatTranscriptStore
+    class ChatTranscriptRecord
+  }
+  package "org.freeplane.plugin.ai.maps" {
+    class AvailableMaps
+  }
+  AIChatPanel --> LiveChatController
+  AIChatPanel --> ChatMessageHistory
+  AIChatPanel --> ChatMessageStyleApplier
+  AIChatPanel --> AvailableMaps
+  LiveChatController --> LiveChatSessionManager
+  LiveChatController --> LiveChatListDialog
+  LiveChatController --> ChatMessageHistory
+  LiveChatController --> ChatSessionMemoryController
+  LiveChatSessionManager --> ChatTranscriptStore : persist on switch/close
+  ChatTranscriptStore --> ChatTranscriptRecord
+  @enduml
+  ```
+
+  `AIChatPanel` owns the UI and delegates live-session lifecycle to
+  `LiveChatController`.
+  `ChatMessageStyleApplier` centralizes theme-aware message styling.
+  `LiveChatController` coordinates list dialogs, session switching, and
+  history snapshot/restore.
+  `AvailableMaps.findMapModel` exposes overloads with and without a map
+  access callback; only tool flows pass the callback so UI rendering
+  does not affect per-chat map tracking.
 - **Test specification:**
   - Verify persisted transcripts do not contain runtime identifiers or
     tool call payloads.
@@ -84,8 +89,9 @@
   - Manual verification that live sessions remain fully tool-capable
     during the same application session.
 
+
 ## Subtask: Live session continuation
-- **Status:** Planning
+- **Status:** Finished
 - **Scope:** Define how live tool-capable sessions continue within the
   same Freeplane runtime, including chat memory behavior and UI state
   across a single application session.
@@ -102,57 +108,31 @@
   - `ChatSessionMemoryController` maintains LangChain4j chat memory
     independently of the UI history.
 - **Design:**
-  - Ensure transcript features do not change when chat memory is reset
-    or cleared for a new chat.
-  - Keep tool-capable memory updates and tool execution flow identical
-    to current behavior.
-  - Live chat memory (`AIChatService`/LangChain4j memory) remains the
-    authoritative source of truth for the session. Transcript data is
-    non-authoritative and must not feed back into live tool behavior.
-  - Do not move, delay, or alter the existing calls that append to
-    `ChatMessageHistory` or update `ChatSessionMemoryController`; the
-    transcript adapter must observe those events only.
-  - Transcript feature failures (capture, debounce scheduling, store
-    errors) must be isolated so they never block UI updates or tool
-    execution.
-  - Live session name edits are UI-only metadata and must not alter
-    map context, tool routing, or chat memory state.
-  - When a transcript is loaded for viewing, keep the live tool-capable
-    session intact; only the UI history is replaced.
-  - Contract for live session operations (no behavior change):
-    - `startNewChat()` continues to clear `ChatMessageHistory` and
-      reset `ChatSessionMemoryController` as it does today.
-    - User message flow remains: UI append → chat memory update →
-      tool-capable execution path unchanged.
-    - Assistant response flow remains: tool output → UI append →
-      chat memory update unchanged.
-    - Transcript features may subscribe to these events but must not
-      reorder or block them.
-  - Failure isolation:
-    - Any exception in transcript-related hooks must be caught and
-      logged without surfacing to the UI or interrupting the tool
-      pipeline.
-    - Live chat must remain usable even if transcript persistence is
-      disabled or fails.
-  - PlantUML sequence diagram (live session invariants):
-    ```plantuml
-    @startuml
-    actor User
-    participant AIChatPanel
-    participant ChatMessageHistory
-    participant ChatSessionMemoryController
-    participant AIToolPipeline
 
-    User -> AIChatPanel : send message
-    AIChatPanel -> ChatMessageHistory : appendUserMessage(text)
-    AIChatPanel -> ChatSessionMemoryController : addUserMessage(text)
-    AIChatPanel -> AIToolPipeline : execute tools (unchanged)
+  ```plantuml
+  @startuml
+  actor User
+  participant AIChatPanel
+  participant LiveChatController
+  participant ChatMessageHistory
+  participant ChatSessionMemoryController
+  participant AIToolPipeline
+  User -> AIChatPanel : send message
+  AIChatPanel -> ChatMessageHistory : appendUserMessage(text)
+  AIChatPanel -> ChatSessionMemoryController : addUserMessage(text)
+  AIChatPanel -> AIToolPipeline : execute tools
+  AIToolPipeline -> AIChatPanel : assistant reply
+  AIChatPanel -> ChatMessageHistory : appendAssistantMessage(text)
+  AIChatPanel -> ChatSessionMemoryController : addAssistantMessage(text)
+  User -> AIChatPanel : switch chat
+  AIChatPanel -> LiveChatController : switch session
+  LiveChatController -> ChatMessageHistory : snapshot/restore
+  LiveChatController -> ChatSessionMemoryController : replace controller
+  @enduml
+  ```
 
-    AIToolPipeline -> AIChatPanel : assistant reply
-    AIChatPanel -> ChatMessageHistory : appendAssistantMessage(text)
-    AIChatPanel -> ChatSessionMemoryController : addAssistantMessage(text)
-    @enduml
-    ```
+  Message send flow remains unchanged; `LiveChatController` handles
+  session switching by snapshotting history and swapping memory.
 - **Test specification:**
   - Verify live session tools still operate during transcript features.
   - Verify starting a new chat still resets UI history and in-memory
@@ -160,8 +140,9 @@
   - Verify transcript adapter failures do not block message display or
     tool execution.
 
+
 ## Subtask: Live chat list, switch, rename, and close
-- **Status:** Planning
+- **Status:** Finished
 - **Scope:** Provide a UI list of active live chats, allow switching the
   active session, support renaming, and allow closing a live chat
   without affecting persisted transcripts.
@@ -176,81 +157,34 @@
     toolbar/popup actions but no session list.
   - Chat message history and memory are tied to the current session.
 - **Design:**
-  - Maintain an in-memory registry of live chat sessions, each with:
-    - `sessionId` (runtime-only identifier).
-    - `displayName` (auto-assigned, user-editable).
-    - `mapIds` (runtime map identifiers referenced by the chat).
-    - `messageHistory` (existing UI history).
-    - `chatMemory` (LangChain4j memory / AIChatService state).
-  - Record `mapIds` when a tool call includes a map id parameter.
-  - Add a “Chats” action to open a list of live sessions.
-  - Switching:
-    - Save the current UI history and chat memory into the current
-      session entry.
-    - Load the selected session’s UI history and chat memory into the
-      active panel.
-    - Persist the transcript for the session being switched away from.
-  - Renaming:
-    - Allow inline rename; update only the live session’s display name.
-  - Closing:
-    - Allow closing a live session, removing it from the list.
-    - Persist the transcript on close automatically; no explicit save.
-  - Session memory strategy:
-    - Keep a separate `ChatSessionMemoryController` per live session so
-      switching does not require serialization of tool memory.
-    - This keeps live session state authoritative and avoids partial
-      restores.
-  - Keep live session list separate from persisted transcripts for now,
-    but design the list UI to support grouping/merging later.
-  - Compute map root short text counts on demand from live `mapIds`
-    when rendering the list; do not persist these for live sessions.
-  - Implement the UI component under `org.freeplane.plugin.ai.chat`
-    (for example `LiveChatListDialog` or `LiveChatListPanel`) and keep
-    `org.freeplane.plugin.ai.chat.history` reserved for persisted
-    transcript classes.
-  - PlantUML class diagram (live chat manager):
-    ```plantuml
-    @startuml
-    package "org.freeplane.plugin.ai.chat" {
-      class AIChatPanel
-      class LiveChatListDialog
-    }
 
-    package "org.freeplane.plugin.ai.chat.history" {
-      class LiveChatSessionManager {
-        +list(): List<LiveChatSessionSummary>
-        +switchTo(sessionId: LiveChatSessionId): void
-        +rename(sessionId: LiveChatSessionId, name: String): void
-        +close(sessionId: LiveChatSessionId): void
-        +createNew(name: String): LiveChatSessionId
-      }
+  ```plantuml
+  @startuml
+  package "org.freeplane.plugin.ai.chat" {
+    class AIChatPanel
+    class LiveChatController
+    class LiveChatListDialog
+    class LiveChatSessionManager
+    class LiveChatSession
+    class LiveChatSessionSummary
+  }
+  AIChatPanel --> LiveChatController
+  LiveChatController --> LiveChatListDialog
+  LiveChatController --> LiveChatSessionManager
+  LiveChatListDialog --> LiveChatController
+  LiveChatSessionManager --> LiveChatSession
+  LiveChatSessionManager --> LiveChatSessionSummary
+  @enduml
+  ```
 
-      class LiveChatSession {
-        +id: LiveChatSessionId
-        +displayName: String
-        +mapIds: List<String>
-        +messageHistory: ChatMessageHistory
-        +chatMemory: ChatSessionMemoryController
-      }
-
-      class LiveChatSessionSummary {
-        +id: LiveChatSessionId
-        +displayName: String
-        +mapIds: List<String>
-      }
-
-      class LiveChatSessionId {
-        +value: String
-      }
-    }
-
-    AIChatPanel --> LiveChatSessionManager
-    AIChatPanel --> LiveChatListDialog
-    LiveChatListDialog --> LiveChatSessionManager
-    LiveChatSessionManager --> LiveChatSession
-    LiveChatSessionManager --> LiveChatSessionSummary
-    @enduml
-    ```
+  `AIChatPanel` owns the chat UI and delegates session management to
+  `LiveChatController`.
+  `LiveChatController` coordinates dialog actions and session changes.
+  `LiveChatSessionManager` tracks live sessions and handles switch,
+  rename, and close operations.
+  `LiveChatSession` stores per-session memory and message history.
+  `LiveChatSessionSummary` provides lightweight list rows.
+  `LiveChatListDialog` is the modal UI list for switching/renaming.
 - **Test specification:**
   - Manual: switching chats preserves distinct UI history and memory.
   - Manual: renaming updates the live chat list immediately.
@@ -259,6 +193,7 @@
     prompting for save.
   - Manual: map root short texts are computed from live map ids and
     appear in the live chat list.
+
 
 ## Subtask: Transcript generation and persistence
 - **Status:** Planning
@@ -274,88 +209,23 @@
   - `AIChatPanel` already receives user/assistant message events and
     updates `ChatMessageHistory`.
 - **Design:**
-  - Capture only user and assistant messages, ignoring tool output,
-    tool calls, and runtime identifiers.
-  - Capture at a consistent boundary (after each assistant response),
-    so transcripts represent complete exchanges in-memory before a
-    switch or close triggers persistence.
-  - Keep a lightweight in-memory transcript shadow that is updated on
-    new messages but is not used for live tool behavior.
-  - Update the transcript shadow map root short text list whenever the
-    set of maps in the live session changes (use each map’s root node
-    text, shortened for display, grouped with counts).
-  - Maintain a minimal adapter that mirrors `ChatMessageHistory`
-    updates into a `ChatTranscriptRecord` without altering UI or tool
-    logic.
-  - Adapter responsibilities:
-    - `startNewTranscript()` initializes the in-memory record and
-      resets the edited-name flag.
-    - `onUserMessage(text)` appends a `USER` entry and, if this is the
-      first user message and the name is not edited, updates
-      `displayName`.
-    - `onAssistantMessage(text)` appends an `ASSISTANT` entry.
-    - `updateMapRootShortTextCounts(list)` replaces the in-memory map
-      root short text list with the latest shortened root node texts
-      grouped with counts.
-    - `renameLiveTranscript(name)` sets `displayName` and marks the
-      name as edited to prevent auto-replacement.
-    - `snapshotForSave()` returns an immutable copy for persistence.
-  - Persistence triggers:
-    - Flush the most recent in-memory transcript on chat switch.
-    - Flush on chat close or shutdown.
-  - Suggested data flow:
-    - `AIChatPanel` already receives user/assistant message events;
-      add adapter calls at the same points that update
-      `ChatMessageHistory`.
-    - This subtask depends on live session invariants: adapter calls
-      are purely observational and must not reorder existing updates.
-    - Do not read tool execution output for transcripts; the adapter
-      only handles user and assistant text shown in the chat pane.
-    - Record map references only when a tool call includes a map id
-      parameter.
-  - PlantUML component diagram (live capture flow):
-    ```plantuml
-    @startuml
-    package "org.freeplane.plugin.ai.chat" {
-      class AIChatPanel
-      class ChatMessageHistory
-      class ChatSessionMemoryController
-    }
 
-    package "org.freeplane.plugin.ai.chat.history" {
-      class LiveTranscriptAdapter
-      class ChatTranscriptRecord
-      class ChatTranscriptStore
-    }
+  ```plantuml
+  @startuml
+  participant AIChatPanel
+  participant LiveChatSessionManager
+  participant LiveTranscriptAdapter
+  participant ChatTranscriptStore
+  AIChatPanel -> LiveTranscriptAdapter : onUserMessage/onAssistantMessage
+  AIChatPanel -> LiveChatSessionManager : switch chat
+  LiveTranscriptAdapter -> ChatTranscriptStore : save(snapshot)
+  AIChatPanel -> LiveChatSessionManager : close chat
+  LiveTranscriptAdapter -> ChatTranscriptStore : save(snapshot)
+  @enduml
+  ```
 
-    AIChatPanel --> ChatMessageHistory : appendMessage(...)
-    AIChatPanel --> ChatSessionMemoryController : addMessage(...)
-    AIChatPanel --> LiveTranscriptAdapter : onUserMessage(text)\n/onAssistantMessage(text)\n/startNewTranscript()\n/renameLiveTranscript(name)\n/updateMapRootShortTextCounts(list)
-    LiveTranscriptAdapter --> ChatTranscriptRecord : updates entries\nand displayName
-    LiveTranscriptAdapter --> ChatTranscriptStore : save on switch/close
-    @enduml
-    ```
-  - PlantUML sequence diagram (message capture timing):
-    ```plantuml
-    @startuml
-    actor User
-    participant AIChatPanel
-    participant ChatMessageHistory
-    participant LiveTranscriptAdapter
-    participant ChatSessionMemoryController
-    participant ChatTranscriptStore
-
-    User -> AIChatPanel : send message
-    AIChatPanel -> ChatMessageHistory : appendUserMessage(text)
-    AIChatPanel -> LiveTranscriptAdapter : onUserMessage(text)
-    AIChatPanel -> ChatSessionMemoryController : addUserMessage(text)
-
-    AIChatPanel -> ChatSessionMemoryController : addAssistantMessage(text)
-    AIChatPanel -> ChatMessageHistory : appendAssistantMessage(text)
-    AIChatPanel -> LiveTranscriptAdapter : onAssistantMessage(text)
-    LiveTranscriptAdapter -> ChatTranscriptStore : save on switch/close
-    @enduml
-    ```
+  Transcript shadow updates per message; persistence happens on
+  switch/close.
 - **Test specification:**
   - Verify transcript capture preserves message order and user and
     assistant text.
@@ -365,6 +235,7 @@
   - Verify transcript shadow map root short text counts update before
     persistence.
   - Verify live session tools still operate during capture.
+
 
 ## Subtask: Persisted transcript format and storage
 - **Status:** Planning
@@ -382,83 +253,55 @@
   - Jackson `ObjectMapper` usage in the plugin indicates JSON
     serialization support is already present.
 - **Design:**
-  - Store transcripts under `${freeplaneUserDirectory}/ai-chats` with
-    deterministic filenames based on timestamp and a sanitized name.
-  - Transcript schema:
-    - `timestamp` as the chat start time in epoch milliseconds.
-    - `displayName` as the user-visible name (auto-assigned, then
-      editable).
-    - `mapRootShortTextCounts` as a list of shortened root node texts
-      with counts for each map referenced by the chat.
-    - `entries` as ordered `{role, text}` items for user and assistant.
-  - `ChatTranscriptStore` responsibilities:
-    - `save(record)` writes gzip JSON atomically via temp file + rename.
-    - `list()` scans the directory, reads minimal metadata from each
-      file, and returns items sorted by timestamp.
-    - `load(id)` reads a full record for UI display.
-    - `delete(id)` removes the file and returns success/failure.
-    - `rename(id, displayName)` updates the stored name for a
-      transcript (load + rewrite).
-  - Define a simple `ChatTranscriptSummary` for list results (id,
-    timestamp, displayName, mapRootShortTextCounts).
-  - Define `ChatTranscriptId` as the filename token to avoid exposing
-    raw paths to the UI.
-  - Treat the persisted record as the serialized output of the live
-    transcript shadow; do not invent or infer entries during
-    save/load.
-  - Skip unreadable or malformed files with a log entry and continue
-    listing.
-  - Keep all classes under `org.freeplane.plugin.ai.chat.history`.
-  - PlantUML class diagram (storage layer):
-    ```plantuml
-    @startuml
-    package "org.freeplane.plugin.ai.chat.history" {
-      class ChatTranscriptStore {
-        +save(record: ChatTranscriptRecord): void
-        +list(): List<ChatTranscriptSummary>
-        +load(id: ChatTranscriptId): ChatTranscriptRecord
-        +delete(id: ChatTranscriptId): boolean
-        +rename(id: ChatTranscriptId, displayName: String): void
-      }
 
-      class ChatTranscriptRecord {
-        +timestamp: long
-        +displayName: String
-        +mapRootShortTextCounts: List<MapRootShortTextCount>
-        +entries: List<ChatTranscriptEntry>
-      }
-
-      class ChatTranscriptEntry {
-        +role: ChatTranscriptRole
-        +text: String
-      }
-
-      enum ChatTranscriptRole {
-        USER
-        ASSISTANT
-      }
-
-      class ChatTranscriptSummary {
-        +id: ChatTranscriptId
-        +timestamp: long
-        +displayName: String
-        +mapRootShortTextCounts: List<MapRootShortTextCount>
-
-      class MapRootShortTextCount {
-        +text: String
-        +count: int
-      }
-      }
-
-      class ChatTranscriptId {
-        +fileName: String
-      }
+  ```plantuml
+  @startuml
+  package "org.freeplane.plugin.ai.chat.history" {
+    class ChatTranscriptStore {
+      +save(record: ChatTranscriptRecord): void
+      +list(): List<ChatTranscriptSummary>
+      +load(id: ChatTranscriptId): ChatTranscriptRecord
+      +delete(id: ChatTranscriptId): boolean
+      +rename(id: ChatTranscriptId, displayName: String): void
     }
-    ChatTranscriptStore --> ChatTranscriptRecord
-    ChatTranscriptRecord "1" o-- "*" ChatTranscriptEntry
-    ChatTranscriptSummary --> ChatTranscriptId
-    @enduml
-    ```
+    class ChatTranscriptRecord {
+      +timestamp: long
+      +displayName: String
+      +mapRootShortTextCounts: List<MapRootShortTextCount>
+      +entries: List<ChatTranscriptEntry>
+    }
+    class ChatTranscriptEntry {
+      +role: ChatTranscriptRole
+      +text: String
+    }
+    enum ChatTranscriptRole {
+      USER
+      ASSISTANT
+    }
+    class ChatTranscriptSummary {
+      +id: ChatTranscriptId
+      +timestamp: long
+      +displayName: String
+      +mapRootShortTextCounts: List<MapRootShortTextCount>
+    }
+    class ChatTranscriptId { 
+      +fileName: String
+    }
+    class MapRootShortTextCount {
+      +text: String
+      +count: int
+    }
+  }
+  ChatTranscriptStore --> ChatTranscriptRecord
+  ChatTranscriptRecord "1" o-- "*" ChatTranscriptEntry
+  ChatTranscriptSummary --> ChatTranscriptId
+  @enduml
+  ```
+
+  `ChatTranscriptStore` handles gzip JSON I/O.
+  `ChatTranscriptRecord` is the on-disk payload.
+  `ChatTranscriptSummary` is list metadata for UI.
+  `MapRootShortTextCount` deduplicates map labels with counts.
 - **Test specification:**
   - Verify transcript serialization round-trips and list/delete/rename
     behavior.
@@ -468,6 +311,7 @@
   - Verify display name edits persist and appear in list summaries.
   - Verify map root short texts with counts persist and appear in list
     summaries.
+
 
 ## Subtask: Transcript list, load, and delete integration
 - **Status:** Planning
@@ -492,23 +336,22 @@
   - `org.freeplane.core.util.TextUtils` is used in the chat panel for
     localized label text.
 - **Design:**
-  - Add a chat transcript action (toolbar button or menu item) that
-    opens a simple list dialog/popup backed by the transcript store.
-  - When a transcript is loaded for viewing: clear the existing UI
-    history and rehydrate messages into `ChatMessageHistory` for
-    read-only viewing.
-  - Show each transcript’s display name and map root short text counts
-    in the list row (format: `Map A (x2), Map B, Map C`).
-  - Allow renaming a transcript from the list; persist the new name and
-    refresh the list item immediately.
-  - When a transcript is deleted: remove the file via the store and
-    refresh the list without restarting the panel.
-  - Save new transcript entries at consistent boundaries (after each
-    assistant response) so the list stays current.
-  - Use `TranslatedElementFactory` and `TextUtils` for all new UI
-    labels, tooltips, and menu text, and read any toggle preferences
-    via `ResourceController` to stay consistent with existing chat panel
-    localization and settings patterns.
+
+  ```plantuml
+  @startuml
+  package "org.freeplane.plugin.ai.chat" {
+    class AIChatPanel
+    class TranscriptListDialog
+    class ChatMessageHistory
+  }
+  package "org.freeplane.plugin.ai.chat.history" {
+    class ChatTranscriptStore
+  }
+  AIChatPanel --> TranscriptListDialog
+  TranscriptListDialog --> ChatTranscriptStore
+  TranscriptListDialog --> ChatMessageHistory : load for viewing
+  @enduml
+  ```
 - **Test specification:**
   - Manual checklist: list shows saved transcripts, load replaces
     current chat content, delete removes entries immediately, rename
@@ -517,6 +360,7 @@
     each transcript.
   - If UI automation hooks exist, add tests for list selection, rename,
     and delete actions.
+
 
 ## Subtask: Start new chat from transcript with explicit map confirmation
 - **Status:** Planning
@@ -535,14 +379,19 @@
     tools can provide current map identifiers for explicit user
     selection.
 - **Design:**
-  - Insert a system message when starting from transcript that instructs
-    the assistant to request map confirmation for any map-specific
-    action.
-  - Provide a UI affordance to select or confirm maps (for example by
-    reusing existing selection tools or a map picker), then proceed with
-    tool-capable actions.
-  - Ensure the assistant remains map-agnostic until confirmation is
-    recorded.
+
+  ```plantuml
+  @startuml
+  actor User
+  participant TranscriptListDialog
+  participant AIChatPanel
+  participant ChatSessionMemoryController
+  User -> TranscriptListDialog : start new chat from transcript
+  TranscriptListDialog -> AIChatPanel : load transcript text
+  AIChatPanel -> ChatSessionMemoryController : seed memory + system guard
+  User -> AIChatPanel : confirm map context
+  @enduml
+  ```
 - **Test specification:**
   - Verify the system message is injected for transcript-based chats.
   - Verify map-specific actions are blocked or deferred until explicit

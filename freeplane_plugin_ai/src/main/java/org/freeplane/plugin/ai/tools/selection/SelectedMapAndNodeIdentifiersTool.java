@@ -13,16 +13,23 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class SelectedMapAndNodeIdentifiersTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final SelectionIdentifiersBuilder selectionIdentifiersBuilder;
 
-    public SelectedMapAndNodeIdentifiersTool(AvailableMaps availableMaps, TextController textController) {
+    public SelectedMapAndNodeIdentifiersTool(AvailableMaps availableMaps,
+                                             AvailableMaps.MapAccessListener mapAccessListener,
+                                             TextController textController) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.selectionIdentifiersBuilder = new SelectionIdentifiersBuilder(textController);
     }
 
     public SelectionIdentifiersResponse getSelectedMapAndNodeIdentifiers(SelectionIdentifiersRequest request) {
         UUID mapIdentifier = availableMaps.getCurrentMapIdentifier();
         MapModel mapModel = availableMaps.getCurrentMapModel();
+        if (mapIdentifier != null && mapModel != null && mapAccessListener != null) {
+            mapAccessListener.onMapAccessed(mapIdentifier, mapModel);
+        }
         String mapIdentifierValue = mapIdentifier == null ? null : mapIdentifier.toString();
         IMapSelection selection = Controller.getCurrentController().getSelection();
         SelectionCollectionMode selectionCollectionMode = request == null

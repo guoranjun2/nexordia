@@ -23,7 +23,7 @@ public class MoveNodesIntoSummaryToolTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MMapController mapController = mock(MMapController.class);
         SummaryNodeCreator summaryNodeCreator = mock(SummaryNodeCreator.class);
-        MoveNodesIntoSummaryTool unitUnderTest = new MoveNodesIntoSummaryTool(availableMaps, mapController,
+        MoveNodesIntoSummaryTool unitUnderTest = new MoveNodesIntoSummaryTool(availableMaps, null, mapController,
             summaryNodeCreator);
         UUID mapIdentifier = UUID.fromString("28f31fd6-7c67-402e-9bb2-9c756498ba7f");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
@@ -39,7 +39,7 @@ public class MoveNodesIntoSummaryToolTest {
         secondMovedNode.setID("ID_moved_2");
         NodeModel summaryNode = new NodeModel("summary", mapModel);
         summaryNode.setID("ID_summary");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode)).thenReturn(summaryNode);
         MoveNodesIntoSummaryRequest request = new MoveNodesIntoSummaryRequest(
             mapIdentifier.toString(),

@@ -38,7 +38,7 @@ public class SearchNodesToolTest {
         NodeModel rootNode = mock(NodeModel.class);
         NodeModel childNode = mock(NodeModel.class);
         NodeModel otherNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getRootNode()).thenReturn(rootNode);
         when(rootNode.getChildren()).thenReturn(Arrays.asList(childNode, otherNode));
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
@@ -59,7 +59,8 @@ public class SearchNodesToolTest {
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF)).thenReturn(rootBriefContent);
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF)).thenReturn(childBriefContent);
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController,
+            objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alp",
@@ -87,9 +88,9 @@ public class SearchNodesToolTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         UUID mapIdentifier = UUID.fromString("f605a3ed-c8a9-4f9a-a001-d2f0c2f92d21");
         MapModel mapModel = mock(MapModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alpha",
@@ -117,7 +118,7 @@ public class SearchNodesToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel rootNode = mock(NodeModel.class);
         NodeModel childNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getRootNode()).thenReturn(rootNode);
         when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
@@ -128,7 +129,8 @@ public class SearchNodesToolTest {
                 return matcher.matchesValue("Alpha");
             });
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController,
+            objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "alp",
@@ -156,7 +158,7 @@ public class SearchNodesToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel rootNode = mock(NodeModel.class);
         NodeModel childNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getRootNode()).thenReturn(rootNode);
         when(rootNode.getChildren()).thenReturn(Collections.singletonList(childNode));
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
@@ -173,7 +175,8 @@ public class SearchNodesToolTest {
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))
             .thenReturn(new NodeContentResponse("Alpha", null, null, null, null, null));
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController, objectMapper);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController,
+            objectMapper);
         SearchNodesRequest request = new SearchNodesRequest(
             mapIdentifier.toString(),
             "priority",

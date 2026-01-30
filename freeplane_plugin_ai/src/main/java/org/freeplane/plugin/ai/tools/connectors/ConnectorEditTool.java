@@ -21,11 +21,14 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class ConnectorEditTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final MLinkController linkController;
     private final AiEditsMarker aiEditsMarker;
 
-    public ConnectorEditTool(AvailableMaps availableMaps, MLinkController linkController) {
+    public ConnectorEditTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                             MLinkController linkController) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.linkController = Objects.requireNonNull(linkController, "linkController");
         this.aiEditsMarker = new AiEditsMarker();
     }
@@ -36,7 +39,7 @@ public class ConnectorEditTool {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

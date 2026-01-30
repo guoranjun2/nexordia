@@ -20,12 +20,15 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
 public class DeleteNodesTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final MMapController mapController;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
 
-    public DeleteNodesTool(AvailableMaps availableMaps, MMapController mapController,
+    public DeleteNodesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                           MMapController mapController,
                            ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.mapController = Objects.requireNonNull(mapController, "mapController");
         this.modifiedNodeSummaryBuilder = Objects.requireNonNull(
             modifiedNodeSummaryBuilder, "modifiedNodeSummaryBuilder");
@@ -35,7 +38,7 @@ public class DeleteNodesTool {
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         String userSummary = requireValue(request.getUserSummary(), "userSummary");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

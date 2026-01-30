@@ -3,6 +3,8 @@ package org.freeplane.plugin.ai.tools.read;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,7 +34,7 @@ public class BreadcrumbsToolTest {
         NodeModel parentNode = mock(NodeModel.class);
         NodeModel targetNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("d7d1a45d-62f7-4ec6-9b4a-7f41f9f8b8a3");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(targetNode.getParentNode()).thenReturn(parentNode);
         when(parentNode.getParentNode()).thenReturn(rootNode);
@@ -49,7 +51,7 @@ public class BreadcrumbsToolTest {
         when(nodeContentItemReader.readNodeContentItem(rootNode, NodeContentPreset.BRIEF, true)).thenReturn(rootItem);
         when(nodeContentItemReader.readNodeContentItem(parentNode, NodeContentPreset.BRIEF, true)).thenReturn(parentItem);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, true)).thenReturn(targetItem);
-        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, nodeContentItemReader);
+        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, null, nodeContentItemReader);
 
         BreadcrumbsResponse response = uut.getBreadcrumbs(
             new BreadcrumbsRequest(mapIdentifier.toString(), "ID_target", true));
@@ -71,7 +73,7 @@ public class BreadcrumbsToolTest {
         NodeModel hiddenNode = mock(NodeModel.class);
         NodeModel targetNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("4c0c8af1-8a97-4aad-bc46-83d0c10c9e93");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(targetNode.getParentNode()).thenReturn(hiddenNode);
         when(hiddenNode.getParentNode()).thenReturn(rootNode);
@@ -89,7 +91,7 @@ public class BreadcrumbsToolTest {
             null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(rootNode, NodeContentPreset.BRIEF, true)).thenReturn(rootItem);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, true)).thenReturn(targetItem);
-        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, nodeContentItemReader);
+        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, null, nodeContentItemReader);
 
         BreadcrumbsResponse response = uut.getBreadcrumbs(
             new BreadcrumbsRequest(mapIdentifier.toString(), "ID_target", true));
@@ -110,7 +112,7 @@ public class BreadcrumbsToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel targetNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("8f1bf5ea-8d9e-4b91-a9b2-fc1ea5701e98");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_target")).thenReturn(targetNode);
         when(targetNode.getParentNode()).thenReturn(null);
         NodeContentItem targetItem = new NodeContentItem("ID_target",
@@ -118,7 +120,7 @@ public class BreadcrumbsToolTest {
             null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(targetNode, NodeContentPreset.BRIEF, false))
             .thenReturn(targetItem);
-        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, nodeContentItemReader);
+        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, null, nodeContentItemReader);
 
         BreadcrumbsResponse response = uut.getBreadcrumbs(
             new BreadcrumbsRequest(mapIdentifier.toString(), "ID_target", false));
@@ -131,7 +133,7 @@ public class BreadcrumbsToolTest {
 
     @Test
     public void getBreadcrumbs_throwsWhenMapIdentifierIsInvalid() {
-        BreadcrumbsTool uut = new BreadcrumbsTool(mock(AvailableMaps.class), mock(NodeContentItemReader.class));
+        BreadcrumbsTool uut = new BreadcrumbsTool(mock(AvailableMaps.class), null, mock(NodeContentItemReader.class));
 
         assertThatThrownBy(() -> uut.getBreadcrumbs(
             new BreadcrumbsRequest("not-a-uuid", "ID_target", true)))
@@ -144,9 +146,9 @@ public class BreadcrumbsToolTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         MapModel mapModel = mock(MapModel.class);
         UUID mapIdentifier = UUID.fromString("cb18bb44-c208-4bb6-9d03-70ef5287e7dc");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_target")).thenReturn(null);
-        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, mock(NodeContentItemReader.class));
+        BreadcrumbsTool uut = new BreadcrumbsTool(availableMaps, null, mock(NodeContentItemReader.class));
 
         assertThatThrownBy(() -> uut.getBreadcrumbs(
             new BreadcrumbsRequest(mapIdentifier.toString(), "ID_target", true)))

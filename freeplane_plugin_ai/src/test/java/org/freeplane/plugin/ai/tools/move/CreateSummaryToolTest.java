@@ -34,9 +34,8 @@ public class CreateSummaryToolTest {
         SummaryNodeCreator summaryNodeCreator = mock(SummaryNodeCreator.class);
         TextController textController = mock(TextController.class);
         ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder = new ModifiedNodeSummaryBuilder(textController);
-        CreateSummaryTool unitUnderTest = new CreateSummaryTool(availableMaps, nodeCreationHierarchyBuilder, nodeInserter,
-            summaryNodeCreator,
-            modifiedNodeSummaryBuilder);
+        CreateSummaryTool unitUnderTest = new CreateSummaryTool(availableMaps, null, nodeCreationHierarchyBuilder,
+            nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
         UUID mapIdentifier = UUID.fromString("2d872386-bb55-4c6c-9da0-d600b7400b10");
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, null, null);
         NodeModel rootNode = new NodeModel("root", mapModel);
@@ -47,7 +46,7 @@ public class CreateSummaryToolTest {
         lastNode.setID("ID_last");
         NodeModel summaryNode = new NodeModel("summary", mapModel);
         summaryNode.setID("ID_summary");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(summaryNodeCreator.createSummaryNode(rootNode, firstNode, lastNode)).thenReturn(summaryNode);
         NodeCreationItem childItem = new NodeCreationItem(0, -1, null, null);
         NodeModel childNodeModel = new NodeModel("child", mapModel);

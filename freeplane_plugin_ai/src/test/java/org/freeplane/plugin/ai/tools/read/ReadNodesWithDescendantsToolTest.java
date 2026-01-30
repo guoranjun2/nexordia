@@ -58,7 +58,7 @@ public class ReadNodesWithDescendantsToolTest {
         NodeModel firstChildNode = mock(NodeModel.class);
         NodeModel secondChildNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("c33dd4d4-25f0-4bcb-8b57-f6d59cfb57f2");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(focusNode.getParentNode()).thenReturn(parentNode);
         when(parentNode.getParentNode()).thenReturn(null);
@@ -74,7 +74,7 @@ public class ReadNodesWithDescendantsToolTest {
         when(textController.getShortPlainText(firstChildNode)).thenReturn("Child 1");
         when(textController.getShortPlainText(secondChildNode)).thenReturn("Child 2");
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController, objectMapper);
+            availableMaps, null, nodeContentItemReader, textController, objectMapper);
 
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
@@ -109,9 +109,10 @@ public class ReadNodesWithDescendantsToolTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         UUID mapIdentifier = UUID.fromString("2e8d84f0-75b4-4c76-9c25-46863b02cdde");
         MapModel mapModel = mock(MapModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         TextController textController = mock(TextController.class);
-        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, null,
+            nodeContentItemReader, textController);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
             Arrays.asList("ID_dup", "ID_dup"),
@@ -131,10 +132,11 @@ public class ReadNodesWithDescendantsToolTest {
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         UUID mapIdentifier = UUID.fromString("1b661e53-7049-4e84-9509-1e7d6e7c9e49");
         MapModel mapModel = mock(MapModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_missing")).thenReturn(null);
         TextController textController = mock(TextController.class);
-        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, null,
+            nodeContentItemReader, textController);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_missing"),
@@ -158,7 +160,7 @@ public class ReadNodesWithDescendantsToolTest {
         MapModel mapModel = mock(MapModel.class);
         NodeModel focusNode = mock(NodeModel.class);
         NodeModel secondFocusNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(mapModel.getNodeForID("ID_focus_2")).thenReturn(secondFocusNode);
         when(focusNode.createID()).thenReturn("ID_focus");
@@ -171,7 +173,7 @@ public class ReadNodesWithDescendantsToolTest {
             .thenReturn(new NodeContentResponse(null, new TextualContent("Focus 2", null, null), null, null, null, null));
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController, objectMapper);
+            availableMaps, null, nodeContentItemReader, textController, objectMapper);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
             Arrays.asList("ID_focus", "ID_focus_2"),
@@ -199,7 +201,7 @@ public class ReadNodesWithDescendantsToolTest {
         NodeModel focusNode = mock(NodeModel.class);
         NodeModel childNode = mock(NodeModel.class);
         UUID mapIdentifier = UUID.fromString("bd2f43b2-f1b4-4a3a-b41b-259d5c3427bf");
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(focusNode.getParentNode()).thenReturn(null);
         when(focusNode.getChildren()).thenReturn(Collections.singletonList(childNode));
@@ -213,7 +215,7 @@ public class ReadNodesWithDescendantsToolTest {
         TextController textController = mock(TextController.class);
         when(textController.getShortPlainText(childNode)).thenReturn("Child");
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController, objectMapper);
+            availableMaps, null, nodeContentItemReader, textController, objectMapper);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),
@@ -241,7 +243,7 @@ public class ReadNodesWithDescendantsToolTest {
         NodeModel targetNode = mock(NodeModel.class);
         NodeModel incomingSource = mock(NodeModel.class);
         NodeModel cloneNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         when(focusNode.createID()).thenReturn("ID_focus");
@@ -283,7 +285,7 @@ public class ReadNodesWithDescendantsToolTest {
         when(mapModel.getExtension(MapLinks.class)).thenReturn(mapLinks);
 
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
-            availableMaps, nodeContentItemReader, textController, objectMapper);
+            availableMaps, null, nodeContentItemReader, textController, objectMapper);
         ReadNodesWithDescendantsRequest request = new ReadNodesWithDescendantsRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),
@@ -325,7 +327,7 @@ public class ReadNodesWithDescendantsToolTest {
         UUID mapIdentifier = UUID.fromString("bb7f2976-43e0-4bf7-9cc1-77a0949f4f30");
         MapModel mapModel = mock(MapModel.class);
         NodeModel focusNode = mock(NodeModel.class);
-        when(availableMaps.findMapModel(mapIdentifier)).thenReturn(mapModel);
+        when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(focusNode.createID()).thenReturn("ID_focus");
         EditableContent editableContent = mock(EditableContent.class);
@@ -335,7 +337,8 @@ public class ReadNodesWithDescendantsToolTest {
         NodeContentItem item = new NodeContentItem("ID_focus", content, null, null, null, null, null);
         when(nodeContentItemReader.readNodeContentItem(focusNode, content, true, false)).thenReturn(item);
         TextController textController = mock(TextController.class);
-        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, nodeContentItemReader, textController);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, null,
+            nodeContentItemReader, textController);
         FetchNodesForEditingRequest request = new FetchNodesForEditingRequest(
             mapIdentifier.toString(),
             Collections.singletonList("ID_focus"),

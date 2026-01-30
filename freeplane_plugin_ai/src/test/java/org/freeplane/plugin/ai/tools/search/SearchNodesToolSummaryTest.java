@@ -18,7 +18,7 @@ public class SearchNodesToolSummaryTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController);
         SearchNodesRequest request = new SearchNodesRequest(
             "map-identifier",
             "alpha\nbeta",
@@ -49,7 +49,7 @@ public class SearchNodesToolSummaryTest {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
         TextController textController = mock(TextController.class);
-        SearchNodesTool uut = new SearchNodesTool(availableMaps, nodeContentItemReader, textController);
+        SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController);
 
         ToolCallSummary summary = uut.buildToolCallErrorSummary(null, new IllegalArgumentException("Bad\nquery"));
 

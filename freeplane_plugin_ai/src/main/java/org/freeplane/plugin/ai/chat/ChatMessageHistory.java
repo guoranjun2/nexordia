@@ -42,6 +42,43 @@ class ChatMessageHistory {
         scrollToBottom();
     }
 
+    void clear() {
+        messageHistoryPane.setText("<html><body></body></html>");
+        messageHistoryPane.setCaretPosition(0);
+        messageEntries.clear();
+    }
+
+    List<ChatMessageSnapshot> snapshot() {
+        List<ChatMessageSnapshot> snapshots = new ArrayList<>();
+        for (MessageEntry entry : messageEntries) {
+            snapshots.add(new ChatMessageSnapshot(entry.sourceText, entry.messageMarkup, entry.styleClassName));
+        }
+        return snapshots;
+    }
+
+    void restoreMessages(List<ChatMessageSnapshot> snapshots) {
+        clear();
+        if (snapshots == null || snapshots.isEmpty()) {
+            return;
+        }
+        HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
+        for (ChatMessageSnapshot snapshot : snapshots) {
+            if (snapshot == null || snapshot.messageMarkup == null || snapshot.styleClassName == null) {
+                continue;
+            }
+            int startOffset = document.getLength();
+            try {
+                messageHistoryEditorKit.insertHTML(document, document.getLength(), snapshot.messageMarkup, 0, 0, null);
+            } catch (BadLocationException | IOException error) {
+                LogUtils.severe(error);
+            }
+            int endOffset = document.getLength();
+            messageEntries.add(new MessageEntry(startOffset, endOffset, snapshot.sourceText,
+                snapshot.messageMarkup, snapshot.styleClassName));
+        }
+        scrollToBottom();
+    }
+
     Transferable createTransferable(int selectionStart, int selectionEnd) {
         if (selectionStart == selectionEnd) {
             return null;
@@ -222,6 +259,30 @@ class ChatMessageHistory {
             } catch (ClassNotFoundException exception) {
                 throw new IllegalStateException("Unable to create text/html data flavor.", exception);
             }
+        }
+    }
+
+    static final class ChatMessageSnapshot {
+        private final String sourceText;
+        private final String messageMarkup;
+        private final String styleClassName;
+
+        ChatMessageSnapshot(String sourceText, String messageMarkup, String styleClassName) {
+            this.sourceText = sourceText;
+            this.messageMarkup = messageMarkup;
+            this.styleClassName = styleClassName;
+        }
+
+        String getSourceText() {
+            return sourceText;
+        }
+
+        String getMessageMarkup() {
+            return messageMarkup;
+        }
+
+        String getStyleClassName() {
+            return styleClassName;
         }
     }
 }

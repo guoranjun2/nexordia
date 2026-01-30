@@ -29,6 +29,7 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 public class AIToolSetBuilder {
     private ToolCallSummaryHandler toolCallSummaryHandler;
     private AvailableMaps availableMaps;
+    private AvailableMaps.MapAccessListener mapAccessListener;
     private TextController textController;
     private AttributeController attributeController;
     private IconController iconController;
@@ -47,6 +48,11 @@ public class AIToolSetBuilder {
 
     public AIToolSetBuilder availableMaps(AvailableMaps availableMaps) {
         this.availableMaps = availableMaps;
+        return this;
+    }
+
+    public AIToolSetBuilder mapAccessListener(AvailableMaps.MapAccessListener mapAccessListener) {
+        this.mapAccessListener = mapAccessListener;
         return this;
     }
 
@@ -79,8 +85,8 @@ public class AIToolSetBuilder {
         MMapController mapController = this.mapController != null ? this.mapController : createMapController();
         NodeContentFactories nodeContentFactories = createNodeContentFactories(textController, attributeController,
             iconController);
-        return new AIToolSet(toolCallSummaryHandler, availableMaps, textController, nodeContentFactories, mapController,
-            toolCaller);
+        return new AIToolSet(toolCallSummaryHandler, availableMaps, mapAccessListener, textController,
+            nodeContentFactories, mapController, toolCaller);
     }
 
     private AvailableMaps createAvailableMaps() {

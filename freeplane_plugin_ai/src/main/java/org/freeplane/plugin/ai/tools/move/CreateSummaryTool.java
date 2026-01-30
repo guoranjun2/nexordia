@@ -21,15 +21,18 @@ import org.freeplane.plugin.ai.tools.utilities.ToolErrorHandler;
 
 public class CreateSummaryTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder;
     private final NodeInserter nodeInserter;
     private final SummaryNodeCreator summaryNodeCreator;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
 
-    public CreateSummaryTool(AvailableMaps availableMaps, NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
+    public CreateSummaryTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                             NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
                              NodeInserter nodeInserter, SummaryNodeCreator summaryNodeCreator,
                              ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.nodeCreationHierarchyBuilder = Objects.requireNonNull(nodeCreationHierarchyBuilder,
             "nodeCreationHierarchyBuilder");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
@@ -43,7 +46,7 @@ public class CreateSummaryTool {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

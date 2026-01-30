@@ -16,16 +16,19 @@ import org.freeplane.plugin.ai.tools.utilities.ToolErrorHandler;
 
 public class CreateNodesTool {
     private final AvailableMaps availableMaps;
+    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder;
     private final NodeInserter nodeInserter;
     private final ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder;
     private final MapController mapController;
     private final CreateNodesPreferences createNodesPreferences;
 
-    public CreateNodesTool(AvailableMaps availableMaps, NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
+    public CreateNodesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
+                           NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder,
                            NodeInserter nodeInserter, ModifiedNodeSummaryBuilder modifiedNodeSummaryBuilder,
                            MapController mapController, CreateNodesPreferences createNodesPreferences) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
+        this.mapAccessListener = mapAccessListener;
         this.nodeCreationHierarchyBuilder = Objects.requireNonNull(nodeCreationHierarchyBuilder,
             "nodeCreationHierarchyBuilder");
         this.nodeInserter = Objects.requireNonNull(nodeInserter, "nodeInserter");
@@ -40,7 +43,7 @@ public class CreateNodesTool {
         }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier);
+        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }

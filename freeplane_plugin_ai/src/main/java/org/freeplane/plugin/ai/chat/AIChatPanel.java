@@ -11,10 +11,14 @@ import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.mode.Controller;
+import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
+import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
+import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
@@ -38,11 +42,11 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.time.format.DateTimeFormatter;
 
 public class AIChatPanel extends JPanel {
 
@@ -60,11 +64,14 @@ public class AIChatPanel extends JPanel {
     private final AIProviderConfiguration configuration;
     private final ChatDisplaySettings chatDisplaySettings;
     private final AIModelSelectionController modelSelectionController;
-    private final ChatSessionMemoryController chatSessionMemoryController;
+    private ChatSessionMemoryController chatSessionMemoryController;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
     private final ChatMessageRenderer messageRenderer;
     private final ChatMessageHistory messageHistory;
+    private final AvailableMaps availableMaps;
+    private final DateTimeFormatter chatNameFormatter;
+    private final LiveChatController liveChatController;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -74,7 +81,7 @@ public class AIChatPanel extends JPanel {
         messageHistoryPane.setOpaque(true);
         messageHistoryPane.setBackground(Color.WHITE);
         messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
-        configureMessageHistoryStyles();
+        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit);
         resetMessageHistory();
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));
@@ -95,6 +102,18 @@ public class AIChatPanel extends JPanel {
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
         messageRenderer = new ChatMessageRenderer();
+        availableMaps = new AvailableMaps(new ControllerMapModelProvider());
+        chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        liveChatController = new LiveChatController(
+            this,
+            messageHistory,
+            availableMaps,
+            requireTextController(),
+            chatNameFormatter,
+            this::persistCurrentSession,
+            this::activateSession
+        );
+        liveChatController.initialize(chatSessionMemoryController);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -148,9 +167,12 @@ public class AIChatPanel extends JPanel {
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
         toolbar.add(menuButton);
         toolbar.add(modelSelectionController.getModelSelectionComboBox());
+        JButton chatsButton = TranslatedElementFactory.createButton("ai_chat_chats");
+        chatsButton.addActionListener(event -> liveChatController.openLiveChats());
+        toolbar.add(chatsButton);
         String clearIconPath = "/images/generic_trash.svg?useAccentColor=true";
         JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_clear");
-        newChatButton.addActionListener(event -> startNewChat());
+        newChatButton.addActionListener(event -> liveChatController.startNewChat());
         toolbar.add(newChatButton);
     }
 
@@ -238,6 +260,7 @@ public class AIChatPanel extends JPanel {
             return;
         }
         appendChatMessage(userMessage, ChatMessageCategory.USER);
+        liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
         ensureChatService();
         if (chatService == null) {
@@ -294,6 +317,8 @@ public class AIChatPanel extends JPanel {
         }
         chatService = AIChatServiceFactory.createService(new AIToolSetBuilder()
                 .toolCallSummaryHandler(this::handleToolCallSummary)
+                .availableMaps(availableMaps)
+                .mapAccessListener(liveChatController.mapAccessListener())
                 .build(),
             chatSessionMemoryController,
             chatTokenUsageTracker,
@@ -334,32 +359,37 @@ public class AIChatPanel extends JPanel {
         appendChatMessage(messageText, category);
     }
 
-    private void configureMessageHistoryStyles() {
-        StyleSheet styleSheet = messageHistoryEditorKit.getStyleSheet();
-        styleSheet.addRule("body { font-family: Sans-Serif; font-size: 12pt; margin: 6px; }");
-        styleSheet.addRule(".message-user { margin: 6px 0; padding: 6px 8px; background-color: #ebebeb;"
-            + " border-left: 4px solid #3e3e3eff; }");
-        styleSheet.addRule(".message-assistant { margin: 6px 0; padding: 6px 8px; background-color: #f5f5f5;"
-            + " border-left: 4px solid #d7d7d7; }");
-        styleSheet.addRule(".message-tool { margin: 6px 0; padding: 6px 8px; background-color: #eaf3ff;"
-            + " border-left: 4px solid #bcd9ff; }");
-        styleSheet.addRule(".message-mcp-call { margin: 6px 0; padding: 6px 8px; background-color: #eaf3ff;"
-            + " border-left: 8px solid #5c79bd; }");
-    }
-
     private void resetMessageHistory() {
         messageHistoryPane.setText("<html><body></body></html>");
         messageHistoryPane.setCaretPosition(0);
     }
 
-    private void startNewChat() {
-        resetMessageHistory();
-        chatSessionMemoryController.clearChatMemory();
+    private void updateTokenUsageLabel(ChatUsageTotals totals) {
+        SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
+    }
+
+    private void persistCurrentSession() {
+    }
+
+    private void activateSession(ChatSessionMemoryController sessionMemoryController) {
+        if (sessionMemoryController == null) {
+            return;
+        }
+        chatSessionMemoryController = sessionMemoryController;
+        chatService = null;
         chatTokenUsageTracker.resetTotals();
     }
 
-    private void updateTokenUsageLabel(ChatUsageTotals totals) {
-        SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
+    private TextController requireTextController() {
+        ModeController modeController = Controller.getCurrentModeController();
+        if (modeController == null) {
+            throw new IllegalStateException("Current mode controller is not available.");
+        }
+        TextController textController = modeController.getExtension(TextController.class);
+        if (textController == null) {
+            throw new IllegalStateException("Text controller is not available.");
+        }
+        return textController;
     }
 
     private enum ChatMessageCategory {
