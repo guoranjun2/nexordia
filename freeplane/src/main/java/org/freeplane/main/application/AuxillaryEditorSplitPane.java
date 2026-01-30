@@ -34,6 +34,7 @@ public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePr
 	// Optional binding to a visibility property (e.g., "outlineVisible")
 	private String auxVisibilityBaseKey; // e.g., "outlineVisible"
 	private boolean auxVisibilityBound;
+	private boolean isSettingComponent;
 
 	public AuxillaryEditorSplitPane(Component mainComponent, AuxiliarySplitPaneController controller) {
 		this.controller = controller;
@@ -120,6 +121,36 @@ public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePr
 		revalidate();
 		repaint();
 		applyAuxVisibility();
+	}
+
+
+
+	@Override
+	public void setLeftComponent(Component comp) {
+		if(! isSettingComponent) {
+			isSettingComponent = true;
+			try {
+				super.setLeftComponent(comp);
+			}
+			finally {
+				isSettingComponent = false;
+			}
+		}
+		else super.setLeftComponent(comp);
+	}
+
+	@Override
+	public void setRightComponent(Component comp) {
+		if(! isSettingComponent) {
+			isSettingComponent = true;
+			try {
+				super.setRightComponent(comp);
+			}
+			finally {
+				isSettingComponent = false;
+			}
+		}
+		super.setRightComponent(comp);
 	}
 
 	private void repositionComponent(Component component, String constraints) {
@@ -237,7 +268,7 @@ public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePr
 
 	@Override
 	public void remove(Component component) {
-		if(component == auxillaryComponent)
+		if(component == auxillaryComponent && ! isSettingComponent)
 			removeAuxiliaryComponent();
 		else
 			super.remove(component);
