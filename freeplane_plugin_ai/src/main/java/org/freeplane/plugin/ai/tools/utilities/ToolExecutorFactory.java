@@ -13,14 +13,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ToolExecutorFactory {
     private final boolean wrapToolArgumentsExceptions;
     private final boolean propagateToolExecutionExceptions;
+    private final Supplier<Boolean> cancellationSupplier;
 
     public ToolExecutorFactory(boolean wrapToolArgumentsExceptions, boolean propagateToolExecutionExceptions) {
+        this(wrapToolArgumentsExceptions, propagateToolExecutionExceptions, null);
+    }
+
+    public ToolExecutorFactory(boolean wrapToolArgumentsExceptions,
+                               boolean propagateToolExecutionExceptions,
+                               Supplier<Boolean> cancellationSupplier) {
         this.wrapToolArgumentsExceptions = wrapToolArgumentsExceptions;
         this.propagateToolExecutionExceptions = propagateToolExecutionExceptions;
+        this.cancellationSupplier = cancellationSupplier;
     }
 
     public ToolExecutorRegistry createRegistry(Object toolSet) {
@@ -41,6 +50,9 @@ public class ToolExecutorFactory {
                 .propagateToolExecutionExceptions(propagateToolExecutionExceptions)
                 .build();
             ToolExecutor toolExecutor = new EventDispatchToolExecutor(executor);
+            if (cancellationSupplier != null) {
+                toolExecutor = new CancellationToolExecutor(toolExecutor, cancellationSupplier);
+            }
             executorsByName.put(specification.name(), toolExecutor);
             executorsBySpecification.put(specification, toolExecutor);
             specifications.add(specification);

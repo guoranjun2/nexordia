@@ -17,6 +17,7 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
@@ -24,6 +25,7 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
+import dev.langchain4j.data.message.ChatMessage;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -31,6 +33,7 @@ import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JEditorPane;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -44,9 +47,12 @@ import javax.swing.SwingWorker;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class AIChatPanel extends JPanel {
 
@@ -59,6 +65,8 @@ public class AIChatPanel extends JPanel {
     private final JScrollPane scrollPane;
     private final JTextArea inputArea;
     private final JButton sendButton;
+    private final Icon sendIcon;
+    private final Icon stopIcon;
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
@@ -72,6 +80,14 @@ public class AIChatPanel extends JPanel {
     private final AvailableMaps availableMaps;
     private final DateTimeFormatter chatNameFormatter;
     private final LiveChatController liveChatController;
+    private final ChatRequestCancellation requestCancellation;
+    private SwingWorker<String, Void> activeWorker;
+    private boolean requestInProgress;
+    private int activeRequestId;
+    private List<ChatMessageHistory.ChatMessageSnapshot> pendingHistorySnapshot;
+    private List<ChatMessage> pendingMemorySnapshot;
+    private List<ChatTranscriptEntry> pendingTranscriptEntries;
+    private String pendingUserMessage;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -94,6 +110,13 @@ public class AIChatPanel extends JPanel {
         sendButton = new JButton();
         sendButton.setIcon(ResourceController.getResourceController()
             .getImageIcon("/images/ai_send_arrow_up.svg?useAccentColor=true"));
+        sendIcon = sendButton.getIcon();
+        stopIcon = ResourceController.getResourceController()
+            .getImageIcon("/images/ai_stop.svg?useAccentColor=true");
+        Dimension sendButtonSize = sendButton.getPreferredSize();
+        sendButton.setPreferredSize(sendButtonSize);
+        sendButton.setMinimumSize(sendButtonSize);
+        sendButton.setMaximumSize(sendButtonSize);
         menuPopup = buildMenuPopup();
         configuration = new AIProviderConfiguration();
         chatDisplaySettings = new ChatDisplaySettings();
@@ -114,6 +137,7 @@ public class AIChatPanel extends JPanel {
             chatNameFormatter,
             this::activateSession
         );
+        requestCancellation = new ChatRequestCancellation();
         liveChatController.initialize(chatSessionMemoryController);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
@@ -135,14 +159,20 @@ public class AIChatPanel extends JPanel {
         add(inputContainer, BorderLayout.SOUTH);
         add(topBarContainer, BorderLayout.NORTH);
 
-        sendButton.addActionListener(event -> sendMessage());
+        sendButton.addActionListener(event -> {
+            if (isRequestActive()) {
+                cancelActiveRequest();
+            } else {
+                sendMessage();
+            }
+        });
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         messageHistoryPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutMask), "selectAllMessages");
         messageHistoryPane.getActionMap().put("selectAllMessages", new AbstractAction() {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent event) {
+            public void actionPerformed(ActionEvent event) {
                 messageHistoryPane.selectAll();
             }
         });
@@ -154,8 +184,12 @@ public class AIChatPanel extends JPanel {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-            public void actionPerformed(java.awt.event.ActionEvent event) {
-                sendMessage();
+            public void actionPerformed(ActionEvent event) {
+                if (isRequestActive()) {
+                    cancelActiveRequest();
+                } else {
+                    sendMessage();
+                }
             }
         });
         modelSelectionController.loadInitialModelSelectionList();
@@ -170,11 +204,17 @@ public class AIChatPanel extends JPanel {
         toolbar.add(modelSelectionController.getModelSelectionComboBox());
         String historyIconPath = "/images/ai_history.svg?useAccentColor=true";
         JButton chatsButton = TranslatedElementFactory.createButtonWithIcon(historyIconPath, "ai_chat_chats");
-        chatsButton.addActionListener(event -> liveChatController.openLiveChats());
+        chatsButton.addActionListener(event -> {
+            cancelActiveRequest();
+            liveChatController.openLiveChats();
+        });
         toolbar.add(chatsButton);
         String clearIconPath = "/images/ai_new_chat.svg?useAccentColor=true";
         JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_new_chat");
-        newChatButton.addActionListener(event -> liveChatController.startNewChat());
+        newChatButton.addActionListener(event -> {
+            cancelActiveRequest();
+            liveChatController.startNewChat();
+        });
         toolbar.add(newChatButton);
     }
 
@@ -184,7 +224,7 @@ public class AIChatPanel extends JPanel {
             private static final long serialVersionUID = 1L;
 
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent event) {
+            public void actionPerformed(ActionEvent event) {
                 openPreferences();
             }
         };
@@ -261,15 +301,17 @@ public class AIChatPanel extends JPanel {
         if (userMessage.isEmpty()) {
             return;
         }
+        beginRequest(userMessage);
         appendChatMessage(userMessage, ChatMessageCategory.USER);
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
         ensureChatService();
         if (chatService == null) {
+            restoreCancelledRequest();
             return;
         }
-        sendButton.setEnabled(false);
-        new SwingWorker<String, Void>() {
+        final int requestId = activeRequestId;
+        activeWorker = new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() {
                 return chatService.chat(userMessage);
@@ -278,14 +320,96 @@ public class AIChatPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    if (requestId != activeRequestId || requestCancellation.isCancelled()) {
+                        return;
+                    }
                     appendChatMessage(get(), ChatMessageCategory.ASSISTANT);
                 } catch (Exception error) {
+                    if (requestId != activeRequestId || requestCancellation.isCancelled()) {
+                        return;
+                    }
                     appendChatMessage(String.valueOf(error.getMessage()), ChatMessageCategory.ASSISTANT);
                 } finally {
-                    sendButton.setEnabled(true);
+                    if (requestId == activeRequestId && !requestCancellation.isCancelled()) {
+                        finishRequest();
+                    }
                 }
             }
-        }.execute();
+        };
+        activeWorker.execute();
+    }
+
+    private boolean isRequestActive() {
+        return requestInProgress;
+    }
+
+    private void beginRequest(String userMessage) {
+        requestCancellation.reset();
+        activeRequestId++;
+        pendingUserMessage = userMessage;
+        pendingHistorySnapshot = messageHistory.snapshot();
+        pendingMemorySnapshot = chatSessionMemoryController.snapshotMessages();
+        pendingTranscriptEntries = liveChatController.snapshotTranscriptEntries();
+        requestInProgress = true;
+        inputArea.setEditable(false);
+        setSendButtonStopState();
+    }
+
+    private void finishRequest() {
+        activeWorker = null;
+        requestInProgress = false;
+        inputArea.setEditable(true);
+        setSendButtonSendState();
+        clearPendingRequestState();
+    }
+
+    private void cancelActiveRequest() {
+        if (!isRequestActive()) {
+            return;
+        }
+        requestCancellation.cancel();
+        activeRequestId++;
+        if (activeWorker != null) {
+            activeWorker.cancel(true);
+        }
+        requestInProgress = false;
+        restoreCancelledRequest();
+    }
+
+    private void restoreCancelledRequest() {
+        if (pendingHistorySnapshot != null) {
+            messageHistory.restoreMessages(pendingHistorySnapshot);
+        }
+        if (pendingMemorySnapshot != null) {
+            chatSessionMemoryController.restoreMessages(pendingMemorySnapshot);
+        }
+        if (pendingTranscriptEntries != null) {
+            liveChatController.restoreTranscriptEntries(pendingTranscriptEntries);
+        }
+        activeWorker = null;
+        requestInProgress = false;
+        inputArea.setEditable(true);
+        inputArea.setText(pendingUserMessage == null ? "" : pendingUserMessage);
+        inputArea.setCaretPosition(inputArea.getText().length());
+        setSendButtonSendState();
+        clearPendingRequestState();
+    }
+
+    private void clearPendingRequestState() {
+        pendingHistorySnapshot = null;
+        pendingMemorySnapshot = null;
+        pendingTranscriptEntries = null;
+        pendingUserMessage = null;
+    }
+
+    private void setSendButtonStopState() {
+        sendButton.setText(null);
+        sendButton.setIcon(stopIcon);
+    }
+
+    private void setSendButtonSendState() {
+        sendButton.setText(null);
+        sendButton.setIcon(sendIcon);
     }
 
     private void ensureChatService() {
@@ -324,7 +448,8 @@ public class AIChatPanel extends JPanel {
                 .build(),
             chatSessionMemoryController,
             chatTokenUsageTracker,
-            this::handleToolCallSummary);
+            this::handleToolCallSummary,
+            requestCancellation::isCancelled);
     }
 
     private void appendChatMessage(String text, ChatMessageCategory category) {
@@ -357,7 +482,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void handleToolCallSummary(ToolCallSummary summary) {
-        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible()) {
+        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible() || !isRequestActive()) {
             return;
         }
         boolean isMcpCall = summary.getToolCaller() == ToolCaller.MCP;

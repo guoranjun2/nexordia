@@ -7,6 +7,9 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
@@ -37,6 +40,30 @@ public class ChatSessionMemoryController {
     public void clearChatMemory() {
         if (chatMemory != null) {
             chatMemory.clear();
+        }
+    }
+
+    public List<ChatMessage> snapshotMessages() {
+        ChatMemory memory = getChatMemory();
+        if (memory == null) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(memory.messages());
+    }
+
+    public void restoreMessages(List<ChatMessage> messages) {
+        ChatMemory memory = getChatMemory();
+        if (memory == null) {
+            return;
+        }
+        memory.clear();
+        if (messages == null) {
+            return;
+        }
+        for (ChatMessage message : messages) {
+            if (message != null) {
+                memory.add(message);
+            }
         }
     }
 

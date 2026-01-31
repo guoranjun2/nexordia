@@ -118,6 +118,22 @@ public class LiveChatController {
         transcriptAdapter.appendAssistantMessage(session, message);
     }
 
+    public List<ChatTranscriptEntry> snapshotTranscriptEntries() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(session.getTranscriptEntries());
+    }
+
+    public void restoreTranscriptEntries(List<ChatTranscriptEntry> entries) {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        session.setTranscriptEntries(entries == null ? new ArrayList<>() : new ArrayList<>(entries));
+    }
+
     public void persistCurrentSessionIfNeeded() {
         saveCurrentSessionState();
         persistCurrentSession();

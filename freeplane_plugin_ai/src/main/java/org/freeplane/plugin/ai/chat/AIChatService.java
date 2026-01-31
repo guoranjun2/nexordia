@@ -22,6 +22,7 @@ import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 
 import org.freeplane.core.util.LogUtils;
+import java.util.function.Supplier;
 
 public class AIChatService {
     private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
@@ -31,11 +32,12 @@ public class AIChatService {
     private final ToolArgumentsErrorHandler toolArgumentsErrorHandler;
 
     public AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
-                         ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler) {
+                         ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler,
+                         Supplier<Boolean> cancellationSupplier) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolArgumentsErrorHandler = buildToolArgumentsErrorHandler();
-        ToolExecutorFactory toolExecutorFactory = new ToolExecutorFactory(true, true);
+        ToolExecutorFactory toolExecutorFactory = new ToolExecutorFactory(true, true, cancellationSupplier);
         ToolExecutorRegistry toolExecutorRegistry = toolExecutorFactory.createRegistry(toolSet);
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
             .toolArgumentsErrorHandler(toolArgumentsErrorHandler)
