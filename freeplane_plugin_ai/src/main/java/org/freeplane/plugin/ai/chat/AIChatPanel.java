@@ -9,6 +9,7 @@ import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
 import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
+import org.freeplane.core.util.MenuUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
@@ -167,6 +168,8 @@ public class AIChatPanel extends JPanel {
             }
         });
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        KeyStroke sendKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, shortcutMask);
+        sendButton.setToolTipText(TextUtils.format("ai_chat_send.tooltip", MenuUtils.formatKeyStroke(sendKeyStroke)));
         messageHistoryPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutMask), "selectAllMessages");
         messageHistoryPane.getActionMap().put("selectAllMessages", new AbstractAction() {
             private static final long serialVersionUID = 1L;
@@ -176,7 +179,7 @@ public class AIChatPanel extends JPanel {
                 messageHistoryPane.selectAll();
             }
         });
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, shortcutMask), "sendMessage");
+        inputArea.getInputMap().put(sendKeyStroke, "sendMessage");
         inputArea.getActionMap().put("sendMessage", new AbstractAction() {
             /**
 			 * Comment for <code>serialVersionUID</code>
