@@ -1,9 +1,14 @@
 package org.freeplane.plugin.ai.chat;
 
-import org.freeplane.features.text.TextController;
-import org.freeplane.plugin.ai.maps.AvailableMaps;
-
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.text.TextController;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRecord;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
+import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
+import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,28 +24,40 @@ public class LiveChatController {
 
     private final AIChatPanel owner;
     private final AvailableMaps availableMaps;
-    private final TextController textController;
     private final LiveChatSessionManager liveChatSessionManager;
     private final ChatMessageHistory messageHistory;
     private final DateTimeFormatter chatNameFormatter;
-    private final Runnable persistCurrentSession;
     private final SessionActivationHandler sessionActivationHandler;
+    private final ChatTranscriptStore transcriptStore;
+    private final LiveTranscriptAdapter transcriptAdapter;
+    private final MapRootShortTextFormatter mapRootShortTextFormatter;
+    private ChatTranscriptId loadedTranscriptId;
+    private static final String USER_STYLE_CLASS = "message-user";
+    private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
+    private static final String TRANSCRIPT_HIDDEN_USER_MESSAGE =
+        "System message: The messages in this session include a restored transcript of a prior chat. "
+            + "Treat those messages as the earlier conversation context, not as hallucinations. "
+            + "The currently opened map may differ from the maps discussed in that transcript. "
+            + "Confirm the map context with the user when needed. The real conversation begins after this message. "
+            + "Respond only with \"ok\". This message and your response are not shown to the user.";
+    private static final String TRANSCRIPT_HIDDEN_ASSISTANT_REPLY = "ok";
+    private static final boolean SHOW_TRANSCRIPT_HIDDEN_EXCHANGE = true;
 
     public LiveChatController(AIChatPanel parent,
                               ChatMessageHistory messageHistory,
                               AvailableMaps availableMaps,
                               TextController textController,
                               DateTimeFormatter chatNameFormatter,
-                              Runnable persistCurrentSession,
                               SessionActivationHandler sessionActivationHandler) {
         this.owner = parent;
         this.messageHistory = messageHistory;
         this.availableMaps = availableMaps;
-        this.textController = textController;
         this.chatNameFormatter = chatNameFormatter;
-        this.persistCurrentSession = persistCurrentSession;
         this.sessionActivationHandler = sessionActivationHandler;
         this.liveChatSessionManager = new LiveChatSessionManager();
+        this.transcriptStore = new ChatTranscriptStore();
+        this.transcriptAdapter = new LiveTranscriptAdapter();
+        this.mapRootShortTextFormatter = new MapRootShortTextFormatter(availableMaps, textController);
     }
 
     public void initialize(ChatSessionMemoryController sessionMemoryController) {
@@ -56,7 +73,7 @@ public class LiveChatController {
 
     public void openLiveChats() {
         saveCurrentSessionState();
-        createLiveChatListDialog().openDialog();
+        createChatListDialog().openDialog();
     }
 
     public void updateSessionNameFromFirstUserMessage(String userMessage) {
@@ -79,9 +96,34 @@ public class LiveChatController {
         return this::recordMapAccess;
     }
 
+    public void recordUserMessage(String message) {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        loadedTranscriptId = null;
+        session.setLastActivityTimestamp(System.currentTimeMillis());
+        transcriptAdapter.appendUserMessage(session, message);
+    }
+
+    public void recordAssistantMessage(String message) {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        loadedTranscriptId = null;
+        session.setLastActivityTimestamp(System.currentTimeMillis());
+        transcriptAdapter.appendAssistantMessage(session, message);
+    }
+
+    public void persistCurrentSessionIfNeeded() {
+        saveCurrentSessionState();
+        persistCurrentSession();
+    }
+
     private void switchToNewSession() {
         saveCurrentSessionState();
-        persistCurrentSession.run();
+        persistCurrentSession();
         ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
         switchToSession(newSession.getId(), false);
@@ -97,9 +139,10 @@ public class LiveChatController {
         }
         if (saveCurrent) {
             saveCurrentSessionState();
-            persistCurrentSession.run();
+            persistCurrentSession();
         }
         liveChatSessionManager.setCurrentSession(sessionId);
+        loadedTranscriptId = null;
         LiveChatSession session = liveChatSessionManager.getCurrentSession();
         if (session == null) {
             return;
@@ -115,7 +158,7 @@ public class LiveChatController {
         LiveChatSession activeSession = liveChatSessionManager.getCurrentSession();
         if (activeSession != null && sessionId.equals(activeSession.getId())) {
             saveCurrentSessionState();
-            persistCurrentSession.run();
+            persistCurrentSession();
         }
         liveChatSessionManager.remove(sessionId);
         LiveChatSession nextSession = liveChatSessionManager.getCurrentSession();
@@ -126,6 +169,24 @@ public class LiveChatController {
         switchToSession(nextSession.getId(), false);
     }
 
+    private void deleteLiveSessionInternal(LiveChatSessionId sessionId) {
+        if (sessionId == null) {
+            return;
+        }
+        LiveChatSession activeSession = liveChatSessionManager.getCurrentSession();
+        boolean isActive = activeSession != null && sessionId.equals(activeSession.getId());
+        liveChatSessionManager.remove(sessionId);
+        if (!isActive) {
+            return;
+        }
+        ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
+        LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
+        liveChatSessionManager.setCurrentSession(newSession.getId());
+        messageHistory.clear();
+        sessionActivationHandler.activate(newChatMemory);
+        loadedTranscriptId = null;
+    }
+
     private void saveCurrentSessionState() {
         LiveChatSession session = liveChatSessionManager.getCurrentSession();
         if (session == null) {
@@ -133,6 +194,24 @@ public class LiveChatController {
         }
         List<ChatMessageHistory.ChatMessageSnapshot> snapshots = messageHistory.snapshot();
         session.setMessageSnapshots(new ArrayList<>(snapshots));
+    }
+
+    private void persistCurrentSession() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        if (session.getTranscriptEntries().isEmpty() && session.getTranscriptId() == null) {
+            return;
+        }
+        ChatTranscriptRecord record = new ChatTranscriptRecord();
+        record.setDisplayName(session.getDisplayName());
+        record.setEntries(new ArrayList<>(session.getTranscriptEntries()));
+        List<MapRootShortTextCount> mapCounts = mapRootShortTextFormatter.buildCounts(new ArrayList<>(session.getMapIds()));
+        record.setMapRootShortTextCounts(mapCounts);
+        ChatTranscriptId transcriptId = transcriptStore.save(record, session.getTranscriptId());
+        session.setTranscriptId(transcriptId);
+        session.setLastActivityTimestamp(record.getTimestamp());
     }
 
     private String buildDefaultChatName() {
@@ -159,13 +238,14 @@ public class LiveChatController {
         liveChatSessionManager.recordMapId(mapIdentifier.toString());
     }
 
-    private LiveChatListDialog createLiveChatListDialog() {
-        return new LiveChatListDialog(
+    private ChatListDialog createChatListDialog() {
+        return new ChatListDialog(
             owner,
             liveChatSessionManager,
-            availableMaps,
-            textController,
-            new LiveChatListDialog.LiveChatListHandler() {
+            transcriptStore,
+            mapRootShortTextFormatter,
+            this::getLoadedTranscriptId,
+            new ChatListDialog.ChatListHandler() {
                 @Override
                 public void switchTo(LiveChatSessionId sessionId) {
                     switchToSession(sessionId);
@@ -177,10 +257,98 @@ public class LiveChatController {
                 }
 
                 @Override
+                public void deleteLiveSession(LiveChatSessionId sessionId) {
+                    deleteLiveSessionInternal(sessionId);
+                }
+
+                @Override
                 public void rename(LiveChatSessionId sessionId, String displayName) {
                     liveChatSessionManager.rename(sessionId, displayName);
                 }
+
+                @Override
+                public void renameTranscript(ChatTranscriptId transcriptId, String displayName) {
+                    transcriptStore.rename(transcriptId, displayName);
+                }
+
+                @Override
+                public void startChatFromTranscript(ChatTranscriptId transcriptId) {
+                    startChatFromTranscriptInternal(transcriptId);
+                }
+
+                @Override
+                public void deleteTranscript(ChatTranscriptId transcriptId) {
+                    transcriptStore.delete(transcriptId);
+                }
             }
         );
+    }
+
+    private ChatTranscriptId getLoadedTranscriptId() {
+        return loadedTranscriptId;
+    }
+
+    private void startChatFromTranscriptInternal(ChatTranscriptId transcriptId) {
+        if (transcriptId == null) {
+            return;
+        }
+        saveCurrentSessionState();
+        persistCurrentSession();
+        ChatTranscriptRecord record = transcriptStore.load(transcriptId);
+        if (record == null) {
+            return;
+        }
+        ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
+        LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory,
+            record.getDisplayName() == null || record.getDisplayName().trim().isEmpty()
+                ? buildDefaultChatName()
+                : record.getDisplayName());
+        newSession.setTranscriptId(transcriptId);
+        newSession.setLastActivityTimestamp(record.getTimestamp());
+        newSession.setMessageSnapshots(buildSnapshotsFromRecord(record));
+        transcriptAdapter.setEntries(newSession, record.getEntries());
+        switchToSession(newSession.getId(), false);
+        loadedTranscriptId = transcriptId;
+        seedTranscriptMemory(newSession, record);
+    }
+
+    private void seedTranscriptMemory(LiveChatSession session, ChatTranscriptRecord record) {
+        if (session == null || record == null) {
+            return;
+        }
+        session.getChatMemoryController().seedTranscriptWithHiddenExchange(record.getEntries(),
+            TRANSCRIPT_HIDDEN_USER_MESSAGE, TRANSCRIPT_HIDDEN_ASSISTANT_REPLY);
+    }
+
+    private List<ChatMessageHistory.ChatMessageSnapshot> buildSnapshotsFromRecord(ChatTranscriptRecord record) {
+        List<ChatMessageHistory.ChatMessageSnapshot> snapshots = new ArrayList<>();
+        if (record == null || record.getEntries() == null) {
+            return snapshots;
+        }
+        ChatMessageRenderer renderer = new ChatMessageRenderer();
+        for (ChatTranscriptEntry entry : record.getEntries()) {
+            if (entry == null || entry.getText() == null || entry.getRole() == null) {
+                continue;
+            }
+            addSnapshot(snapshots, renderer, entry.getText(), entry.getRole() == ChatTranscriptRole.ASSISTANT);
+        }
+        if (SHOW_TRANSCRIPT_HIDDEN_EXCHANGE) {
+            addSnapshot(snapshots, renderer, TRANSCRIPT_HIDDEN_USER_MESSAGE, false);
+            addSnapshot(snapshots, renderer, TRANSCRIPT_HIDDEN_ASSISTANT_REPLY, true);
+        }
+        return snapshots;
+    }
+
+    private void addSnapshot(List<ChatMessageHistory.ChatMessageSnapshot> snapshots,
+                             ChatMessageRenderer renderer,
+                             String text,
+                             boolean isAssistant) {
+        if (text == null || snapshots == null || renderer == null) {
+            return;
+        }
+        String messageText = renderer.renderMessage(text, isAssistant);
+        String styleClassName = isAssistant ? ASSISTANT_STYLE_CLASS : USER_STYLE_CLASS;
+        String messageMarkup = "<div class=\"" + styleClassName + "\">" + messageText + "</div>";
+        snapshots.add(new ChatMessageHistory.ChatMessageSnapshot(text, messageMarkup, styleClassName));
     }
 }

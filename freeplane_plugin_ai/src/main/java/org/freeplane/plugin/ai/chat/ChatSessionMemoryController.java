@@ -1,9 +1,16 @@
 package org.freeplane.plugin.ai.chat;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.util.Objects;
+
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 
 public class ChatSessionMemoryController {
     private final ChatMemorySettings chatMemorySettings;
@@ -31,5 +38,60 @@ public class ChatSessionMemoryController {
         if (chatMemory != null) {
             chatMemory.clear();
         }
+    }
+
+    public void seedTranscript(Iterable<ChatTranscriptEntry> entries, String systemGuard) {
+        ChatMemory memory = getChatMemory();
+        if (memory == null) {
+            return;
+        }
+        memory.clear();
+        if (systemGuard != null && !systemGuard.trim().isEmpty()) {
+            memory.add(new SystemMessage(systemGuard));
+        }
+        if (entries == null) {
+            return;
+        }
+        for (ChatTranscriptEntry entry : entries) {
+            ChatMessage message = toChatMessage(entry);
+            if (message != null) {
+                memory.add(message);
+            }
+        }
+    }
+
+    public void seedTranscriptWithHiddenExchange(Iterable<ChatTranscriptEntry> entries,
+                                                 String hiddenUserMessage,
+                                                 String hiddenAssistantReply) {
+        ChatMemory memory = getChatMemory();
+        if (memory == null) {
+            return;
+        }
+        memory.clear();
+        if (entries == null) {
+            return;
+        }
+        for (ChatTranscriptEntry entry : entries) {
+            ChatMessage message = toChatMessage(entry);
+            if (message != null) {
+                memory.add(message);
+            }
+        }
+        if (hiddenUserMessage != null && !hiddenUserMessage.trim().isEmpty()) {
+            memory.add(new UserMessage(hiddenUserMessage));
+        }
+        if (hiddenAssistantReply != null && !hiddenAssistantReply.trim().isEmpty()) {
+            memory.add(new AiMessage(hiddenAssistantReply));
+        }
+    }
+
+    private ChatMessage toChatMessage(ChatTranscriptEntry entry) {
+        if (entry == null || entry.getText() == null || entry.getRole() == null) {
+            return null;
+        }
+        if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
+            return new AiMessage(entry.getText());
+        }
+        return new UserMessage(entry.getText());
     }
 }

@@ -110,7 +110,6 @@ public class AIChatPanel extends JPanel {
             availableMaps,
             requireTextController(),
             chatNameFormatter,
-            this::persistCurrentSession,
             this::activateSession
         );
         liveChatController.initialize(chatSessionMemoryController);
@@ -339,10 +338,19 @@ public class AIChatPanel extends JPanel {
         }
         String messageText = messageRenderer.renderMessage(text, category == ChatMessageCategory.ASSISTANT);
         messageHistory.appendMessage(text, messageText, category.getStyleClassName());
+        if (category == ChatMessageCategory.USER) {
+            liveChatController.recordUserMessage(text);
+        } else if (category == ChatMessageCategory.ASSISTANT) {
+            liveChatController.recordAssistantMessage(text);
+        }
     }
 
     public ToolCallSummaryHandler toolCallSummaryHandler() {
         return this::handleToolCallSummary;
+    }
+
+    public void persistCurrentChatIfNeeded() {
+        liveChatController.persistCurrentSessionIfNeeded();
     }
 
     private void handleToolCallSummary(ToolCallSummary summary) {
@@ -366,9 +374,6 @@ public class AIChatPanel extends JPanel {
 
     private void updateTokenUsageLabel(ChatUsageTotals totals) {
         SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
-    }
-
-    private void persistCurrentSession() {
     }
 
     private void activateSession(ChatSessionMemoryController sessionMemoryController) {

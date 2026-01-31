@@ -12,6 +12,7 @@ final class LiveChatSessionManager {
     LiveChatSession createSession(ChatSessionMemoryController chatMemoryController, String displayName) {
         LiveChatSessionId id = LiveChatSessionId.create();
         LiveChatSession session = new LiveChatSession(id, chatMemoryController, displayName);
+        session.setLastActivityTimestamp(System.currentTimeMillis());
         sessions.put(id, session);
         if (currentSessionId == null) {
             currentSessionId = id;
@@ -41,7 +42,8 @@ final class LiveChatSessionManager {
                 continue;
             }
             summaries.add(new LiveChatSessionSummary(session.getId(), session.getDisplayName(),
-                new ArrayList<>(session.getMapIds())));
+                new ArrayList<>(session.getMapIds()), session.getTranscriptId(),
+                session.getLastActivityTimestamp()));
         }
         return summaries;
     }
@@ -73,6 +75,7 @@ final class LiveChatSessionManager {
             return;
         }
         session.getMapIds().add(mapId);
+        session.setLastActivityTimestamp(System.currentTimeMillis());
     }
 
     void updateUserMessageName(String updatedName) {

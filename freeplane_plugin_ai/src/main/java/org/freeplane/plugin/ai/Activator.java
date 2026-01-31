@@ -40,6 +40,7 @@ public class Activator implements BundleActivator {
 	private static final String PREFERENCES_RESOURCE = "preferences.xml";
 	private static final String SYSTEM_MESSAGE_PROPERTY = SystemMessageBuilder.SYSTEM_MESSAGE_PROPERTY;
 	private ModelContextProtocolServer modelContextProtocolServer;
+	private AIChatPanel aiChatPanel;
 
 	/*
 	 * (non-Javadoc)
@@ -60,7 +61,7 @@ public class Activator implements BundleActivator {
 				    addPluginDefaults();
 				    registerAiEditsFeatures(modeController);
 				    final JTabbedPane tabs = UITools.getFreeplaneTabbedPanel();
-				    AIChatPanel aiChatPanel = new AIChatPanel();
+				    aiChatPanel = new AIChatPanel();
 				    tabs.addTab("", ResourceController.getResourceController().getIcon("/images/panelTabs/aiTab.svg?useAccentColor=true"),
 				        aiChatPanel, TextUtils.getText("ai_panel"));
 				    startModelContextProtocolServer(aiChatPanel);
@@ -162,6 +163,9 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void stop(final BundleContext context) throws Exception {
+		if (aiChatPanel != null) {
+			aiChatPanel.persistCurrentChatIfNeeded();
+		}
 		if (modelContextProtocolServer != null) {
 			modelContextProtocolServer.stop();
 		}

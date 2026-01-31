@@ -91,6 +91,7 @@ public class AvailableMaps {
         return mapIdentifier;
     }
 
+
     private void removeClearedReferences() {
         Iterator<Map.Entry<UUID, WeakReference<MapModel>>> iterator = mapReferencesByIdentifier.entrySet().iterator();
         while (iterator.hasNext()) {
