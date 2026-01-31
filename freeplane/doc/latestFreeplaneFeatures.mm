@@ -74,8 +74,22 @@
 </stylenode>
 </map_styles>
 </hook>
-<node TEXT="Version 1.12.x" POSITION="bottom_or_right" ID="ID_585965147">
-<node TEXT="Version 1.12.15" ID="ID_859157443">
+<node TEXT="Version 1.13.1" POSITION="bottom_or_right" ID="ID_1470551206">
+<node TEXT="Editor features" ID="ID_508552400">
+<node TEXT="" ID="ID_692474027">
+<hook NAME="FirstGroupNode"/>
+</node>
+<node TEXT="AI chat panel" ID="ID_1497752189"/>
+<node TEXT="Freeplane as local MCP server" ID="ID_162256442"/>
+<node TEXT="" ID="ID_1972908470">
+<hook NAME="SummaryNode"/>
+<hook NAME="AlwaysUnfoldedNode"/>
+<node TEXT="Activate in Preferences…-&gt;Plugins-&gt;AI" ID="ID_889739920"/>
+</node>
+</node>
+</node>
+<node TEXT="Version 1.12.x" FOLDED="true" POSITION="bottom_or_right" ID="ID_585965147">
+<node TEXT="Version 1.12.16" FOLDED="true" ID="ID_859157443">
 <node TEXT="Editor features" ID="ID_432815917">
 <node TEXT="Map outline panel" ID="ID_1880554169"/>
 <node TEXT="AES encryption for encrypted nodes and maps" ID="ID_1185446444"/>
