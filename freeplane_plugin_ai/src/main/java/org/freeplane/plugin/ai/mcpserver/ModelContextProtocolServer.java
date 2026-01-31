@@ -64,7 +64,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
             return;
         }
         if (!isPortAvailable(port)) {
-            LogUtils.severe("MCP server port is already in use: " + port);
+            LogUtils.warn("MCP server port is already in use: " + port);
             return;
         }
         if (!running.compareAndSet(false, true)) {
