@@ -227,6 +227,16 @@
   - Verify transcripts contain no runtime identifiers or tool payloads.
   - Verify list returns transcripts sorted by timestamp and marks
     malformed files as error entries.
+  - Unit test: `ChatTranscriptStore.save` writes gzip JSON, returns a
+    stable id, and `load` restores display name, entries, and map root
+    short text counts.
+  - Unit test: `ChatTranscriptStore.list` orders summaries by
+    timestamp descending, includes error entries for malformed files,
+    and populates `errorMessage`.
+  - Unit test: `ChatTranscriptStore.rename` updates display name and
+    refreshes timestamp without changing the transcript id.
+  - Unit test: `ChatTranscriptStore.delete` removes the file and list
+    excludes the transcript after deletion.
   - Verify display name edits persist and appear in list summaries.
   - Verify map root short texts with counts persist and appear in list
     summaries.

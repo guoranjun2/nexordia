@@ -2,9 +2,15 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 
 public class ChatSessionMemoryControllerTest {
     @Test
@@ -27,5 +33,23 @@ public class ChatSessionMemoryControllerTest {
         uut.clearChatMemory();
 
         assertThat(chatMemory.messages()).isEmpty();
+    }
+
+    @Test
+    public void seedTranscriptWithHiddenExchange_appendsHiddenMessagesAfterTranscript() {
+        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.MESSAGE_WINDOW, 10);
+        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
+        List<ChatTranscriptEntry> entries = Arrays.asList(
+            new ChatTranscriptEntry(ChatTranscriptRole.USER, "first user"),
+            new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "first assistant"));
+
+        uut.seedTranscriptWithHiddenExchange(entries, "hidden user", "ok");
+
+        List<ChatMessage> messages = uut.getChatMemory().messages();
+        assertThat(messages).hasSize(4);
+        assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
+        assertThat(messages.get(1)).isInstanceOf(AiMessage.class);
+        assertThat(messages.get(2)).isInstanceOf(UserMessage.class);
+        assertThat(messages.get(3)).isInstanceOf(AiMessage.class);
     }
 }
