@@ -8,6 +8,9 @@ public class SystemMessageBuilder {
         "Any tool calls in this chat require arguments wrapped under the single parameter named request. "
             + "Example: tool({ \"request\": { ... } })";
     private static final String MARKDOWN_RESPONSE_GUIDANCE = "Respond in Markdown.";
+    private static final String MAP_SELECTION_GUIDANCE =
+        "Map selection can change between messages. If a request seems misaligned with prior map references, "
+            + "confirm the current map before proceeding.";
     @FunctionalInterface
     interface SystemMessageTextProvider {
         String getSystemMessageText();
@@ -26,13 +29,16 @@ public class SystemMessageBuilder {
     public String buildForChat() {
         String message = systemMessageTextProvider.getSystemMessageText();
         if (message == null) {
-            return MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+            return MAP_SELECTION_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE + "\n\n"
+                + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
         }
         String trimmed = message.trim();
         if (trimmed.isEmpty()) {
-            return MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+            return MAP_SELECTION_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE + "\n\n"
+                + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
         }
-        return trimmed + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+        return trimmed + "\n\n" + MAP_SELECTION_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE + "\n\n"
+            + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
     }
 
     private static class ResourceControllerSystemMessageTextProvider implements SystemMessageTextProvider {
