@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import javax.swing.JEditorPane;
 import javax.swing.UIManager;
 import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 import java.awt.Color;
 
@@ -27,7 +28,11 @@ public class ChatMessageStyleApplier {
         Color toolBorderColor = darkTheme ? new Color(0x5a, 0x6f, 0x8a) : new Color(0xbc, 0xd9, 0xff);
         Color mcpBorderColor = darkTheme ? new Color(0x6a, 0x7f, 0xb0) : new Color(0x5c, 0x79, 0xbd);
         messageHistoryPane.setBackground(baseBackground);
-        StyleSheet styleSheet = messageHistoryEditorKit.getStyleSheet();
+        StyleSheet baseStyleSheet = messageHistoryEditorKit.getStyleSheet();
+        StyleSheet styleSheet = new StyleSheet();
+        styleSheet.addStyleSheet(baseStyleSheet);
+        HTMLDocument document = new HTMLDocument(styleSheet);
+        messageHistoryPane.setDocument(document);
         styleSheet.addRule("body { font-family: Sans-Serif; font-size: 12pt; margin: 6px; color: "
             + toCssColor(baseForeground) + "; background-color: " + toCssColor(baseBackground) + "; }");
         styleSheet.addRule(".message-user { margin: 6px 0; padding: 6px 8px; background-color: "
