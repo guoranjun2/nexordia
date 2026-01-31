@@ -42,7 +42,8 @@ final class LiveChatSessionManager {
                 continue;
             }
             summaries.add(new LiveChatSessionSummary(session.getId(), session.getDisplayName(),
-                new ArrayList<>(session.getMapIds()), session.getTranscriptId(),
+                new ArrayList<>(session.getMapIds()), session.getMapRootShortTextCounts(),
+                session.getTranscriptId(),
                 session.getLastActivityTimestamp()));
         }
         return summaries;

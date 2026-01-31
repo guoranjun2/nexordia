@@ -91,7 +91,9 @@ public class AIChatPanel extends JPanel {
         inputArea = new JTextArea(3, 20);
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
-        sendButton = new JButton("Send");
+        sendButton = new JButton();
+        sendButton.setIcon(ResourceController.getResourceController()
+            .getImageIcon("/images/ai_send_arrow_up.svg?useAccentColor=true"));
         menuPopup = buildMenuPopup();
         configuration = new AIProviderConfiguration();
         chatDisplaySettings = new ChatDisplaySettings();
@@ -166,11 +168,12 @@ public class AIChatPanel extends JPanel {
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
         toolbar.add(menuButton);
         toolbar.add(modelSelectionController.getModelSelectionComboBox());
-        JButton chatsButton = TranslatedElementFactory.createButton("ai_chat_chats");
+        String historyIconPath = "/images/ai_history.svg?useAccentColor=true";
+        JButton chatsButton = TranslatedElementFactory.createButtonWithIcon(historyIconPath, "ai_chat_chats");
         chatsButton.addActionListener(event -> liveChatController.openLiveChats());
         toolbar.add(chatsButton);
-        String clearIconPath = "/images/generic_trash.svg?useAccentColor=true";
-        JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_clear");
+        String clearIconPath = "/images/ai_new_chat.svg?useAccentColor=true";
+        JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_new_chat");
         newChatButton.addActionListener(event -> liveChatController.startNewChat());
         toolbar.add(newChatButton);
     }

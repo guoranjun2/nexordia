@@ -6,6 +6,7 @@ import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptStatus;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptSummary;
+import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -352,9 +353,12 @@ class ChatListDialog extends JDialog {
                     transcriptById.remove(transcriptId.getFileName());
                 }
                 boolean loaded = session.getId().equals(currentSessionId);
+                List<MapRootShortTextCount> mapCounts = session.getMapRootShortTextCounts();
+                if (mapCounts == null || mapCounts.isEmpty()) {
+                    mapCounts = mapRootShortTextFormatter.buildCounts(session.getMapIds());
+                }
                 results.add(new ChatListItem(ChatListItemStatus.LIVE, session.getId(), transcriptId,
-                    session.getDisplayName(), mapRootShortTextFormatter.buildCounts(session.getMapIds()),
-                    session.getLastActivityTimestamp(), loaded));
+                    session.getDisplayName(), mapCounts, session.getLastActivityTimestamp(), loaded));
             }
             for (ChatTranscriptSummary summary : transcriptById.values()) {
                 ChatListItemStatus status = summary.getStatus() == ChatTranscriptStatus.ERROR

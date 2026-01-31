@@ -31,6 +31,7 @@ public class LiveChatController {
     private final ChatTranscriptStore transcriptStore;
     private final LiveTranscriptAdapter transcriptAdapter;
     private final MapRootShortTextFormatter mapRootShortTextFormatter;
+    private final MapRootShortTextCountsMerger mapRootShortTextCountsMerger;
     private ChatTranscriptId loadedTranscriptId;
     private static final String USER_STYLE_CLASS = "message-user";
     private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
@@ -58,6 +59,7 @@ public class LiveChatController {
         this.transcriptStore = new ChatTranscriptStore();
         this.transcriptAdapter = new LiveTranscriptAdapter();
         this.mapRootShortTextFormatter = new MapRootShortTextFormatter(availableMaps, textController);
+        this.mapRootShortTextCountsMerger = new MapRootShortTextCountsMerger();
     }
 
     public void initialize(ChatSessionMemoryController sessionMemoryController) {
@@ -207,8 +209,19 @@ public class LiveChatController {
         ChatTranscriptRecord record = new ChatTranscriptRecord();
         record.setDisplayName(session.getDisplayName());
         record.setEntries(new ArrayList<>(session.getTranscriptEntries()));
-        List<MapRootShortTextCount> mapCounts = mapRootShortTextFormatter.buildCounts(new ArrayList<>(session.getMapIds()));
-        record.setMapRootShortTextCounts(mapCounts);
+        List<MapRootShortTextCount> currentCounts = mapRootShortTextFormatter.buildCounts(
+            new ArrayList<>(session.getMapIds()));
+        List<MapRootShortTextCount> mergedSessionCounts = mapRootShortTextCountsMerger.mergeByMax(
+            session.getMapRootShortTextCounts(), currentCounts);
+        List<MapRootShortTextCount> mergedCounts = mergedSessionCounts;
+        if (session.getTranscriptId() != null) {
+            ChatTranscriptRecord existingRecord = transcriptStore.load(session.getTranscriptId());
+            if (existingRecord != null) {
+                mergedCounts = mapRootShortTextCountsMerger.mergeByMax(
+                    existingRecord.getMapRootShortTextCounts(), mergedSessionCounts);
+            }
+        }
+        record.setMapRootShortTextCounts(mergedCounts);
         ChatTranscriptId transcriptId = transcriptStore.save(record, session.getTranscriptId());
         session.setTranscriptId(transcriptId);
         session.setLastActivityTimestamp(record.getTimestamp());
@@ -235,7 +248,11 @@ public class LiveChatController {
         if (mapIdentifier == null) {
             return;
         }
-        liveChatSessionManager.recordMapId(mapIdentifier.toString());
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        session.getMapIds().add(mapIdentifier.toString());
     }
 
     private ChatListDialog createChatListDialog() {
@@ -306,6 +323,7 @@ public class LiveChatController {
         newSession.setTranscriptId(transcriptId);
         newSession.setLastActivityTimestamp(record.getTimestamp());
         newSession.setMessageSnapshots(buildSnapshotsFromRecord(record));
+        newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
         transcriptAdapter.setEntries(newSession, record.getEntries());
         switchToSession(newSession.getId(), false);
         loadedTranscriptId = transcriptId;

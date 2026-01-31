@@ -16,7 +16,12 @@
   while saved transcripts store only user and assistant text. Live
   chats and saved transcripts share an auto-assigned name that the user
   can edit in the unified list. Map root short text counts exist to
-  disambiguate duplicate short texts. The unified list shows a status
+  disambiguate duplicate short texts and must accumulate across saves.
+  Counts are based on distinct map UUIDs that share the same root text,
+  so repeated access to the same map does not increase the counter.
+  When persisting a live chat, merge the current session map root short
+  text counts with any existing transcript counts, using the max count
+  when a short text appears in both. The unified list shows a status
   icon (green for live, yellow for transcript, red for error). Users
   can list, start, rename, and delete transcripts, or start a new
   tool-capable chat from one with explicit map confirmation before
@@ -237,6 +242,9 @@
     refreshes timestamp without changing the transcript id.
   - Unit test: `ChatTranscriptStore.delete` removes the file and list
     excludes the transcript after deletion.
+  - Unit test: map root short text count merging keeps all prior
+    values and uses max counts when the same short text appears in
+    both live and transcript data.
   - Verify display name edits persist and appear in list summaries.
   - Verify map root short texts with counts persist and appear in list
     summaries.

@@ -7,11 +7,13 @@ import java.util.Set;
 
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
+import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 
 final class LiveChatSession {
     private final LiveChatSessionId id;
     private final ChatSessionMemoryController chatMemoryController;
     private final Set<String> mapIds;
+    private final List<MapRootShortTextCount> mapRootShortTextCounts;
     private List<ChatMessageHistory.ChatMessageSnapshot> messageSnapshots;
     private List<ChatTranscriptEntry> transcriptEntries;
     private ChatTranscriptId transcriptId;
@@ -25,6 +27,7 @@ final class LiveChatSession {
         this.chatMemoryController = chatMemoryController;
         this.displayName = displayName;
         this.mapIds = new LinkedHashSet<>();
+        this.mapRootShortTextCounts = new ArrayList<>();
         this.messageSnapshots = new ArrayList<>();
         this.transcriptEntries = new ArrayList<>();
     }
@@ -87,6 +90,17 @@ final class LiveChatSession {
 
     Set<String> getMapIds() {
         return mapIds;
+    }
+
+    List<MapRootShortTextCount> getMapRootShortTextCounts() {
+        return mapRootShortTextCounts;
+    }
+
+    void setMapRootShortTextCounts(List<MapRootShortTextCount> mapRootShortTextCounts) {
+        this.mapRootShortTextCounts.clear();
+        if (mapRootShortTextCounts != null) {
+            this.mapRootShortTextCounts.addAll(mapRootShortTextCounts);
+        }
     }
 
     long getLastActivityTimestamp() {

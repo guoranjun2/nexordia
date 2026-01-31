@@ -43,6 +43,7 @@ class MapRootShortTextFormatter {
         return results;
     }
 
+
     String formatCounts(List<MapRootShortTextCount> counts) {
         if (counts == null || counts.isEmpty()) {
             return "";
