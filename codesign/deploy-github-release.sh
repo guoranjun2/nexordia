@@ -23,7 +23,7 @@ if [ ! -d "$DIST_DIR" ]; then
     exit 1
 fi
 
-VERSION_PATTERN='[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?'
+VERSION_PATTERN='[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+){0,2}'
 DIST_FILES=($(ls "$DIST_DIR" | grep -E "^[^.]+[-_]$VERSION_PATTERN\." | head -1))
 
 if [ ${#DIST_FILES[@]} -eq 0 ]; then
@@ -46,7 +46,13 @@ fi
 
 echo "Found version: $VERSION"
 
-TAG="release-$VERSION"
+TAG_PREFIX="release"
+if [[ "$VERSION" == *alpha* ]]; then
+    TAG_PREFIX="alpha"
+elif [[ "$VERSION" == *beta* ]]; then
+    TAG_PREFIX="beta"
+fi
+TAG="${TAG_PREFIX}-${VERSION}"
 echo "Looking for tag: $TAG"
 
 if ! git tag | grep -q "^${TAG}$"; then
