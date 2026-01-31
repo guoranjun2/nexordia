@@ -33,6 +33,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -68,6 +69,8 @@ public class AIChatPanel extends JPanel {
     private final JButton sendButton;
     private final Icon sendIcon;
     private final Icon stopIcon;
+    private String sendTooltipText;
+    private String cancelTooltipText;
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
@@ -169,7 +172,10 @@ public class AIChatPanel extends JPanel {
         });
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         KeyStroke sendKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, shortcutMask);
-        sendButton.setToolTipText(TextUtils.format("ai_chat_send.tooltip", MenuUtils.formatKeyStroke(sendKeyStroke)));
+        sendTooltipText = TextUtils.format("ai_chat_send.tooltip", MenuUtils.formatKeyStroke(sendKeyStroke));
+        KeyStroke cancelKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        cancelTooltipText = TextUtils.format("ai_chat_cancel.tooltip", MenuUtils.formatKeyStroke(cancelKeyStroke));
+        sendButton.setToolTipText(sendTooltipText);
         messageHistoryPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutMask), "selectAllMessages");
         messageHistoryPane.getActionMap().put("selectAllMessages", new AbstractAction() {
             private static final long serialVersionUID = 1L;
@@ -193,6 +199,16 @@ public class AIChatPanel extends JPanel {
                 } else {
                     sendMessage();
                 }
+            }
+        });
+        inputContainer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+            .put(cancelKeyStroke, "cancelRequest");
+        inputContainer.getActionMap().put("cancelRequest", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                cancelActiveRequest();
             }
         });
         modelSelectionController.loadInitialModelSelectionList();
@@ -408,11 +424,13 @@ public class AIChatPanel extends JPanel {
     private void setSendButtonStopState() {
         sendButton.setText(null);
         sendButton.setIcon(stopIcon);
+        sendButton.setToolTipText(cancelTooltipText);
     }
 
     private void setSendButtonSendState() {
         sendButton.setText(null);
         sendButton.setIcon(sendIcon);
+        sendButton.setToolTipText(sendTooltipText);
     }
 
     private void ensureChatService() {
