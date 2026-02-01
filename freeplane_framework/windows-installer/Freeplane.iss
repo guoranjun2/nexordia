@@ -24,7 +24,7 @@
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{D3941722-C4DD-4509-88C4-0E87F675A859}
-AppCopyright=Copyright ï¿½ 2000-2025 Freeplane team and others
+AppCopyright=Copyright © 2000-2026 Freeplane team and others
 AppName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
@@ -61,7 +61,6 @@ WizardImageFile=WizModernImage-IS.bmp
 
 [Languages]
 Name: English; MessagesFile: compiler:Default.isl,messages_en.isl; LicenseFile: gpl-2.0_english.txt
-Name: Croatian; MessagesFile: Croatian.isl,messages_hr.isl; LicenseFile: gpl-2.0_croatian.txt
 Name: French; MessagesFile: compiler:Languages\French.isl,messages_fr.isl; LicenseFile: gpl-2.0_french.txt
 Name: German; MessagesFile: compiler:Languages\German.isl,messages_de.isl; LicenseFile: gpl-2.0_german.txt
 Name: Russian; MessagesFile: compiler:Languages\Russian.isl,messages_ru.isl; LicenseFile: gpl-2.0_russian.txt
