@@ -37,6 +37,7 @@ import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.Icon;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -69,8 +70,11 @@ public class AIChatPanel extends JPanel {
     private final JButton sendButton;
     private final Icon sendIcon;
     private final Icon stopIcon;
+    private final Icon preferencesIcon;
     private String sendTooltipText;
     private String cancelTooltipText;
+    private String preferencesTooltipText;
+    private String noProviderConfiguredText;
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
@@ -117,6 +121,8 @@ public class AIChatPanel extends JPanel {
         sendIcon = sendButton.getIcon();
         stopIcon = ResourceController.getResourceController()
             .getImageIcon("/images/ai_stop.svg?useAccentColor=true");
+        preferencesIcon = ResourceController.getResourceController()
+            .getImageIcon("/images/generic_settings.svg?useAccentColor=true");
         Dimension sendButtonSize = sendButton.getPreferredSize();
         sendButton.setPreferredSize(sendButtonSize);
         sendButton.setMinimumSize(sendButtonSize);
@@ -166,6 +172,8 @@ public class AIChatPanel extends JPanel {
         sendButton.addActionListener(event -> {
             if (isRequestActive()) {
                 cancelActiveRequest();
+            } else if (!isProviderConfigured()) {
+                openPreferences();
             } else {
                 sendMessage();
             }
@@ -175,6 +183,8 @@ public class AIChatPanel extends JPanel {
         sendTooltipText = TextUtils.format("ai_chat_send.tooltip", MenuUtils.formatKeyStroke(sendKeyStroke));
         KeyStroke cancelKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
         cancelTooltipText = TextUtils.format("ai_chat_cancel.tooltip", MenuUtils.formatKeyStroke(cancelKeyStroke));
+        preferencesTooltipText = TextUtils.getText("preferences");
+        noProviderConfiguredText = TextUtils.getText("ai_chat_no_provider_configured");
         sendButton.setToolTipText(sendTooltipText);
         messageHistoryPane.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutMask), "selectAllMessages");
         messageHistoryPane.getActionMap().put("selectAllMessages", new AbstractAction() {
@@ -196,6 +206,8 @@ public class AIChatPanel extends JPanel {
             public void actionPerformed(ActionEvent event) {
                 if (isRequestActive()) {
                     cancelActiveRequest();
+                } else if (!isProviderConfigured()) {
+                    return;
                 } else {
                     sendMessage();
                 }
@@ -212,7 +224,9 @@ public class AIChatPanel extends JPanel {
             }
         });
         modelSelectionController.loadInitialModelSelectionList();
-        registerModelAllowlistRefreshListener();
+        registerProviderConfigurationListener();
+        registerModelSelectionRefreshListener();
+        updateInputState();
     }
 
     private void configureToolbar(FreeplaneToolBar toolbar) {
@@ -247,7 +261,9 @@ public class AIChatPanel extends JPanel {
                 openPreferences();
             }
         };
-        menuPopup.add(TranslatedElementFactory.createMenuItem(openPreferencesAction, "preferences"));
+        JMenuItem preferencesMenuItem = TranslatedElementFactory.createMenuItem(openPreferencesAction, "preferences");
+        preferencesMenuItem.setIcon(preferencesIcon);
+        menuPopup.add(preferencesMenuItem);
         addAiEditsMenuItems(menuPopup);
         return menuPopup;
     }
@@ -296,12 +312,12 @@ public class AIChatPanel extends JPanel {
         modeController.showPreferences("plugins", "ai");
     }
 
-    private void registerModelAllowlistRefreshListener() {
+    private void registerModelSelectionRefreshListener() {
         ResourceController.getResourceController().addPropertyChangeListener(
             new IFreeplanePropertyListener() {
                 @Override
                 public void propertyChanged(String propertyName, String newValue, String oldValue) {
-                    if (!isModelAllowlistProperty(propertyName)) {
+                    if (!isModelSelectionRefreshProperty(propertyName)) {
                         return;
                     }
                     SwingUtilities.invokeLater(() -> modelSelectionController.loadInitialModelSelectionList());
@@ -309,10 +325,38 @@ public class AIChatPanel extends JPanel {
             });
     }
 
-    private boolean isModelAllowlistProperty(String propertyName) {
+    private void registerProviderConfigurationListener() {
+        ResourceController.getResourceController().addPropertyChangeListener(
+            new IFreeplanePropertyListener() {
+                @Override
+                public void propertyChanged(String propertyName, String newValue, String oldValue) {
+                    if (!isProviderConfigurationProperty(propertyName)) {
+                        return;
+                    }
+                    SwingUtilities.invokeLater(() -> updateInputState());
+                }
+            });
+    }
+
+    private boolean isModelSelectionRefreshProperty(String propertyName) {
         return "ai_openrouter_model_allowlist".equals(propertyName)
             || "ai_gemini_model_list".equals(propertyName)
-            || "ai_ollama_model_allowlist".equals(propertyName);
+            || "ai_ollama_model_allowlist".equals(propertyName)
+            || "ai_provider_name".equals(propertyName)
+            || "ai_model_name".equals(propertyName)
+            || "ai_selected_model".equals(propertyName)
+            || "ai_openrouter_key".equals(propertyName)
+            || "ai_openrouter_service_address".equals(propertyName)
+            || "ai_gemini_key".equals(propertyName)
+            || "ai_gemini_service_address".equals(propertyName)
+            || "ai_use_ollama".equals(propertyName)
+            || "ai_ollama_service_address".equals(propertyName);
+    }
+
+    private boolean isProviderConfigurationProperty(String propertyName) {
+        return "ai_openrouter_key".equals(propertyName)
+            || "ai_gemini_key".equals(propertyName)
+            || "ai_use_ollama".equals(propertyName);
     }
 
     private void sendMessage() {
@@ -377,8 +421,7 @@ public class AIChatPanel extends JPanel {
     private void finishRequest() {
         activeWorker = null;
         requestInProgress = false;
-        inputArea.setEditable(true);
-        setSendButtonSendState();
+        updateInputState();
         clearPendingRequestState();
     }
 
@@ -407,10 +450,9 @@ public class AIChatPanel extends JPanel {
         }
         activeWorker = null;
         requestInProgress = false;
-        inputArea.setEditable(true);
         inputArea.setText(pendingUserMessage == null ? "" : pendingUserMessage);
         inputArea.setCaretPosition(inputArea.getText().length());
-        setSendButtonSendState();
+        updateInputState();
         clearPendingRequestState();
     }
 
@@ -431,6 +473,48 @@ public class AIChatPanel extends JPanel {
         sendButton.setText(null);
         sendButton.setIcon(sendIcon);
         sendButton.setToolTipText(sendTooltipText);
+    }
+
+    private void setSendButtonPreferencesState() {
+        sendButton.setText(null);
+        sendButton.setIcon(preferencesIcon);
+        sendButton.setToolTipText(preferencesTooltipText);
+    }
+
+    private void updateInputState() {
+        if (isRequestActive()) {
+            return;
+        }
+        if (isProviderConfigured()) {
+            setProviderReadyState();
+        } else {
+            setNoProviderState();
+        }
+    }
+
+    private void setProviderReadyState() {
+        inputArea.setEditable(true);
+        if (noProviderConfiguredText.equals(inputArea.getText())) {
+            inputArea.setText("");
+        }
+        setSendButtonSendState();
+    }
+
+    private void setNoProviderState() {
+        inputArea.setEditable(false);
+        inputArea.setText(noProviderConfiguredText);
+        inputArea.setCaretPosition(0);
+        setSendButtonPreferencesState();
+    }
+
+    private boolean isProviderConfigured() {
+        return isNonEmptyText(configuration.getOpenRouterKey())
+            || isNonEmptyText(configuration.getGeminiKey())
+            || configuration.isOllamaEnabled();
+    }
+
+    private boolean isNonEmptyText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private void ensureChatService() {
