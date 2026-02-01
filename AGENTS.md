@@ -4,6 +4,8 @@
 Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [CONSTITUTION.md](file:///Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md) if it is available. This requirement applies universally to all AI assistants, not just agents.
 ---
 
+We separate tasks by module, e.g. `freeplane_plugin_ai/specs/tasks`
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
