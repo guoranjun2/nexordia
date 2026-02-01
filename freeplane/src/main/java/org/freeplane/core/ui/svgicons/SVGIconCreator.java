@@ -21,6 +21,7 @@ import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.TextIcon;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.core.util.Compat;
@@ -131,7 +132,15 @@ class SVGIconCreator {
         int iconHeight = icon.getIconHeight();
         BufferedImage image = new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
-        icon.paintIcon(null, graphics, 0, 0);
+        try {
+			icon.paintIcon(null, graphics, 0, 0);
+		} catch (Exception e) {
+			LogUtils.warn("Can't paint icon " + url, e);
+			graphics.setColor(Color.WHITE);
+			graphics.fillRect(0, 0, iconWidth, iconHeight);
+			graphics.setColor(Color.RED);
+			graphics.drawOval(2, 2, Math.max(0, iconWidth - 4), Math.max(0, iconHeight - 4));
+		}
         graphics.dispose();
         if(! diagramWasAlreadyLoaded) {
             SVGUniverse svgUniverse = SVGCache.getSVGUniverse();

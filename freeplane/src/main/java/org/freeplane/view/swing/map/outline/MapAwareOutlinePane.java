@@ -53,6 +53,7 @@ import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.main.application.AuxillaryEditorSplitPane;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.map.outline.ScrollableTreePanel.ScrollMode;
 
 public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeListener, IMapChangeListener, INodeChangeListener {
@@ -107,7 +108,10 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
     void synchronizeOutlineSelection(SelectionSynchronizationTrigger synchronizationTrigger, boolean requestFocus) {
     	if(currentRoot == NO_MAP_AVAILABLE)
     		return;
-        final NodeModel node = currentMapView.getSelected().getNode();
+        NodeView selectedNodeView = currentMapView.getSelected();
+        if(selectedNodeView == null)
+        	return;
+		final NodeModel node = selectedNodeView.getNode();
         final ScrollableTreePanel panel = getTreePanel();
         TreeNode target = findOutlineNode(node);
         if(target != null)

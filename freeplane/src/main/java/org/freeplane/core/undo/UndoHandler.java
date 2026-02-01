@@ -128,8 +128,10 @@ public class UndoHandler implements IUndoHandler {
 			final Controller controller = Controller.getCurrentController();
 			if(map == controller.getMap()){
 				final IMapSelection selection = controller.getSelection();
-				final SelectionActor selectionActor = SelectionActor.create(selection);
-				compoundActor.add(selectionActor);
+				if(selection.getSelected() != null) {
+					final SelectionActor selectionActor = SelectionActor.create(selection);
+					compoundActor.add(selectionActor);
+				}
 			}
 			compoundActor.add(actor);
 			actorIterator.add(compoundActor);
@@ -298,7 +300,7 @@ public class UndoHandler implements IUndoHandler {
 		timeOfLastAdd = 0;
 		actionFrameStarted = false;
     }
-	
+
 	public void startTransaction() {
 		transactionList.addLast(actorList);
 		transactionIteratorList.addLast(actorIterator);

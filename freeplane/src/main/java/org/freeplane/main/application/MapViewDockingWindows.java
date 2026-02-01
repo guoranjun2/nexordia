@@ -269,7 +269,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
                             @Override
                             public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow) {
-                                if (removedWindow instanceof View) {
+                                if (removedWindow instanceof View && ((View)removedWindow).getComponent() instanceof MapViewPane) {
                                     Component contained = getContainedMapView((View) removedWindow);
                                     Window sourceTop = (Window) removedFromWindow.getTopLevelAncestor();
                                     if (sourceTop instanceof RootPaneContainer) {
@@ -651,9 +651,14 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 	}
 
 	static Component getContainedMapView(View dockedWindow) {
-	    JScrollPane scrollPane = ((MapViewPane) dockedWindow.getComponent()).getMapViewScrollPane();
-	    Component view = scrollPane.getViewport().getView();
-        return view;
+	    Component pane = dockedWindow.getComponent();
+	    if(pane instanceof MapViewPane) {
+	    	JScrollPane scrollPane = ((MapViewPane) pane).getMapViewScrollPane();
+	    	Component view = scrollPane.getViewport().getView();
+	    	return view;
+	    }
+	    else
+	    	return null;
     }
 
 	private void addDockedWindow(final Component pOldMap, final Component pNewMap) {

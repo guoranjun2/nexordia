@@ -39,6 +39,8 @@ class TimeDelayedOutlineSelection implements ActionListener {
 	    }
 	    final Component component = mouseEvent.getComponent();
 	    final MapAwareOutlinePane pane = (MapAwareOutlinePane)SwingUtilities.getAncestorOfClass(MapAwareOutlinePane.class, component);
+	    if(pane == null)
+	    	return;
 	    final ScrollableTreePanel treePanel = pane.getTreePanel();
 	    final TreeNode node;
 	    if(component instanceof NodeButton) {
