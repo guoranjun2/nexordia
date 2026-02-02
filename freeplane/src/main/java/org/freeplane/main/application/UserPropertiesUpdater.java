@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FileUtils;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.FreeplaneVersion;
 import org.freeplane.main.application.FreeplaneGUIStarter.UserPropertiesStatus;
@@ -38,8 +39,10 @@ import org.freeplane.main.application.FreeplaneGUIStarter.UserPropertiesStatus;
  */
 public class UserPropertiesUpdater {
 	private static final String ORG_FREEPLANE_OLD_USERFPDIR = "org.freeplane.old_userfpdir";
+	private final UserReadmeWriter userReadmeWriter = new UserReadmeWriter();
 
 	UserPropertiesStatus importOldProperties(){
+		userReadmeWriter.ensureReadmeExists();
 		final File userPreferencesFile = ApplicationResourceController.getUserPreferencesFile();
 		if(userPreferencesFile.exists()){
 			return UserPropertiesStatus.CURRENT_VERSION_FOUND;
@@ -81,7 +84,7 @@ public class UserPropertiesUpdater {
 	            previousPropertyDirectory = new File(parentDirectory, previousDirName).getCanonicalFile();
 	        if (previousPropertyDirectory.exists() && !previousPropertyDirectory.equals(canonicalTargetDirectory)) {
 	            parentDirectory.mkdirs();
-	            org.apache.commons.io.FileUtils.copyDirectory(previousPropertyDirectory,
+	            FileUtils.copyDirectory(previousPropertyDirectory,
 	                    canonicalTargetDirectory,
 	                    file -> ! Stream.of("logs", /*"templates",*/ ".backup", "compiledscripts", "compiledscripts2")
 	                    .map(name -> new File(previousPropertyDirectory, name))
@@ -114,4 +117,3 @@ public class UserPropertiesUpdater {
 	    }
     }
 }
-
