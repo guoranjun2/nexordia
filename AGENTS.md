@@ -2,9 +2,8 @@
 ---
 **MANDATORY:**
 Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [CONSTITUTION.md](file:///Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md) if it is available. This requirement applies universally to all AI assistants, not just agents.
----
 
-We separate tasks by module, e.g. `freeplane_plugin_ai/specs/tasks`
+---
 
 # Repository Guidelines
 
@@ -13,6 +12,7 @@ We separate tasks by module, e.g. `freeplane_plugin_ai/specs/tasks`
 - Build artifacts and launchers in `BIN/` (e.g., `BIN/freeplane.sh`, `BIN/freeplane.bat`, `BIN/core/...`).
 - Tests under each module’s `src/test/java` (e.g., `freeplane/src/test/java/...`, `freeplane_api/src/test/java/...`).
 - Packaging helpers live in `*.dist.gradle` and `DIST/`.
+- Project task directory is `ai-specs/tasks`
 
 ## Build, Test, and Development Commands
 - For build use `java` from Java from `~/.sdkman/candidates/java/21.0.5-zulu`
