@@ -113,6 +113,12 @@ public class ChatSessionMemoryController {
         if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
             return new AiMessage(entry.getText());
         }
+        if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
+            return new AssistantProfileSystemMessage(entry.getText());
+        }
+        if (entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
+            return new RemovedForSpaceSystemMessage(entry.getText());
+        }
         return new UserMessage(entry.getText());
     }
 }

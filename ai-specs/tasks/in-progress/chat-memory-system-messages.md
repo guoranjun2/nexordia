@@ -239,7 +239,7 @@ package "freeplane_plugin_ai" {
     - Verify orphan tool result eviction still occurs.
 
 ## Subtask: Transcript Roles And Persistence
-- **Status:** Planning
+- **Status:** Implementation Review
 - **Scope:**
   - Persist assistant profile and removed-for-space system entries in
     chat transcripts.

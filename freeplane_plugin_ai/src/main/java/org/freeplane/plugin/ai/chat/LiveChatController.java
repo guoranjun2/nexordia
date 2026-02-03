@@ -359,6 +359,10 @@ public class LiveChatController {
             if (entry == null || entry.getText() == null || entry.getRole() == null) {
                 continue;
             }
+            if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM
+                || entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
+                continue;
+            }
             addSnapshot(snapshots, renderer, entry.getText(), entry.getRole() == ChatTranscriptRole.ASSISTANT);
         }
         return snapshots;
