@@ -1,20 +1,20 @@
 package org.freeplane.plugin.ai.chat;
 
-import org.freeplane.features.map.MapModel;
-import org.freeplane.features.text.TextController;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptRecord;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
-import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
-import org.freeplane.plugin.ai.maps.AvailableMaps;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.freeplane.features.map.MapModel;
+import org.freeplane.features.text.TextController;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRecord;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
+import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
+import org.freeplane.plugin.ai.maps.AvailableMaps;
 
 public class LiveChatController {
 
@@ -23,7 +23,6 @@ public class LiveChatController {
     }
 
     private final AIChatPanel owner;
-    private final AvailableMaps availableMaps;
     private final LiveChatSessionManager liveChatSessionManager;
     private final ChatMessageHistory messageHistory;
     private final DateTimeFormatter chatNameFormatter;
@@ -35,14 +34,11 @@ public class LiveChatController {
     private ChatTranscriptId loadedTranscriptId;
     private static final String USER_STYLE_CLASS = "message-user";
     private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
-    private static final String TRANSCRIPT_HIDDEN_USER_MESSAGE =
+    private static final String TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE =
         "System message: The messages in this session include a restored transcript of a prior chat. "
             + "Treat those messages as the earlier conversation context, not as hallucinations. "
             + "The currently opened map may differ from the maps discussed in that transcript. "
-            + "Confirm the map context with the user when needed. The real conversation begins after this message. "
-            + "Respond only with \"ok\". This message and your response are not shown to the user.";
-    private static final String TRANSCRIPT_HIDDEN_ASSISTANT_REPLY = "ok";
-    private static final boolean SHOW_TRANSCRIPT_HIDDEN_EXCHANGE = true;
+            + "Confirm the map context with the user when needed. The real conversation begins after this message. ";
 
     public LiveChatController(AIChatPanel parent,
                               ChatMessageHistory messageHistory,
@@ -52,7 +48,6 @@ public class LiveChatController {
                               SessionActivationHandler sessionActivationHandler) {
         this.owner = parent;
         this.messageHistory = messageHistory;
-        this.availableMaps = availableMaps;
         this.chatNameFormatter = chatNameFormatter;
         this.sessionActivationHandler = sessionActivationHandler;
         this.liveChatSessionManager = new LiveChatSessionManager();
@@ -260,7 +255,7 @@ public class LiveChatController {
         return builder.toString().trim();
     }
 
-    private void recordMapAccess(UUID mapIdentifier, MapModel mapModel) {
+    private void recordMapAccess(UUID mapIdentifier, @SuppressWarnings("unused") MapModel mapModel) {
         if (mapIdentifier == null) {
             return;
         }
@@ -351,7 +346,7 @@ public class LiveChatController {
             return;
         }
         session.getChatMemoryController().seedTranscriptWithHiddenExchange(record.getEntries(),
-            TRANSCRIPT_HIDDEN_USER_MESSAGE, TRANSCRIPT_HIDDEN_ASSISTANT_REPLY);
+            TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE);
     }
 
     private List<ChatMessageHistory.ChatMessageSnapshot> buildSnapshotsFromRecord(ChatTranscriptRecord record) {
@@ -365,10 +360,6 @@ public class LiveChatController {
                 continue;
             }
             addSnapshot(snapshots, renderer, entry.getText(), entry.getRole() == ChatTranscriptRole.ASSISTANT);
-        }
-        if (SHOW_TRANSCRIPT_HIDDEN_EXCHANGE) {
-            addSnapshot(snapshots, renderer, TRANSCRIPT_HIDDEN_USER_MESSAGE, false);
-            addSnapshot(snapshots, renderer, TRANSCRIPT_HIDDEN_ASSISTANT_REPLY, true);
         }
         return snapshots;
     }

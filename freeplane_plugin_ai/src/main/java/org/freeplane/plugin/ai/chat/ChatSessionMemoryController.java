@@ -88,8 +88,7 @@ public class ChatSessionMemoryController {
     }
 
     public void seedTranscriptWithHiddenExchange(Iterable<ChatTranscriptEntry> entries,
-                                                 String hiddenUserMessage,
-                                                 String hiddenAssistantReply) {
+                                                 String hiddenSystemMessage) {
         ChatMemory memory = getChatMemory();
         if (memory == null) {
             return;
@@ -104,11 +103,8 @@ public class ChatSessionMemoryController {
                 memory.add(message);
             }
         }
-        if (hiddenUserMessage != null && !hiddenUserMessage.trim().isEmpty()) {
-            memory.add(new UserMessage(hiddenUserMessage));
-        }
-        if (hiddenAssistantReply != null && !hiddenAssistantReply.trim().isEmpty()) {
-            memory.add(new AiMessage(hiddenAssistantReply));
+        if (hiddenSystemMessage != null && !hiddenSystemMessage.trim().isEmpty()) {
+            memory.add(new SystemMessage(hiddenSystemMessage));
         }
     }
 
