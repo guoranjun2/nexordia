@@ -43,13 +43,12 @@ public class ChatSessionMemoryControllerTest {
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "first user"),
             new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "first assistant"));
 
-        uut.seedTranscriptWithHiddenExchange(entries, "hidden user", "ok");
+        uut.seedTranscriptWithHiddenExchange(entries, "hidden user");
 
         List<ChatMessage> messages = uut.getChatMemory().messages();
-        assertThat(messages).hasSize(4);
-        assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
-        assertThat(messages.get(1)).isInstanceOf(AiMessage.class);
-        assertThat(messages.get(2)).isInstanceOf(UserMessage.class);
-        assertThat(messages.get(3)).isInstanceOf(AiMessage.class);
+        assertThat(messages).hasSize(3);
+        assertThat(messages.get(0)).isInstanceOf(TranscriptHiddenSystemMessage.class);
+        assertThat(messages.get(1)).isInstanceOf(UserMessage.class);
+        assertThat(messages.get(2)).isInstanceOf(AiMessage.class);
     }
 }

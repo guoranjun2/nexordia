@@ -2,10 +2,8 @@ package org.freeplane.plugin.ai.chat;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +30,7 @@ public class ChatSessionMemoryController {
             return null;
         }
         if (chatMemory == null) {
-            chatMemory = MessageWindowChatMemory.withMaxMessages(chatMemorySettings.getMaximumMessageCount());
+            chatMemory = AssistantProfileChatMemory.withMaxMessages(chatMemorySettings.getMaximumMessageCount());
         }
         return chatMemory;
     }
@@ -74,7 +72,7 @@ public class ChatSessionMemoryController {
         }
         memory.clear();
         if (systemGuard != null && !systemGuard.trim().isEmpty()) {
-            memory.add(new SystemMessage(systemGuard));
+            memory.add(new GeneralSystemMessage(systemGuard));
         }
         if (entries == null) {
             return;
@@ -104,7 +102,7 @@ public class ChatSessionMemoryController {
             }
         }
         if (hiddenSystemMessage != null && !hiddenSystemMessage.trim().isEmpty()) {
-            memory.add(new SystemMessage(hiddenSystemMessage));
+            memory.add(new TranscriptHiddenSystemMessage(hiddenSystemMessage));
         }
     }
 
