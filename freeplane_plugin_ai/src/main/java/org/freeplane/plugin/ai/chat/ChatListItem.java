@@ -13,18 +13,18 @@ class ChatListItem {
     private final String displayName;
     private final List<MapRootShortTextCount> mapRootShortTextCounts;
     private final long lastUpdatedTimestamp;
-    private final boolean loaded;
+    private final boolean currentLiveSession;
 
     ChatListItem(ChatListItemStatus status, LiveChatSessionId liveSessionId, ChatTranscriptId transcriptId,
-                 String displayName, List<MapRootShortTextCount> mapRootShortTextCounts, long lastUpdatedTimestamp,
-                 boolean loaded) {
+                 String displayName, List<MapRootShortTextCount> mapRootShortTextCounts,
+                 long lastUpdatedTimestamp, boolean currentLiveSession) {
         this.status = status;
         this.liveSessionId = liveSessionId;
         this.transcriptId = transcriptId;
         this.displayName = displayName;
         this.mapRootShortTextCounts = mapRootShortTextCounts == null ? new ArrayList<>() : mapRootShortTextCounts;
         this.lastUpdatedTimestamp = lastUpdatedTimestamp;
-        this.loaded = loaded;
+        this.currentLiveSession = currentLiveSession;
     }
 
     ChatListItemStatus getStatus() {
@@ -51,8 +51,8 @@ class ChatListItem {
         return lastUpdatedTimestamp;
     }
 
-    boolean isLoaded() {
-        return loaded;
+    boolean isCurrentLiveSession() {
+        return currentLiveSession;
     }
 
 }

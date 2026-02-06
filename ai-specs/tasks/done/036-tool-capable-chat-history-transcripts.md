@@ -261,9 +261,12 @@
   to list live chats and saved transcripts together, switch to a live
   chat or start a new chat from a transcript selection, and delete
   transcripts with immediate feedback. The list should indicate which
-  entry is currently loaded
-  (for example with a checkbox or icon). The list should show a status
-  icon for each entry (green live, yellow transcript, red error).
+  entry is currently loaded using the live status marker only (no
+  separate loaded checkbox column). The list should show a status
+  icon for each entry (green live, yellow transcript, red error). Only
+  the currently active live chat uses a right-pointing green play
+  triangle; other live chats keep the green circle marker. Triangle
+  and circles use the same height.
   Rename and delete actions should be available from the unified list
   dialog. The Close button must close the dialog and do nothing else,
   and it must always be enabled. The Switch button must activate the
@@ -308,9 +311,12 @@
   - Unit test: `ChatListTableModel.refresh` merges live sessions with
     transcript summaries, removes duplicates, and sorts by timestamp
     descending.
-  - Unit test: `ChatListTableModel` marks the loaded row via
-    `loadedTranscriptSupplier` and propagates status icons per entry
-    type (live, transcript, error).
+  - Unit test: `ChatListTableModel` has no separate loaded-column
+    marker and propagates status icons per entry type (live,
+    transcript, error).
+  - Unit test: status icon renderer uses a live play-triangle icon only
+    for the current live chat row, and green circles for other live
+    rows; triangle and circles share the same height.
   - Unit test: `ChatListDialog.openChat` invokes `startChatFromTranscript`
     for transcript-only rows and `switchTo` for live sessions, then
     closes the dialog.

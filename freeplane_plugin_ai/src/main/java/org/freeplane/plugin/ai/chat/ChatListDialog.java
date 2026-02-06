@@ -35,7 +35,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 class ChatListDialog extends JDialog {
     private static final long serialVersionUID = 1L;
@@ -43,7 +42,6 @@ class ChatListDialog extends JDialog {
     private final LiveChatSessionManager sessionManager;
     private final ChatTranscriptStore transcriptStore;
     private final MapRootShortTextFormatter mapRootShortTextFormatter;
-    private final Supplier<ChatTranscriptId> loadedTranscriptSupplier;
     private final ChatListHandler listHandler;
     private final ChatListTableModel tableModel;
     private final JTable table;
@@ -55,22 +53,19 @@ class ChatListDialog extends JDialog {
                    LiveChatSessionManager sessionManager,
                    ChatTranscriptStore transcriptStore,
                    MapRootShortTextFormatter mapRootShortTextFormatter,
-                   Supplier<ChatTranscriptId> loadedTranscriptSupplier,
                    ChatListHandler listHandler) {
         super(findOwnerWindow(owner), TextUtils.getText("ai_chat_chats_dialog"), ModalityType.DOCUMENT_MODAL);
         this.sessionManager = sessionManager;
         this.transcriptStore = transcriptStore;
         this.mapRootShortTextFormatter = mapRootShortTextFormatter;
-        this.loadedTranscriptSupplier = loadedTranscriptSupplier;
         this.listHandler = listHandler;
         this.tableModel = new ChatListTableModel(sessionManager, transcriptStore, mapRootShortTextFormatter,
-            loadedTranscriptSupplier, listHandler, TextUtils.getText("ai_chat_chats_column_name"),
+            listHandler, TextUtils.getText("ai_chat_chats_column_name"),
             TextUtils.getText("ai_chat_chats_column_maps"));
         this.table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setFillsViewportHeight(true);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_STATUS).setPreferredWidth(24);
-        table.getColumnModel().getColumn(ChatListTableModel.COLUMN_LOADED).setPreferredWidth(40);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_NAME).setPreferredWidth(220);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_MAPS).setPreferredWidth(320);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_STATUS).setCellRenderer(
@@ -203,14 +198,12 @@ class ChatListDialog extends JDialog {
     private static class ChatListTableModel extends AbstractTableModel {
         private static final long serialVersionUID = 1L;
         private static final int COLUMN_STATUS = 0;
-        private static final int COLUMN_LOADED = 1;
-        private static final int COLUMN_NAME = 2;
-        private static final int COLUMN_MAPS = 3;
+        private static final int COLUMN_NAME = 1;
+        private static final int COLUMN_MAPS = 2;
 
         private final LiveChatSessionManager sessionManager;
         private final ChatTranscriptStore transcriptStore;
         private final MapRootShortTextFormatter mapRootShortTextFormatter;
-        private final Supplier<ChatTranscriptId> loadedTranscriptSupplier;
         private final ChatListHandler handler;
         private List<ChatListItem> items;
         private final String nameColumnLabel;
@@ -219,14 +212,12 @@ class ChatListDialog extends JDialog {
         private ChatListTableModel(LiveChatSessionManager sessionManager,
                                    ChatTranscriptStore transcriptStore,
                                    MapRootShortTextFormatter mapRootShortTextFormatter,
-                                   Supplier<ChatTranscriptId> loadedTranscriptSupplier,
                                    ChatListHandler handler,
                                    String nameColumnLabel,
                                    String mapsColumnLabel) {
             this.sessionManager = sessionManager;
             this.transcriptStore = transcriptStore;
             this.mapRootShortTextFormatter = mapRootShortTextFormatter;
-            this.loadedTranscriptSupplier = loadedTranscriptSupplier;
             this.handler = handler;
             this.nameColumnLabel = nameColumnLabel;
             this.mapsColumnLabel = mapsColumnLabel;
@@ -241,7 +232,7 @@ class ChatListDialog extends JDialog {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 3;
         }
 
         @Override
@@ -257,9 +248,6 @@ class ChatListDialog extends JDialog {
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            if (columnIndex == COLUMN_LOADED) {
-                return Boolean.class;
-            }
             return Object.class;
         }
 
@@ -277,9 +265,6 @@ class ChatListDialog extends JDialog {
             ChatListItem item = items.get(rowIndex);
             if (columnIndex == COLUMN_STATUS) {
                 return item.getStatus();
-            }
-            if (columnIndex == COLUMN_LOADED) {
-                return item.isLoaded();
             }
             if (columnIndex == COLUMN_NAME) {
                 return item.getDisplayName();
@@ -339,40 +324,36 @@ class ChatListDialog extends JDialog {
         private List<ChatListItem> buildItems() {
             List<ChatListItem> results = new ArrayList<>();
             Map<String, ChatTranscriptSummary> transcriptById = new HashMap<>();
+            LiveChatSessionId currentSessionId = sessionManager.getCurrentSessionId();
             for (ChatTranscriptSummary summary : transcriptStore.list()) {
                 if (summary == null || summary.getId() == null || summary.getId().getFileName() == null) {
                     continue;
                 }
                 transcriptById.put(summary.getId().getFileName(), summary);
             }
-            ChatTranscriptId loadedTranscriptId = loadedTranscriptSupplier.get();
-            LiveChatSessionId currentSessionId = sessionManager.getCurrentSessionId();
             for (LiveChatSessionSummary session : sessionManager.listSessions()) {
                 ChatTranscriptId transcriptId = session.getTranscriptId();
                 if (transcriptId != null) {
                     transcriptById.remove(transcriptId.getFileName());
                 }
-                boolean loaded = session.getId().equals(currentSessionId);
                 List<MapRootShortTextCount> mapCounts = session.getMapRootShortTextCounts();
                 if (mapCounts == null || mapCounts.isEmpty()) {
                     mapCounts = mapRootShortTextFormatter.buildCounts(session.getMapIds());
                 }
+                boolean currentLiveSession = session.getId() != null && session.getId().equals(currentSessionId);
                 results.add(new ChatListItem(ChatListItemStatus.LIVE, session.getId(), transcriptId,
-                    session.getDisplayName(), mapCounts, session.getLastActivityTimestamp(), loaded));
+                    session.getDisplayName(), mapCounts, session.getLastActivityTimestamp(), currentLiveSession));
             }
             for (ChatTranscriptSummary summary : transcriptById.values()) {
                 ChatListItemStatus status = summary.getStatus() == ChatTranscriptStatus.ERROR
                     ? ChatListItemStatus.ERROR
                     : ChatListItemStatus.TRANSCRIPT;
-                boolean loaded = loadedTranscriptId != null
-                    && summary.getId() != null
-                    && loadedTranscriptId.getFileName().equals(summary.getId().getFileName());
                 String displayName = summary.getDisplayName();
                 if (displayName == null || displayName.trim().isEmpty()) {
                     displayName = summary.getId() == null ? "" : summary.getId().getLeafFileName();
                 }
                 results.add(new ChatListItem(status, null, summary.getId(), displayName,
-                    summary.getMapRootShortTextCounts(), summary.getTimestamp(), loaded));
+                    summary.getMapRootShortTextCounts(), summary.getTimestamp(), false));
             }
             results.sort(Comparator.comparingLong(ChatListItem::getLastUpdatedTimestamp).reversed());
             return results;
@@ -380,10 +361,12 @@ class ChatListDialog extends JDialog {
     }
 
     private static class StatusIconRenderer implements TableCellRenderer {
+        private static final int MARKER_SIZE = 6;
         private final DefaultTableCellRenderer fallback = new DefaultTableCellRenderer();
-        private final Icon liveIcon = new StatusDotIcon(new Color(0x2E7D32));
-        private final Icon transcriptIcon = new StatusDotIcon(new Color(0xF9A825));
-        private final Icon errorIcon = new StatusDotIcon(new Color(0xC62828));
+        private final Icon liveCurrentIcon = new StatusTriangleIcon(new Color(0x2E7D32), MARKER_SIZE);
+        private final Icon liveIcon = new StatusDotIcon(new Color(0x2E7D32), MARKER_SIZE);
+        private final Icon transcriptIcon = new StatusDotIcon(new Color(0xF9A825), MARKER_SIZE);
+        private final Icon errorIcon = new StatusDotIcon(new Color(0xC62828), MARKER_SIZE);
         private final ChatListTableModel model;
 
         private StatusIconRenderer(ChatListTableModel model) {
@@ -400,7 +383,7 @@ class ChatListDialog extends JDialog {
                 return label;
             }
             if (item.getStatus() == ChatListItemStatus.LIVE) {
-                label.setIcon(liveIcon);
+                label.setIcon(item.isCurrentLiveSession() ? liveCurrentIcon : liveIcon);
             } else if (item.getStatus() == ChatListItemStatus.ERROR) {
                 label.setIcon(errorIcon);
             } else {
@@ -412,27 +395,56 @@ class ChatListDialog extends JDialog {
     }
 
     private static class StatusDotIcon implements Icon {
-        private static final int DIAMETER = 10;
         private final Color color;
+        private final int diameter;
 
-        private StatusDotIcon(Color color) {
+        private StatusDotIcon(Color color, int diameter) {
             this.color = color;
+            this.diameter = diameter;
         }
 
         @Override
         public void paintIcon(Component component, Graphics graphics, int x, int y) {
             graphics.setColor(color);
-            graphics.fillOval(x, y, DIAMETER, DIAMETER);
+            graphics.fillOval(x, y, diameter, diameter);
         }
 
         @Override
         public int getIconWidth() {
-            return DIAMETER;
+            return diameter;
         }
 
         @Override
         public int getIconHeight() {
-            return DIAMETER;
+            return diameter;
+        }
+    }
+
+    private static class StatusTriangleIcon implements Icon {
+        private final Color color;
+        private final int size;
+
+        private StatusTriangleIcon(Color color, int size) {
+            this.color = color;
+            this.size = size;
+        }
+
+        @Override
+        public void paintIcon(Component component, Graphics graphics, int x, int y) {
+            int[] xPoints = {x, x, x + size};
+            int[] yPoints = {y, y + size, y + size / 2};
+            graphics.setColor(color);
+            graphics.fillPolygon(xPoints, yPoints, 3);
+        }
+
+        @Override
+        public int getIconWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return size;
         }
     }
 }

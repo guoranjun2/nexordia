@@ -34,7 +34,6 @@ public class LiveChatController {
     private final LiveTranscriptAdapter transcriptAdapter;
     private final MapRootShortTextFormatter mapRootShortTextFormatter;
     private final MapRootShortTextCountsMerger mapRootShortTextCountsMerger;
-    private ChatTranscriptId loadedTranscriptId;
     private static final String USER_STYLE_CLASS = "message-user";
     private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
     private static final String SYSTEM_STYLE_CLASS = "message-system";
@@ -103,7 +102,6 @@ public class LiveChatController {
         if (session == null) {
             return;
         }
-        loadedTranscriptId = null;
         session.setLastActivityTimestamp(System.currentTimeMillis());
         transcriptAdapter.appendUserMessage(session, message);
     }
@@ -113,7 +111,6 @@ public class LiveChatController {
         if (session == null) {
             return;
         }
-        loadedTranscriptId = null;
         session.setLastActivityTimestamp(System.currentTimeMillis());
         transcriptAdapter.appendAssistantMessage(session, message);
     }
@@ -123,7 +120,6 @@ public class LiveChatController {
         if (session == null || message == null) {
             return;
         }
-        loadedTranscriptId = null;
         session.setLastActivityTimestamp(System.currentTimeMillis());
         transcriptAdapter.appendAssistantProfileMessage(session, message);
     }
@@ -170,7 +166,6 @@ public class LiveChatController {
             persistCurrentSession();
         }
         liveChatSessionManager.setCurrentSession(sessionId);
-        loadedTranscriptId = null;
         LiveChatSession session = liveChatSessionManager.getCurrentSession();
         if (session == null) {
             return;
@@ -212,7 +207,6 @@ public class LiveChatController {
         liveChatSessionManager.setCurrentSession(newSession.getId());
         messageHistory.clear();
         sessionActivationHandler.activate(newChatMemory);
-        loadedTranscriptId = null;
     }
 
     private void saveCurrentSessionState() {
@@ -287,7 +281,6 @@ public class LiveChatController {
             liveChatSessionManager,
             transcriptStore,
             mapRootShortTextFormatter,
-            this::getLoadedTranscriptId,
             new ChatListDialog.ChatListHandler() {
                 @Override
                 public void switchTo(LiveChatSessionId sessionId) {
@@ -327,10 +320,6 @@ public class LiveChatController {
         );
     }
 
-    private ChatTranscriptId getLoadedTranscriptId() {
-        return loadedTranscriptId;
-    }
-
     private void startChatFromTranscriptInternal(ChatTranscriptId transcriptId) {
         if (transcriptId == null) {
             return;
@@ -352,7 +341,6 @@ public class LiveChatController {
         newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
         transcriptAdapter.setEntries(newSession, record.getEntries());
         switchToSession(newSession.getId(), false);
-        loadedTranscriptId = transcriptId;
         seedTranscriptMemory(newSession, record);
     }
 
