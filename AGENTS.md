@@ -56,3 +56,10 @@
 - Use verification gates before logic changes/refactors; describe planned diffs first.
 - Answer user questions fully before coding; pause implementation while questions are open.
 - Never modify core logic without explicit approval; prefer parameterization over restructuring.
+
+## Legacy Removal Policy
+- Remove obsolete code by default when behavior or structure changes.
+- Do not keep compatibility fallbacks unless explicitly requested by the user.
+- If retaining legacy code is considered, get explicit user approval before implementation.
+- If a legacy path is intentionally retained, document why and when it will be removed.
+- Prefer one active execution path over parallel old/new implementations.
