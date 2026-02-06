@@ -28,6 +28,7 @@ import java.awt.Cursor;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Window;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
@@ -81,6 +82,20 @@ class ChatListDialog extends JDialog {
                 }
             }
         });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() != 2 || event.getButton() != MouseEvent.BUTTON1) {
+                    return;
+                }
+                int row = table.rowAtPoint(event.getPoint());
+                if (row < 0) {
+                    return;
+                }
+                table.setRowSelectionInterval(row, row);
+                openChat();
+            }
+        });
 
         openChatButton = TranslatedElementFactory.createButton("ai_chat_chats_open");
         openChatButton.addActionListener(event -> openChat());
@@ -126,10 +141,11 @@ class ChatListDialog extends JDialog {
         }
         if (item.getStatus() == ChatListItemStatus.LIVE) {
             listHandler.switchTo(item.getLiveSessionId());
+            dispose();
         } else if (item.getStatus() == ChatListItemStatus.TRANSCRIPT) {
             listHandler.startChatFromTranscript(item.getTranscriptId());
+            dispose();
         }
-        dispose();
     }
 
     private void deleteChat() {
