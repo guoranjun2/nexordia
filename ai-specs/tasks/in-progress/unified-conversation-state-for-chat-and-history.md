@@ -148,7 +148,7 @@
   commands and invariants.
 
 ## Subtask: Add projection layer and dual-write parity validation
-- **Status:** backlog
+- **Status:** in-progress
 - **Scope:** Introduce `ConversationProjector` that derives chat render
   entries, memory messages, and transcript entries from current state;
   wire dual-write/dual-read checks to compare projected results with
