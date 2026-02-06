@@ -8,7 +8,7 @@
 - **Test specification:** Add read tool tests for the new optional sections; add create/edit tool tests for hyperlink creation and updates; add connector edit tool tests for add/update/delete and ambiguity reporting.
 
 ## Subtask: Read node links and clone metadata
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add read-time support for hyperlink, outgoing connectors, incoming connectors, and clone metadata when requested via new context sections, in both `NodeDepthItem` and `NodeContentItem`.
 - **Motivation:** Link-aware reads are required for automation flows that depend on connector structure and clone lineage.
 - **Developer Briefing:** Extend `ContextSection` and enrich read responses with hyperlink, connector lists, and clone metadata. Read hyperlink from `NodeLinks`, outgoing connectors from `NodeLinks.getLinks`, incoming connectors from `MapLinks.get(targetId)`, and clone metadata from `NodeModel`.
@@ -89,7 +89,7 @@
   - Add tests for read tool output with hyperlinks, incoming and outgoing connectors, and clone metadata (clone identifiers and clone flags) when the new sections are requested.
 
 ## Subtask: Hyperlink create and edit support
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add hyperlink support to node creation content and to the edit tool via a dedicated `EditedElement.HYPERLINK` payload.
 - **Motivation:** Hyperlinks are essential node metadata and must be creatable and editable through existing tools.
 - **Developer Briefing:** Extend `NodeContentWriteRequest` to accept a hyperlink on create, and extend `NodeContentEditItem` to edit hyperlinks using a separate payload and `MLinkController.setLink` for undo-aware updates.
@@ -151,7 +151,7 @@
   - Add creation tool tests verifying hyperlinks are created when provided.
 
 ## Subtask: Connector edit tool
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add a new connector edit tool with add/update/delete operations that accepts map id and source/target node identifiers, supports label edits, and reports ignored ambiguous matches. Centralize AI edit marker logic in a utility and apply it to connector source nodes for any connector CUD operation.
 - **Motivation:** Connectors are distinct from textual content edits and require explicit operations with clear response semantics.
 - **Developer Briefing:** Implement a new tool request/response for connector operations. Use `MLinkController` to add/remove and set labels, filter connectors by source/target (and optional label matchers), and when multiple matches exist edit/delete the first match while reporting `ignoredAmbiguousConnectorCount`. Move `addAiEditsMarkerWithUndo` into a shared utility and invoke it on the connector source node after any connector create/update/delete.

@@ -23,7 +23,7 @@
   - Verify responses include identifiers and short texts for all modified nodes, including newly created nodes.
 
 ## Subtask: Define request and response structures
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Define request fields, response shape, and modified node summaries for create, move, create summary, and move into summary operations, including shared anchor and ordering structures.
 - **Motivation:** Clear contracts are required before implementation and testing, especially for ordered groups, summaries, and user facing confirmation text.
 - **Research:**
@@ -63,7 +63,7 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/SummaryAnchorPlacement.java`
 
 ## Subtask: Create NodeModel elements for new nodes
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Create new NodeModel elements for a request group and place them relative to the anchor before applying content.
 - **Motivation:** Separate structural creation from content updates so creation order and placement are deterministic.
 - **Research:**
@@ -97,7 +97,7 @@
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/NodeModelCreatorTest.java`
 
 ## Subtask: Apply content to created nodes with content editors
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Apply content values directly to newly created nodes using shared editor helpers so the creation path mirrors later edit tools while staying undo-free.
 - **Motivation:** Consistent editors for text, attributes, tags, and icons reduce duplication and make future edit tools easier to build.
 - **Research:**
@@ -119,7 +119,7 @@
 -  - Verify editors do not interact with undo helpers or `MMapController` when applying content during creation.
 
 ## Subtask: Implement anchor placement and ordering rules for moves
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Implement placement for first child, last child, sibling before, and sibling after with strict group ordering for moved nodes.
 - **Motivation:** Deterministic placement is needed to keep edits predictable.
 - **Research:**
@@ -136,7 +136,7 @@
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesToolTest.java`
 
 ## Subtask: Surface clone/move restriction errors for tools
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Allow callers to observe every “not allowed” failure reported by `MMapController` instead of only triggering `UITools.errorMessage`, so AI tools and FCP can relay structured errors while UI callers continue to show popups.
 - **Motivation:** The current UI-only error popups are invisible to the tools, so move/create failures look like silent crashes from the AI perspective; we need a callback-driven path so tools can report the same errors back to the agent without regressing existing UI behavior.
 - **Research:**
@@ -157,7 +157,7 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryTool.java`
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/tools/AIToolSet.java`
 ## Subtask: Support summary creation for a group
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Create summaries and move nodes into summary content anchored to the first and last nodes of a summarized group that is separate from the moved or created group.
 - **Motivation:** Summary creation is a common Freeplane operation and uses its own anchor model based on summarized nodes.
 - **Research:**
@@ -189,7 +189,7 @@
   - `freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/tools/MoveNodesIntoSummaryToolTest.java`
 
 ## Subtask: Track and return modified node summaries
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Return identifiers and short texts for all modified nodes after creation or move.
 - **Motivation:** The model needs identifiers for follow up edits, especially for newly created nodes.
 - **Research:**

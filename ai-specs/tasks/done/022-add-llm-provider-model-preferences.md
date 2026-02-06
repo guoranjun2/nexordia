@@ -48,7 +48,7 @@
 - See subtasks.
 
 ## Subtask: Provider allowlist preferences and Gemini model list
-- **Status:** Finished
+- **Status:** done
 - **Scope:**
   - Add provider allowlist preferences with wildcard filtering.
   - Use the Gemini model list preference as the sole source of Gemini models.
@@ -69,7 +69,7 @@
   - freeplane_plugin_ai/src/test/java/org/freeplane/plugin/ai/chat/AIModelCatalogTest.java
 
 ## Subtask: Rebuild model selector when allowlist preferences change
-- **Status:** Implementation Review
+- **Status:** done
 - **Scope:**
   - Rebuild the model selector when any provider model list preference changes.
 - **Motivation:**

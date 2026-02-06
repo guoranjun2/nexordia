@@ -108,7 +108,7 @@
     flow before switching context.
 
 ## Subtask: Stop control without streaming
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add a stop control that cancels a non-streaming chat
   request and allows a new message without waiting for completion.
 - **Motivation:** Enable user-controlled cancellation without adding

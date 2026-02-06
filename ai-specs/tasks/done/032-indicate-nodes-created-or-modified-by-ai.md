@@ -29,7 +29,7 @@
 - **Test specification:** For each subtask, add focused tests: marker attachment on AI create/edit, icon visibility and marker clearing logic, and persistence writer behavior when enabled/disabled.
 
 ## Subtask: Mark AI edits in tools
-- **Status:** Implementation Review
+- **Status:** done
 - **Scope:** Add the `AIEdits` extension and attach it to nodes created or edited by AI tools. No persistence or icon behavior yet.
 - **Motivation:** Provide immediate AI edit tracking in data without changing storage or user interface.
 - **Developer Briefing:** The AI tools already call undo-aware create and edit paths, so the marker can be attached at the end of those flows. Keep the marker attachment minimal and avoid adding extra undo steps beyond existing create/edit actions.
@@ -76,7 +76,7 @@
 - **Test specification:** Tool tests confirm `createNodes` and `edit` attach `AIEdits` to their target nodes.
 
 ## Subtask: Actions and state icon visibility setting
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add undoable actions to clear AI edits from a node or from the whole map, plus a state icon provider controlled by a visibility setting.
 - **Motivation:** Make AI edits visible and reversible without persisting them yet.
 - **Developer Briefing:** This subtask adds reversible user actions and a UI indicator without changing persistence. The state icon provider should be a thin wrapper over a testable decision helper, and marker removal should be centralized in a helper so the actions stay focused on wiring selections and undo.
@@ -129,7 +129,7 @@
 - **Test specification:** Helper tests cover icon visibility decisions and marker removal with undo without requiring `ResourceController` or `Controller` initialization; provider tests verify icon presence when visibility is enabled and the marker is set.
 
 ## Subtask: Persistence setting and serialization
-- **Status:** Implementation Review
+- **Status:** done
 - **Scope:** Add persistence of `AIEdits` using attribute handlers and extension writers, controlled by a persistence setting.
 - **Motivation:** Allow optional storage of AI edit indicators across saves.
 - **Developer Briefing:** Persist the marker via attribute handlers registered with `ReadManager`/`WriteManager`, and gate writes on a preference. Reading should always hydrate stored markers from maps so user data is preserved, while the preference only controls whether new saves emit the attribute.

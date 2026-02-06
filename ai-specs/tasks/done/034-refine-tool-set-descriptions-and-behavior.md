@@ -25,7 +25,7 @@
     - Add tests to verify DELETE for DETAILS/NOTE maps to clearing content.
 
 ## Subtask: Shorten and clarify tool descriptions
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Reduce @Description verbosity while preserving constraints; align wording across map/selection/node IDs.
 - **Motivation:** Make MCP tool schemas smaller without losing clarity.
 - **Developer Briefing:** Focus on @Description strings in request/response classes; keep each as one short sentence.
@@ -34,7 +34,7 @@
 - **Test specification:** Update or add schema-focused tests if tool schema snapshots exist.
 
 ## Subtask: Optional fields and edit DELETE semantics
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Make NodeContentWriteRequest fields optional except text; allow DELETE for DETAILS/NOTE; document valid operations.
 - **Motivation:** Reduce boilerplate payloads and remove ambiguity in edit operations.
 - **Developer Briefing:** Use @JsonProperty(required = false) for optional fields; map DELETE for DETAILS/NOTE to empty string to trigger controller removal behavior.
@@ -43,7 +43,7 @@
 - **Test specification:** Add unit tests that verify DELETE for DETAILS/NOTE results in empty string passed to editors.
 
 ## Subtask: Control folding for newly created non-leaf nodes
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Add an optional folding flag to NodeCreationItem, defaulting to UNFOLD; apply it to newly created non-leaf nodes and ignore it for leaves.
 - **Motivation:** Allow createNodes to control whether new parent nodes start folded or unfolded.
 - **Developer Briefing:** NodeCreationItem gains an optional enum field (e.g., NodeFoldingState). After the node subtree is created, apply folding to nodes that have children created in the same request; leaf nodes ignore the flag.

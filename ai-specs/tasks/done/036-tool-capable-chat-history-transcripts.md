@@ -107,7 +107,7 @@
 
 
 ## Subtask: Transcript generation and persistence
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Define how transcripts are generated from live session
   messages and persisted on chat switch/close.
 - **Motivation:** Transcripts must be derived from live sessions
@@ -153,7 +153,7 @@
 
 
 ## Subtask: Persisted transcript format and storage
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Specify the transcript schema, storage location, gzip JSON
   persistence, and list/start/delete/rename operations for transcripts.
 - **Motivation:** A stable, readable, shareable transcript format is
@@ -251,7 +251,7 @@
 
 
 ## Subtask: Transcript list, switch, and delete integration
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Surface stored transcripts in the chat panel, allow
   switching to live chats or starting a new chat from a transcript, and
   support deletion with immediate UI refresh.
@@ -321,7 +321,7 @@
 
 
 ## Subtask: Start new chat from transcript with explicit map confirmation
-- **Status:** Finished
+- **Status:** done
 - **Scope:** Provide a "start new chat from transcript" flow that seeds
   the new chat and enforces explicit map selection before map-specific
   actions.
