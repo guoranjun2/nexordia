@@ -109,10 +109,13 @@ public class ChatSessionMemoryController {
     }
 
     private ChatMessage toChatMessage(ChatTranscriptEntry entry) {
-        if (entry == null || entry.getText() == null || entry.getRole() == null) {
+        if (entry == null || entry.getRole() == null) {
             return null;
         }
         if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
+            if (entry.getText() == null) {
+                return null;
+            }
             return new AiMessage(entry.getText());
         }
         if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
@@ -123,7 +126,13 @@ public class ChatSessionMemoryController {
             return MessageBuilder.buildSystemInstructionUserMessage(instructionText);
         }
         if (entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
+            if (entry.getText() == null) {
+                return null;
+            }
             return MessageBuilder.buildSystemInstructionUserMessage(entry.getText());
+        }
+        if (entry.getText() == null) {
+            return null;
         }
         return new UserMessage(entry.getText());
     }
@@ -133,8 +142,8 @@ public class ChatSessionMemoryController {
             AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
             return MessageBuilder.buildAssistantProfileInstruction(
                 assistantProfileEntry.getProfileName(),
-                assistantProfileEntry.getProfileDefinition(),
-                assistantProfileEntry.isHistoricalMarker());
+                "",
+                assistantProfileEntry.containsProfileDefinition());
         }
         return null;
     }

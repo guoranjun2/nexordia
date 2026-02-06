@@ -51,12 +51,11 @@ public class MessageBuilder {
 
     public static String buildAssistantProfileInstruction(String profileName,
                                                           String profileDefinition,
-                                                          boolean historicalMarker) {
+                                                          boolean containsProfileDefinition) {
         String marker = buildAssistantProfileMarker(profileName);
-        if (historicalMarker) {
+        if (!containsProfileDefinition) {
             return marker;
         }
-        String name = profileName == null ? "" : profileName.trim();
         String definition = profileDefinition == null ? "" : profileDefinition.trim();
         if (definition.isEmpty()) {
             return marker;

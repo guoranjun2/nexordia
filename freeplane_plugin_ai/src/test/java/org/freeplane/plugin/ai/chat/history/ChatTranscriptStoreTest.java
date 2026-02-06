@@ -24,7 +24,7 @@ public class ChatTranscriptStoreTest {
             List<ChatTranscriptEntry> entries = Arrays.asList(
                 new ChatTranscriptEntry(ChatTranscriptRole.USER, "user"),
                 new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "assistant"),
-                new AssistantProfileTranscriptEntry("A sayer", "Start with A", false),
+                new AssistantProfileTranscriptEntry("profile-a", "A sayer", true),
                 new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM, "removed"));
             record.setEntries(entries);
 
@@ -42,9 +42,9 @@ public class ChatTranscriptStoreTest {
             assertThat(loaded.getEntries().get(2)).isInstanceOf(AssistantProfileTranscriptEntry.class);
             AssistantProfileTranscriptEntry profileEntry =
                 (AssistantProfileTranscriptEntry) loaded.getEntries().get(2);
+            assertThat(profileEntry.getProfileId()).isEqualTo("profile-a");
             assertThat(profileEntry.getProfileName()).isEqualTo("A sayer");
-            assertThat(profileEntry.getProfileDefinition()).isEqualTo("Start with A");
-            assertThat(profileEntry.isHistoricalMarker()).isFalse();
+            assertThat(profileEntry.containsProfileDefinition()).isTrue();
         } finally {
             deleteRecursively(tempDir);
         }

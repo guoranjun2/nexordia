@@ -634,7 +634,7 @@ public class AIChatPanel extends JPanel {
         SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
     }
 
-    private void activateSession(ChatSessionMemoryController sessionMemoryController) {
+    private void activateSession(ChatSessionMemoryController sessionMemoryController, boolean fromTranscriptRestore) {
         if (sessionMemoryController == null) {
             return;
         }
@@ -642,7 +642,7 @@ public class AIChatPanel extends JPanel {
         chatService = null;
         chatTokenUsageTracker.resetTotals();
         assistantProfileSelectionSync.setChatSessionMemoryController(chatSessionMemoryController);
-        assistantProfilePaneBuilder.syncSelectionFromTranscript();
+        assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
     }
 
     private TextController requireTextController() {

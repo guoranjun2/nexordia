@@ -9,6 +9,7 @@ import dev.langchain4j.memory.ChatMemory;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
@@ -58,5 +59,28 @@ public class ChatSessionMemoryControllerTest {
             .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "hidden user");
         assertThat(messages.get(3)).isInstanceOf(InstructionAckMessage.class);
         assertThat(((AiMessage) messages.get(3)).text()).isEqualTo("ok");
+    }
+
+    @Test
+    public void seedTranscriptWithHiddenExchange_mapsAssistantProfileSubtypeWithoutText() {
+        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.MESSAGE_WINDOW, 10);
+        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
+        List<ChatTranscriptEntry> entries = Arrays.asList(
+            new AssistantProfileTranscriptEntry("profile-a", "A sayer", true),
+            new ChatTranscriptEntry(ChatTranscriptRole.USER, "hello"));
+
+        uut.seedTranscriptWithHiddenExchange(entries, "hidden user");
+
+        List<ChatMessage> messages = uut.getChatMemory().messages();
+        assertThat(messages).hasSize(4);
+        assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
+        assertThat(((UserMessage) messages.get(0)).singleText())
+            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "Now you have the profile A sayer.");
+        assertThat(messages.get(1)).isInstanceOf(UserMessage.class);
+        assertThat(((UserMessage) messages.get(1)).singleText()).isEqualTo("hello");
+        assertThat(messages.get(2)).isInstanceOf(UserMessage.class);
+        assertThat(((UserMessage) messages.get(2)).singleText())
+            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "hidden user");
+        assertThat(messages.get(3)).isInstanceOf(InstructionAckMessage.class);
     }
 }

@@ -55,21 +55,21 @@ public class MessageBuilderTest {
 
     @Test
     public void buildAssistantProfileInstruction_returnsNameAndDefinition() {
-        String message = MessageBuilder.buildAssistantProfileInstruction("Analyst", "Be strict.", false);
+        String message = MessageBuilder.buildAssistantProfileInstruction("Analyst", "Be strict.", true);
 
         assertThat(message).isEqualTo("Now you have the profile Analyst.\nProfile definition: Be strict.");
     }
 
     @Test
     public void buildAssistantProfileInstruction_returnsFallbackForEmptyDefinition() {
-        String message = MessageBuilder.buildAssistantProfileInstruction("Analyst", "  ", false);
+        String message = MessageBuilder.buildAssistantProfileInstruction("Analyst", "  ", true);
 
         assertThat(message).isEqualTo("Now you have the profile Analyst.");
     }
 
     @Test
-    public void buildAssistantProfileInstruction_historicalMarker_keepsOnlyProfileName() {
-        String historical = MessageBuilder.buildAssistantProfileInstruction("Analyst", "Be strict.", true);
+    public void buildAssistantProfileInstruction_nonCurrentProfile_keepsOnlyProfileName() {
+        String historical = MessageBuilder.buildAssistantProfileInstruction("Analyst", "Be strict.", false);
 
         assertThat(historical).isEqualTo("Now you have the profile Analyst.");
     }

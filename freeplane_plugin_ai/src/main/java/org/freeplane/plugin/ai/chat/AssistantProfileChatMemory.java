@@ -149,7 +149,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
             ChatMessage message = conversationMessages.get(index);
             if (message instanceof AssistantProfileSystemMessage) {
                 AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
-                conversationMessages.set(index, profileMessage.toHistoricalMarker());
+                conversationMessages.set(index, profileMessage.withoutProfileDefinition());
             }
         }
     }

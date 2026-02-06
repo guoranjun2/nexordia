@@ -27,9 +27,9 @@ class LiveTranscriptAdapter {
             session.setTranscriptEntries(entries);
         }
         AssistantProfileTranscriptEntry entry = new AssistantProfileTranscriptEntry(
+            message.getProfileId(),
             message.getProfileName(),
-            message.getProfileDefinition(),
-            message.isHistoricalMarker());
+            message.containsProfileDefinition());
         entries.add(entry);
     }
 

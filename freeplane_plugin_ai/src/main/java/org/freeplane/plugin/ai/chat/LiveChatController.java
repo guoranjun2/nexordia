@@ -22,7 +22,7 @@ import org.freeplane.plugin.ai.tools.MessageBuilder;
 public class LiveChatController {
 
     public interface SessionActivationHandler {
-        void activate(ChatSessionMemoryController sessionMemoryController);
+        void activate(ChatSessionMemoryController sessionMemoryController, boolean fromTranscriptRestore);
     }
 
     private final AIChatPanel owner;
@@ -65,7 +65,7 @@ public class LiveChatController {
         LiveChatSession initialSession = liveChatSessionManager.createSession(
             sessionMemoryController, buildDefaultChatName());
         liveChatSessionManager.setCurrentSession(initialSession.getId());
-        sessionActivationHandler.activate(sessionMemoryController);
+        sessionActivationHandler.activate(sessionMemoryController, false);
     }
 
     public void startNewChat() {
@@ -150,14 +150,18 @@ public class LiveChatController {
         persistCurrentSession();
         ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
-        switchToSession(newSession.getId(), false);
+        switchToSession(newSession.getId(), false, false);
     }
 
     private void switchToSession(LiveChatSessionId sessionId) {
-        switchToSession(sessionId, true);
+        switchToSession(sessionId, true, false);
     }
 
     private void switchToSession(LiveChatSessionId sessionId, boolean saveCurrent) {
+        switchToSession(sessionId, saveCurrent, false);
+    }
+
+    private void switchToSession(LiveChatSessionId sessionId, boolean saveCurrent, boolean fromTranscriptRestore) {
         if (sessionId == null) {
             return;
         }
@@ -171,7 +175,7 @@ public class LiveChatController {
             return;
         }
         messageHistory.restoreMessages(session.getMessageSnapshots());
-        sessionActivationHandler.activate(session.getChatMemoryController());
+        sessionActivationHandler.activate(session.getChatMemoryController(), fromTranscriptRestore);
     }
 
     private void closeSession(LiveChatSessionId sessionId) {
@@ -206,7 +210,7 @@ public class LiveChatController {
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
         liveChatSessionManager.setCurrentSession(newSession.getId());
         messageHistory.clear();
-        sessionActivationHandler.activate(newChatMemory);
+        sessionActivationHandler.activate(newChatMemory, false);
     }
 
     private void saveCurrentSessionState() {
@@ -340,7 +344,7 @@ public class LiveChatController {
         newSession.setMessageSnapshots(buildSnapshotsFromRecord(record));
         newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
         transcriptAdapter.setEntries(newSession, record.getEntries());
-        switchToSession(newSession.getId(), false);
+        switchToSession(newSession.getId(), false, true);
         seedTranscriptMemory(newSession, record);
     }
 

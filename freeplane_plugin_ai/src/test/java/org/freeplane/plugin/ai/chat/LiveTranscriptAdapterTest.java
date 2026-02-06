@@ -18,7 +18,7 @@ public class LiveTranscriptAdapterTest {
             "test");
         LiveTranscriptAdapter adapter = new LiveTranscriptAdapter();
         AssistantProfileSystemMessage message =
-            new AssistantProfileSystemMessage("A sayer", "Start with A", false);
+            new AssistantProfileSystemMessage("profile-a", "A sayer", "Start with A", true);
 
         adapter.appendAssistantProfileMessage(session, message);
 
@@ -27,8 +27,8 @@ public class LiveTranscriptAdapterTest {
         assertThat(entries.get(0).getRole()).isEqualTo(ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM);
         assertThat(entries.get(0)).isInstanceOf(AssistantProfileTranscriptEntry.class);
         AssistantProfileTranscriptEntry entry = (AssistantProfileTranscriptEntry) entries.get(0);
+        assertThat(entry.getProfileId()).isEqualTo("profile-a");
         assertThat(entry.getProfileName()).isEqualTo("A sayer");
-        assertThat(entry.getProfileDefinition()).isEqualTo("Start with A");
-        assertThat(entry.isHistoricalMarker()).isFalse();
+        assertThat(entry.containsProfileDefinition()).isTrue();
     }
 }

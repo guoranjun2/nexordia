@@ -52,21 +52,17 @@ public class AssistantProfileSelectionModel {
         setSelectedProfile(profile, true);
     }
 
-    public AssistantProfile selectByPrompt(String prompt) {
-        AssistantProfile profile = findByPrompt(prompt).orElseGet(() -> {
-            if (prompt == null || prompt.trim().isEmpty()) {
-                return AssistantProfile.defaultProfile();
-            }
-            return AssistantProfile.customProfile(prompt);
-        });
-        setSelectedProfile(profile, false);
-        return profile;
+    public AssistantProfile findProfileById(String id) {
+        return findById(id).orElse(null);
     }
 
     public void setSelectedProfile(AssistantProfile profile, boolean updateLastUsed) {
         this.selectedProfile = profile == null ? AssistantProfile.defaultProfile() : profile;
-        if (updateLastUsed && !selectedProfile.isCustom()) {
-            resourceController.setProperty(LAST_PROFILE_ID_PROPERTY, selectedProfile.getId());
+        if (updateLastUsed) {
+            String selectedProfileId = selectedProfile.getId();
+            if (selectedProfileId != null && !selectedProfileId.trim().isEmpty()) {
+                resourceController.setProperty(LAST_PROFILE_ID_PROPERTY, selectedProfileId);
+            }
         }
         notifyListeners();
     }
@@ -95,15 +91,6 @@ public class AssistantProfileSelectionModel {
         }
         return profiles.stream()
             .filter(profile -> id.equals(profile.getId()))
-            .findFirst();
-    }
-
-    private Optional<AssistantProfile> findByPrompt(String prompt) {
-        if (prompt == null || prompt.trim().isEmpty()) {
-            return Optional.empty();
-        }
-        return profiles.stream()
-            .filter(profile -> prompt.equals(profile.getPrompt()))
             .findFirst();
     }
 

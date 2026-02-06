@@ -121,20 +121,14 @@ package "freeplane_plugin_ai" {
         - `AssistantProfileTranscriptEntry`
       - `ASSISTANT_PROFILE_SYSTEM` resolves to profile subtype.
     - Store profile-specific data as fields in subtype:
+      - `profileId`
       - `profileName`
-      - `profileDefinition`
-      - `historicalMarker`
-    - Drop legacy text fallback for profile transcript entries.
-      `ASSISTANT_PROFILE_SYSTEM` must deserialize as
-      `AssistantProfileTranscriptEntry`; non-structured legacy entries
-      are ignored for profile reconstruction.
+      - `containsProfileDefinition`
     - Persist `role` for assistant profile and removed-for-space
       entries; do not store general or transcript hidden system
       messages.
     - Do not persist general or transcript hidden system messages in
       transcripts.
-    - Ensure load defaults preserve backward compatibility when
-      system entry fields are missing.
   - Eviction removes from the beginning of the counted portion.
     - If an assistant profile message has no remaining
       user/assistant/tool messages after it, remove that profile
@@ -177,18 +171,35 @@ package "freeplane_plugin_ai" {
     - Keep only one full profile definition in memory and downgrade
       older profile-change entries to historical markers.
     - `AssistantProfileSystemMessage` stores profile fields
-      (`profileName`, `profileDefinition`, `historicalMarker`) and
-      derives instruction text via `MessageBuilder`.
+      (`profileId`, `profileName`, `profileDefinition`,
+      `containsProfileDefinition`) and derives instruction text via
+      `MessageBuilder`.
     - `AssistantProfileSystemMessage` uses structured construction only.
-    - Re-selecting the last-injected profile does not inject again.
+    - Re-selecting the last-injected profile id does not inject again.
+    - Pending selection and duplicate suppression are compared by
+      normalized `profileId`.
     - General and transcript hidden system messages remain injected
       separately (not persisted in transcripts).
     - Default selection:
       - New chat sessions start with the last-used assistant profile.
     - Transcript behavior:
-      - Transcripts store the assistant profile prompt text at the time
-        of selection; later edits to a saved assistant profile do not
-        rewrite prior transcript entries.
+      - Transcripts store only assistant profile id/name marker data
+        and `containsProfileDefinition`; profile definitions are not
+        persisted in transcript entries.
+      - On restore, if transcript `profileId` exists in the current
+        profile catalog, select that current profile definition.
+      - If transcript `profileId` does not exist in the current
+        profile catalog, keep the current chat selection unchanged and
+        do not create a custom fallback profile.
+      - Activation modes:
+        - Transcript restore activation always schedules one pending
+          profile instruction with `containsProfileDefinition=true`
+          before the first new user message.
+        - Live session switch does not schedule reinjection when
+          transcript profile id still exists.
+        - Live session switch schedules reinjection only when the last
+          transcript profile id no longer exists in the current profile
+          catalog.
     - Chat pane behavior:
       - Do not render profile-control instruction text in the chat pane.
       - Do not render the profile-control acknowledgement `"ok"` in the
@@ -232,10 +243,11 @@ package "freeplane_plugin_ai" {
       removed-for-space system entries, while general and transcript
       hidden messages are not stored.
     - Verify profile transcript entries deserialize as
-      `AssistantProfileTranscriptEntry` and preserve structured fields.
+      `AssistantProfileTranscriptEntry` and preserve structured marker
+      fields.
     - Verify persisted assistant profile catalog loads/saves correctly
       and selection appends an `ASSISTANT_PROFILE_SYSTEM` transcript
-      entry.
+      entry with `profileId`/`profileName`.
     - Verify profile selection appends exactly one profile event message
       to chat pane and does not append visible control instruction or
       visible `"ok"` acknowledgement.
@@ -254,7 +266,7 @@ package "freeplane_plugin_ai" {
       and selectable.
 
 ## Subtask: Chat Memory Slots And Eviction
-- **Status:** in-progress
+- **Status:** done
 - **Scope:**
   - Implement a custom chat memory with ordered instruction slots
     and eviction rules.
@@ -344,7 +356,7 @@ package "freeplane_plugin_ai" {
     - Verify orphan tool result eviction still occurs.
 
 ## Subtask: Transcript Roles And Persistence
-- **Status:** in-progress
+- **Status:** done
 - **Scope:**
   - Persist assistant profile and removed-for-space system entries in
     chat transcripts.
@@ -355,7 +367,7 @@ package "freeplane_plugin_ai" {
   - Extend ChatTranscriptRole with system roles for assistant profile
     and removed-for-space entries.
   - Update transcript save/load flow to store those roles while
-    keeping backward compatibility.
+    using the current structured subtype format.
 - **Research:**
   - Chat transcripts are serialized via Jackson ObjectMapper in
     ChatTranscriptStore as ChatTranscriptRecord JSON gzip files.
@@ -383,8 +395,12 @@ package "freeplane_plugin_ai" {
   - Persist `role` for assistant profile and removed-for-space entries;
     do
     not store general or transcript hidden system messages.
-  - Ensure Jackson load defaults preserve backward compatibility when
-    older transcripts contain only `USER`/`ASSISTANT`.
+  - Persist assistant profile transcript subtype fields:
+    - `profileId`
+    - `profileName`
+    - `containsProfileDefinition`
+  - Do not persist assistant profile definition text in transcript
+    entries.
 - **Test specification:**
   - Automated tests:
     - Verify transcript save/load preserves assistant profile and
@@ -395,7 +411,7 @@ package "freeplane_plugin_ai" {
       removed-for-space markers and confirm they are restored.
 
 ## Subtask: Assistant Profile Catalog And UI
-- **Status:** in-progress
+- **Status:** done
 - **Scope:**
   - Provide a user-defined assistant profile catalog and a selector in
     the chat panel.
@@ -406,8 +422,10 @@ package "freeplane_plugin_ai" {
   - Add an assistant profile selector near the chat input and a manage
     dialog for create/edit/delete.
   - New chats start with the last-used assistant profile.
-  - Transcripts store the assistant profile prompt text at the time of
-    selection; edits do not rewrite prior transcripts.
+  - Transcripts store assistant profile id/name markers only; restore
+    selects by current profile catalog id.
+  - If transcript profile id is missing from the current profile
+    catalog, keep current chat selection unchanged.
   - Profile-change text formatting must be delegated to `MessageBuilder`
     and follow the latest-full plus historical-marker rule.
 - **Research:**
@@ -447,9 +465,11 @@ package "freeplane_plugin_ai" {
   - Applying an assistant profile:
     - Changing the profile marks it as pending; injection happens only
       when the next user message is sent.
-    - Injection appends a `ChatTranscriptEntry(role=ASSISTANT_PROFILE_SYSTEM, text=<prompt>)`
-      and adds the corresponding AssistantProfileSystemMessage to memory
-      immediately before the user message.
+    - Injection appends an `AssistantProfileTranscriptEntry` with
+      `role=ASSISTANT_PROFILE_SYSTEM` and fields
+      `profileId`/`profileName`/`containsProfileDefinition`, and adds the
+      corresponding AssistantProfileSystemMessage to memory immediately
+      before the user message.
     - Render older profile changes as:
       - `Now you have the profile <Name>.`
     - Render the latest profile change as:
@@ -460,6 +480,15 @@ package "freeplane_plugin_ai" {
     - Verify persisted assistant profile catalog loads/saves correctly
       and selection appends an `ASSISTANT_PROFILE_SYSTEM` transcript
       entry.
+    - Verify transcript restore selects profile by `profileId` from the
+      current catalog and keeps current selection when the id is
+      missing.
+    - Verify transcript-restore activation always schedules one profile
+      definition reinjection before first new user message.
+    - Verify live-session switch does not schedule reinjection when
+      stored profile id is still available.
+    - Verify live-session switch schedules reinjection when stored
+      profile id is missing.
     - Verify UI and transcript restore display one full latest profile
       instruction and historical markers for previous switches.
   - Manual tests:

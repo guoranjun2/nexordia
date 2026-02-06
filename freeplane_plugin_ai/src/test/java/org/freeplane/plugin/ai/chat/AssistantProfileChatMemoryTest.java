@@ -19,7 +19,7 @@ public class AssistantProfileChatMemoryTest {
 
         uut.add(UserMessage.from("hello"));
         uut.add(new TranscriptHiddenSystemMessage("hidden"));
-        uut.add(new AssistantProfileSystemMessage("profile", "", true));
+        uut.add(new AssistantProfileSystemMessage("profile", "profile", "", true));
         uut.add(new GeneralSystemMessage("general"));
         uut.add(new RemovedForSpaceSystemMessage("removed"));
 
@@ -75,7 +75,7 @@ public class AssistantProfileChatMemoryTest {
     public void assistantProfileMessagesDropWhenNoConversationMessagesRemain() {
         AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(1);
 
-        uut.add(new AssistantProfileSystemMessage("profile", "", true));
+        uut.add(new AssistantProfileSystemMessage("profile", "profile", "", true));
         uut.add(UserMessage.from("first"));
 
         List<ChatMessage> messages = uut.messages();
@@ -111,8 +111,8 @@ public class AssistantProfileChatMemoryTest {
     @Test
     public void olderProfileInstructionsAreCompactedToMarkers() {
         AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(10);
-        uut.add(new AssistantProfileSystemMessage("Alpha", "First definition", false));
-        uut.add(new AssistantProfileSystemMessage("Beta", "Second definition", false));
+        uut.add(new AssistantProfileSystemMessage("alpha", "Alpha", "First definition", true));
+        uut.add(new AssistantProfileSystemMessage("beta", "Beta", "Second definition", true));
         uut.add(UserMessage.from("hello"));
 
         List<ChatMessage> messages = uut.messages();
@@ -128,11 +128,11 @@ public class AssistantProfileChatMemoryTest {
     @Test
     public void profileInstructionCompactionPreservesConversationOrder() {
         AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
-        uut.add(new AssistantProfileSystemMessage("Default", "Default definition", false));
+        uut.add(new AssistantProfileSystemMessage("default", "Default", "Default definition", true));
         uut.add(UserMessage.from("u1"));
-        uut.add(new AssistantProfileSystemMessage("A", "A definition", false));
+        uut.add(new AssistantProfileSystemMessage("a", "A", "A definition", true));
         uut.add(UserMessage.from("u2"));
-        uut.add(new AssistantProfileSystemMessage("Default", "Default definition", false));
+        uut.add(new AssistantProfileSystemMessage("default", "Default", "Default definition", true));
         uut.add(UserMessage.from("u3"));
 
         List<ChatMessage> messages = uut.messages();

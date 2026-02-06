@@ -4,15 +4,24 @@ import dev.langchain4j.data.message.SystemMessage;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class AssistantProfileSystemMessage extends SystemMessage {
+    private final String profileId;
     private final String profileName;
     private final String profileDefinition;
-    private final boolean historicalMarker;
+    private final boolean containsProfileDefinition;
 
-    public AssistantProfileSystemMessage(String profileName, String profileDefinition, boolean historicalMarker) {
-        super(MessageBuilder.buildAssistantProfileInstruction(profileName, profileDefinition, historicalMarker));
+    public AssistantProfileSystemMessage(String profileId,
+                                         String profileName,
+                                         String profileDefinition,
+                                         boolean containsProfileDefinition) {
+        super(MessageBuilder.buildAssistantProfileInstruction(profileName, profileDefinition, containsProfileDefinition));
+        this.profileId = profileId == null ? "" : profileId.trim();
         this.profileName = profileName == null ? "" : profileName.trim();
         this.profileDefinition = profileDefinition == null ? "" : profileDefinition.trim();
-        this.historicalMarker = historicalMarker || this.profileDefinition.isEmpty();
+        this.containsProfileDefinition = containsProfileDefinition && !this.profileDefinition.isEmpty();
+    }
+
+    public String getProfileId() {
+        return profileId;
     }
 
     public String getProfileName() {
@@ -23,14 +32,14 @@ public class AssistantProfileSystemMessage extends SystemMessage {
         return profileDefinition;
     }
 
-    public boolean isHistoricalMarker() {
-        return historicalMarker;
+    public boolean containsProfileDefinition() {
+        return containsProfileDefinition;
     }
 
-    public AssistantProfileSystemMessage toHistoricalMarker() {
-        if (historicalMarker) {
+    public AssistantProfileSystemMessage withoutProfileDefinition() {
+        if (!containsProfileDefinition) {
             return this;
         }
-        return new AssistantProfileSystemMessage(profileName, profileDefinition, true);
+        return new AssistantProfileSystemMessage(profileId, profileName, profileDefinition, false);
     }
 }

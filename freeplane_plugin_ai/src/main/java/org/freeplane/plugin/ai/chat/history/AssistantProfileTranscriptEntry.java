@@ -1,19 +1,31 @@
 package org.freeplane.plugin.ai.chat.history;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class AssistantProfileTranscriptEntry extends ChatTranscriptEntry {
+    private String profileId;
     private String profileName;
-    private String profileDefinition;
-    private boolean historicalMarker;
+    private boolean containsProfileDefinition;
 
     public AssistantProfileTranscriptEntry() {
         setRole(ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM);
     }
 
-    public AssistantProfileTranscriptEntry(String profileName, String profileDefinition, boolean historicalMarker) {
+    public AssistantProfileTranscriptEntry(String profileId,
+                                           String profileName,
+                                           boolean containsProfileDefinition) {
         this();
+        this.profileId = profileId;
         this.profileName = profileName;
-        this.profileDefinition = profileDefinition;
-        this.historicalMarker = historicalMarker;
+        this.containsProfileDefinition = containsProfileDefinition;
+    }
+
+    public String getProfileId() {
+        return profileId;
+    }
+
+    public void setProfileId(String profileId) {
+        this.profileId = profileId;
     }
 
     public String getProfileName() {
@@ -24,19 +36,13 @@ public class AssistantProfileTranscriptEntry extends ChatTranscriptEntry {
         this.profileName = profileName;
     }
 
-    public String getProfileDefinition() {
-        return profileDefinition;
+    @JsonProperty("containsProfileDefinition")
+    public boolean containsProfileDefinition() {
+        return containsProfileDefinition;
     }
 
-    public void setProfileDefinition(String profileDefinition) {
-        this.profileDefinition = profileDefinition;
-    }
-
-    public boolean isHistoricalMarker() {
-        return historicalMarker;
-    }
-
-    public void setHistoricalMarker(boolean historicalMarker) {
-        this.historicalMarker = historicalMarker;
+    @JsonProperty("containsProfileDefinition")
+    public void setContainsProfileDefinition(boolean containsProfileDefinition) {
+        this.containsProfileDefinition = containsProfileDefinition;
     }
 }

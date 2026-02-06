@@ -1,7 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
 import java.awt.BorderLayout;
-import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -41,8 +40,8 @@ class AssistantProfilePaneBuilder {
         return panel;
     }
 
-    void syncSelectionFromTranscript() {
-        AssistantProfile selected = selectionSync.selectFromTranscript();
+    void syncSelection(boolean fromTranscriptRestore) {
+        AssistantProfile selected = selectionSync.selectForActivation(fromTranscriptRestore);
         setAssistantProfileSelection(selected, false);
     }
 
@@ -64,9 +63,7 @@ class AssistantProfilePaneBuilder {
         dialog.openDialog();
         AssistantProfile current = selectionModel.getSelectedProfile();
         selectionModel.reloadProfiles();
-        if (current != null && current.isCustom()) {
-            setAssistantProfileSelection(current, false);
-        } else if (current != null) {
+        if (current != null) {
             selectionModel.selectById(current.getId());
             setAssistantProfileSelection(selectionModel.getSelectedProfile(), false);
         } else {
@@ -78,18 +75,10 @@ class AssistantProfilePaneBuilder {
         updatingSelection = true;
         AssistantProfile resolved = profile == null ? AssistantProfile.defaultProfile() : profile;
         DefaultComboBoxModel<AssistantProfile> model = new DefaultComboBoxModel<>(
-            buildAssistantProfileOptions(resolved).toArray(new AssistantProfile[0]));
+            selectionModel.getProfiles().toArray(new AssistantProfile[0]));
         selector.setModel(model);
         selector.setSelectedItem(resolved);
         selectionModel.setSelectedProfile(resolved, updateLastUsed);
         updatingSelection = false;
-    }
-
-    private List<AssistantProfile> buildAssistantProfileOptions(AssistantProfile selected) {
-        List<AssistantProfile> profiles = selectionModel.getProfiles();
-        if (selected != null && selected.isCustom()) {
-            profiles.add(1, selected);
-        }
-        return profiles;
     }
 }
