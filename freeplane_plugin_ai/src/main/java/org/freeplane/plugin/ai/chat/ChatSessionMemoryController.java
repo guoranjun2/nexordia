@@ -10,8 +10,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
+import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class ChatSessionMemoryController {
     private final ChatMemorySettings chatMemorySettings;
@@ -114,11 +116,26 @@ public class ChatSessionMemoryController {
             return new AiMessage(entry.getText());
         }
         if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            return new AssistantProfileSystemMessage(entry.getText());
+            String instructionText = buildAssistantProfileInstructionText(entry);
+            if (instructionText == null || instructionText.trim().isEmpty()) {
+                return null;
+            }
+            return MessageBuilder.buildSystemInstructionUserMessage(instructionText);
         }
         if (entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
-            return new RemovedForSpaceSystemMessage(entry.getText());
+            return MessageBuilder.buildSystemInstructionUserMessage(entry.getText());
         }
         return new UserMessage(entry.getText());
+    }
+
+    private String buildAssistantProfileInstructionText(ChatTranscriptEntry entry) {
+        if (entry instanceof AssistantProfileTranscriptEntry) {
+            AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
+            return MessageBuilder.buildAssistantProfileInstruction(
+                assistantProfileEntry.getProfileName(),
+                assistantProfileEntry.getProfileDefinition(),
+                assistantProfileEntry.isHistoricalMarker());
+        }
+        return null;
     }
 }

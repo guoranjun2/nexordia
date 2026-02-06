@@ -8,13 +8,16 @@ import java.util.UUID;
 
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.text.TextController;
+import org.freeplane.core.util.TextUtils;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRecord;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
 import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
+import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class LiveChatController {
 
@@ -34,6 +37,8 @@ public class LiveChatController {
     private ChatTranscriptId loadedTranscriptId;
     private static final String USER_STYLE_CLASS = "message-user";
     private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
+    private static final String SYSTEM_STYLE_CLASS = "message-system";
+    private static final String PROFILE_STYLE_CLASS = "message-profile";
     private static final String TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE =
         "System message: The messages in this session include a restored transcript of a prior chat. "
             + "Treat those messages as the earlier conversation context, not as hallucinations. "
@@ -111,6 +116,16 @@ public class LiveChatController {
         loadedTranscriptId = null;
         session.setLastActivityTimestamp(System.currentTimeMillis());
         transcriptAdapter.appendAssistantMessage(session, message);
+    }
+
+    public void recordAssistantProfileMessage(AssistantProfileSystemMessage message) {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null || message == null) {
+            return;
+        }
+        loadedTranscriptId = null;
+        session.setLastActivityTimestamp(System.currentTimeMillis());
+        transcriptAdapter.appendAssistantProfileMessage(session, message);
     }
 
     public List<ChatTranscriptEntry> snapshotTranscriptEntries() {
@@ -355,29 +370,82 @@ public class LiveChatController {
             return snapshots;
         }
         ChatMessageRenderer renderer = new ChatMessageRenderer();
-        for (ChatTranscriptEntry entry : record.getEntries()) {
-            if (entry == null || entry.getText() == null || entry.getRole() == null) {
+        List<ChatTranscriptEntry> entries = record.getEntries();
+        for (int index = 0; index < entries.size(); index++) {
+            ChatTranscriptEntry entry = entries.get(index);
+            if (entry == null || entry.getRole() == null) {
                 continue;
             }
-            if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM
-                || entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
+            if (isProfileAcknowledgementEntry(entries, index)) {
                 continue;
             }
-            addSnapshot(snapshots, renderer, entry.getText(), entry.getRole() == ChatTranscriptRole.ASSISTANT);
+            addSnapshot(snapshots, renderer, entry);
         }
         return snapshots;
     }
 
     private void addSnapshot(List<ChatMessageHistory.ChatMessageSnapshot> snapshots,
                              ChatMessageRenderer renderer,
-                             String text,
-                             boolean isAssistant) {
-        if (text == null || snapshots == null || renderer == null) {
+                             ChatTranscriptEntry entry) {
+        if (entry == null || snapshots == null || renderer == null) {
             return;
         }
-        String messageText = renderer.renderMessage(text, isAssistant);
-        String styleClassName = isAssistant ? ASSISTANT_STYLE_CLASS : USER_STYLE_CLASS;
+        if (entry.getRole() != ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM
+            && (entry.getText() == null || entry.getText().trim().isEmpty())) {
+            return;
+        }
+        boolean isAssistant = entry.getRole() == ChatTranscriptRole.ASSISTANT;
+        String snapshotText = entry.getText();
+        if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
+            snapshotText = buildProfilePaneMessage(entry);
+        } else if (!isAssistant && entry.getRole() != ChatTranscriptRole.USER) {
+            snapshotText = MessageBuilder.buildSystemInstructionText(snapshotText);
+        }
+        String messageText = renderer.renderMessage(snapshotText, isAssistant);
+        String styleClassName;
+        if (entry.getRole() == ChatTranscriptRole.USER) {
+            styleClassName = USER_STYLE_CLASS;
+        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
+            styleClassName = ASSISTANT_STYLE_CLASS;
+        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
+            styleClassName = PROFILE_STYLE_CLASS;
+        } else {
+            styleClassName = SYSTEM_STYLE_CLASS;
+        }
         String messageMarkup = "<div class=\"" + styleClassName + "\">" + messageText + "</div>";
-        snapshots.add(new ChatMessageHistory.ChatMessageSnapshot(text, messageMarkup, styleClassName));
+        snapshots.add(new ChatMessageHistory.ChatMessageSnapshot(snapshotText, messageMarkup, styleClassName));
+    }
+
+    private boolean isProfileAcknowledgementEntry(List<ChatTranscriptEntry> entries, int index) {
+        if (entries == null || index <= 0 || index >= entries.size()) {
+            return false;
+        }
+        ChatTranscriptEntry current = entries.get(index);
+        ChatTranscriptEntry previous = entries.get(index - 1);
+        if (current == null || previous == null) {
+            return false;
+        }
+        if (current.getRole() != ChatTranscriptRole.ASSISTANT) {
+            return false;
+        }
+        if (previous.getRole() != ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
+            return false;
+        }
+        String text = current.getText();
+        return MessageBuilder.buildInstructionAcknowledgementText().equals(text == null ? "" : text.trim());
+    }
+
+    private String buildProfilePaneMessage(ChatTranscriptEntry entry) {
+        if (entry == null) {
+            return TextUtils.getText("ai_chat_profile_label");
+        }
+        if (entry instanceof AssistantProfileTranscriptEntry) {
+            AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
+            String profileName = assistantProfileEntry.getProfileName();
+            if (profileName != null && !profileName.trim().isEmpty()) {
+                return TextUtils.format("ai_chat_profile_message", profileName.trim());
+            }
+        }
+        return TextUtils.getText("ai_chat_profile_label");
     }
 }

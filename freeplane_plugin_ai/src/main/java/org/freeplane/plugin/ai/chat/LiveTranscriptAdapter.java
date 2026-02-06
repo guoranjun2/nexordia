@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 
@@ -14,6 +15,22 @@ class LiveTranscriptAdapter {
 
     void appendAssistantMessage(LiveChatSession session, String text) {
         appendEntry(session, ChatTranscriptRole.ASSISTANT, text);
+    }
+
+    void appendAssistantProfileMessage(LiveChatSession session, AssistantProfileSystemMessage message) {
+        if (session == null || message == null) {
+            return;
+        }
+        List<ChatTranscriptEntry> entries = session.getTranscriptEntries();
+        if (entries == null) {
+            entries = new ArrayList<>();
+            session.setTranscriptEntries(entries);
+        }
+        AssistantProfileTranscriptEntry entry = new AssistantProfileTranscriptEntry(
+            message.getProfileName(),
+            message.getProfileDefinition(),
+            message.isHistoricalMarker());
+        entries.add(entry);
     }
 
     void setEntries(LiveChatSession session, List<ChatTranscriptEntry> entries) {

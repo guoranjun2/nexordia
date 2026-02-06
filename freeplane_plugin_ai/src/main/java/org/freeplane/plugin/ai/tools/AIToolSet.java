@@ -87,7 +87,7 @@ import org.freeplane.plugin.ai.tools.connectors.ConnectorEditTool;
 import dev.langchain4j.agent.tool.Tool;
 
 public class AIToolSet {
-    private final SystemMessageBuilder systemMessageBuilder;
+    private final MessageBuilder messageBuilder;
     private final ReadNodesWithDescendantsTool readNodesWithDescendantsTool;
     private final SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool;
     private final SelectSingleNodeTool selectSingleNodeTool;
@@ -139,7 +139,7 @@ public class AIToolSet {
             nodeModelCreator, nodeContentApplier);
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
             textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
-        SystemMessageBuilder systemMessageBuilder = new SystemMessageBuilder();
+        MessageBuilder messageBuilder = new MessageBuilder();
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, mapAccessListener, nodeContentFactories.nodeContentItemReader, textController);
         SelectedMapAndNodeIdentifiersTool selectedMapAndNodeIdentifiersTool = new SelectedMapAndNodeIdentifiersTool(
@@ -163,7 +163,7 @@ public class AIToolSet {
         ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(
             nodeContentFactories.iconDescriptionResolver);
         ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, mapAccessListener, linkController);
-        this.systemMessageBuilder = Objects.requireNonNull(systemMessageBuilder, "systemMessageBuilder");
+        this.messageBuilder = Objects.requireNonNull(messageBuilder, "messageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
             "readNodesWithDescendantsTool");
         this.selectedMapAndNodeIdentifiersTool = Objects.requireNonNull(
@@ -185,7 +185,7 @@ public class AIToolSet {
     }
 
     public String systemMessageForChat(@SuppressWarnings("unused") Object input) {
-        return systemMessageBuilder.buildForChat();
+        return messageBuilder.buildForChat();
     }
 
     @Tool("Read nodes with descendants.")

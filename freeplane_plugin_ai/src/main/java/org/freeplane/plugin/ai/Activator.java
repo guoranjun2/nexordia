@@ -30,7 +30,7 @@ import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
-import org.freeplane.plugin.ai.tools.SystemMessageBuilder;
+import org.freeplane.plugin.ai.tools.MessageBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -38,7 +38,7 @@ import org.osgi.framework.BundleContext;
 public class Activator implements BundleActivator {
 
 	private static final String PREFERENCES_RESOURCE = "preferences.xml";
-	private static final String SYSTEM_MESSAGE_PROPERTY = SystemMessageBuilder.SYSTEM_MESSAGE_PROPERTY;
+	private static final String SYSTEM_MESSAGE_PROPERTY = MessageBuilder.SYSTEM_MESSAGE_PROPERTY;
 	private ModelContextProtocolServer modelContextProtocolServer;
 	private AIChatPanel aiChatPanel;
 

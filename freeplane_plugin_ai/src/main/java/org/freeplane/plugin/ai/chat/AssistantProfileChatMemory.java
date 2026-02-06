@@ -12,15 +12,13 @@ import dev.langchain4j.service.memory.ChatMemoryService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class AssistantProfileChatMemory implements ChatMemory {
 
     private final Object id;
     private final Function<Object, Integer> maxMessagesProvider;
     private GeneralSystemMessage generalSystemMessage;
-    private final List<AssistantProfileSystemMessage> assistantProfileMessages = new ArrayList<>();
-    private TranscriptHiddenSystemMessage transcriptHiddenMessage;
-    private RemovedForSpaceSystemMessage removedForSpaceMessage;
     private final List<ChatMessage> conversationMessages = new ArrayList<>();
 
     private AssistantProfileChatMemory(Builder builder) {
@@ -41,16 +39,29 @@ public class AssistantProfileChatMemory implements ChatMemory {
         }
         ensureCapacity();
         if (message instanceof TranscriptHiddenSystemMessage) {
-            transcriptHiddenMessage = (TranscriptHiddenSystemMessage) message;
+            if (!containsInstructionOfType(TranscriptHiddenSystemMessage.class)) {
+                conversationMessages.add(message);
+                conversationMessages.add(new InstructionAckMessage());
+                ensureCapacity();
+            }
             return;
         }
         if (message instanceof RemovedForSpaceSystemMessage) {
-            removedForSpaceMessage = (RemovedForSpaceSystemMessage) message;
+            if (!containsInstructionOfType(RemovedForSpaceSystemMessage.class)) {
+                conversationMessages.add(message);
+                conversationMessages.add(new InstructionAckMessage());
+                ensureCapacity();
+            }
             return;
         }
         if (message instanceof AssistantProfileSystemMessage) {
-            assistantProfileMessages.add((AssistantProfileSystemMessage) message);
+            shortenStoredProfileInstructions();
+            conversationMessages.add(message);
+            conversationMessages.add(new InstructionAckMessage());
             ensureCapacity();
+            return;
+        }
+        if (message instanceof InstructionAckMessage) {
             return;
         }
         if (message instanceof SystemMessage) {
@@ -71,9 +82,6 @@ public class AssistantProfileChatMemory implements ChatMemory {
     @Override
     public void clear() {
         generalSystemMessage = null;
-        assistantProfileMessages.clear();
-        transcriptHiddenMessage = null;
-        removedForSpaceMessage = null;
         conversationMessages.clear();
     }
 
@@ -82,17 +90,20 @@ public class AssistantProfileChatMemory implements ChatMemory {
         ensureGreaterThanZero(maxMessages, "maxMessages");
         boolean evictedConversation = false;
         while (countedSize() > maxMessages) {
-            if (!conversationMessages.isEmpty()) {
-                ChatMessage evicted = conversationMessages.remove(0);
+            int indexToEvict = findFirstCountedMessageIndex();
+            if (indexToEvict >= 0) {
+                ChatMessage evicted = conversationMessages.remove(indexToEvict);
                 evictedConversation = true;
+                if (indexToEvict < conversationMessages.size()
+                    && conversationMessages.get(indexToEvict) instanceof InstructionAckMessage) {
+                    conversationMessages.remove(indexToEvict);
+                }
                 if (evicted instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
-                    while (!conversationMessages.isEmpty()
-                        && conversationMessages.get(0) instanceof ToolExecutionResultMessage) {
-                        conversationMessages.remove(0);
+                    while (indexToEvict < conversationMessages.size()
+                        && conversationMessages.get(indexToEvict) instanceof ToolExecutionResultMessage) {
+                        conversationMessages.remove(indexToEvict);
                     }
                 }
-            } else if (!assistantProfileMessages.isEmpty()) {
-                assistantProfileMessages.remove(0);
             } else {
                 break;
             }
@@ -100,13 +111,15 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (evictedConversation) {
             ensureRemovedForSpaceMessage();
         }
-        if (evictedConversation && conversationMessages.isEmpty() && !assistantProfileMessages.isEmpty()) {
-            assistantProfileMessages.clear();
-        }
     }
 
     private int countedSize() {
-        int count = conversationMessages.size() + assistantProfileMessages.size();
+        int count = 0;
+        for (ChatMessage conversationMessage : conversationMessages) {
+            if (!isNonCountedMessage(conversationMessage)) {
+                count++;
+            }
+        }
         if (generalSystemMessage != null) {
             count += 1;
         }
@@ -118,21 +131,62 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (generalSystemMessage != null) {
             messages.add(generalSystemMessage);
         }
-        messages.addAll(assistantProfileMessages);
-        if (transcriptHiddenMessage != null) {
-            messages.add(transcriptHiddenMessage);
+        for (ChatMessage message : conversationMessages) {
+            if (message instanceof AssistantProfileSystemMessage
+                || message instanceof TranscriptHiddenSystemMessage
+                || message instanceof RemovedForSpaceSystemMessage) {
+                messages.add(MessageBuilder.buildSystemInstructionUserMessage(
+                    ((SystemMessage) message).text()));
+                continue;
+            }
+            messages.add(message);
         }
-        if (removedForSpaceMessage != null) {
-            messages.add(removedForSpaceMessage);
-        }
-        messages.addAll(conversationMessages);
         return messages;
     }
 
-    private void ensureRemovedForSpaceMessage() {
-        if (removedForSpaceMessage == null) {
-            removedForSpaceMessage = new RemovedForSpaceSystemMessage();
+    private void shortenStoredProfileInstructions() {
+        for (int index = 0; index < conversationMessages.size(); index++) {
+            ChatMessage message = conversationMessages.get(index);
+            if (message instanceof AssistantProfileSystemMessage) {
+                AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
+                conversationMessages.set(index, profileMessage.toHistoricalMarker());
+            }
         }
+    }
+
+    private void ensureRemovedForSpaceMessage() {
+        if (!containsInstructionOfType(RemovedForSpaceSystemMessage.class)) {
+            int insertionIndex = findFirstCountedMessageIndex();
+            if (insertionIndex < 0) {
+                insertionIndex = conversationMessages.size();
+            }
+            conversationMessages.add(insertionIndex, new RemovedForSpaceSystemMessage());
+            conversationMessages.add(insertionIndex + 1, new InstructionAckMessage());
+        }
+    }
+
+    private boolean isNonCountedMessage(ChatMessage message) {
+        return message instanceof TranscriptHiddenSystemMessage
+            || message instanceof RemovedForSpaceSystemMessage
+            || message instanceof InstructionAckMessage;
+    }
+
+    private int findFirstCountedMessageIndex() {
+        for (int index = 0; index < conversationMessages.size(); index++) {
+            if (!isNonCountedMessage(conversationMessages.get(index))) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private boolean containsInstructionOfType(Class<? extends SystemMessage> messageClass) {
+        for (ChatMessage message : conversationMessages) {
+            if (messageClass.isInstance(message)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private GeneralSystemMessage toGeneralSystemMessage(SystemMessage message) {

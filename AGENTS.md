@@ -1,7 +1,10 @@
 
 ---
 **MANDATORY:**
-Before any action, all LLMs (including agents, copilots, and any automated or semi-automated system) must read and comply with the rules in [CONSTITUTION.md](file:///Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md) if it is available. This requirement applies universally to all AI assistants, not just agents.
+- Constitution preflight: before any response beyond a brief
+  acknowledgement, open and read `/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md` in the
+  current turn if it is available. This requirement applies universally to all AI assistants, not just agents.
+- Constitution path references must stay absolute.
 
 ---
 

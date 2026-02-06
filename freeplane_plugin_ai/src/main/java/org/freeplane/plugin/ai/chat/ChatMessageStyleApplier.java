@@ -23,10 +23,14 @@ public class ChatMessageStyleApplier {
         Color assistantBackground = darkTheme ? new Color(0x2b, 0x2b, 0x2b) : new Color(0xf5, 0xf5, 0xf5);
         Color toolBackground = darkTheme ? new Color(0x2a, 0x36, 0x46) : new Color(0xea, 0xf3, 0xff);
         Color mcpBackground = darkTheme ? new Color(0x25, 0x33, 0x54) : new Color(0xea, 0xf3, 0xff);
+        Color systemBackground = darkTheme ? new Color(0x1f, 0x1f, 0x1f) : new Color(0xf0, 0xf0, 0xf0);
+        Color profileBackground = darkTheme ? new Color(0x1c, 0x2c, 0x24) : new Color(0xe8, 0xf6, 0xec);
         Color userBorderColor = darkTheme ? new Color(0x6a, 0x6a, 0x6a) : new Color(0x3e, 0x3e, 0x3e);
         Color borderColor = darkTheme ? new Color(0x52, 0x52, 0x52) : new Color(0xd7, 0xd7, 0xd7);
         Color toolBorderColor = darkTheme ? new Color(0x5a, 0x6f, 0x8a) : new Color(0xbc, 0xd9, 0xff);
         Color mcpBorderColor = darkTheme ? new Color(0x6a, 0x7f, 0xb0) : new Color(0x5c, 0x79, 0xbd);
+        Color systemBorderColor = darkTheme ? new Color(0x3a, 0x3a, 0x3a) : new Color(0xb0, 0xb0, 0xb0);
+        Color profileBorderColor = darkTheme ? new Color(0x3f, 0x70, 0x58) : new Color(0x4d, 0x9a, 0x72);
         messageHistoryPane.setBackground(baseBackground);
         StyleSheet baseStyleSheet = messageHistoryEditorKit.getStyleSheet();
         StyleSheet styleSheet = new StyleSheet();
@@ -43,6 +47,10 @@ public class ChatMessageStyleApplier {
             + toCssColor(toolBackground) + "; border-left: 4px solid " + toCssColor(toolBorderColor) + "; }");
         styleSheet.addRule(".message-mcp-call { margin: 6px 0; padding: 6px 8px; background-color: "
             + toCssColor(mcpBackground) + "; border-left: 8px solid " + toCssColor(mcpBorderColor) + "; }");
+        styleSheet.addRule(".message-system { margin: 6px 0; padding: 6px 8px; background-color: "
+            + toCssColor(systemBackground) + "; border-left: 4px solid " + toCssColor(systemBorderColor) + "; }");
+        styleSheet.addRule(".message-profile { margin: 6px 0; padding: 6px 8px; background-color: "
+            + toCssColor(profileBackground) + "; border-left: 4px solid " + toCssColor(profileBorderColor) + "; }");
     }
 
     private boolean isDark(Color color) {

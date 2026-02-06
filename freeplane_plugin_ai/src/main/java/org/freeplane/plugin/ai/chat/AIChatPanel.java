@@ -15,10 +15,10 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.text.TextController;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
@@ -89,6 +89,8 @@ public class AIChatPanel extends JPanel {
     private final DateTimeFormatter chatNameFormatter;
     private final LiveChatController liveChatController;
     private final ChatRequestCancellation requestCancellation;
+    private final AssistantProfileSelectionSync assistantProfileSelectionSync;
+    private final AssistantProfilePaneBuilder assistantProfilePaneBuilder;
     private SwingWorker<String, Void> activeWorker;
     private boolean requestInProgress;
     private int activeRequestId;
@@ -123,6 +125,8 @@ public class AIChatPanel extends JPanel {
             .getImageIcon("/images/ai_stop.svg?useAccentColor=true");
         preferencesIcon = ResourceController.getResourceController()
             .getImageIcon("/images/generic_settings.svg?useAccentColor=true");
+        Icon assistantProfileIcon = ResourceController.getResourceController()
+            .getImageIcon("/images/EggheadCB.svg?useAccentColor=true");
         Dimension sendButtonSize = sendButton.getPreferredSize();
         sendButton.setPreferredSize(sendButtonSize);
         sendButton.setMinimumSize(sendButtonSize);
@@ -139,6 +143,7 @@ public class AIChatPanel extends JPanel {
         messageRenderer = new ChatMessageRenderer();
         availableMaps = new AvailableMaps(new ControllerMapModelProvider());
         chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
         liveChatController = new LiveChatController(
             this,
             messageHistory,
@@ -147,13 +152,24 @@ public class AIChatPanel extends JPanel {
             chatNameFormatter,
             this::activateSession
         );
+        assistantProfileSelectionSync = new AssistantProfileSelectionSync(
+            assistantProfileSelectionModel,
+            liveChatController);
+        assistantProfileSelectionSync.setChatSessionMemoryController(chatSessionMemoryController);
+        assistantProfileSelectionSync.setProfileMessageConsumer(this::appendProfileMessage);
+        assistantProfilePaneBuilder = new AssistantProfilePaneBuilder(
+            assistantProfileSelectionModel,
+            assistantProfileSelectionSync,
+            assistantProfileIcon);
         requestCancellation = new ChatRequestCancellation();
         liveChatController.initialize(chatSessionMemoryController);
+        assistantProfilePaneBuilder.initialize();
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         JPanel inputContainer = new JPanel(new BorderLayout());
+        inputContainer.add(assistantProfilePaneBuilder.buildPanel(), BorderLayout.NORTH);
         inputContainer.add(inputPanel, BorderLayout.CENTER);
         JPanel tokenUsagePanel = new JPanel(new BorderLayout());
         tokenUsagePanel.add(tokenUsageLabel, BorderLayout.EAST);
@@ -365,6 +381,7 @@ public class AIChatPanel extends JPanel {
             return;
         }
         beginRequest(userMessage);
+        assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
         appendChatMessage(userMessage, ChatMessageCategory.USER);
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
@@ -578,6 +595,14 @@ public class AIChatPanel extends JPanel {
         }
     }
 
+    private void appendProfileMessage(String profileName) {
+        String normalizedName = profileName == null ? "" : profileName.trim();
+        String messageText = normalizedName.isEmpty()
+            ? TextUtils.getText("ai_chat_profile_label")
+            : TextUtils.format("ai_chat_profile_message", normalizedName);
+        appendChatMessage(messageText, ChatMessageCategory.PROFILE);
+    }
+
     public ToolCallSummaryHandler toolCallSummaryHandler() {
         return this::handleToolCallSummary;
     }
@@ -616,6 +641,8 @@ public class AIChatPanel extends JPanel {
         chatSessionMemoryController = sessionMemoryController;
         chatService = null;
         chatTokenUsageTracker.resetTotals();
+        assistantProfileSelectionSync.setChatSessionMemoryController(chatSessionMemoryController);
+        assistantProfilePaneBuilder.syncSelectionFromTranscript();
     }
 
     private TextController requireTextController() {
@@ -634,7 +661,9 @@ public class AIChatPanel extends JPanel {
         USER("message-user"),
         ASSISTANT("message-assistant"),
         TOOL_CALL("message-tool"),
-        MCP_CALL("message-mcp-call");
+        MCP_CALL("message-mcp-call"),
+        PROFILE("message-profile"),
+        SYSTEM("message-system");
 
         private final String styleClassName;
 

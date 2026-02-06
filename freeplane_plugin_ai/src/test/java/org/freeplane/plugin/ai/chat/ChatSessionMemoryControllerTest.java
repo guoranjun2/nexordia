@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Test;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
+import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class ChatSessionMemoryControllerTest {
     @Test
@@ -46,9 +47,16 @@ public class ChatSessionMemoryControllerTest {
         uut.seedTranscriptWithHiddenExchange(entries, "hidden user");
 
         List<ChatMessage> messages = uut.getChatMemory().messages();
-        assertThat(messages).hasSize(3);
-        assertThat(messages.get(0)).isInstanceOf(TranscriptHiddenSystemMessage.class);
-        assertThat(messages.get(1)).isInstanceOf(UserMessage.class);
-        assertThat(messages.get(2)).isInstanceOf(AiMessage.class);
+        assertThat(messages).hasSize(4);
+        assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
+        assertThat(((UserMessage) messages.get(0)).singleText())
+            .isEqualTo("first user");
+        assertThat(messages.get(1)).isInstanceOf(AiMessage.class);
+        assertThat(((AiMessage) messages.get(1)).text()).isEqualTo("first assistant");
+        assertThat(messages.get(2)).isInstanceOf(UserMessage.class);
+        assertThat(((UserMessage) messages.get(2)).singleText())
+            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "hidden user");
+        assertThat(messages.get(3)).isInstanceOf(InstructionAckMessage.class);
+        assertThat(((AiMessage) messages.get(3)).text()).isEqualTo("ok");
     }
 }
