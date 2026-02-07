@@ -84,7 +84,10 @@ public class Activator implements BundleActivator {
 					ResourceController.loadProperties(properties, defaults);
 					ResourceController resourceController = ResourceController.getResourceController();
 					resourceController.addDefaults(properties);
-					properties.keySet().forEach(key -> resourceController.securePropertyForReadingAndModification((String) key));
+					properties.keySet()
+					.stream()
+					.filter(key -> ! AiEditsSettings.AI_EDITS_STATE_ICON_VISIBLE_PROPERTY.equals(key))
+					.forEach(key -> resourceController.securePropertyForReadingAndModification((String) key));
 					setSystemMessageDefault(resourceController);
 				}
 
