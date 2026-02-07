@@ -171,4 +171,48 @@ public class AssistantProfileChatMemoryTest {
         assertThat(messages).noneMatch(message -> message instanceof AiMessage
             && ((AiMessage) message).hasToolExecutionRequests());
     }
+
+    @Test
+    public void undoAndRedoTrackLastCompletedTurns() {
+        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.canUndo()).isTrue();
+        assertThat(uut.canRedo()).isFalse();
+        assertThat(uut.undo()).isEqualTo("u2");
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1")
+            .doesNotContain("u2");
+        assertThat(uut.canRedo()).isTrue();
+
+        uut.redo();
+
+        assertThat(uut.canRedo()).isFalse();
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u2");
+    }
+
+    @Test
+    public void newMessageAfterUndoClearsRedoBranch() {
+        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.undo()).isEqualTo("u2");
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+
+        assertThat(uut.canRedo()).isFalse();
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u3")
+            .doesNotContain("u2");
+    }
 }

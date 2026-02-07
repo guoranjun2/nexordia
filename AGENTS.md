@@ -1,11 +1,10 @@
 
 ---
 **MANDATORY:**
-- Constitution preflight: before any response beyond a brief
-  acknowledgement, open and read `/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md` in the
-  current turn if it is available. This requirement applies universally to all AI assistants, not just agents.
-- Constitution path references must stay absolute.
-
+- Constitution preflight: completely read
+  `/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md` if available
+  whenever `AGENTS.md` is re-read in the current session or the user
+  explicitly asks to re-check it.
 ---
 
 # Repository Guidelines

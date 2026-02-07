@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.memory.ChatMemory;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -14,40 +13,18 @@ import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
 
-public class ChatSessionMemoryControllerTest {
-    @Test
-    public void getChatMemory_returnsNullWhenDisabled() {
-        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.DISABLED, 5);
-        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
-
-        ChatMemory chatMemory = uut.getChatMemory();
-
-        assertThat(chatMemory).isNull();
-    }
-
-    @Test
-    public void clearChatMemory_removesMessages() {
-        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.MESSAGE_WINDOW, 5);
-        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
-        ChatMemory chatMemory = uut.getChatMemory();
-        chatMemory.add(UserMessage.from("hello"));
-
-        uut.clearChatMemory();
-
-        assertThat(chatMemory.messages()).isEmpty();
-    }
-
+public class TranscriptMemoryMapperTest {
     @Test
     public void seedTranscriptWithHiddenExchange_appendsHiddenMessagesAfterTranscript() {
-        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.MESSAGE_WINDOW, 10);
-        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
+        TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxMessages(10);
         List<ChatTranscriptEntry> entries = Arrays.asList(
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "first user"),
             new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "first assistant"));
 
-        uut.seedTranscriptWithHiddenExchange(entries, "hidden user");
+        uut.seedTranscriptWithHiddenExchange(memory, entries, "hidden user");
 
-        List<ChatMessage> messages = uut.getChatMemory().messages();
+        List<ChatMessage> messages = memory.messages();
         assertThat(messages).hasSize(4);
         assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
         assertThat(((UserMessage) messages.get(0)).singleText())
@@ -63,15 +40,15 @@ public class ChatSessionMemoryControllerTest {
 
     @Test
     public void seedTranscriptWithHiddenExchange_mapsAssistantProfileSubtypeWithoutText() {
-        ChatMemorySettings settings = new ChatMemorySettings(ChatMemoryMode.MESSAGE_WINDOW, 10);
-        ChatSessionMemoryController uut = new ChatSessionMemoryController(settings);
+        TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxMessages(10);
         List<ChatTranscriptEntry> entries = Arrays.asList(
             new AssistantProfileTranscriptEntry("profile-a", "A sayer", true),
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "hello"));
 
-        uut.seedTranscriptWithHiddenExchange(entries, "hidden user");
+        uut.seedTranscriptWithHiddenExchange(memory, entries, "hidden user");
 
-        List<ChatMessage> messages = uut.getChatMemory().messages();
+        List<ChatMessage> messages = memory.messages();
         assertThat(messages).hasSize(4);
         assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
         assertThat(((UserMessage) messages.get(0)).singleText())
@@ -82,5 +59,25 @@ public class ChatSessionMemoryControllerTest {
         assertThat(((UserMessage) messages.get(2)).singleText())
             .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "hidden user");
         assertThat(messages.get(3)).isInstanceOf(InstructionAckMessage.class);
+    }
+
+    @Test
+    public void toTranscriptEntries_usesVisibleConversationMessagesOnly() {
+        TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxMessages(20);
+        memory.add(new AssistantProfileSystemMessage("profile-a", "A sayer", "Start with A", true));
+        memory.add(UserMessage.from("hello"));
+        memory.add(AiMessage.from("world"));
+        memory.add(new TranscriptHiddenSystemMessage("hidden"));
+
+        List<ChatTranscriptEntry> entries = uut.toTranscriptEntries(memory);
+
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0)).isInstanceOf(AssistantProfileTranscriptEntry.class);
+        assertThat(entries.get(0).getRole()).isEqualTo(ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM);
+        assertThat(entries.get(1).getRole()).isEqualTo(ChatTranscriptRole.USER);
+        assertThat(entries.get(1).getText()).isEqualTo("hello");
+        assertThat(entries.get(2).getRole()).isEqualTo(ChatTranscriptRole.ASSISTANT);
+        assertThat(entries.get(2).getText()).isEqualTo("world");
     }
 }

@@ -22,12 +22,10 @@ public class AssistantProfileSelectionSyncTest {
     public void applyAssistantProfileSelection_emitsOnlyProfilePaneMessage() {
         AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
         LiveChatController liveChatController = mock(LiveChatController.class);
-        ChatSessionMemoryController chatSessionMemoryController = mock(ChatSessionMemoryController.class);
         ChatMemory chatMemory = mock(ChatMemory.class);
-        when(chatSessionMemoryController.getChatMemory()).thenReturn(chatMemory);
         AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
             selectionModel, liveChatController);
-        uut.setChatSessionMemoryController(chatSessionMemoryController);
+        uut.setChatMemory(chatMemory);
         List<String> paneMessages = new ArrayList<>();
         uut.setProfileMessageConsumer(paneMessages::add);
         AssistantProfile profile = new AssistantProfile("profile-id", "A sayer", "Start with A");
@@ -47,9 +45,7 @@ public class AssistantProfileSelectionSyncTest {
     public void selectFromTranscript_selectsExistingProfileById() {
         AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
         LiveChatController liveChatController = mock(LiveChatController.class);
-        ChatSessionMemoryController chatSessionMemoryController = mock(ChatSessionMemoryController.class);
         ChatMemory chatMemory = mock(ChatMemory.class);
-        when(chatSessionMemoryController.getChatMemory()).thenReturn(chatMemory);
         AssistantProfile transcriptProfile = new AssistantProfile("profile-a", "A", "Prompt A");
         when(liveChatController.snapshotTranscriptEntries()).thenReturn(Arrays.asList(
             new AssistantProfileTranscriptEntry("profile-a", "A", true)));
@@ -57,7 +53,7 @@ public class AssistantProfileSelectionSyncTest {
 
         AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
             selectionModel, liveChatController);
-        uut.setChatSessionMemoryController(chatSessionMemoryController);
+        uut.setChatMemory(chatMemory);
 
         AssistantProfile selected = uut.selectForActivation(true);
         uut.maybeInjectBeforeUserMessage();
@@ -71,9 +67,7 @@ public class AssistantProfileSelectionSyncTest {
     public void selectFromTranscriptRestore_injectsCurrentSelectionWhenProfileIdMissing() {
         AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
         LiveChatController liveChatController = mock(LiveChatController.class);
-        ChatSessionMemoryController chatSessionMemoryController = mock(ChatSessionMemoryController.class);
         ChatMemory chatMemory = mock(ChatMemory.class);
-        when(chatSessionMemoryController.getChatMemory()).thenReturn(chatMemory);
         AssistantProfile current = new AssistantProfile("current", "Current", "Prompt");
         List<ChatTranscriptEntry> entries = Collections.singletonList(
             new AssistantProfileTranscriptEntry("missing", "Missing", true));
@@ -83,7 +77,7 @@ public class AssistantProfileSelectionSyncTest {
 
         AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
             selectionModel, liveChatController);
-        uut.setChatSessionMemoryController(chatSessionMemoryController);
+        uut.setChatMemory(chatMemory);
 
         AssistantProfile selected = uut.selectForActivation(true);
         uut.maybeInjectBeforeUserMessage();
@@ -96,9 +90,7 @@ public class AssistantProfileSelectionSyncTest {
     public void selectForActivation_liveSwitch_skipsInjectionWhenTranscriptProfileExists() {
         AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
         LiveChatController liveChatController = mock(LiveChatController.class);
-        ChatSessionMemoryController chatSessionMemoryController = mock(ChatSessionMemoryController.class);
         ChatMemory chatMemory = mock(ChatMemory.class);
-        when(chatSessionMemoryController.getChatMemory()).thenReturn(chatMemory);
         AssistantProfile transcriptProfile = new AssistantProfile("profile-a", "A", "Prompt A");
         when(liveChatController.snapshotTranscriptEntries()).thenReturn(Arrays.asList(
             new AssistantProfileTranscriptEntry("profile-a", "A", true)));
@@ -106,7 +98,7 @@ public class AssistantProfileSelectionSyncTest {
 
         AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
             selectionModel, liveChatController);
-        uut.setChatSessionMemoryController(chatSessionMemoryController);
+        uut.setChatMemory(chatMemory);
 
         AssistantProfile selected = uut.selectForActivation(false);
         uut.maybeInjectBeforeUserMessage();
@@ -119,9 +111,7 @@ public class AssistantProfileSelectionSyncTest {
     public void selectForActivation_liveSwitch_injectsWhenTranscriptProfileMissing() {
         AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
         LiveChatController liveChatController = mock(LiveChatController.class);
-        ChatSessionMemoryController chatSessionMemoryController = mock(ChatSessionMemoryController.class);
         ChatMemory chatMemory = mock(ChatMemory.class);
-        when(chatSessionMemoryController.getChatMemory()).thenReturn(chatMemory);
         AssistantProfile current = new AssistantProfile("current", "Current", "Prompt");
         when(liveChatController.snapshotTranscriptEntries()).thenReturn(Arrays.asList(
             new AssistantProfileTranscriptEntry("missing", "Missing", true)));
@@ -130,7 +120,7 @@ public class AssistantProfileSelectionSyncTest {
 
         AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
             selectionModel, liveChatController);
-        uut.setChatSessionMemoryController(chatSessionMemoryController);
+        uut.setChatMemory(chatMemory);
 
         AssistantProfile selected = uut.selectForActivation(false);
         uut.maybeInjectBeforeUserMessage();

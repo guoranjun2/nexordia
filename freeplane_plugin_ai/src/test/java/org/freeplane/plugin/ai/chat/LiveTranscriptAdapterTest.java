@@ -14,7 +14,7 @@ public class LiveTranscriptAdapterTest {
     public void appendAssistantProfileMessage_recordsSystemRole() {
         LiveChatSession session = new LiveChatSession(
             LiveChatSessionId.create(),
-            new ChatSessionMemoryController(new ChatMemorySettings(ChatMemoryMode.DISABLED, 1)),
+            null,
             "test");
         LiveTranscriptAdapter adapter = new LiveTranscriptAdapter();
         AssistantProfileSystemMessage message =

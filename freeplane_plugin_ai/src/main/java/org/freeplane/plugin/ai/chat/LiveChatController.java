@@ -1,43 +1,35 @@
 package org.freeplane.plugin.ai.chat;
 
+import dev.langchain4j.memory.ChatMemory;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.text.TextController;
-import org.freeplane.core.util.TextUtils;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
-import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptRecord;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptStore;
 import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class LiveChatController {
 
     public interface SessionActivationHandler {
-        void activate(ChatSessionMemoryController sessionMemoryController, boolean fromTranscriptRestore);
+        void activate(ChatMemory chatMemory, boolean fromTranscriptRestore);
     }
 
     private final AIChatPanel owner;
     private final LiveChatSessionManager liveChatSessionManager;
-    private final ChatMessageHistory messageHistory;
     private final DateTimeFormatter chatNameFormatter;
     private final SessionActivationHandler sessionActivationHandler;
     private final ChatTranscriptStore transcriptStore;
-    private final LiveTranscriptAdapter transcriptAdapter;
+    private final TranscriptMemoryMapper transcriptMemoryMapper;
+    private final ChatMemorySettings chatMemorySettings;
     private final MapRootShortTextFormatter mapRootShortTextFormatter;
     private final MapRootShortTextCountsMerger mapRootShortTextCountsMerger;
-    private static final String USER_STYLE_CLASS = "message-user";
-    private static final String ASSISTANT_STYLE_CLASS = "message-assistant";
-    private static final String SYSTEM_STYLE_CLASS = "message-system";
-    private static final String PROFILE_STYLE_CLASS = "message-profile";
     private static final String TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE =
         "System message: The messages in this session include a restored transcript of a prior chat. "
             + "Treat those messages as the earlier conversation context, not as hallucinations. "
@@ -45,27 +37,25 @@ public class LiveChatController {
             + "Confirm the map context with the user when needed. The real conversation begins after this message. ";
 
     public LiveChatController(AIChatPanel parent,
-                              ChatMessageHistory messageHistory,
                               AvailableMaps availableMaps,
                               TextController textController,
                               DateTimeFormatter chatNameFormatter,
                               SessionActivationHandler sessionActivationHandler) {
         this.owner = parent;
-        this.messageHistory = messageHistory;
         this.chatNameFormatter = chatNameFormatter;
         this.sessionActivationHandler = sessionActivationHandler;
         this.liveChatSessionManager = new LiveChatSessionManager();
         this.transcriptStore = new ChatTranscriptStore();
-        this.transcriptAdapter = new LiveTranscriptAdapter();
+        this.transcriptMemoryMapper = new TranscriptMemoryMapper();
+        this.chatMemorySettings = new ChatMemorySettings();
         this.mapRootShortTextFormatter = new MapRootShortTextFormatter(availableMaps, textController);
         this.mapRootShortTextCountsMerger = new MapRootShortTextCountsMerger();
     }
 
-    public void initialize(ChatSessionMemoryController sessionMemoryController) {
-        LiveChatSession initialSession = liveChatSessionManager.createSession(
-            sessionMemoryController, buildDefaultChatName());
+    public void initialize(ChatMemory chatMemory) {
+        LiveChatSession initialSession = liveChatSessionManager.createSession(chatMemory, buildDefaultChatName());
         liveChatSessionManager.setCurrentSession(initialSession.getId());
-        sessionActivationHandler.activate(sessionMemoryController, false);
+        sessionActivationHandler.activate(chatMemory, false);
     }
 
     public void startNewChat() {
@@ -73,7 +63,6 @@ public class LiveChatController {
     }
 
     public void openLiveChats() {
-        saveCurrentSessionState();
         createChatListDialog().openDialog();
     }
 
@@ -98,30 +87,15 @@ public class LiveChatController {
     }
 
     public void recordUserMessage(String message) {
-        LiveChatSession session = liveChatSessionManager.getCurrentSession();
-        if (session == null) {
-            return;
-        }
-        session.setLastActivityTimestamp(System.currentTimeMillis());
-        transcriptAdapter.appendUserMessage(session, message);
+        synchronizeTranscriptWithMemory();
     }
 
     public void recordAssistantMessage(String message) {
-        LiveChatSession session = liveChatSessionManager.getCurrentSession();
-        if (session == null) {
-            return;
-        }
-        session.setLastActivityTimestamp(System.currentTimeMillis());
-        transcriptAdapter.appendAssistantMessage(session, message);
+        synchronizeTranscriptWithMemory();
     }
 
     public void recordAssistantProfileMessage(AssistantProfileSystemMessage message) {
-        LiveChatSession session = liveChatSessionManager.getCurrentSession();
-        if (session == null || message == null) {
-            return;
-        }
-        session.setLastActivityTimestamp(System.currentTimeMillis());
-        transcriptAdapter.appendAssistantProfileMessage(session, message);
+        synchronizeTranscriptWithMemory();
     }
 
     public List<ChatTranscriptEntry> snapshotTranscriptEntries() {
@@ -132,23 +106,51 @@ public class LiveChatController {
         return new ArrayList<>(session.getTranscriptEntries());
     }
 
-    public void restoreTranscriptEntries(List<ChatTranscriptEntry> entries) {
+    public void persistCurrentSessionIfNeeded() {
+        persistCurrentSession();
+    }
+
+    public boolean canUndo() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        return memory != null && memory.canUndo();
+    }
+
+    public boolean canRedo() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        return memory != null && memory.canRedo();
+    }
+
+    public String undoLastTurn() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory == null || !memory.canUndo()) {
+            return "";
+        }
+        String userMessage = memory.undo();
+        synchronizeTranscriptWithMemory();
+        return userMessage;
+    }
+
+    public void redoLastTurn() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory == null || !memory.canRedo()) {
+            return;
+        }
+        memory.redo();
+        synchronizeTranscriptWithMemory();
+    }
+
+    public void synchronizeTranscriptWithMemory() {
         LiveChatSession session = liveChatSessionManager.getCurrentSession();
         if (session == null) {
             return;
         }
-        session.setTranscriptEntries(entries == null ? new ArrayList<>() : new ArrayList<>(entries));
-    }
-
-    public void persistCurrentSessionIfNeeded() {
-        saveCurrentSessionState();
-        persistCurrentSession();
+        session.setTranscriptEntries(transcriptMemoryMapper.toTranscriptEntries(session.getChatMemory()));
+        session.setLastActivityTimestamp(System.currentTimeMillis());
     }
 
     private void switchToNewSession() {
-        saveCurrentSessionState();
         persistCurrentSession();
-        ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
+        ChatMemory newChatMemory = createChatMemory();
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
         switchToSession(newSession.getId(), false, false);
     }
@@ -166,7 +168,6 @@ public class LiveChatController {
             return;
         }
         if (saveCurrent) {
-            saveCurrentSessionState();
             persistCurrentSession();
         }
         liveChatSessionManager.setCurrentSession(sessionId);
@@ -174,8 +175,7 @@ public class LiveChatController {
         if (session == null) {
             return;
         }
-        messageHistory.restoreMessages(session.getMessageSnapshots());
-        sessionActivationHandler.activate(session.getChatMemoryController(), fromTranscriptRestore);
+        sessionActivationHandler.activate(session.getChatMemory(), fromTranscriptRestore);
     }
 
     private void closeSession(LiveChatSessionId sessionId) {
@@ -184,7 +184,6 @@ public class LiveChatController {
         }
         LiveChatSession activeSession = liveChatSessionManager.getCurrentSession();
         if (activeSession != null && sessionId.equals(activeSession.getId())) {
-            saveCurrentSessionState();
             persistCurrentSession();
         }
         liveChatSessionManager.remove(sessionId);
@@ -206,20 +205,10 @@ public class LiveChatController {
         if (!isActive) {
             return;
         }
-        ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
+        ChatMemory newChatMemory = createChatMemory();
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory, buildDefaultChatName());
         liveChatSessionManager.setCurrentSession(newSession.getId());
-        messageHistory.clear();
         sessionActivationHandler.activate(newChatMemory, false);
-    }
-
-    private void saveCurrentSessionState() {
-        LiveChatSession session = liveChatSessionManager.getCurrentSession();
-        if (session == null) {
-            return;
-        }
-        List<ChatMessageHistory.ChatMessageSnapshot> snapshots = messageHistory.snapshot();
-        session.setMessageSnapshots(new ArrayList<>(snapshots));
     }
 
     private void persistCurrentSession() {
@@ -328,116 +317,58 @@ public class LiveChatController {
         if (transcriptId == null) {
             return;
         }
-        saveCurrentSessionState();
         persistCurrentSession();
         ChatTranscriptRecord record = transcriptStore.load(transcriptId);
         if (record == null) {
             return;
         }
-        ChatSessionMemoryController newChatMemory = new ChatSessionMemoryController();
+        ChatMemory newChatMemory = createChatMemory();
         LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory,
             record.getDisplayName() == null || record.getDisplayName().trim().isEmpty()
                 ? buildDefaultChatName()
                 : record.getDisplayName());
         newSession.setTranscriptId(transcriptId);
         newSession.setLastActivityTimestamp(record.getTimestamp());
-        newSession.setMessageSnapshots(buildSnapshotsFromRecord(record));
         newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
-        transcriptAdapter.setEntries(newSession, record.getEntries());
-        switchToSession(newSession.getId(), false, true);
+        newSession.setTranscriptEntries(record.getEntries() == null
+            ? new ArrayList<>()
+            : new ArrayList<>(record.getEntries()));
         seedTranscriptMemory(newSession, record);
+        switchToSession(newSession.getId(), false, true);
     }
 
     private void seedTranscriptMemory(LiveChatSession session, ChatTranscriptRecord record) {
         if (session == null || record == null) {
             return;
         }
-        session.getChatMemoryController().seedTranscriptWithHiddenExchange(record.getEntries(),
+        transcriptMemoryMapper.seedTranscriptWithHiddenExchange(session.getChatMemory(), record.getEntries(),
             TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE);
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory(session);
+        if (memory != null) {
+            memory.initializeUndoRedoFromMessages();
+        }
     }
 
-    private List<ChatMessageHistory.ChatMessageSnapshot> buildSnapshotsFromRecord(ChatTranscriptRecord record) {
-        List<ChatMessageHistory.ChatMessageSnapshot> snapshots = new ArrayList<>();
-        if (record == null || record.getEntries() == null) {
-            return snapshots;
-        }
-        ChatMessageRenderer renderer = new ChatMessageRenderer();
-        List<ChatTranscriptEntry> entries = record.getEntries();
-        for (int index = 0; index < entries.size(); index++) {
-            ChatTranscriptEntry entry = entries.get(index);
-            if (entry == null || entry.getRole() == null) {
-                continue;
-            }
-            if (isProfileAcknowledgementEntry(entries, index)) {
-                continue;
-            }
-            addSnapshot(snapshots, renderer, entry);
-        }
-        return snapshots;
+    private AssistantProfileChatMemory activeAssistantProfileChatMemory() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        return activeAssistantProfileChatMemory(session);
     }
 
-    private void addSnapshot(List<ChatMessageHistory.ChatMessageSnapshot> snapshots,
-                             ChatMessageRenderer renderer,
-                             ChatTranscriptEntry entry) {
-        if (entry == null || snapshots == null || renderer == null) {
-            return;
+    private AssistantProfileChatMemory activeAssistantProfileChatMemory(LiveChatSession session) {
+        if (session == null) {
+            return null;
         }
-        if (entry.getRole() != ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM
-            && (entry.getText() == null || entry.getText().trim().isEmpty())) {
-            return;
+        ChatMemory memory = session.getChatMemory();
+        if (memory instanceof AssistantProfileChatMemory) {
+            return (AssistantProfileChatMemory) memory;
         }
-        boolean isAssistant = entry.getRole() == ChatTranscriptRole.ASSISTANT;
-        String snapshotText = entry.getText();
-        if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            snapshotText = buildProfilePaneMessage(entry);
-        } else if (!isAssistant && entry.getRole() != ChatTranscriptRole.USER) {
-            snapshotText = MessageBuilder.buildSystemInstructionText(snapshotText);
-        }
-        String messageText = renderer.renderMessage(snapshotText, isAssistant);
-        String styleClassName;
-        if (entry.getRole() == ChatTranscriptRole.USER) {
-            styleClassName = USER_STYLE_CLASS;
-        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
-            styleClassName = ASSISTANT_STYLE_CLASS;
-        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            styleClassName = PROFILE_STYLE_CLASS;
-        } else {
-            styleClassName = SYSTEM_STYLE_CLASS;
-        }
-        String messageMarkup = "<div class=\"" + styleClassName + "\">" + messageText + "</div>";
-        snapshots.add(new ChatMessageHistory.ChatMessageSnapshot(snapshotText, messageMarkup, styleClassName));
+        return null;
     }
 
-    private boolean isProfileAcknowledgementEntry(List<ChatTranscriptEntry> entries, int index) {
-        if (entries == null || index <= 0 || index >= entries.size()) {
-            return false;
+    private ChatMemory createChatMemory() {
+        if (chatMemorySettings.getChatMemoryMode() == ChatMemoryMode.DISABLED) {
+            return null;
         }
-        ChatTranscriptEntry current = entries.get(index);
-        ChatTranscriptEntry previous = entries.get(index - 1);
-        if (current == null || previous == null) {
-            return false;
-        }
-        if (current.getRole() != ChatTranscriptRole.ASSISTANT) {
-            return false;
-        }
-        if (previous.getRole() != ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            return false;
-        }
-        String text = current.getText();
-        return MessageBuilder.buildInstructionAcknowledgementText().equals(text == null ? "" : text.trim());
-    }
-
-    private String buildProfilePaneMessage(ChatTranscriptEntry entry) {
-        if (entry == null) {
-            return TextUtils.getText("ai_chat_profile_label");
-        }
-        if (entry instanceof AssistantProfileTranscriptEntry) {
-            AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
-            String profileName = assistantProfileEntry.getProfileName();
-            if (profileName != null && !profileName.trim().isEmpty()) {
-                return TextUtils.format("ai_chat_profile_message", profileName.trim());
-            }
-        }
-        return TextUtils.getText("ai_chat_profile_label");
+        return AssistantProfileChatMemory.withMaxMessages(chatMemorySettings.getMaximumMessageCount());
     }
 }

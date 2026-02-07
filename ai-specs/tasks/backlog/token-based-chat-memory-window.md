@@ -47,17 +47,15 @@
   @startuml
   actor User
   participant "AIChatPanel" as ChatPanel
-  participant "ChatSessionMemoryController" as MemoryController
   participant "AssistantProfileChatMemory" as Memory
   participant "TokenCountEstimator" as Estimator
 
   User -> ChatPanel : send message
-  ChatPanel -> MemoryController : getChatMemory()
-  MemoryController -> Memory : add(user/assistant/tool/system)
+  ChatPanel -> Memory : add(user/assistant/tool/system)
   Memory -> Estimator : estimateTokenCountInMessages(...)
   Estimator --> Memory : token count
   Memory -> Memory : evict oldest until within maxTokens
-  Memory --> MemoryController : bounded message history
+  Memory --> ChatPanel : bounded message history
   @enduml
   ```
 
@@ -67,15 +65,13 @@
   package "org.freeplane.plugin.ai.chat" {
     class ChatMemoryMode
     class ChatMemorySettings
-    class ChatSessionMemoryController
     class AssistantProfileChatMemory
     interface ChatTokenEstimatorProvider
     class AdaptiveTokenCountEstimator
   }
 
   ChatMemorySettings --> ChatMemoryMode : reads
-  ChatSessionMemoryController --> ChatMemorySettings : uses
-  ChatSessionMemoryController --> AssistantProfileChatMemory : builds
+  AssistantProfileChatMemory --> ChatMemorySettings : reads mode and limits
   AssistantProfileChatMemory --> ChatTokenEstimatorProvider : queries
   ChatTokenEstimatorProvider --> AdaptiveTokenCountEstimator : delegates
   @enduml
@@ -97,11 +93,8 @@
     behavior for tests.
   - Keep `MESSAGE_WINDOW` as compatibility mode and default migration
     path explicit in settings.
-  - Ensure snapshot/restore (`snapshotMessages`, `restoreMessages`) in
-    `ChatSessionMemoryController` continues to work identically with
-    token-window mode.
-  - Keep transcript seed methods (`seedTranscript`,
-    `seedTranscriptWithHiddenExchange`) behavior unchanged.
+  - Keep transcript seeding and conversation-cursor behavior unchanged
+    under token mode.
 - **Test specification:**
   - Automated tests:
     - Add `AssistantProfileChatMemory` tests for token-window eviction:
@@ -115,8 +108,8 @@
     - Add `ChatMemorySettings` parsing tests for token count property
       defaults and invalid values.
     - Add `ChatMemoryMode` parsing tests including `token_window`.
-    - Add `ChatSessionMemoryController` tests to verify memory creation
-      mode selection and snapshot/restore behavior in token mode.
+    - Add runtime integration tests to verify panel/session flows use
+      token mode without changing undo/redo and transcript semantics.
   - Manual tests:
     - Run a long multi-turn chat with large messages and verify old
       turns are removed earlier than in message-window mode while recent

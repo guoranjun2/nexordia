@@ -11,8 +11,8 @@
 - **Developer Briefing:** The current panel already restores one pending
   user message when cancellation is used during an active request. The
   new behavior extends this to multi-step conversation rewind and
-  forward navigation at turn granularity, while keeping chat memory,
-  on-screen history, and transcript entries consistent.
+  forward navigation at turn granularity. The target architecture uses
+  memory-owned cursor movement, not snapshot stacks.
 - **Research:**
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java`
     keeps request lifecycle state in `pendingHistorySnapshot`,
@@ -30,11 +30,13 @@
     side (`sendButton`) and no dedicated undo/redo controls.
   - `ChatMessageHistory` supports full snapshot/restore of rendered
     chat entries through `ChatMessageSnapshot`.
-  - `ChatSessionMemoryController` supports full snapshot/restore of
-    LangChain4j `ChatMessage` lists.
   - `LiveChatController` supports snapshot/restore of transcript entries
     for the active live session and already records user/assistant
     transcript entries per turn.
+  - In-progress task
+    `ai-specs/tasks/in-progress/unified-conversation-memory.md`
+    moves turn ownership to `AssistantProfileChatMemory` and removes
+    `ChatSessionMemoryController`.
   - Chat translation keys for send/cancel/chats are present in
     `freeplane/src/viewer/resources/translations/Resources_en.properties`;
     no undo/redo chat keys exist yet.
@@ -47,26 +49,26 @@
   @startuml
   actor User
   participant "AIChatPanel" as ChatPanel
-  participant "ChatTurnRewindController" as Rewind
+  participant "AssistantProfileChatMemory" as ChatMemory
   participant "AIChatService" as ChatService
 
   User -> ChatPanel : send user message
-  ChatPanel -> Rewind : captureBeforeTurn(snapshot, userMessage)
+  ChatPanel -> ChatMemory : appendUserTurnPart(userMessage)
   ChatPanel -> ChatService : chat(userMessage)
   ChatService --> ChatPanel : assistant response
-  ChatPanel -> Rewind : captureAfterTurn(snapshot)
-  ChatPanel -> Rewind : clearRedo()
+  ChatPanel -> ChatMemory : appendAssistantTurnPart(response)
 
   User -> ChatPanel : click Undo
-  ChatPanel -> Rewind : undo(currentSnapshot)
-  Rewind --> ChatPanel : restoreSnapshot + input userMessage
+  ChatPanel -> ChatMemory : moveCursor(back)
+  ChatMemory --> ChatPanel : activeTimeline + rewoundUserMessage
 
   User -> ChatPanel : click Redo
-  ChatPanel -> Rewind : redo(currentSnapshot)
-  Rewind --> ChatPanel : restoreSnapshot + input afterTurnInput
+  ChatPanel -> ChatMemory : moveCursor(forward)
+  ChatMemory --> ChatPanel : activeTimeline
 
   User -> ChatPanel : send new message after undo
-  ChatPanel -> Rewind : clearRedo()
+  ChatPanel -> ChatMemory : appendUserTurnPart(newMessage)
+  ChatMemory -> ChatMemory : clearForwardBranch
   @enduml
   ```
 
@@ -75,58 +77,48 @@
   set separator none
   package "org.freeplane.plugin.ai.chat" {
     class AIChatPanel
-    class ChatTurnRewindController
-    class ChatConversationSnapshot
-    class ChatTurnRewindStep
+    class AssistantProfileChatMemory
+    interface ConversationCursorNavigator
+    interface ConversationMessagesView
     class LiveChatSession
   }
 
-  AIChatPanel --> ChatTurnRewindController : manage undo/redo
-  ChatTurnRewindController --> ChatConversationSnapshot : stores
-  ChatTurnRewindController --> ChatTurnRewindStep : pushes/pops
-  LiveChatSession --> ChatTurnRewindController : per-session state
+  AssistantProfileChatMemory ..|> ConversationCursorNavigator
+  AssistantProfileChatMemory ..|> ConversationMessagesView
+  AIChatPanel --> ConversationCursorNavigator : undo/redo
+  AIChatPanel --> ConversationMessagesView : render + restore input
+  LiveChatSession --> AssistantProfileChatMemory : per-session owner
   @enduml
   ```
 
   - Add a compact button group near `sendButton` with `Undo` and `Redo`
     icons or localized labels, and enable each button only when the
     corresponding action is available.
-  - Introduce `ChatConversationSnapshot` with:
-    `messageSnapshots`, `memoryMessages`, `transcriptEntries`, and
-    `inputText`.
-  - Introduce `ChatTurnRewindStep` with:
-    `beforeTurnSnapshot`, `afterTurnSnapshot`, and `userMessage`.
-  - Introduce `ChatTurnRewindController` that owns two stacks:
-    `undoSteps` and `redoSteps`, and exposes:
-    `recordCompletedTurn(...)`, `undo(...)`, `redo(...)`,
-    `clearRedo()`, `clearAll()`, `canUndo()`, and `canRedo()`.
+  - Use one memory-owned turn chain with a current cursor.
   - Integrate with request lifecycle in `AIChatPanel`:
-    - On send start: capture the `before` snapshot for the pending turn.
-    - On successful assistant completion: capture `after` snapshot and
-      push a completed step to undo; clear redo.
-    - On cancellation/interruption before completion: restore pending
-      state and keep user message in input without recording a new undo
-      step.
+    - On send start: keep interrupted request text in input draft state.
+    - On successful assistant completion: append completed turn to
+      memory-owned chain.
+    - On cancellation/interruption before completion: keep user message
+      in input and do not append a completed assistant turn.
   - Undo behavior:
-    - Restore `beforeTurnSnapshot`.
-    - Put `userMessage` into input with caret at end.
-    - Push corresponding step into redo stack.
+    - Move memory cursor one completed turn back.
+    - Render active timeline from memory.
+    - Put rewound turn user text into input with caret at end.
   - Redo behavior:
-    - Restore `afterTurnSnapshot`.
-    - Restore `afterTurnSnapshot.inputText` (normally empty).
-    - Push step back into undo stack.
-  - New message after at least one undo must clear redo immediately
-    before dispatching the new request.
-  - Keep rewind history per live chat session by storing rewind
-    controller state in `LiveChatSession` and reattaching it on session
-    activation; starting a new chat initializes empty rewind stacks.
+    - Move memory cursor one completed turn forward.
+    - Render active timeline from memory.
+    - Keep input empty unless another draft is present.
+  - New message after at least one undo clears forward branch in memory.
+  - Keep cursor state per live chat session by storing memory owner in
+    `LiveChatSession`; switching sessions restores each cursor naturally.
   - Rewind/redo actions are disabled while a request is active.
 - **Test specification:**
   - Automated tests:
-    - Add focused tests for `ChatTurnRewindController`:
-      `undo_restores_previous_snapshot_and_user_input`,
-      `redo_restores_rewound_turn`,
-      `sending_new_message_after_undo_clears_redo`.
+    - Add focused tests for memory cursor behavior:
+      `undo_moves_cursor_back_and_returns_user_text`,
+      `redo_moves_cursor_forward`,
+      `sending_new_message_after_undo_clears_forward_branch`.
     - Add `AIChatPanel` lifecycle tests for interruption behavior:
       `cancelled_request_restores_pending_user_message_to_input`.
     - Add `AIChatPanel` tests verifying button state transitions:

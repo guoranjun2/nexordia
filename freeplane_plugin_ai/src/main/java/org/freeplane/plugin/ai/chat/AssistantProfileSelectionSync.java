@@ -9,7 +9,7 @@ import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
 class AssistantProfileSelectionSync {
     private final AssistantProfileSelectionModel selectionModel;
     private final LiveChatController liveChatController;
-    private ChatSessionMemoryController chatSessionMemoryController;
+    private ChatMemory chatMemory;
     private Consumer<String> profileMessageConsumer;
     private AssistantProfile pendingProfile;
     private String pendingProfileId;
@@ -20,8 +20,8 @@ class AssistantProfileSelectionSync {
         this.liveChatController = liveChatController;
     }
 
-    void setChatSessionMemoryController(ChatSessionMemoryController chatSessionMemoryController) {
-        this.chatSessionMemoryController = chatSessionMemoryController;
+    void setChatMemory(ChatMemory chatMemory) {
+        this.chatMemory = chatMemory;
     }
 
     void setProfileMessageConsumer(Consumer<String> profileMessageConsumer) {
@@ -41,9 +41,8 @@ class AssistantProfileSelectionSync {
         if (prompt == null || prompt.trim().isEmpty()) {
             return;
         }
-        ChatMemory memory = chatSessionMemoryController == null ? null : chatSessionMemoryController.getChatMemory();
-        if (memory != null) {
-            memory.add(message);
+        if (chatMemory != null) {
+            chatMemory.add(message);
         }
         liveChatController.recordAssistantProfileMessage(message);
         if (profileMessageConsumer != null) {

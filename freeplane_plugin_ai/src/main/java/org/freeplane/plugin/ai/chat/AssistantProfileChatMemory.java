@@ -5,6 +5,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -12,6 +13,9 @@ import dev.langchain4j.service.memory.ChatMemoryService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class AssistantProfileChatMemory implements ChatMemory {
@@ -20,6 +24,8 @@ public class AssistantProfileChatMemory implements ChatMemory {
     private final Function<Object, Integer> maxMessagesProvider;
     private GeneralSystemMessage generalSystemMessage;
     private final List<ChatMessage> conversationMessages = new ArrayList<>();
+    private final List<Integer> turnEndIndexes = new ArrayList<>();
+    private int currentTurnCount;
 
     private AssistantProfileChatMemory(Builder builder) {
         this.id = ensureNotNull(builder.id, "id");
@@ -37,12 +43,13 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (message == null) {
             return;
         }
-        ensureCapacity();
+        discardRedoBranchIfNeeded();
         if (message instanceof TranscriptHiddenSystemMessage) {
             if (!containsInstructionOfType(TranscriptHiddenSystemMessage.class)) {
                 conversationMessages.add(message);
                 conversationMessages.add(new InstructionAckMessage());
                 ensureCapacity();
+                rebuildTurnBoundaries();
             }
             return;
         }
@@ -51,6 +58,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
                 conversationMessages.add(message);
                 conversationMessages.add(new InstructionAckMessage());
                 ensureCapacity();
+                rebuildTurnBoundaries();
             }
             return;
         }
@@ -59,6 +67,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
             conversationMessages.add(message);
             conversationMessages.add(new InstructionAckMessage());
             ensureCapacity();
+            rebuildTurnBoundaries();
             return;
         }
         if (message instanceof InstructionAckMessage) {
@@ -67,22 +76,68 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (message instanceof SystemMessage) {
             generalSystemMessage = toGeneralSystemMessage((SystemMessage) message);
             ensureCapacity();
+            rebuildTurnBoundaries();
             return;
         }
         conversationMessages.add(message);
         ensureCapacity();
+        rebuildTurnBoundaries();
     }
 
     @Override
     public List<ChatMessage> messages() {
-        ensureCapacity();
-        return buildMessages();
+        return buildMessages(activeConversationEndIndex());
     }
 
     @Override
     public void clear() {
         generalSystemMessage = null;
         conversationMessages.clear();
+        turnEndIndexes.clear();
+        currentTurnCount = 0;
+    }
+
+    public boolean canUndo() {
+        return currentTurnCount > 0;
+    }
+
+    public boolean canRedo() {
+        return currentTurnCount < turnEndIndexes.size();
+    }
+
+    public String undo() {
+        if (!canUndo()) {
+            return "";
+        }
+        int turnIndex = currentTurnCount - 1;
+        int from = turnIndex == 0 ? 0 : turnEndIndexes.get(turnIndex - 1);
+        int to = turnEndIndexes.get(turnIndex);
+        currentTurnCount = turnIndex;
+        return findUserMessageInRange(from, to);
+    }
+
+    public void redo() {
+        if (!canRedo()) {
+            return;
+        }
+        currentTurnCount++;
+    }
+
+    public void initializeUndoRedoFromMessages() {
+        rebuildTurnBoundaries();
+    }
+
+    public List<ChatTranscriptEntry> activeTranscriptEntries() {
+        List<ChatTranscriptEntry> entries = new ArrayList<>();
+        int endIndex = activeConversationEndIndex();
+        for (int index = 0; index < endIndex; index++) {
+            ChatMessage message = conversationMessages.get(index);
+            ChatTranscriptEntry entry = toTranscriptEntry(message);
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+        return entries;
     }
 
     private void ensureCapacity() {
@@ -126,12 +181,14 @@ public class AssistantProfileChatMemory implements ChatMemory {
         return count;
     }
 
-    private List<ChatMessage> buildMessages() {
+    private List<ChatMessage> buildMessages(int conversationEndIndex) {
         List<ChatMessage> messages = new ArrayList<>();
         if (generalSystemMessage != null) {
             messages.add(generalSystemMessage);
         }
-        for (ChatMessage message : conversationMessages) {
+        int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
+        for (int index = 0; index < endIndex; index++) {
+            ChatMessage message = conversationMessages.get(index);
             if (message instanceof AssistantProfileSystemMessage
                 || message instanceof TranscriptHiddenSystemMessage
                 || message instanceof RemovedForSpaceSystemMessage) {
@@ -142,6 +199,13 @@ public class AssistantProfileChatMemory implements ChatMemory {
             messages.add(message);
         }
         return messages;
+    }
+
+    private int activeConversationEndIndex() {
+        if (canRedo()) {
+            return currentTurnCount == 0 ? 0 : turnEndIndexes.get(currentTurnCount - 1);
+        }
+        return conversationMessages.size();
     }
 
     private void shortenStoredProfileInstructions() {
@@ -194,6 +258,77 @@ public class AssistantProfileChatMemory implements ChatMemory {
             return (GeneralSystemMessage) message;
         }
         return new GeneralSystemMessage(message.text());
+    }
+
+    private void rebuildTurnBoundaries() {
+        turnEndIndexes.clear();
+        for (int index = 0; index < conversationMessages.size(); index++) {
+            ChatMessage message = conversationMessages.get(index);
+            if (message instanceof AiMessage && !(message instanceof InstructionAckMessage)) {
+                turnEndIndexes.add(index + 1);
+            }
+        }
+        currentTurnCount = turnEndIndexes.size();
+    }
+
+    private void discardRedoBranchIfNeeded() {
+        if (!canRedo()) {
+            return;
+        }
+        int keepSize = currentTurnCount == 0 ? 0 : turnEndIndexes.get(currentTurnCount - 1);
+        while (conversationMessages.size() > keepSize) {
+            conversationMessages.remove(conversationMessages.size() - 1);
+        }
+        while (turnEndIndexes.size() > currentTurnCount) {
+            turnEndIndexes.remove(turnEndIndexes.size() - 1);
+        }
+    }
+
+    private String findUserMessageInRange(int from, int to) {
+        int safeFrom = Math.max(0, from);
+        int safeTo = Math.min(to, conversationMessages.size());
+        for (int index = safeTo - 1; index >= safeFrom; index--) {
+            ChatMessage message = conversationMessages.get(index);
+            if (message instanceof UserMessage) {
+                String text = ((UserMessage) message).singleText();
+                if (text != null && !text.startsWith(MessageBuilder.CONTROL_INSTRUCTION_PREFIX)) {
+                    return text;
+                }
+            }
+        }
+        return "";
+    }
+
+    private ChatTranscriptEntry toTranscriptEntry(ChatMessage message) {
+        if (message == null) {
+            return null;
+        }
+        if (message instanceof AssistantProfileSystemMessage) {
+            AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
+            return new AssistantProfileTranscriptEntry(
+                profileMessage.getProfileId(),
+                profileMessage.getProfileName(),
+                profileMessage.containsProfileDefinition());
+        }
+        if (message instanceof RemovedForSpaceSystemMessage) {
+            return new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,
+                ((RemovedForSpaceSystemMessage) message).text());
+        }
+        if (message instanceof UserMessage) {
+            String text = ((UserMessage) message).singleText();
+            if (text == null || text.trim().isEmpty() || text.startsWith(MessageBuilder.CONTROL_INSTRUCTION_PREFIX)) {
+                return null;
+            }
+            return new ChatTranscriptEntry(ChatTranscriptRole.USER, text);
+        }
+        if (message instanceof AiMessage && !(message instanceof InstructionAckMessage)) {
+            String text = ((AiMessage) message).text();
+            if (text == null || text.trim().isEmpty()) {
+                return null;
+            }
+            return new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, text);
+        }
+        return null;
     }
 
     public static Builder builder() {

@@ -1,5 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
+import dev.langchain4j.memory.ChatMemory;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -11,10 +12,9 @@ import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 
 final class LiveChatSession {
     private final LiveChatSessionId id;
-    private final ChatSessionMemoryController chatMemoryController;
+    private final ChatMemory chatMemory;
     private final Set<String> mapIds;
     private final List<MapRootShortTextCount> mapRootShortTextCounts;
-    private List<ChatMessageHistory.ChatMessageSnapshot> messageSnapshots;
     private List<ChatTranscriptEntry> transcriptEntries;
     private ChatTranscriptId transcriptId;
     private String displayName;
@@ -22,13 +22,12 @@ final class LiveChatSession {
     private boolean userMessageNameApplied;
     private long lastActivityTimestamp;
 
-    LiveChatSession(LiveChatSessionId id, ChatSessionMemoryController chatMemoryController, String displayName) {
+    LiveChatSession(LiveChatSessionId id, ChatMemory chatMemory, String displayName) {
         this.id = id;
-        this.chatMemoryController = chatMemoryController;
+        this.chatMemory = chatMemory;
         this.displayName = displayName;
         this.mapIds = new LinkedHashSet<>();
         this.mapRootShortTextCounts = new ArrayList<>();
-        this.messageSnapshots = new ArrayList<>();
         this.transcriptEntries = new ArrayList<>();
     }
 
@@ -36,16 +35,8 @@ final class LiveChatSession {
         return id;
     }
 
-    ChatSessionMemoryController getChatMemoryController() {
-        return chatMemoryController;
-    }
-
-    List<ChatMessageHistory.ChatMessageSnapshot> getMessageSnapshots() {
-        return messageSnapshots;
-    }
-
-    void setMessageSnapshots(List<ChatMessageHistory.ChatMessageSnapshot> messageSnapshots) {
-        this.messageSnapshots = messageSnapshots;
+    ChatMemory getChatMemory() {
+        return chatMemory;
     }
 
     List<ChatTranscriptEntry> getTranscriptEntries() {

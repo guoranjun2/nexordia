@@ -1,5 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
+import dev.langchain4j.memory.ChatMemory;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,9 +10,9 @@ final class LiveChatSessionManager {
     private final Map<LiveChatSessionId, LiveChatSession> sessions = new LinkedHashMap<>();
     private LiveChatSessionId currentSessionId;
 
-    LiveChatSession createSession(ChatSessionMemoryController chatMemoryController, String displayName) {
+    LiveChatSession createSession(ChatMemory chatMemory, String displayName) {
         LiveChatSessionId id = LiveChatSessionId.create();
-        LiveChatSession session = new LiveChatSession(id, chatMemoryController, displayName);
+        LiveChatSession session = new LiveChatSession(id, chatMemory, displayName);
         session.setLastActivityTimestamp(System.currentTimeMillis());
         sessions.put(id, session);
         if (currentSessionId == null) {
@@ -38,7 +39,7 @@ final class LiveChatSessionManager {
     List<LiveChatSessionSummary> listSessions() {
         List<LiveChatSessionSummary> summaries = new ArrayList<>();
         for (LiveChatSession session : sessions.values()) {
-            if (session.getMessageSnapshots().isEmpty()) {
+            if (session.getTranscriptEntries().isEmpty()) {
                 continue;
             }
             summaries.add(new LiveChatSessionSummary(session.getId(), session.getDisplayName(),
