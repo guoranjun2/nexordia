@@ -5,21 +5,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.TokenCountEstimator;
 import java.util.List;
 import org.junit.Test;
+import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class AssistantProfileChatMemoryTest {
 
     @Test
     public void messages_ordersSystemMessagesBySlot() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(10);
+        AssistantProfileChatMemory uut = createMemory(500);
 
         uut.add(UserMessage.from("hello"));
         uut.add(new TranscriptHiddenSystemMessage("hidden"));
-        uut.add(new AssistantProfileSystemMessage("profile", "profile", "", true));
+        uut.add(new AssistantProfileControlInstructionMessage("profile", "profile", "", true));
         uut.add(new GeneralSystemMessage("general"));
         uut.add(new RemovedForSpaceSystemMessage("removed"));
 
@@ -48,11 +51,12 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void capacity_excludesTranscriptHiddenAndRemovedForSpace() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(2);
+        AssistantProfileChatMemory uut = createMemory(25);
 
         uut.add(new GeneralSystemMessage("general"));
         uut.add(new TranscriptHiddenSystemMessage("hidden"));
-        uut.add(UserMessage.from("first"));
+        uut.add(UserMessage.from("first first first first first first first first first first "
+            + "first first first first first first first first first first first first first first first first"));
         uut.add(AiMessage.from("second"));
 
         List<ChatMessage> messages = uut.messages();
@@ -73,9 +77,13 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void assistantProfileMessagesDropWhenNoConversationMessagesRemain() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(1);
+        AssistantProfileChatMemory uut = createMemory(25);
 
-        uut.add(new AssistantProfileSystemMessage("profile", "profile", "", true));
+        uut.add(new AssistantProfileControlInstructionMessage("profile", "profile",
+            "word word word word word word word word word word "
+                + "word word word word word word word word word word "
+                + "word word word word word word word word word word ",
+            true));
         uut.add(UserMessage.from("first"));
 
         List<ChatMessage> messages = uut.messages();
@@ -91,9 +99,10 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void removedForSpaceMessageInsertedOnce() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(1);
+        AssistantProfileChatMemory uut = createMemory(25);
 
-        uut.add(UserMessage.from("first"));
+        uut.add(UserMessage.from("first first first first first first first first first first "
+            + "first first first first first first first first first first first first first first first first"));
         uut.add(AiMessage.from("second"));
         uut.add(AiMessage.from("third"));
 
@@ -110,9 +119,9 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void olderProfileInstructionsAreCompactedToMarkers() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(10);
-        uut.add(new AssistantProfileSystemMessage("alpha", "Alpha", "First definition", true));
-        uut.add(new AssistantProfileSystemMessage("beta", "Beta", "Second definition", true));
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(new AssistantProfileControlInstructionMessage("alpha", "Alpha", "First definition", true));
+        uut.add(new AssistantProfileControlInstructionMessage("beta", "Beta", "Second definition", true));
         uut.add(UserMessage.from("hello"));
 
         List<ChatMessage> messages = uut.messages();
@@ -127,12 +136,12 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void profileInstructionCompactionPreservesConversationOrder() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
-        uut.add(new AssistantProfileSystemMessage("default", "Default", "Default definition", true));
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(new AssistantProfileControlInstructionMessage("default", "Default", "Default definition", true));
         uut.add(UserMessage.from("u1"));
-        uut.add(new AssistantProfileSystemMessage("a", "A", "A definition", true));
+        uut.add(new AssistantProfileControlInstructionMessage("a", "A", "A definition", true));
         uut.add(UserMessage.from("u2"));
-        uut.add(new AssistantProfileSystemMessage("default", "Default", "Default definition", true));
+        uut.add(new AssistantProfileControlInstructionMessage("default", "Default", "Default definition", true));
         uut.add(UserMessage.from("u3"));
 
         List<ChatMessage> messages = uut.messages();
@@ -156,7 +165,7 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void evictingToolRequestAlsoEvictsToolResults() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(1);
+        AssistantProfileChatMemory uut = createMemory(1);
         ToolExecutionRequest toolRequest = ToolExecutionRequest.builder()
             .id("tool-1")
             .name("test")
@@ -174,7 +183,7 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void undoAndRedoTrackLastCompletedTurns() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
+        AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("u1"));
         uut.add(AiMessage.from("a1"));
         uut.add(UserMessage.from("u2"));
@@ -199,7 +208,7 @@ public class AssistantProfileChatMemoryTest {
 
     @Test
     public void newMessageAfterUndoClearsRedoBranch() {
-        AssistantProfileChatMemory uut = AssistantProfileChatMemory.withMaxMessages(20);
+        AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("u1"));
         uut.add(AiMessage.from("a1"));
         uut.add(UserMessage.from("u2"));
@@ -214,5 +223,175 @@ public class AssistantProfileChatMemoryTest {
             .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
             .contains("u1", "u3")
             .doesNotContain("u2");
+    }
+
+    @Test
+    public void tokenCountingUsesDeltaUpdates() {
+        CountingWordTokenCountEstimator estimator = new CountingWordTokenCountEstimator();
+        AssistantProfileChatMemory uut = AssistantProfileChatMemory.builder()
+            .maxTokens(500)
+            .tokenCountEstimator(estimator)
+            .build();
+
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        int callsAfterAdds = estimator.getMessageEstimateCalls();
+        uut.messages();
+        int callsAfterRead = estimator.getMessageEstimateCalls();
+
+        assertThat(callsAfterAdds).isEqualTo(4);
+        assertThat(callsAfterRead).isEqualTo(callsAfterAdds);
+    }
+
+    @Test
+    public void deferredCapacityChecksEvictOnCompletion() {
+        AssistantProfileChatMemory uut = createMemory(2);
+        uut.deferCapacityChecks();
+
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u2");
+
+        uut.completeDeferredCapacityChecks();
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u2")
+            .doesNotContain("u1");
+    }
+
+    @Test
+    public void evictOldestTurnRemovesFirstTurn() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        boolean evicted = uut.evictOldestTurn();
+
+        assertThat(evicted).isTrue();
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u2")
+            .doesNotContain("u1");
+    }
+
+    @Test
+    public void truncateConversationMessagesPreservesAssistantProfileMessageType() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(new AssistantProfileControlInstructionMessage("profile", "Profile", "definition", true));
+        int sizeAfterProfileInjection = uut.conversationMessageCount();
+        uut.add(UserMessage.from("u1"));
+
+        uut.truncateConversationMessagesTo(sizeAfterProfileInjection);
+
+        assertThat(uut.activeTranscriptEntries())
+            .anyMatch(entry -> entry instanceof AssistantProfileTranscriptEntry);
+    }
+
+    @Test
+    public void tokenCountingIncludesToolMessagesWithoutFullRecount() {
+        CountingWordTokenCountEstimator estimator = new CountingWordTokenCountEstimator();
+        AssistantProfileChatMemory uut = AssistantProfileChatMemory.builder()
+            .maxTokens(500)
+            .tokenCountEstimator(estimator)
+            .build();
+        ToolExecutionRequest toolRequest = ToolExecutionRequest.builder()
+            .id("tool-1")
+            .name("test")
+            .arguments("{}")
+            .build();
+
+        uut.add(AiMessage.from(List.of(toolRequest)));
+        uut.add(ToolExecutionResultMessage.from("tool-1", "test", "result"));
+        int callsAfterAdds = estimator.getMessageEstimateCalls();
+        uut.messages();
+
+        assertThat(callsAfterAdds).isEqualTo(2);
+        assertThat(estimator.getMessageEstimateCalls()).isEqualTo(callsAfterAdds);
+    }
+
+    @Test
+    public void truncateConversationMessagesAdjustsTokenTotalByDelta() {
+        AssistantProfileChatMemory uut = createMemory(3);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+
+        uut.truncateConversationMessagesTo(2);
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1")
+            .doesNotContain("u2");
+    }
+
+    private AssistantProfileChatMemory createMemory(int maxTokens) {
+        return AssistantProfileChatMemory.builder()
+            .maxTokens(maxTokens)
+            .tokenCountEstimator(new WordCountTokenCountEstimator())
+            .build();
+    }
+
+    private static class WordCountTokenCountEstimator implements TokenCountEstimator {
+
+        @Override
+        public int estimateTokenCountInText(String text) {
+            if (text == null) {
+                return 1;
+            }
+            String normalized = text.trim();
+            if (normalized.isEmpty()) {
+                return 1;
+            }
+            return normalized.split("\\s+").length;
+        }
+
+        @Override
+        public int estimateTokenCountInMessage(ChatMessage message) {
+            if (message instanceof UserMessage) {
+                return estimateTokenCountInText(((UserMessage) message).singleText());
+            }
+            if (message instanceof AiMessage) {
+                return estimateTokenCountInText(((AiMessage) message).text());
+            }
+            if (message instanceof SystemMessage) {
+                return estimateTokenCountInText(((SystemMessage) message).text());
+            }
+            return estimateTokenCountInText(message.toString());
+        }
+
+        @Override
+        public int estimateTokenCountInMessages(Iterable<ChatMessage> messages) {
+            int total = 0;
+            for (ChatMessage message : messages) {
+                total += estimateTokenCountInMessage(message);
+            }
+            return total;
+        }
+    }
+
+    private static class CountingWordTokenCountEstimator extends WordCountTokenCountEstimator {
+
+        private int messageEstimateCalls;
+
+        @Override
+        public int estimateTokenCountInMessage(ChatMessage message) {
+            messageEstimateCalls++;
+            return super.estimateTokenCountInMessage(message);
+        }
+
+        int getMessageEstimateCalls() {
+            return messageEstimateCalls;
+        }
     }
 }

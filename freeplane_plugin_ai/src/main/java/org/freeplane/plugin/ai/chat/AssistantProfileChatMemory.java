@@ -9,6 +9,9 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.ChatMemory;
+import dev.langchain4j.model.TokenCountEstimator;
+import dev.langchain4j.model.openai.OpenAiChatModelName;
+import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.service.memory.ChatMemoryService;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,17 +23,26 @@ import org.freeplane.plugin.ai.tools.MessageBuilder;
 
 public class AssistantProfileChatMemory implements ChatMemory {
 
+    private static final TokenCountEstimator DEFAULT_TOKEN_COUNT_ESTIMATOR =
+        new OpenAiTokenCountEstimator(OpenAiChatModelName.GPT_4_O_MINI);
+
     private final Object id;
-    private final Function<Object, Integer> maxMessagesProvider;
+    private final Function<Object, Integer> maxTokensProvider;
+    private final TokenCountEstimator tokenCountEstimator;
     private GeneralSystemMessage generalSystemMessage;
     private final List<ChatMessage> conversationMessages = new ArrayList<>();
+    private final List<Integer> conversationTokenCounts = new ArrayList<>();
+    private int conversationTokenTotal;
+    private int generalSystemTokenCount;
     private final List<Integer> turnEndIndexes = new ArrayList<>();
     private int currentTurnCount;
+    private boolean capacityChecksDeferred;
 
     private AssistantProfileChatMemory(Builder builder) {
         this.id = ensureNotNull(builder.id, "id");
-        this.maxMessagesProvider = ensureNotNull(builder.maxMessagesProvider, "maxMessagesProvider");
-        ensureGreaterThanZero(this.maxMessagesProvider.apply(this.id), "maxMessages");
+        this.maxTokensProvider = ensureNotNull(builder.maxTokensProvider, "maxTokensProvider");
+        this.tokenCountEstimator = ensureNotNull(builder.tokenCountEstimator, "tokenCountEstimator");
+        ensureGreaterThanZero(this.maxTokensProvider.apply(this.id), "maxTokens");
     }
 
     @Override
@@ -46,27 +58,27 @@ public class AssistantProfileChatMemory implements ChatMemory {
         discardRedoBranchIfNeeded();
         if (message instanceof TranscriptHiddenSystemMessage) {
             if (!containsInstructionOfType(TranscriptHiddenSystemMessage.class)) {
-                conversationMessages.add(message);
-                conversationMessages.add(new InstructionAckMessage());
-                ensureCapacity();
+                addConversationMessage(message);
+                addConversationMessage(new InstructionAckMessage());
+                ensureCapacityIfEnabled();
                 rebuildTurnBoundaries();
             }
             return;
         }
         if (message instanceof RemovedForSpaceSystemMessage) {
             if (!containsInstructionOfType(RemovedForSpaceSystemMessage.class)) {
-                conversationMessages.add(message);
-                conversationMessages.add(new InstructionAckMessage());
-                ensureCapacity();
+                addConversationMessage(message);
+                addConversationMessage(new InstructionAckMessage());
+                ensureCapacityIfEnabled();
                 rebuildTurnBoundaries();
             }
             return;
         }
-        if (message instanceof AssistantProfileSystemMessage) {
+        if (message instanceof AssistantProfileControlInstructionMessage) {
             shortenStoredProfileInstructions();
-            conversationMessages.add(message);
-            conversationMessages.add(new InstructionAckMessage());
-            ensureCapacity();
+            addConversationMessage(message);
+            addConversationMessage(new InstructionAckMessage());
+            ensureCapacityIfEnabled();
             rebuildTurnBoundaries();
             return;
         }
@@ -74,13 +86,13 @@ public class AssistantProfileChatMemory implements ChatMemory {
             return;
         }
         if (message instanceof SystemMessage) {
-            generalSystemMessage = toGeneralSystemMessage((SystemMessage) message);
-            ensureCapacity();
+            setGeneralSystemMessage(toGeneralSystemMessage((SystemMessage) message));
+            ensureCapacityIfEnabled();
             rebuildTurnBoundaries();
             return;
         }
-        conversationMessages.add(message);
-        ensureCapacity();
+        addConversationMessage(message);
+        ensureCapacityIfEnabled();
         rebuildTurnBoundaries();
     }
 
@@ -92,13 +104,28 @@ public class AssistantProfileChatMemory implements ChatMemory {
     @Override
     public void clear() {
         generalSystemMessage = null;
+        generalSystemTokenCount = 0;
         conversationMessages.clear();
+        conversationTokenCounts.clear();
+        conversationTokenTotal = 0;
         turnEndIndexes.clear();
         currentTurnCount = 0;
     }
 
     public boolean canUndo() {
         return currentTurnCount > 0;
+    }
+
+    public int conversationMessageCount() {
+        return conversationMessages.size();
+    }
+
+    public void truncateConversationMessagesTo(int size) {
+        int targetSize = Math.max(0, Math.min(size, conversationMessages.size()));
+        while (conversationMessages.size() > targetSize) {
+            removeConversationMessage(conversationMessages.size() - 1);
+        }
+        rebuildTurnBoundaries();
     }
 
     public boolean canRedo() {
@@ -127,6 +154,35 @@ public class AssistantProfileChatMemory implements ChatMemory {
         rebuildTurnBoundaries();
     }
 
+    public void deferCapacityChecks() {
+        capacityChecksDeferred = true;
+    }
+
+    public void completeDeferredCapacityChecks() {
+        capacityChecksDeferred = false;
+        ensureCapacity();
+        rebuildTurnBoundaries();
+    }
+
+    public void cancelDeferredCapacityChecks() {
+        capacityChecksDeferred = false;
+    }
+
+    public boolean evictOldestTurn() {
+        rebuildTurnBoundaries();
+        if (turnEndIndexes.isEmpty()) {
+            return false;
+        }
+        int removeUntil = turnEndIndexes.get(0);
+        for (int index = 0; index < removeUntil; index++) {
+            removeConversationMessage(0);
+        }
+        ensureRemovedForSpaceMessage();
+        ensureCapacityIfEnabled();
+        rebuildTurnBoundaries();
+        return true;
+    }
+
     public List<ChatTranscriptEntry> activeTranscriptEntries() {
         List<ChatTranscriptEntry> entries = new ArrayList<>();
         int endIndex = activeConversationEndIndex();
@@ -141,22 +197,22 @@ public class AssistantProfileChatMemory implements ChatMemory {
     }
 
     private void ensureCapacity() {
-        int maxMessages = maxMessagesProvider.apply(id);
-        ensureGreaterThanZero(maxMessages, "maxMessages");
+        int maxTokens = maxTokensProvider.apply(id);
+        ensureGreaterThanZero(maxTokens, "maxTokens");
         boolean evictedConversation = false;
-        while (countedSize() > maxMessages) {
+        while (totalTokenCount() > maxTokens) {
             int indexToEvict = findFirstCountedMessageIndex();
             if (indexToEvict >= 0) {
-                ChatMessage evicted = conversationMessages.remove(indexToEvict);
+                ChatMessage evicted = removeConversationMessage(indexToEvict);
                 evictedConversation = true;
                 if (indexToEvict < conversationMessages.size()
                     && conversationMessages.get(indexToEvict) instanceof InstructionAckMessage) {
-                    conversationMessages.remove(indexToEvict);
+                    removeConversationMessage(indexToEvict);
                 }
                 if (evicted instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
                     while (indexToEvict < conversationMessages.size()
                         && conversationMessages.get(indexToEvict) instanceof ToolExecutionResultMessage) {
-                        conversationMessages.remove(indexToEvict);
+                        removeConversationMessage(indexToEvict);
                     }
                 }
             } else {
@@ -168,17 +224,14 @@ public class AssistantProfileChatMemory implements ChatMemory {
         }
     }
 
-    private int countedSize() {
-        int count = 0;
-        for (ChatMessage conversationMessage : conversationMessages) {
-            if (!isNonCountedMessage(conversationMessage)) {
-                count++;
-            }
+    private int totalTokenCount() {
+        return conversationTokenTotal + generalSystemTokenCount;
+    }
+
+    private void ensureCapacityIfEnabled() {
+        if (!capacityChecksDeferred) {
+            ensureCapacity();
         }
-        if (generalSystemMessage != null) {
-            count += 1;
-        }
-        return count;
     }
 
     private List<ChatMessage> buildMessages(int conversationEndIndex) {
@@ -189,8 +242,12 @@ public class AssistantProfileChatMemory implements ChatMemory {
         int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
         for (int index = 0; index < endIndex; index++) {
             ChatMessage message = conversationMessages.get(index);
-            if (message instanceof AssistantProfileSystemMessage
-                || message instanceof TranscriptHiddenSystemMessage
+            if (message instanceof AssistantProfileControlInstructionMessage) {
+                messages.add(MessageBuilder.buildSystemInstructionUserMessage(
+                    ((AssistantProfileControlInstructionMessage) message).text()));
+                continue;
+            }
+            if (message instanceof TranscriptHiddenSystemMessage
                 || message instanceof RemovedForSpaceSystemMessage) {
                 messages.add(MessageBuilder.buildSystemInstructionUserMessage(
                     ((SystemMessage) message).text()));
@@ -211,9 +268,9 @@ public class AssistantProfileChatMemory implements ChatMemory {
     private void shortenStoredProfileInstructions() {
         for (int index = 0; index < conversationMessages.size(); index++) {
             ChatMessage message = conversationMessages.get(index);
-            if (message instanceof AssistantProfileSystemMessage) {
-                AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
-                conversationMessages.set(index, profileMessage.withoutProfileDefinition());
+            if (message instanceof AssistantProfileControlInstructionMessage) {
+                AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
+                replaceConversationMessage(index, profileMessage.withoutProfileDefinition());
             }
         }
     }
@@ -224,8 +281,8 @@ public class AssistantProfileChatMemory implements ChatMemory {
             if (insertionIndex < 0) {
                 insertionIndex = conversationMessages.size();
             }
-            conversationMessages.add(insertionIndex, new RemovedForSpaceSystemMessage());
-            conversationMessages.add(insertionIndex + 1, new InstructionAckMessage());
+            addConversationMessage(insertionIndex, new RemovedForSpaceSystemMessage());
+            addConversationMessage(insertionIndex + 1, new InstructionAckMessage());
         }
     }
 
@@ -277,7 +334,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         }
         int keepSize = currentTurnCount == 0 ? 0 : turnEndIndexes.get(currentTurnCount - 1);
         while (conversationMessages.size() > keepSize) {
-            conversationMessages.remove(conversationMessages.size() - 1);
+            removeConversationMessage(conversationMessages.size() - 1);
         }
         while (turnEndIndexes.size() > currentTurnCount) {
             turnEndIndexes.remove(turnEndIndexes.size() - 1);
@@ -303,8 +360,8 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (message == null) {
             return null;
         }
-        if (message instanceof AssistantProfileSystemMessage) {
-            AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
+        if (message instanceof AssistantProfileControlInstructionMessage) {
+            AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
             return new AssistantProfileTranscriptEntry(
                 profileMessage.getProfileId(),
                 profileMessage.getProfileName(),
@@ -331,31 +388,69 @@ public class AssistantProfileChatMemory implements ChatMemory {
         return null;
     }
 
+    private void setGeneralSystemMessage(GeneralSystemMessage message) {
+        generalSystemMessage = message;
+        generalSystemTokenCount = message == null ? 0 : estimateTokenCount(message);
+    }
+
+    private void addConversationMessage(ChatMessage message) {
+        addConversationMessage(conversationMessages.size(), message);
+    }
+
+    private void addConversationMessage(int index, ChatMessage message) {
+        conversationMessages.add(index, message);
+        int tokenCount = estimateTokenCount(message);
+        conversationTokenCounts.add(index, tokenCount);
+        conversationTokenTotal += tokenCount;
+    }
+
+    private ChatMessage removeConversationMessage(int index) {
+        conversationTokenTotal -= conversationTokenCounts.remove(index);
+        return conversationMessages.remove(index);
+    }
+
+    private void replaceConversationMessage(int index, ChatMessage message) {
+        conversationMessages.set(index, message);
+        int updatedTokenCount = estimateTokenCount(message);
+        int previousTokenCount = conversationTokenCounts.set(index, updatedTokenCount);
+        conversationTokenTotal += updatedTokenCount - previousTokenCount;
+    }
+
+    private int estimateTokenCount(ChatMessage message) {
+        return tokenCountEstimator.estimateTokenCountInMessage(message);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
 
-    public static AssistantProfileChatMemory withMaxMessages(int maxMessages) {
-        return builder().maxMessages(maxMessages).build();
+    public static AssistantProfileChatMemory withMaxTokens(int maxTokens) {
+        return builder().maxTokens(maxTokens).build();
     }
 
     public static class Builder {
 
         private Object id = ChatMemoryService.DEFAULT;
-        private Function<Object, Integer> maxMessagesProvider;
+        private Function<Object, Integer> maxTokensProvider;
+        private TokenCountEstimator tokenCountEstimator = DEFAULT_TOKEN_COUNT_ESTIMATOR;
 
         public Builder id(Object id) {
             this.id = id;
             return this;
         }
 
-        public Builder maxMessages(Integer maxMessages) {
-            this.maxMessagesProvider = ignored -> maxMessages;
+        public Builder maxTokens(Integer maxTokens) {
+            this.maxTokensProvider = ignored -> maxTokens;
             return this;
         }
 
-        public Builder dynamicMaxMessages(Function<Object, Integer> maxMessagesProvider) {
-            this.maxMessagesProvider = maxMessagesProvider;
+        public Builder dynamicMaxTokens(Function<Object, Integer> maxTokensProvider) {
+            this.maxTokensProvider = maxTokensProvider;
+            return this;
+        }
+
+        public Builder tokenCountEstimator(TokenCountEstimator tokenCountEstimator) {
+            this.tokenCountEstimator = tokenCountEstimator;
             return this;
         }
 

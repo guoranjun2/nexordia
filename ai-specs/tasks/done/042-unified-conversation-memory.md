@@ -5,7 +5,9 @@
   `ChatSessionMemoryController`. Keep live chat orchestration focused in
   one runtime class and apply interface segregation so each client
   depends only on the memory capabilities it needs. `Undo` and `Redo`
-  must be fully memory-owned with no external state copies.
+  must be fully memory-owned with no external state copies. Tool-call
+  messages produced by the LLM must remain memory-backed and visible
+  after normal panel refresh.
 - **Motivation:** Conversation data is currently routed through an extra
   controller layer, which obscures ownership and duplicates flow logic.
   One owner class with segregated interfaces keeps integration with
@@ -14,7 +16,8 @@
   stable. Do not introduce parallel conversation-state abstractions.
   Keep memory ownership and eviction policy in memory classes. Do not
   add external undo stacks, snapshots, or delta copies outside
-  `AssistantProfileChatMemory`.
+  `AssistantProfileChatMemory`. MCP tool-call messages are UI-transient:
+  visible in the active panel until undo/redo or chat switch.
 - **Research:**
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AssistantProfileChatMemory.java`
     already encapsulates Freeplane-specific memory semantics
@@ -26,6 +29,15 @@
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/AIChatPanel.java`
     currently depends on the controller for request lifecycle and cancel
     restore behavior.
+  - Panel rebuild currently replays transcript/session entries, so
+    messages that exist only as direct UI appends disappear after full
+    rebuild.
+  - LLM tool-call messages and MCP tool-call messages have different
+    ownership:
+    - LLM tool calls are part of conversational state and should be
+      memory-backed.
+    - MCP tool calls are outside chat-memory ownership and remain
+      UI-transient by design.
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/LiveChatSession.java`
     owns runtime `transcriptEntries` and other per-session fields.
   - `freeplane_plugin_ai/src/main/java/org/freeplane/plugin/ai/chat/LiveChatController.java`
@@ -57,8 +69,10 @@
   User -> ChatPanel : send/cancel/undo/redo
   ChatPanel -> ChatMemory : appendUserTurnPart(...)
   ChatPanel -> ChatMemory : appendAssistantTurnPart(...)
+  ChatPanel -> ChatMemory : appendToolCallTurnPart(...)
   ChatPanel -> ChatMemory : undo()/redo()
   ChatPanel -> ChatMemory : currentConversationMessages()
+  ChatPanel -> ChatPanel : appendTransientMcpToolCall(...)
   ChatPanel -> ChatPanel : rebuildHistoryFromCurrentState()
   ChatPanel -> LiveChat : persistCurrentSessionIfNeeded()
   LiveChat -> LiveChat : currentSession()
@@ -110,6 +124,8 @@
 
   - `AssistantProfileChatMemory` is the single owner of:
     turn chain, current cursor, and eviction policy.
+  - Eviction is non-destructive for conversation history: move a memory
+    window start cursor instead of deleting historical entries.
   - `AssistantProfileChatMemory` is also the single owner of undo/redo
     state. No undo/redo copies are stored in panel/session/controller.
   - `ChatSessionMemoryController` is removed.
@@ -128,6 +144,12 @@
     - LangChain service wiring depends on `ChatMemory`.
   - Undo/redo is cursor movement over one memory-owned turn chain.
     New send from rewound position clears forward branch.
+  - LLM tool-call messages are memory-backed conversation entries and
+    must survive normal response-time UI refresh.
+  - MCP tool-call messages are panel-transient entries:
+    - they are shown while staying in the active chat panel,
+    - they are cleared on undo/redo and on chat switch,
+    - they are not persisted into conversation memory or transcript.
   - Interrupted user input remains UI draft state in the panel, while
     persistent conversation data remains memory-owned.
   - Transcript persistence is derived from memory-owned active timeline.

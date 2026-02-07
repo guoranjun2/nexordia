@@ -5,6 +5,7 @@
         <boolean name="ai_edits_state_icon_visible"/>
         <boolean name="ai_edits_persistence_enabled"/>
         <boolean name="ai_chat_shows_tool_calls"/>
+        <number name="ai_chat_memory_maximum_token_count" min="8192" max="1048576" />
         <boolean name="ai_unfolds_parents_on_create"/>
         <textbox name="ai_system_message" lines="5"/>
         <boolean name="ai_mcp_server_enabled"/>

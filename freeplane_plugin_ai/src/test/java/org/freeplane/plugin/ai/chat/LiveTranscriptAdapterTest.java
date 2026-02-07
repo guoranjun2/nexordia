@@ -17,8 +17,8 @@ public class LiveTranscriptAdapterTest {
             null,
             "test");
         LiveTranscriptAdapter adapter = new LiveTranscriptAdapter();
-        AssistantProfileSystemMessage message =
-            new AssistantProfileSystemMessage("profile-a", "A sayer", "Start with A", true);
+        AssistantProfileControlInstructionMessage message =
+            new AssistantProfileControlInstructionMessage("profile-a", "A sayer", "Start with A", true);
 
         adapter.appendAssistantProfileMessage(session, message);
 

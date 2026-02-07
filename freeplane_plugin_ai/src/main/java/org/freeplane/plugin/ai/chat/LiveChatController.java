@@ -94,7 +94,7 @@ public class LiveChatController {
         synchronizeTranscriptWithMemory();
     }
 
-    public void recordAssistantProfileMessage(AssistantProfileSystemMessage message) {
+    public void recordAssistantProfileMessage(AssistantProfileControlInstructionMessage message) {
         synchronizeTranscriptWithMemory();
     }
 
@@ -366,9 +366,6 @@ public class LiveChatController {
     }
 
     private ChatMemory createChatMemory() {
-        if (chatMemorySettings.getChatMemoryMode() == ChatMemoryMode.DISABLED) {
-            return null;
-        }
-        return AssistantProfileChatMemory.withMaxMessages(chatMemorySettings.getMaximumMessageCount());
+        return AssistantProfileChatMemory.withMaxTokens(chatMemorySettings.getMaximumTokenCount());
     }
 }

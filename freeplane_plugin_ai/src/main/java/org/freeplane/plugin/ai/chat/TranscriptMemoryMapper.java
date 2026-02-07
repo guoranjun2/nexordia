@@ -61,11 +61,15 @@ class TranscriptMemoryMapper {
             return new AiMessage(entry.getText());
         }
         if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            String instructionText = buildAssistantProfileInstructionText(entry);
-            if (instructionText == null || instructionText.trim().isEmpty()) {
+            if (!(entry instanceof AssistantProfileTranscriptEntry)) {
                 return null;
             }
-            return MessageBuilder.buildSystemInstructionUserMessage(instructionText);
+            AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
+            return new AssistantProfileControlInstructionMessage(
+                assistantProfileEntry.getProfileId(),
+                assistantProfileEntry.getProfileName(),
+                "",
+                assistantProfileEntry.containsProfileDefinition());
         }
         if (entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
             if (entry.getText() == null) {
@@ -83,8 +87,8 @@ class TranscriptMemoryMapper {
         if (message == null) {
             return null;
         }
-        if (message instanceof AssistantProfileSystemMessage) {
-            AssistantProfileSystemMessage profileMessage = (AssistantProfileSystemMessage) message;
+        if (message instanceof AssistantProfileControlInstructionMessage) {
+            AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
             return new AssistantProfileTranscriptEntry(
                 profileMessage.getProfileId(),
                 profileMessage.getProfileName(),
@@ -111,14 +115,4 @@ class TranscriptMemoryMapper {
         return null;
     }
 
-    private String buildAssistantProfileInstructionText(ChatTranscriptEntry entry) {
-        if (entry instanceof AssistantProfileTranscriptEntry) {
-            AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
-            return MessageBuilder.buildAssistantProfileInstruction(
-                assistantProfileEntry.getProfileName(),
-                "",
-                assistantProfileEntry.containsProfileDefinition());
-        }
-        return null;
-    }
 }

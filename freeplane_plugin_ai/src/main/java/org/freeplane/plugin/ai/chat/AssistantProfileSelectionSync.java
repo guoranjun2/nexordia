@@ -32,7 +32,7 @@ class AssistantProfileSelectionSync {
         if (profile == null) {
             return;
         }
-        AssistantProfileSystemMessage message = new AssistantProfileSystemMessage(
+        AssistantProfileControlInstructionMessage message = new AssistantProfileControlInstructionMessage(
             profile.getId(),
             profile.getName(),
             profile.getPrompt(),

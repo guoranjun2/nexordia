@@ -50,7 +50,6 @@ import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -63,6 +62,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class AIChatPanel extends JPanel {
+    private static final int CONTEXT_TOO_LARGE_MAX_RETRIES = 2;
 
     /**
 	 * Comment for <code>serialVersionUID</code>
@@ -90,6 +90,7 @@ public class AIChatPanel extends JPanel {
     private final ChatDisplaySettings chatDisplaySettings;
     private final AIModelSelectionController modelSelectionController;
     private ChatMemory chatMemory;
+    private SingleTurnChatMemory singleTurnChatMemory;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
     private final ChatMessageRenderer messageRenderer;
@@ -97,14 +98,9 @@ public class AIChatPanel extends JPanel {
     private final AvailableMaps availableMaps;
     private final DateTimeFormatter chatNameFormatter;
     private final LiveChatController liveChatController;
-    private final ChatRequestCancellation requestCancellation;
+    private final ChatRequestFlow chatRequestFlow;
     private final AssistantProfileSelectionSync assistantProfileSelectionSync;
     private final AssistantProfilePaneBuilder assistantProfilePaneBuilder;
-    private SwingWorker<String, Void> activeWorker;
-    private boolean requestInProgress;
-    private int activeRequestId;
-    private int pendingMemorySize;
-    private String pendingUserMessage;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -154,6 +150,7 @@ public class AIChatPanel extends JPanel {
         modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
         chatMemory = createChatMemory();
+        singleTurnChatMemory = SingleTurnChatMemoryFactory.forMemory(chatMemory);
         tokenUsageLabel = new JLabel();
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
@@ -177,7 +174,76 @@ public class AIChatPanel extends JPanel {
             assistantProfileSelectionModel,
             assistantProfileSelectionSync,
             assistantProfileIcon);
-        requestCancellation = new ChatRequestCancellation();
+        chatRequestFlow = new ChatRequestFlow(new ChatRequestFlow.RequestCallbacks() {
+            @Override
+            public void onRequestStarted() {
+                inputArea.setEditable(false);
+                setSendButtonStopState();
+                updateUndoRedoButtonState();
+            }
+
+            @Override
+            public void onRequestFinished() {
+                updateInputState();
+            }
+
+            @Override
+            public void onRequestRestored(String pendingUserMessage) {
+                inputArea.setText(pendingUserMessage == null ? "" : pendingUserMessage);
+                inputArea.setCaretPosition(inputArea.getText().length());
+            }
+
+            @Override
+            public void onAssistantResponse(String text) {
+                appendChatMessage(text, ChatMessageCategory.ASSISTANT);
+            }
+
+            @Override
+            public void onAssistantError(String text) {
+                appendChatMessage(text, ChatMessageCategory.ASSISTANT);
+            }
+
+            @Override
+            public int snapshotMemorySize() {
+                return getMemorySize();
+            }
+
+            @Override
+            public void truncateMemoryToSize(int size) {
+                AIChatPanel.this.truncateMemoryToSize(size);
+            }
+
+            @Override
+            public void synchronizeTranscriptWithMemory() {
+                liveChatController.synchronizeTranscriptWithMemory();
+            }
+
+            @Override
+            public void rebuildHistoryFromTranscript() {
+                AIChatPanel.this.rebuildHistoryFromTranscript();
+            }
+
+            @Override
+            public boolean evictOldestTurn() {
+                AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+                return memory != null && memory.evictOldestTurn();
+            }
+
+            @Override
+            public void deferCapacityChecks() {
+                AIChatPanel.this.deferCapacityChecks();
+            }
+
+            @Override
+            public void completeDeferredCapacityChecks() {
+                AIChatPanel.this.completeDeferredCapacityChecks();
+            }
+
+            @Override
+            public void cancelDeferredCapacityChecks() {
+                AIChatPanel.this.cancelDeferredCapacityChecks();
+            }
+        }, CONTEXT_TOO_LARGE_MAX_RETRIES);
         liveChatController.initialize(chatMemory);
         assistantProfilePaneBuilder.initialize();
 
@@ -434,95 +500,56 @@ public class AIChatPanel extends JPanel {
         if (userMessage.isEmpty()) {
             return;
         }
-        beginRequest(userMessage);
+        chatRequestFlow.beginRequest(userMessage);
         assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
+        chatRequestFlow.refreshPendingMemorySnapshot();
         appendChatMessage(userMessage, ChatMessageCategory.USER);
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
         ensureChatService();
         if (chatService == null) {
-            restoreCancelledRequest();
+            chatRequestFlow.restorePendingRequest();
             return;
         }
-        final int requestId = activeRequestId;
-        activeWorker = new SwingWorker<String, Void>() {
-            @Override
-            protected String doInBackground() {
-                return chatService.chat(userMessage);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    if (requestId != activeRequestId || requestCancellation.isCancelled()) {
-                        return;
-                    }
-                    appendChatMessage(get(), ChatMessageCategory.ASSISTANT);
-                } catch (Exception error) {
-                    if (requestId != activeRequestId || requestCancellation.isCancelled()) {
-                        return;
-                    }
-                    appendChatMessage(String.valueOf(error.getMessage()), ChatMessageCategory.ASSISTANT);
-                } finally {
-                    if (requestId == activeRequestId && !requestCancellation.isCancelled()) {
-                        finishRequest();
-                    }
-                }
-            }
-        };
-        activeWorker.execute();
+        chatRequestFlow.submitRequest(chatService);
     }
 
     private boolean isRequestActive() {
-        return requestInProgress;
-    }
-
-    private void beginRequest(String userMessage) {
-        requestCancellation.reset();
-        activeRequestId++;
-        pendingUserMessage = userMessage;
-        pendingMemorySize = getMemorySize();
-        requestInProgress = true;
-        inputArea.setEditable(false);
-        setSendButtonStopState();
-        updateUndoRedoButtonState();
-    }
-
-    private void finishRequest() {
-        activeWorker = null;
-        requestInProgress = false;
-        updateInputState();
-        clearPendingRequestState();
+        return chatRequestFlow.isRequestActive();
     }
 
     private void cancelActiveRequest() {
-        if (!isRequestActive()) {
-            return;
-        }
-        requestCancellation.cancel();
-        activeRequestId++;
-        if (activeWorker != null) {
-            activeWorker.cancel(true);
-        }
-        requestInProgress = false;
-        restoreCancelledRequest();
+        chatRequestFlow.cancelActiveRequest();
     }
 
-    private void restoreCancelledRequest() {
-        truncateMemoryToSize(pendingMemorySize);
-        liveChatController.synchronizeTranscriptWithMemory();
-        rebuildHistoryFromTranscript();
-        activeWorker = null;
-        requestInProgress = false;
-        inputArea.setText(pendingUserMessage == null ? "" : pendingUserMessage);
-        inputArea.setCaretPosition(inputArea.getText().length());
-        updateInputState();
-        clearPendingRequestState();
+    private AssistantProfileChatMemory activeAssistantProfileChatMemory() {
+        if (chatMemory instanceof AssistantProfileChatMemory) {
+            return (AssistantProfileChatMemory) chatMemory;
+        }
+        return null;
     }
 
-    private void clearPendingRequestState() {
-        pendingMemorySize = 0;
-        pendingUserMessage = null;
+    private void deferCapacityChecks() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            memory.deferCapacityChecks();
+        }
+    }
+
+    private void completeDeferredCapacityChecks() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            memory.completeDeferredCapacityChecks();
+            liveChatController.synchronizeTranscriptWithMemory();
+            rebuildHistoryFromTranscript();
+        }
+    }
+
+    private void cancelDeferredCapacityChecks() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            memory.cancelDeferredCapacityChecks();
+        }
     }
 
     private void setSendButtonStopState() {
@@ -618,7 +645,7 @@ public class AIChatPanel extends JPanel {
             chatMemory,
             chatTokenUsageTracker,
             this::handleToolCallSummary,
-            requestCancellation::isCancelled);
+            chatRequestFlow.cancellationSupplier());
     }
 
     private void appendChatMessage(String text, ChatMessageCategory category) {
@@ -659,7 +686,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void handleToolCallSummary(ToolCallSummary summary) {
-        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible() || !isRequestActive()) {
+        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible()) {
             return;
         }
         boolean isMcpCall = summary.getToolCaller() == ToolCaller.MCP;
@@ -687,7 +714,7 @@ public class AIChatPanel extends JPanel {
         chatTokenUsageTracker.resetTotals();
         assistantProfileSelectionSync.setChatMemory(chatMemory);
         assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
-        clearPendingRequestState();
+        chatRequestFlow.resetPendingState();
         rebuildHistoryFromTranscript();
         updateInputState();
     }
@@ -729,6 +756,10 @@ public class AIChatPanel extends JPanel {
     }
 
     private int getMemorySize() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            return memory.conversationMessageCount();
+        }
         if (chatMemory == null) {
             return 0;
         }
@@ -736,6 +767,11 @@ public class AIChatPanel extends JPanel {
     }
 
     private void truncateMemoryToSize(int size) {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            memory.truncateConversationMessagesTo(size);
+            return;
+        }
         if (chatMemory == null) {
             return;
         }
@@ -825,10 +861,7 @@ public class AIChatPanel extends JPanel {
 
     private ChatMemory createChatMemory() {
         ChatMemorySettings chatMemorySettings = new ChatMemorySettings();
-        if (chatMemorySettings.getChatMemoryMode() == ChatMemoryMode.DISABLED) {
-            return null;
-        }
-        return AssistantProfileChatMemory.withMaxMessages(chatMemorySettings.getMaximumMessageCount());
+        return AssistantProfileChatMemory.withMaxTokens(chatMemorySettings.getMaximumTokenCount());
     }
 
     private TextController requireTextController() {

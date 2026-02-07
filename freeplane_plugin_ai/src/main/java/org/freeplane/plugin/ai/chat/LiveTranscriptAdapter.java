@@ -17,7 +17,7 @@ class LiveTranscriptAdapter {
         appendEntry(session, ChatTranscriptRole.ASSISTANT, text);
     }
 
-    void appendAssistantProfileMessage(LiveChatSession session, AssistantProfileSystemMessage message) {
+    void appendAssistantProfileMessage(LiveChatSession session, AssistantProfileControlInstructionMessage message) {
         if (session == null || message == null) {
             return;
         }

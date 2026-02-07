@@ -3,46 +3,37 @@ package org.freeplane.plugin.ai.chat;
 import org.freeplane.core.resources.ResourceController;
 
 public class ChatMemorySettings {
-    private static final String CHAT_MEMORY_MODE_PROPERTY = "ai_chat_memory_mode";
-    private static final String CHAT_MEMORY_MAXIMUM_MESSAGE_COUNT_PROPERTY = "ai_chat_memory_maximum_message_count";
-    private static final int DEFAULT_MAXIMUM_MESSAGE_COUNT = 40;
+    private static final String CHAT_MEMORY_MAXIMUM_TOKEN_COUNT_PROPERTY = "ai_chat_memory_maximum_token_count";
+    private static final int DEFAULT_MAXIMUM_TOKEN_COUNT = 65536;
 
-    private final ChatMemoryMode chatMemoryMode;
-    private final int maximumMessageCount;
+    private final int maximumTokenCount;
 
     public ChatMemorySettings() {
         this(ResourceController.getResourceController());
     }
 
     ChatMemorySettings(ResourceController resourceController) {
-        this.chatMemoryMode = ChatMemoryMode.fromPropertyValue(
-            resourceController.getProperty(CHAT_MEMORY_MODE_PROPERTY));
-        this.maximumMessageCount = parseMaximumMessageCount(
-            resourceController.getProperty(CHAT_MEMORY_MAXIMUM_MESSAGE_COUNT_PROPERTY));
+        this.maximumTokenCount = parseMaximumTokenCount(
+            resourceController.getProperty(CHAT_MEMORY_MAXIMUM_TOKEN_COUNT_PROPERTY));
     }
 
-    ChatMemorySettings(ChatMemoryMode chatMemoryMode, int maximumMessageCount) {
-        this.chatMemoryMode = chatMemoryMode;
-        this.maximumMessageCount = maximumMessageCount;
+    ChatMemorySettings(int maximumTokenCount) {
+        this.maximumTokenCount = maximumTokenCount;
     }
 
-    public ChatMemoryMode getChatMemoryMode() {
-        return chatMemoryMode;
+    public int getMaximumTokenCount() {
+        return maximumTokenCount;
     }
 
-    public int getMaximumMessageCount() {
-        return maximumMessageCount;
-    }
-
-    private static int parseMaximumMessageCount(String value) {
+    private static int parseMaximumTokenCount(String value) {
         if (value == null || value.isEmpty()) {
-            return DEFAULT_MAXIMUM_MESSAGE_COUNT;
+            return DEFAULT_MAXIMUM_TOKEN_COUNT;
         }
         try {
             int parsedValue = Integer.parseInt(value.trim());
-            return parsedValue > 0 ? parsedValue : DEFAULT_MAXIMUM_MESSAGE_COUNT;
+            return parsedValue > 0 ? parsedValue : DEFAULT_MAXIMUM_TOKEN_COUNT;
         } catch (NumberFormatException exception) {
-            return DEFAULT_MAXIMUM_MESSAGE_COUNT;
+            return DEFAULT_MAXIMUM_TOKEN_COUNT;
         }
     }
 }
