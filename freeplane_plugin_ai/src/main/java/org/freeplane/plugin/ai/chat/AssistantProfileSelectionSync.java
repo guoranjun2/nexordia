@@ -64,6 +64,12 @@ class AssistantProfileSelectionSync {
         List<ChatTranscriptEntry> entries = liveChatController.snapshotTranscriptEntries();
         AssistantProfileTranscriptEntry profileEntry = findLastAssistantProfileEntry(entries);
         AssistantProfile selected = selectionModel.getSelectedProfile();
+        if (profileEntry == null && !fromTranscriptRestore) {
+            lastInjectedProfileId = null;
+            pendingProfile = selected;
+            pendingProfileId = profileId(selected);
+            return selected;
+        }
         String transcriptProfileId = profileEntry == null ? "" : normalize(profileEntry.getProfileId());
         boolean transcriptProfileExists = false;
         if (!transcriptProfileId.isEmpty()) {

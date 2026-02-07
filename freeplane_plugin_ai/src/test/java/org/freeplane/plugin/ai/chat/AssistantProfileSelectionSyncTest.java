@@ -128,4 +128,24 @@ public class AssistantProfileSelectionSyncTest {
         assertThat(selected).isEqualTo(current);
         verify(chatMemory).add(any(AssistantProfileSystemMessage.class));
     }
+
+    @Test
+    public void selectForActivation_newChat_injectsSelectedProfile() {
+        AssistantProfileSelectionModel selectionModel = mock(AssistantProfileSelectionModel.class);
+        LiveChatController liveChatController = mock(LiveChatController.class);
+        ChatMemory chatMemory = mock(ChatMemory.class);
+        AssistantProfile current = new AssistantProfile("current", "Current", "Prompt");
+        when(liveChatController.snapshotTranscriptEntries()).thenReturn(Collections.emptyList());
+        when(selectionModel.getSelectedProfile()).thenReturn(current);
+
+        AssistantProfileSelectionSync uut = new AssistantProfileSelectionSync(
+            selectionModel, liveChatController);
+        uut.setChatMemory(chatMemory);
+
+        AssistantProfile selected = uut.selectForActivation(false);
+        uut.maybeInjectBeforeUserMessage();
+
+        assertThat(selected).isEqualTo(current);
+        verify(chatMemory).add(any(AssistantProfileSystemMessage.class));
+    }
 }
