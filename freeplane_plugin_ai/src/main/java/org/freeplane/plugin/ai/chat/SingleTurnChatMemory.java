@@ -6,11 +6,5 @@ interface SingleTurnChatMemory {
 
     void truncateTo(int size);
 
-    void deferCapacityChecks();
-
-    void completeDeferredCapacityChecks();
-
-    void cancelDeferredCapacityChecks();
-
     boolean evictOldestTurn();
 }

@@ -15,9 +15,6 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.text.TextController;
-import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
-import org.freeplane.plugin.ai.chat.history.ChatTranscriptRole;
 import org.freeplane.plugin.ai.edits.AiEditsSettings;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
@@ -59,6 +56,8 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AIChatPanel extends JPanel {
@@ -95,6 +94,7 @@ public class AIChatPanel extends JPanel {
     private final JLabel tokenUsageLabel;
     private final ChatMessageRenderer messageRenderer;
     private final ChatMessageHistory messageHistory;
+    private final ChatMemoryHistoryRenderer chatMemoryHistoryRenderer;
     private final AvailableMaps availableMaps;
     private final DateTimeFormatter chatNameFormatter;
     private final LiveChatController liveChatController;
@@ -155,6 +155,7 @@ public class AIChatPanel extends JPanel {
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
         messageRenderer = new ChatMessageRenderer();
+        chatMemoryHistoryRenderer = new ChatMemoryHistoryRenderer(messageHistory, messageRenderer);
         availableMaps = new AvailableMaps(new ControllerMapModelProvider());
         chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
@@ -163,7 +164,8 @@ public class AIChatPanel extends JPanel {
             availableMaps,
             requireTextController(),
             chatNameFormatter,
-            this::activateSession
+            this::activateSession,
+            chatTokenUsageTracker::snapshotState
         );
         assistantProfileSelectionSync = new AssistantProfileSelectionSync(
             assistantProfileSelectionModel,
@@ -184,6 +186,7 @@ public class AIChatPanel extends JPanel {
 
             @Override
             public void onRequestFinished() {
+                liveChatController.synchronizeTranscriptWithMemory();
                 updateInputState();
             }
 
@@ -196,6 +199,7 @@ public class AIChatPanel extends JPanel {
             @Override
             public void onAssistantResponse(String text) {
                 appendChatMessage(text, ChatMessageCategory.ASSISTANT);
+                refreshTokenCounters();
             }
 
             @Override
@@ -220,30 +224,31 @@ public class AIChatPanel extends JPanel {
 
             @Override
             public void rebuildHistoryFromTranscript() {
-                AIChatPanel.this.rebuildHistoryFromTranscript();
+                AIChatPanel.this.rebuildHistoryFromMemory();
             }
 
             @Override
             public boolean evictOldestTurn() {
                 AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-                return memory != null && memory.evictOldestTurn();
+                if (memory == null || !memory.evictOldestTurn()) {
+                    return false;
+                }
+                return true;
             }
 
             @Override
-            public void deferCapacityChecks() {
-                AIChatPanel.this.deferCapacityChecks();
+            public void onPostResponseEviction() {
+                liveChatController.synchronizeTranscriptWithMemory();
+                rebuildHistoryFromMemory();
+                updateInputState();
             }
 
             @Override
-            public void completeDeferredCapacityChecks() {
-                AIChatPanel.this.completeDeferredCapacityChecks();
+            public void refreshTokenCounters() {
+                AIChatPanel.this.refreshTokenCounters();
             }
-
-            @Override
-            public void cancelDeferredCapacityChecks() {
-                AIChatPanel.this.cancelDeferredCapacityChecks();
-            }
-        }, CONTEXT_TOO_LARGE_MAX_RETRIES);
+        }, chatTokenUsageTracker, CONTEXT_TOO_LARGE_MAX_RETRIES);
+        chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         liveChatController.initialize(chatMemory);
         assistantProfilePaneBuilder.initialize();
 
@@ -362,6 +367,8 @@ public class AIChatPanel extends JPanel {
         modelSelectionController.loadInitialModelSelectionList();
         registerProviderConfigurationListener();
         registerModelSelectionRefreshListener();
+        registerTokenCounterModeListener();
+        refreshTokenCounterMode();
         updateInputState();
     }
 
@@ -474,6 +481,19 @@ public class AIChatPanel extends JPanel {
             });
     }
 
+    private void registerTokenCounterModeListener() {
+        ResourceController.getResourceController().addPropertyChangeListener(
+            new IFreeplanePropertyListener() {
+                @Override
+                public void propertyChanged(String propertyName, String newValue, String oldValue) {
+                    if (!ChatTokenCounterSettings.CHAT_TOKEN_COUNTER_MODE_PROPERTY.equals(propertyName)) {
+                        return;
+                    }
+                    SwingUtilities.invokeLater(() -> refreshTokenCounterMode());
+                }
+            });
+    }
+
     private boolean isModelSelectionRefreshProperty(String propertyName) {
         return "ai_openrouter_model_allowlist".equals(propertyName)
             || "ai_gemini_model_list".equals(propertyName)
@@ -504,6 +524,7 @@ public class AIChatPanel extends JPanel {
         assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
         chatRequestFlow.refreshPendingMemorySnapshot();
         appendChatMessage(userMessage, ChatMessageCategory.USER);
+        chatRequestFlow.refreshTokenCounters();
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
         ensureChatService();
@@ -527,29 +548,6 @@ public class AIChatPanel extends JPanel {
             return (AssistantProfileChatMemory) chatMemory;
         }
         return null;
-    }
-
-    private void deferCapacityChecks() {
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (memory != null) {
-            memory.deferCapacityChecks();
-        }
-    }
-
-    private void completeDeferredCapacityChecks() {
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (memory != null) {
-            memory.completeDeferredCapacityChecks();
-            liveChatController.synchronizeTranscriptWithMemory();
-            rebuildHistoryFromTranscript();
-        }
-    }
-
-    private void cancelDeferredCapacityChecks() {
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (memory != null) {
-            memory.cancelDeferredCapacityChecks();
-        }
     }
 
     private void setSendButtonStopState() {
@@ -645,7 +643,8 @@ public class AIChatPanel extends JPanel {
             chatMemory,
             chatTokenUsageTracker,
             this::handleToolCallSummary,
-            chatRequestFlow.cancellationSupplier());
+            chatRequestFlow.cancellationSupplier(),
+            chatRequestFlow::onProviderUsage);
     }
 
     private void appendChatMessage(String text, ChatMessageCategory category) {
@@ -690,6 +689,10 @@ public class AIChatPanel extends JPanel {
             return;
         }
         boolean isMcpCall = summary.getToolCaller() == ToolCaller.MCP;
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (!isMcpCall && memory != null) {
+            memory.addToolCallSummary(summary.getSummaryText(), summary.getToolCaller());
+        }
         ChatMessageCategory category = isMcpCall
                 ? ChatMessageCategory.MCP_CALL
                 : ChatMessageCategory.TOOL_CALL;
@@ -705,17 +708,22 @@ public class AIChatPanel extends JPanel {
     }
 
     private void updateTokenUsageLabel(ChatUsageTotals totals) {
-        SwingUtilities.invokeLater(() -> tokenUsageLabel.setText(totals.formatStatusLine()));
+        SwingUtilities.invokeLater(() -> {
+            tokenUsageLabel.setVisible(totals.isVisible());
+            tokenUsageLabel.setText(totals.formatStatusLine());
+        });
     }
 
     private void activateSession(ChatMemory sessionChatMemory, boolean fromTranscriptRestore) {
         chatMemory = sessionChatMemory;
         chatService = null;
-        chatTokenUsageTracker.resetTotals();
+        chatTokenUsageTracker.restoreState(liveChatController.getCurrentTokenUsageState());
+        chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         assistantProfileSelectionSync.setChatMemory(chatMemory);
         assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
         chatRequestFlow.resetPendingState();
-        rebuildHistoryFromTranscript();
+        rebuildHistoryFromMemory();
+        refreshTokenCounters();
         updateInputState();
     }
 
@@ -729,12 +737,17 @@ public class AIChatPanel extends JPanel {
         if (isRequestActive()) {
             return;
         }
+        boolean canUndo = liveChatController.canUndo();
         String userMessage = liveChatController.undoLastTurn();
+        if (canUndo) {
+            chatTokenUsageTracker.undoLastResponse();
+        }
         if (!liveChatController.canRedo() && userMessage.isEmpty()) {
             updateUndoRedoButtonState();
             return;
         }
-        rebuildHistoryFromTranscript();
+        rebuildHistoryFromMemory();
+        refreshTokenCounters();
         inputArea.setText(userMessage);
         inputArea.setCaretPosition(inputArea.getText().length());
         updateInputState();
@@ -749,7 +762,9 @@ public class AIChatPanel extends JPanel {
             return;
         }
         liveChatController.redoLastTurn();
-        rebuildHistoryFromTranscript();
+        chatTokenUsageTracker.redoLastResponse();
+        rebuildHistoryFromMemory();
+        refreshTokenCounters();
         inputArea.setText("");
         inputArea.setCaretPosition(0);
         updateInputState();
@@ -789,79 +804,60 @@ public class AIChatPanel extends JPanel {
         }
     }
 
-    private void rebuildHistoryFromTranscript() {
-        List<ChatTranscriptEntry> entries = liveChatController.snapshotTranscriptEntries();
-        messageHistory.clear();
-        if (entries == null || entries.isEmpty()) {
-            return;
-        }
-        for (int index = 0; index < entries.size(); index++) {
-            ChatTranscriptEntry entry = entries.get(index);
-            if (entry == null || entry.getRole() == null) {
-                continue;
-            }
-            if (isProfileAcknowledgementEntry(entries, index)) {
-                continue;
-            }
-            appendTranscriptEntryToHistory(entry);
-        }
+    private void rebuildHistoryFromMemory() {
+        chatMemoryHistoryRenderer.rebuildFromMessages(historyMessages());
     }
 
-    private void appendTranscriptEntryToHistory(ChatTranscriptEntry entry) {
-        boolean isAssistant = entry.getRole() == ChatTranscriptRole.ASSISTANT;
-        String sourceText = entry.getText();
-        if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            sourceText = buildProfilePaneMessage(entry);
-        } else if (!isAssistant && entry.getRole() != ChatTranscriptRole.USER) {
-            sourceText = MessageBuilder.buildSystemInstructionText(sourceText);
+    private List<ChatMemoryRenderEntry> historyMessages() {
+        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
+        if (memory != null) {
+            return memory.activeConversationRenderEntries();
         }
-        String renderedText = messageRenderer.renderMessage(sourceText, isAssistant);
-        String styleClassName;
-        if (entry.getRole() == ChatTranscriptRole.USER) {
-            styleClassName = ChatMessageCategory.USER.getStyleClassName();
-        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT) {
-            styleClassName = ChatMessageCategory.ASSISTANT.getStyleClassName();
-        } else if (entry.getRole() == ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            styleClassName = ChatMessageCategory.PROFILE.getStyleClassName();
-        } else {
-            styleClassName = ChatMessageCategory.SYSTEM.getStyleClassName();
+        if (chatMemory == null) {
+            return Collections.emptyList();
         }
-        messageHistory.appendMessage(sourceText, renderedText, styleClassName);
-    }
-
-    private boolean isProfileAcknowledgementEntry(List<ChatTranscriptEntry> entries, int index) {
-        if (entries == null || index <= 0 || index >= entries.size()) {
-            return false;
+        List<ChatMessage> messages = chatMemory.messages();
+        List<ChatMemoryRenderEntry> entries = new ArrayList<>();
+        for (int index = 0; index < messages.size(); index++) {
+            entries.add(ChatMemoryRenderEntry.forMessage(messages.get(index)));
         }
-        ChatTranscriptEntry current = entries.get(index);
-        ChatTranscriptEntry previous = entries.get(index - 1);
-        if (current == null || previous == null) {
-            return false;
-        }
-        if (current.getRole() != ChatTranscriptRole.ASSISTANT) {
-            return false;
-        }
-        if (previous.getRole() != ChatTranscriptRole.ASSISTANT_PROFILE_SYSTEM) {
-            return false;
-        }
-        String text = current.getText();
-        return MessageBuilder.buildInstructionAcknowledgementText().equals(text == null ? "" : text.trim());
-    }
-
-    private String buildProfilePaneMessage(ChatTranscriptEntry entry) {
-        if (entry instanceof AssistantProfileTranscriptEntry) {
-            AssistantProfileTranscriptEntry profileEntry = (AssistantProfileTranscriptEntry) entry;
-            String profileName = profileEntry.getProfileName();
-            if (profileName != null && !profileName.trim().isEmpty()) {
-                return TextUtils.format("ai_chat_profile_message", profileName.trim());
-            }
-        }
-        return TextUtils.getText("ai_chat_profile_label");
+        return entries;
     }
 
     private ChatMemory createChatMemory() {
         ChatMemorySettings chatMemorySettings = new ChatMemorySettings();
-        return AssistantProfileChatMemory.withMaxTokens(chatMemorySettings.getMaximumTokenCount());
+        return AssistantProfileChatMemory.builder()
+            .dynamicMaxTokens(ignored -> chatMemorySettings.getMaximumTokenCount())
+            .tokenEstimatorModelNameProvider(this::currentModelNameForTokenEstimator)
+            .build();
+    }
+
+    private void refreshTokenCounterMode() {
+        ChatTokenCounterMode counterMode = new ChatTokenCounterSettings().getCounterMode();
+        chatTokenUsageTracker.setCounterMode(counterMode, tokenCounterModeLabel(counterMode));
+        refreshTokenCounters();
+    }
+
+    private String tokenCounterModeLabel(ChatTokenCounterMode counterMode) {
+        if (counterMode == null) {
+            return null;
+        }
+        String key = "OptionPanel.ai_chat_token_counter_mode." + counterMode.getPreferenceValue();
+        return TextUtils.getOptionalText(key);
+    }
+
+    private void refreshTokenCounters() {
+        chatTokenUsageTracker.refreshTotals(activeAssistantProfileChatMemory(),
+            TextUtils.getOptionalText("ai_chat_token_counter.input"),
+            TextUtils.getOptionalText("ai_chat_token_counter.output"));
+    }
+
+    private String currentModelNameForTokenEstimator() {
+        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
+        if (selection == null) {
+            return null;
+        }
+        return selection.getModelName();
     }
 
     private TextController requireTextController() {

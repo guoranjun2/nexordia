@@ -42,27 +42,27 @@
     settings + memory construction.
   - Plugin memory continues using custom profile/system/tool behavior
     with message-based eviction in the committed baseline.
-  - LangChain4j `1.10.0` provides `TokenCountEstimator` with a local
-    `OpenAiTokenCountEstimator` and a network-based
-    `GoogleAiGeminiTokenCountEstimator`; this task should use a local
-    estimator for memory eviction checks.
-  - Planned token accounting must include all stored message types
-    without
-    exclusions: user, assistant, tool results, profile/system
-    instructions, and acknowledgement messages.
-  - Planned token accounting must be incremental: maintain a running
-    total and
-    update it by delta on add/remove/replace operations, rather than
-    recomputing token count across all messages on each mutation.
+  - LangChain4j provides local token estimators that can be used to
+    approximate token counts for chat messages.
+  - `AIChatService` records provider token usage only when
+    `AiServiceResponseReceivedEvent` arrives; provider totals are
+    incomplete for per-message eviction decisions.
   - Current working tree contains uncommitted token-memory changes; this
     task design describes the target state, not yet-committed baseline.
   - `AIChatService` records `TokenUsage` only when
     `AiServiceResponseReceivedEvent` arrives, so provider token usage is
     available after a successful response.
   - Transcript-restored messages do not have provider token-usage
-    deltas; their token cost must be derived from local estimation.
+    deltas; local estimation is needed for consistent eviction when
+    transcript messages are part of the active window.
   - `ChatTokenUsageTracker` currently stores cumulative chat totals only
     and has no per-turn/per-block token attribution.
+  - Provider token usage includes system instructions, tool metadata,
+    and other model-specific overhead that is not directly attributable
+    to individual removable chat messages.
+  - Accurate per-message token usage is not available from providers,
+    so local estimation is the only consistent way to measure removable
+    blocks for eviction or counter displays.
   - `AIChatPanel` currently appends an error message on request failure
     and always calls `finishRequest()`. Restoring pending user input and
     truncating memory is currently done only on cancellation via
@@ -91,26 +91,22 @@
   @startuml
   actor User
   participant "AIChatPanel" as ChatPanel
-  participant "AIChatService" as ChatService
-  participant "ChatTokenUsageTracker" as UsageTracker
+  participant "ChatRequestFlow" as RequestFlow
   participant "AssistantProfileChatMemory" as Memory
-  participant "TokenCountEstimator" as Estimator
+  participant "ChatTokenUsageTracker" as UsageTracker
+  participant "AIChatService" as ChatService
   participant "MCP transient panel log" as McpLog
 
   User -> ChatPanel : send message
   ChatPanel -> Memory : add(user/assistant/tool/system)
   ChatPanel -> McpLog : append MCP tool call (transient)
-  ChatPanel -> ChatService : chat(request)
-  ChatService -> UsageTracker : record response token usage
-  UsageTracker --> ChatPanel : cumulative input/output totals
-  ChatPanel -> Memory : commit turn token delta
-  Memory -> Memory : post-response eviction by moving window cursor
-  alt provider error: context too large
-    ChatPanel -> Memory : evict and retry request
-  end
-  Memory -> Estimator : estimateTokenCountInMessage(...)
-  Estimator --> Memory : token count by message delta
-  Memory --> ChatPanel : bounded message history after response
+  ChatPanel -> RequestFlow : start request
+  RequestFlow -> ChatService : chat(request)
+  ChatService --> RequestFlow : response token usage (optional)
+  RequestFlow -> Memory : post-response eviction (cursor move)
+  RequestFlow -> UsageTracker : update counters
+  Memory --> ChatPanel : active window messages
+  UsageTracker --> ChatPanel : counters (or hidden)
   McpLog --> ChatPanel : shown until undo/redo or chat switch
   @enduml
   ```
@@ -119,36 +115,40 @@
   @startuml
   set separator none
   package "org.freeplane.plugin.ai.chat" {
-    class ChatMemorySettings
     class AssistantProfileChatMemory
-    interface SingleTurnChatMemory
-    class SingleTurnChatMemoryFactory
+    class ChatMemorySettings
+    class ChatTokenUsageTracker
+    class ChatTokenEstimator
+    class ChatTokenCounterMode
     class ChatRequestFlow
+    class AIChatPanel
   }
 
   AssistantProfileChatMemory --> ChatMemorySettings : reads token limit
-  AssistantProfileChatMemory --> TokenCountEstimator : estimates tokens per message
-  SingleTurnChatMemoryFactory --> SingleTurnChatMemory : creates turn memory bridge
-  ChatRequestFlow --> SingleTurnChatMemory : rollback/eviction operations
+  AIChatPanel --> AssistantProfileChatMemory : active window messages
+  ChatRequestFlow --> ChatTokenUsageTracker : updates counters
+  ChatTokenUsageTracker --> ChatTokenCounterMode : mode selection
+  ChatTokenUsageTracker --> AssistantProfileChatMemory : request estimates
+  AssistantProfileChatMemory --> ChatTokenEstimator : estimate tokens
   @enduml
   ```
 
   - Make token-window eviction the single active memory policy.
   - Extend `ChatMemorySettings` with token-limit configuration:
-    `ai_chat_memory_maximum_token_count` with a safe default.
+    `ai_chat_memory_maximum_token_count` with a safe default and no
+    hardcoded minimum clamp (accept any positive value).
   - Remove message-count-based eviction logic from
     `AssistantProfileChatMemory`.
   - Keep profile/system/tool eviction semantics unchanged; only the
     capacity metric changes.
   - Eviction must move a conversation window-start cursor instead of
     deleting historical messages from the underlying list.
-  - Token counting includes all messages currently held in memory.
-  - Use LangChain4j local token estimation in memory:
-    `OpenAiTokenCountEstimator`.
-  - Document that the token budget is approximate because estimator
-    tokenization may differ from the selected provider.
-  - Include all message types in token accounting, including tool and
-    profile/system instruction messages.
+  - Token counting for eviction is based on local estimation of
+    removable blocks (user, assistant, tool call, tool result) only.
+  - Always-present system and tool instructions are treated as constant
+    overhead and are not included in the removable-token tally.
+  - Profile control instructions may be compacted or removed by other
+    logic; they are excluded from the removable-token tally.
   - LLM tool-call messages are included in token accounting and must be
     rebuilt from memory after panel refresh.
   - MCP tool-call messages are not memory-backed and not included in
@@ -156,15 +156,44 @@
     undo/redo or chat switch.
   - Keep turn-level rollback logic cursor-based (sizes/indexes) over the
     same memory instance; do not introduce snapshot-based message copies.
-  - Keep running token totals via delta updates on message mutations
-    (add/remove/replace), without full-history recount in steady state.
-  - Persist per-turn or per-undo-block token cost after successful
-    responses using provider token-usage deltas.
-  - For transcript-restored or otherwise delta-less blocks, use local
-    estimator token cost as fallback.
-  - Eviction uses unified block cost: provider delta when available,
-    otherwise local estimator fallback.
-  - Run eviction after successful responses (post-response eviction).
+  - Token usage display uses estimates provided by
+    `AssistantProfileChatMemory`, keeping estimator details internal.
+  - Provider usage callbacks record usage only; token counters refresh
+    after assistant responses are appended to memory so estimates are
+    consistent with the rendered conversation.
+  - `ChatTokenEstimator` is a private helper owned by
+    `AssistantProfileChatMemory` and is not accessed by the panel.
+  - Token counter display is configurable via preferences with four
+    modes (default: hidden):
+    - Hidden: no counters are shown.
+    - Context window estimates: input/output counters use the estimator
+      on removable blocks in the active window.
+    - Total chat estimates: input/output counters use the estimator on
+      removable blocks across the full chat history.
+    - Model response: input/output counters show the last response's
+      provider usage only (no accumulation, no estimator).
+  - Counter labels use the selected preference text (for example
+    "Context window estimates") and avoid the literal word "tokens" to
+    keep localization flexible; the label is omitted if no mode label
+    is available.
+  - Implement the counter mode preference as a `radiobuttons` group
+    with four `choice` values and translation keys.
+  - Provide explicit English translations for the counter mode choices
+    to avoid placeholder labels in preferences.
+  - Eviction runs after successful responses (post-response eviction)
+    and moves the window cursor by completed turns until estimated
+    removable tokens are within the configured limit.
+  - Always keep at least one user message in the active window. If the
+    earliest user message alone exceeds the token budget, keep it and
+    stop evicting (do not advance past that first user message).
+  - Refactor `AssistantProfileChatMemory` to make eviction decisions
+    fully testable and remove opaque flags:
+    - Eviction is triggered only from the post-response usage callback.
+    - Keep eviction logic in a single method that returns whether the
+      window advanced so callers can rebuild UI immediately.
+    - Avoid introducing new classes unless needed for test isolation;
+      prefer extracting private helpers that return deterministic
+      results.
   - On provider `context too large` error, run eviction and retry the
     pending request with retry limits to avoid infinite loops.
   - Keep provider hard context limits and plugin memory limits separate:
@@ -178,8 +207,8 @@
 - **Test specification:**
   - Automated tests:
     - Add `AssistantProfileChatMemory` tests for token-window eviction:
-      oldest counted messages are evicted until total estimated tokens
-      fit limit.
+      oldest turns are evicted after a response pushes provider totals
+      beyond the configured limit.
     - Verify profile/system instruction semantics stay unchanged in
       token mode (compaction, hidden/system instruction presence, single
       removed-for-space marker).
@@ -191,10 +220,34 @@
       token mode without changing undo/redo and transcript semantics.
     - Add tests for post-response eviction and context-too-large retry
       flow with bounded retries.
-    - Add tests for per-block token delta attribution and fallback
-      behavior when provider usage is unavailable.
-    - Add tests that transcript-restored blocks are evicted correctly
-      using local-estimator costs when provider deltas are absent.
+    - Add tests for local-estimator token accounting for removable
+      blocks and eviction based on estimated totals.
+    - Add tests for counter display modes:
+    - Hidden shows no counters.
+    - Context window estimates reflect removable blocks inside the
+      active window.
+    - Total chat estimates reflect removable blocks across the full
+      conversation list.
+    - Model response shows last provider usage only and does not
+      accumulate across turns.
+    - Counter labels use the selected preference text and omit the
+      literal word "tokens".
+    - Add tests that eviction never removes the last remaining user
+      message in the active window, even when it exceeds the token
+      limit.
+    - Expand `AssistantProfileChatMemory` coverage to include:
+      - Eviction does not run while a request is in flight and runs only
+        after the post-response usage callback.
+      - Eviction advances the active window by exactly one completed
+        turn per usage callback and never moves backwards.
+      - Context-boundary marker appears immediately after eviction when
+        rebuilding the render entries.
+      - Undo/redo boundaries interact correctly with a non-zero window
+        start index.
+      - Tool call summaries render once and tool results are excluded
+        when summaries are present.
+      - Control instruction and transcript-hidden messages remain
+        system-rendered and excluded from transcript entries.
   - Manual tests:
     - Run a long multi-turn chat with large messages and verify old
       turns are removed as token budget is exceeded while recent turns

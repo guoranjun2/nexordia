@@ -1,5 +1,6 @@
 package org.freeplane.plugin.ai.chat;
 
+import dev.langchain4j.model.output.TokenUsage;
 import java.util.function.Supplier;
 import javax.swing.SwingWorker;
 
@@ -16,14 +17,15 @@ class ChatRequestFlow {
         void synchronizeTranscriptWithMemory();
         void rebuildHistoryFromTranscript();
         boolean evictOldestTurn();
-        void deferCapacityChecks();
-        void completeDeferredCapacityChecks();
-        void cancelDeferredCapacityChecks();
+        void onPostResponseEviction();
+        void refreshTokenCounters();
     }
 
     private final RequestCallbacks callbacks;
     private final ChatRequestCancellation requestCancellation;
     private final int contextTooLargeMaxRetries;
+    private final ChatTokenUsageTracker tokenUsageTracker;
+    private AssistantProfileChatMemory chatMemory;
     private SwingWorker<String, Void> activeWorker;
     private boolean requestInProgress;
     private int activeRequestId;
@@ -31,8 +33,10 @@ class ChatRequestFlow {
     private String pendingUserMessage;
     private int pendingContextTooLargeRetryCount;
 
-    ChatRequestFlow(RequestCallbacks callbacks, int contextTooLargeMaxRetries) {
+    ChatRequestFlow(RequestCallbacks callbacks, ChatTokenUsageTracker tokenUsageTracker,
+                    int contextTooLargeMaxRetries) {
         this.callbacks = callbacks;
+        this.tokenUsageTracker = tokenUsageTracker;
         this.contextTooLargeMaxRetries = contextTooLargeMaxRetries;
         this.requestCancellation = new ChatRequestCancellation();
     }
@@ -45,6 +49,24 @@ class ChatRequestFlow {
         return requestCancellation::isCancelled;
     }
 
+    void refreshTokenCounters() {
+        callbacks.refreshTokenCounters();
+    }
+
+    void updateChatMemory(AssistantProfileChatMemory chatMemory) {
+        this.chatMemory = chatMemory;
+    }
+
+    void onProviderUsage(TokenUsage usage) {
+        if (usage != null && tokenUsageTracker != null) {
+            tokenUsageTracker.recordProviderUsage(usage);
+        }
+        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(usage);
+        if (evicted) {
+            callbacks.onPostResponseEviction();
+        }
+    }
+
     void beginRequest(String userMessage) {
         requestCancellation.reset();
         activeRequestId++;
@@ -52,7 +74,6 @@ class ChatRequestFlow {
         pendingMemorySize = callbacks.snapshotMemorySize();
         pendingContextTooLargeRetryCount = 0;
         requestInProgress = true;
-        callbacks.deferCapacityChecks();
         callbacks.onRequestStarted();
     }
 
@@ -79,13 +100,13 @@ class ChatRequestFlow {
 
     void restorePendingRequest() {
         callbacks.truncateMemoryToSize(pendingMemorySize);
-        callbacks.cancelDeferredCapacityChecks();
         callbacks.synchronizeTranscriptWithMemory();
         callbacks.rebuildHistoryFromTranscript();
         activeWorker = null;
         requestInProgress = false;
         callbacks.onRequestRestored(pendingUserMessage);
         callbacks.onRequestFinished();
+        callbacks.refreshTokenCounters();
         clearPendingRequestState();
     }
 
@@ -134,6 +155,7 @@ class ChatRequestFlow {
         pendingContextTooLargeRetryCount++;
         callbacks.synchronizeTranscriptWithMemory();
         callbacks.rebuildHistoryFromTranscript();
+        callbacks.refreshTokenCounters();
         executeRequestWorker(chatService, pendingUserMessage, requestId);
         return true;
     }
@@ -148,7 +170,6 @@ class ChatRequestFlow {
     }
 
     private void finishRequest() {
-        callbacks.completeDeferredCapacityChecks();
         activeWorker = null;
         requestInProgress = false;
         callbacks.onRequestFinished();

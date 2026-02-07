@@ -25,7 +25,7 @@ public class ChatMemorySettings {
         return maximumTokenCount;
     }
 
-    private static int parseMaximumTokenCount(String value) {
+    static int parseMaximumTokenCount(String value) {
         if (value == null || value.isEmpty()) {
             return DEFAULT_MAXIMUM_TOKEN_COUNT;
         }

@@ -35,21 +35,6 @@ class SingleTurnChatMemoryFactory {
         }
 
         @Override
-        public void deferCapacityChecks() {
-            memory.deferCapacityChecks();
-        }
-
-        @Override
-        public void completeDeferredCapacityChecks() {
-            memory.completeDeferredCapacityChecks();
-        }
-
-        @Override
-        public void cancelDeferredCapacityChecks() {
-            memory.cancelDeferredCapacityChecks();
-        }
-
-        @Override
         public boolean evictOldestTurn() {
             return memory.evictOldestTurn();
         }
@@ -88,18 +73,6 @@ class SingleTurnChatMemoryFactory {
                     memory.add(message);
                 }
             }
-        }
-
-        @Override
-        public void deferCapacityChecks() {
-        }
-
-        @Override
-        public void completeDeferredCapacityChecks() {
-        }
-
-        @Override
-        public void cancelDeferredCapacityChecks() {
         }
 
         @Override

@@ -5,7 +5,13 @@
         <boolean name="ai_edits_state_icon_visible"/>
         <boolean name="ai_edits_persistence_enabled"/>
         <boolean name="ai_chat_shows_tool_calls"/>
-        <number name="ai_chat_memory_maximum_token_count" min="8192" max="1048576" />
+        <number name="ai_chat_memory_maximum_token_count" min="2048" max="1048576" />
+        <radiobuttons name="ai_chat_token_counter_mode">
+            <choice value="hidden" text="OptionPanel.ai_chat_token_counter_mode.hidden"/>
+            <choice value="context" text="OptionPanel.ai_chat_token_counter_mode.context"/>
+            <choice value="total" text="OptionPanel.ai_chat_token_counter_mode.total"/>
+            <choice value="model_response" text="OptionPanel.ai_chat_token_counter_mode.model_response"/>
+        </radiobuttons>
         <boolean name="ai_unfolds_parents_on_create"/>
         <textbox name="ai_system_message" lines="5"/>
         <boolean name="ai_mcp_server_enabled"/>

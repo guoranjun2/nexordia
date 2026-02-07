@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
@@ -13,6 +14,7 @@ import org.freeplane.plugin.ai.tools.utilities.ToolExecutorRegistry;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.output.TokenUsage;
 import dev.langchain4j.observability.api.event.AiServiceErrorEvent;
 import dev.langchain4j.observability.api.event.AiServiceResponseReceivedEvent;
 import dev.langchain4j.observability.api.event.ToolExecutedEvent;
@@ -33,7 +35,7 @@ public class AIChatService {
 
     public AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
                          ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler,
-                         Supplier<Boolean> cancellationSupplier) {
+                         Supplier<Boolean> cancellationSupplier, Consumer<TokenUsage> tokenUsageConsumer) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolArgumentsErrorHandler = buildToolArgumentsErrorHandler();
@@ -66,7 +68,9 @@ public class AIChatService {
 
                 @Override
                 public void onEvent(AiServiceResponseReceivedEvent event) {
-                    chatTokenUsageTracker.recordTokenUsage(event.response().tokenUsage());
+                    if (tokenUsageConsumer != null) {
+                        tokenUsageConsumer.accept(event.response().tokenUsage());
+                    }
                 }
 
             })

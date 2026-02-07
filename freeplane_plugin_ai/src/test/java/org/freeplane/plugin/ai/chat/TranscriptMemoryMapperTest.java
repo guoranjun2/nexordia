@@ -4,9 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.TokenCountEstimator;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -87,70 +85,16 @@ public class TranscriptMemoryMapperTest {
     @Test
     public void transcriptRestoredMessagesUseLocalTokenAccounting() {
         TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
-        CountingWordTokenCountEstimator estimator = new CountingWordTokenCountEstimator();
-        AssistantProfileChatMemory memory = AssistantProfileChatMemory.builder()
-            .maxTokens(500)
-            .tokenCountEstimator(estimator)
-            .build();
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
         List<ChatTranscriptEntry> entries = Arrays.asList(
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "one"),
-            new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "two"),
+            new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,
+                RemovedForSpaceSystemMessage.DEFAULT_TEXT),
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "three"));
 
         uut.seedTranscriptWithHiddenExchange(memory, entries, null);
-        int callsAfterSeed = estimator.getMessageEstimateCalls();
-        memory.messages();
-
-        assertThat(callsAfterSeed).isEqualTo(3);
-        assertThat(estimator.getMessageEstimateCalls()).isEqualTo(callsAfterSeed);
-    }
-
-    private static class WordCountTokenCountEstimator implements TokenCountEstimator {
-
-        @Override
-        public int estimateTokenCountInText(String text) {
-            if (text == null || text.trim().isEmpty()) {
-                return 1;
-            }
-            return text.trim().split("\\s+").length;
-        }
-
-        @Override
-        public int estimateTokenCountInMessage(ChatMessage message) {
-            if (message instanceof UserMessage) {
-                return estimateTokenCountInText(((UserMessage) message).singleText());
-            }
-            if (message instanceof AiMessage) {
-                return estimateTokenCountInText(((AiMessage) message).text());
-            }
-            if (message instanceof SystemMessage) {
-                return estimateTokenCountInText(((SystemMessage) message).text());
-            }
-            return estimateTokenCountInText(message.toString());
-        }
-
-        @Override
-        public int estimateTokenCountInMessages(Iterable<ChatMessage> messages) {
-            int total = 0;
-            for (ChatMessage message : messages) {
-                total += estimateTokenCountInMessage(message);
-            }
-            return total;
-        }
-    }
-
-    private static class CountingWordTokenCountEstimator extends WordCountTokenCountEstimator {
-
-        private int messageEstimateCalls;
-
-        @Override
-        public int estimateTokenCountInMessage(ChatMessage message) {
-            messageEstimateCalls++;
-            return super.estimateTokenCountInMessage(message);
-        }
-
-        int getMessageEstimateCalls() {
-            return messageEstimateCalls;
-        }
+        List<ChatMemoryRenderEntry> renderEntries = memory.activeConversationRenderEntries();
+        assertThat(renderEntries)
+            .anyMatch(entry -> entry.chatMessage() instanceof RemovedForSpaceSystemMessage);
     }
 }

@@ -20,8 +20,16 @@ class TranscriptMemoryMapper {
             return;
         }
         memory.clear();
+        AssistantProfileChatMemory assistantProfileMemory =
+            memory instanceof AssistantProfileChatMemory ? (AssistantProfileChatMemory) memory : null;
         if (entries != null) {
             for (ChatTranscriptEntry entry : entries) {
+                if (assistantProfileMemory != null
+                    && entry != null
+                    && entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
+                    assistantProfileMemory.markContextWindowStart();
+                    continue;
+                }
                 ChatMessage message = toChatMessage(entry);
                 if (message != null) {
                     memory.add(message);

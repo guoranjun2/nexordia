@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
@@ -30,6 +31,7 @@ public class LiveChatController {
     private final ChatMemorySettings chatMemorySettings;
     private final MapRootShortTextFormatter mapRootShortTextFormatter;
     private final MapRootShortTextCountsMerger mapRootShortTextCountsMerger;
+    private final Supplier<ChatTokenUsageState> tokenUsageStateSupplier;
     private static final String TRANSCRIPT_HIDDEN_SYSTEM_MESSAGE =
         "System message: The messages in this session include a restored transcript of a prior chat. "
             + "Treat those messages as the earlier conversation context, not as hallucinations. "
@@ -40,10 +42,12 @@ public class LiveChatController {
                               AvailableMaps availableMaps,
                               TextController textController,
                               DateTimeFormatter chatNameFormatter,
-                              SessionActivationHandler sessionActivationHandler) {
+                              SessionActivationHandler sessionActivationHandler,
+                              Supplier<ChatTokenUsageState> tokenUsageStateSupplier) {
         this.owner = parent;
         this.chatNameFormatter = chatNameFormatter;
         this.sessionActivationHandler = sessionActivationHandler;
+        this.tokenUsageStateSupplier = tokenUsageStateSupplier;
         this.liveChatSessionManager = new LiveChatSessionManager();
         this.transcriptStore = new ChatTranscriptStore();
         this.transcriptMemoryMapper = new TranscriptMemoryMapper();
@@ -108,6 +112,14 @@ public class LiveChatController {
 
     public void persistCurrentSessionIfNeeded() {
         persistCurrentSession();
+    }
+
+    public ChatTokenUsageState getCurrentTokenUsageState() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return null;
+        }
+        return session.getTokenUsageState();
     }
 
     public boolean canUndo() {
@@ -216,6 +228,7 @@ public class LiveChatController {
         if (session == null) {
             return;
         }
+        storeTokenUsageState(session);
         if (session.getTranscriptEntries().isEmpty() && session.getTranscriptId() == null) {
             return;
         }
@@ -367,5 +380,12 @@ public class LiveChatController {
 
     private ChatMemory createChatMemory() {
         return AssistantProfileChatMemory.withMaxTokens(chatMemorySettings.getMaximumTokenCount());
+    }
+
+    private void storeTokenUsageState(LiveChatSession session) {
+        if (session == null || tokenUsageStateSupplier == null) {
+            return;
+        }
+        session.setTokenUsageState(tokenUsageStateSupplier.get());
     }
 }

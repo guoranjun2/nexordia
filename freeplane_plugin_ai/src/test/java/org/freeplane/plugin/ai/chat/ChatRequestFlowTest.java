@@ -2,10 +2,14 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import dev.langchain4j.model.output.TokenUsage;
 import org.junit.Test;
 
 public class ChatRequestFlowTest {
@@ -13,7 +17,7 @@ public class ChatRequestFlowTest {
     @Test
     public void contextTooLargeRetryEvictsAndCompletesAfterSuccessfulRetry() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, 2);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 2);
         AIChatService chatService = mock(AIChatService.class);
         when(chatService.chat("question"))
             .thenThrow(new RuntimeException("context too large"))
@@ -28,14 +32,13 @@ public class ChatRequestFlowTest {
         assertThat(callbacks.evictOldestTurnCount).isEqualTo(1);
         assertThat(callbacks.synchronizeTranscriptCount).isEqualTo(1);
         assertThat(callbacks.rebuildHistoryCount).isEqualTo(1);
-        assertThat(callbacks.completeDeferredCapacityChecksCount).isEqualTo(1);
         assertThat(callbacks.restoreCount).isZero();
     }
 
     @Test
     public void contextTooLargeAfterMaxRetriesRestoresPendingRequest() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
         AIChatService chatService = mock(AIChatService.class);
         when(chatService.chat("question"))
             .thenThrow(new RuntimeException("context too large"))
@@ -49,7 +52,46 @@ public class ChatRequestFlowTest {
         assertThat(callbacks.assistantErrorCount).isEqualTo(1);
         assertThat(callbacks.evictOldestTurnCount).isEqualTo(1);
         assertThat(callbacks.restoreCount).isEqualTo(1);
-        assertThat(callbacks.cancelDeferredCapacityChecksCount).isEqualTo(1);
+    }
+
+    @Test
+    public void onProviderUsageRecordsUsageAndRefreshesCounters() {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
+        TokenUsage usage = mock(TokenUsage.class);
+        when(usage.inputTokenCount()).thenReturn(120);
+        when(usage.outputTokenCount()).thenReturn(80);
+        when(memory.onResponseTokenUsage(usage)).thenReturn(false);
+
+        uut.updateChatMemory(memory);
+        uut.onProviderUsage(usage);
+
+        verify(tokenUsageTracker, times(1)).recordProviderUsage(usage);
+        verify(memory, times(1)).onResponseTokenUsage(usage);
+        assertThat(callbacks.postResponseEvictionCount).isZero();
+        assertThat(callbacks.refreshTokenCountersCount).isZero();
+    }
+
+    @Test
+    public void onProviderUsageTriggersPostResponseEvictionWhenWindowAdvances() {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
+        TokenUsage usage = mock(TokenUsage.class);
+        when(usage.inputTokenCount()).thenReturn(120);
+        when(usage.outputTokenCount()).thenReturn(80);
+        when(memory.onResponseTokenUsage(usage)).thenReturn(true);
+
+        uut.updateChatMemory(memory);
+        uut.onProviderUsage(usage);
+
+        verify(tokenUsageTracker, times(1)).recordProviderUsage(usage);
+        verify(memory, times(1)).onResponseTokenUsage(usage);
+        assertThat(callbacks.postResponseEvictionCount).isEqualTo(1);
+        assertThat(callbacks.refreshTokenCountersCount).isZero();
     }
 
     private static class RecordingCallbacks implements ChatRequestFlow.RequestCallbacks {
@@ -60,9 +102,9 @@ public class ChatRequestFlowTest {
         private int evictOldestTurnCount;
         private int synchronizeTranscriptCount;
         private int rebuildHistoryCount;
-        private int completeDeferredCapacityChecksCount;
-        private int cancelDeferredCapacityChecksCount;
         private int restoreCount;
+        private int postResponseEvictionCount;
+        private int refreshTokenCountersCount;
 
         @Override
         public void onRequestStarted() {
@@ -114,17 +156,13 @@ public class ChatRequestFlowTest {
         }
 
         @Override
-        public void deferCapacityChecks() {
+        public void onPostResponseEviction() {
+            postResponseEvictionCount++;
         }
 
         @Override
-        public void completeDeferredCapacityChecks() {
-            completeDeferredCapacityChecksCount++;
-        }
-
-        @Override
-        public void cancelDeferredCapacityChecks() {
-            cancelDeferredCapacityChecksCount++;
+        public void refreshTokenCounters() {
+            refreshTokenCountersCount++;
         }
 
         boolean awaitFinished() throws InterruptedException {

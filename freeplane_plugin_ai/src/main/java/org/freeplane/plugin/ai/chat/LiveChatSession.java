@@ -21,6 +21,7 @@ final class LiveChatSession {
     private boolean nameEdited;
     private boolean userMessageNameApplied;
     private long lastActivityTimestamp;
+    private ChatTokenUsageState tokenUsageState;
 
     LiveChatSession(LiveChatSessionId id, ChatMemory chatMemory, String displayName) {
         this.id = id;
@@ -100,6 +101,14 @@ final class LiveChatSession {
 
     void setLastActivityTimestamp(long lastActivityTimestamp) {
         this.lastActivityTimestamp = lastActivityTimestamp;
+    }
+
+    ChatTokenUsageState getTokenUsageState() {
+        return tokenUsageState;
+    }
+
+    void setTokenUsageState(ChatTokenUsageState tokenUsageState) {
+        this.tokenUsageState = tokenUsageState;
     }
 
 }

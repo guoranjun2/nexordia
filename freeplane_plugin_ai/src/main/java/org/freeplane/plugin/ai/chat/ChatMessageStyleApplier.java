@@ -51,6 +51,9 @@ public class ChatMessageStyleApplier {
             + toCssColor(systemBackground) + "; border-left: 4px solid " + toCssColor(systemBorderColor) + "; }");
         styleSheet.addRule(".message-profile { margin: 6px 0; padding: 6px 8px; background-color: "
             + toCssColor(profileBackground) + "; border-left: 4px solid " + toCssColor(profileBorderColor) + "; }");
+        styleSheet.addRule(".message-context-boundary { margin: 10px 0 6px 0; padding: 4px 8px 0 8px;"
+            + " border-top: 2px dashed " + toCssColor(systemBorderColor) + ";"
+            + " color: " + toCssColor(systemBorderColor) + "; font-size: 10pt; }");
     }
 
     private boolean isDark(Color color) {
