@@ -5,7 +5,9 @@
   rewind the conversation by one sent turn, restore that user message
   into the input, and remove the rewound turn from active chat context.
   `Redo` must restore previously rewound turns until a new user message
-  is sent, after which redo history is cleared.
+  is sent, after which redo history is cleared. Add keyboard shortcuts
+  for `Undo` and `Redo` aligned with send shortcut handling:
+  `Command/Ctrl + ArrowUp` and `Command/Ctrl + ArrowDown`.
 - **Motivation:** Users need safe iterative prompting without losing
   interrupted drafts and without manually deleting recent chat context.
 - **Developer Briefing:** The current panel already restores one pending
@@ -28,6 +30,9 @@
     history for already completed turns.
   - The input area currently adds only one action button on the east
     side (`sendButton`) and no dedicated undo/redo controls.
+  - Send action key handling in `AIChatPanel` already uses
+    `MenuUtils.formatKeyStroke(...)` in tooltip text and action map
+    bindings from panel/input maps.
   - `ChatMessageHistory` supports full snapshot/restore of rendered
     chat entries through `ChatMessageSnapshot`.
   - `LiveChatController` supports snapshot/restore of transcript entries
@@ -113,6 +118,12 @@
   - Keep cursor state per live chat session by storing memory owner in
     `LiveChatSession`; switching sessions restores each cursor naturally.
   - Rewind/redo actions are disabled while a request is active.
+  - Add `Command/Ctrl + ArrowUp` and `Command/Ctrl + ArrowDown`
+    key bindings for undo/redo on the same input container scope as
+    cancel handling, so they work while focus stays in chat input
+    controls.
+  - Show undo/redo shortcuts in button tooltips using formatted
+    keystroke text, analogous to send tooltip behavior.
 - **Test specification:**
   - Automated tests:
     - Add focused tests for memory cursor behavior:
@@ -124,6 +135,9 @@
     - Add `AIChatPanel` tests verifying button state transitions:
       `undo_redo_buttons_enabled_only_with_available_steps`,
       `undo_redo_disabled_while_request_active`.
+    - Add `AIChatPanel` tests for shortcut dispatch:
+      `undo_shortcut_triggers_undo`,
+      `redo_shortcut_triggers_redo`.
     - Add a session-switch test verifying undo/redo history isolation
       between live sessions.
   - Manual tests:
@@ -133,3 +147,6 @@
       verify redo is cleared.
     - Interrupt an in-flight request and verify input restores the
       interrupted user text.
+    - Press `Command/Ctrl + ArrowUp` and `Command/Ctrl + ArrowDown`
+      in chat input and verify they trigger `Undo`/`Redo` and appear
+      in button tooltips.

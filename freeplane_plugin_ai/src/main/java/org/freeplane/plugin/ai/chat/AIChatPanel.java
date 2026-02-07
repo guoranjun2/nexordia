@@ -220,11 +220,15 @@ public class AIChatPanel extends JPanel {
         redoButton.addActionListener(event -> redoLastTurn());
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         KeyStroke sendKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, shortcutMask);
+        KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_UP, shortcutMask);
+        KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, shortcutMask);
         sendTooltipText = TextUtils.format("ai_chat_send.tooltip", MenuUtils.formatKeyStroke(sendKeyStroke));
         KeyStroke cancelKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
         cancelTooltipText = TextUtils.format("ai_chat_cancel.tooltip", MenuUtils.formatKeyStroke(cancelKeyStroke));
-        undoTooltipText = "Undo";
-        redoTooltipText = "Redo";
+        undoTooltipText = TextUtils.getText("simplyhtml.undoLabel")
+            + " (" + MenuUtils.formatKeyStroke(undoKeyStroke) + ")";
+        redoTooltipText = TextUtils.getText("simplyhtml.redoLabel")
+            + " (" + MenuUtils.formatKeyStroke(redoKeyStroke) + ")";
         preferencesTooltipText = TextUtils.getText("preferences");
         noProviderConfiguredText = TextUtils.getText("ai_chat_no_provider_configured");
         sendButton.setToolTipText(sendTooltipText);
@@ -240,6 +244,8 @@ public class AIChatPanel extends JPanel {
             }
         });
         inputArea.getInputMap().put(sendKeyStroke, "sendMessage");
+        inputArea.getInputMap().put(undoKeyStroke, "undoTurn");
+        inputArea.getInputMap().put(redoKeyStroke, "redoTurn");
         inputArea.getActionMap().put("sendMessage", new AbstractAction() {
             /**
 			 * Comment for <code>serialVersionUID</code>
@@ -259,12 +265,32 @@ public class AIChatPanel extends JPanel {
         });
         inputContainer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
             .put(cancelKeyStroke, "cancelRequest");
+        inputContainer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+            .put(undoKeyStroke, "undoTurn");
+        inputContainer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+            .put(redoKeyStroke, "redoTurn");
         inputContainer.getActionMap().put("cancelRequest", new AbstractAction() {
             private static final long serialVersionUID = 1L;
 
             @Override
             public void actionPerformed(ActionEvent event) {
                 cancelActiveRequest();
+            }
+        });
+        inputContainer.getActionMap().put("undoTurn", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                undoLastTurn();
+            }
+        });
+        inputContainer.getActionMap().put("redoTurn", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                redoLastTurn();
             }
         });
         modelSelectionController.loadInitialModelSelectionList();
