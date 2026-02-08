@@ -46,7 +46,7 @@ class TranscriptMemoryMapper {
             return new ArrayList<>();
         }
         if (memory instanceof AssistantProfileChatMemory) {
-            return ((AssistantProfileChatMemory) memory).activeTranscriptEntries();
+            return ((AssistantProfileChatMemory) memory).transcriptEntriesForPersistence();
         }
         List<ChatTranscriptEntry> entries = new ArrayList<>();
         for (ChatMessage message : memory.messages()) {

@@ -132,6 +132,22 @@ public class ChatMemoryHistoryRendererTest {
     }
 
     @Test
+    public void rebuildFromMessages_hidesTranscriptHiddenSystemMessageAndAck() {
+        RenderFixture fixture = new RenderFixture();
+        List<ChatMemoryRenderEntry> messages = Arrays.asList(
+            ChatMemoryRenderEntry.forMessage(new TranscriptHiddenSystemMessage("hidden transcript")),
+            ChatMemoryRenderEntry.forMessage(new InstructionAckMessage()),
+            ChatMemoryRenderEntry.forMessage(UserMessage.from("visible user")));
+
+        fixture.uut.rebuildFromMessages(messages);
+
+        String html = fixture.html();
+        assertThat(html).contains("visible user");
+        assertThat(html).doesNotContain("hidden transcript");
+        assertThat(html).doesNotContain("ok");
+    }
+
+    @Test
     public void rebuildFromMessages_handlesEmptyList() {
         RenderFixture fixture = new RenderFixture();
 

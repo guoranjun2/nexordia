@@ -44,7 +44,7 @@ class ChatMemoryHistoryRenderer {
             if (entry == null) {
                 continue;
             }
-            if (isProfileAcknowledgementMessage(entries, index)) {
+            if (isHiddenAcknowledgementMessage(entries, index)) {
                 continue;
             }
             appendMessage(entry, hasToolSummaries);
@@ -91,6 +91,9 @@ class ChatMemoryHistoryRenderer {
                 RenderCategory.PROFILE);
         }
         if (message instanceof GeneralSystemMessage) {
+            return null;
+        }
+        if (message instanceof TranscriptHiddenSystemMessage) {
             return null;
         }
         if (message instanceof RemovedForSpaceSystemMessage) {
@@ -151,7 +154,7 @@ class ChatMemoryHistoryRenderer {
         return builder.toString();
     }
 
-    private boolean isProfileAcknowledgementMessage(List<ChatMemoryRenderEntry> entries, int index) {
+    private boolean isHiddenAcknowledgementMessage(List<ChatMemoryRenderEntry> entries, int index) {
         if (entries == null || index <= 0 || index >= entries.size()) {
             return false;
         }
@@ -169,7 +172,8 @@ class ChatMemoryHistoryRenderer {
         if (!(current instanceof InstructionAckMessage)) {
             return false;
         }
-        return previous instanceof AssistantProfileControlInstructionMessage;
+        return previous instanceof AssistantProfileControlInstructionMessage
+            || previous instanceof TranscriptHiddenSystemMessage;
     }
 
     private String buildProfilePaneMessage(String profileName) {

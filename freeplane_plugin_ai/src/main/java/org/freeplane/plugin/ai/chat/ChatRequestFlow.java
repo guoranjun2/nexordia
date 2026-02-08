@@ -35,6 +35,7 @@ class ChatRequestFlow {
     private int pendingMemorySize;
     private String pendingUserMessage;
     private int pendingContextTooLargeRetryCount;
+    private TokenUsage pendingResponseUsage;
 
     ChatRequestFlow(RequestCallbacks callbacks, ChatTokenUsageTracker tokenUsageTracker,
                     int contextTooLargeMaxRetries) {
@@ -75,10 +76,7 @@ class ChatRequestFlow {
         if (usage != null && tokenUsageTracker != null) {
             tokenUsageTracker.recordProviderUsage(usage);
         }
-        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(usage);
-        if (evicted) {
-            callbacks.onPostResponseEviction();
-        }
+        pendingResponseUsage = usage;
     }
 
     void beginRequest(String userMessage) {
@@ -184,6 +182,7 @@ class ChatRequestFlow {
     }
 
     private void finishRequest() {
+        applyPostResponseCompaction();
         activeWorker = null;
         requestInProgress = false;
         callbacks.onRequestFinished();
@@ -194,5 +193,13 @@ class ChatRequestFlow {
         pendingMemorySize = 0;
         pendingUserMessage = null;
         pendingContextTooLargeRetryCount = 0;
+        pendingResponseUsage = null;
+    }
+
+    private void applyPostResponseCompaction() {
+        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(pendingResponseUsage);
+        if (evicted) {
+            callbacks.onPostResponseEviction();
+        }
     }
 }

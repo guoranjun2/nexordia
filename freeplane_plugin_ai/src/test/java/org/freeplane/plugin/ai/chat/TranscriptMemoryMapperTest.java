@@ -63,7 +63,7 @@ public class TranscriptMemoryMapperTest {
     }
 
     @Test
-    public void toTranscriptEntries_usesVisibleConversationMessagesOnly() {
+    public void toTranscriptEntries_exportsConversationMessages() {
         TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
         memory.add(new AssistantProfileControlInstructionMessage("profile-a", "A sayer", "Start with A", true));
@@ -80,6 +80,27 @@ public class TranscriptMemoryMapperTest {
         assertThat(entries.get(1).getText()).isEqualTo("hello");
         assertThat(entries.get(2).getRole()).isEqualTo(ChatTranscriptRole.ASSISTANT);
         assertThat(entries.get(2).getText()).isEqualTo("world");
+    }
+
+    @Test
+    public void toTranscriptEntries_keepsMessagesBeforeContextWindowBoundary() {
+        TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
+        memory.add(UserMessage.from("first user"));
+        memory.add(AiMessage.from("first assistant"));
+        memory.add(UserMessage.from("second user"));
+        memory.add(AiMessage.from("second assistant"));
+        memory.evictOldestTurn();
+
+        List<ChatTranscriptEntry> entries = uut.toTranscriptEntries(memory);
+
+        assertThat(entries)
+            .extracting(entry -> entry.getRole().name() + ":" + entry.getText())
+            .contains("USER:first user")
+            .contains("ASSISTANT:first assistant")
+            .contains("REMOVED_FOR_SPACE_SYSTEM:" + RemovedForSpaceSystemMessage.DEFAULT_TEXT)
+            .contains("USER:second user")
+            .contains("ASSISTANT:second assistant");
     }
 
     @Test

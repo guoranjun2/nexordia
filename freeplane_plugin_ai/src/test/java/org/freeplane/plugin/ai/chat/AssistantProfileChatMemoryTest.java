@@ -165,6 +165,42 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
+    public void panelConversationRenderEntriesKeepMessagesBeforeContextBoundary() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.evictOldestTurn()).isTrue();
+
+        assertThat(uut.panelConversationRenderEntries())
+            .extracting(entry -> entry.chatMessage() instanceof UserMessage
+                ? ((UserMessage) entry.chatMessage()).singleText()
+                : null)
+            .contains("u1", "u2");
+    }
+
+    @Test
+    public void panelConversationRenderEntriesPlaceBoundaryBeforeActiveTurn() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.evictOldestTurn()).isTrue();
+
+        List<ChatMemoryRenderEntry> entries = uut.panelConversationRenderEntries();
+        int markerIndex = indexOfMessage(entries, RemovedForSpaceSystemMessage.class);
+        int firstUserIndex = indexOfUserText(entries, "u1");
+        int activeUserIndex = indexOfUserText(entries, "u2");
+
+        assertThat(markerIndex).isGreaterThan(firstUserIndex);
+        assertThat(markerIndex).isLessThan(activeUserIndex);
+    }
+
+    @Test
     public void olderProfileInstructionsAreCompactedToMarkers() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(new AssistantProfileControlInstructionMessage("alpha", "Alpha", "First definition", true));
@@ -376,7 +412,7 @@ public class AssistantProfileChatMemoryTest {
 
         uut.truncateConversationMessagesTo(sizeAfterProfileInjection);
 
-        assertThat(uut.activeTranscriptEntries())
+        assertThat(uut.transcriptEntriesForPersistence())
             .anyMatch(entry -> entry instanceof AssistantProfileTranscriptEntry);
     }
 
@@ -618,7 +654,7 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
-    public void evictedOldestTurnDoesNotReturnAfterUndoRedo() {
+    public void evictedOldestTurnCanReturnAfterUndoWhenRangeShrinks() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("first question"));
         uut.add(AiMessage.from("first answer"));
@@ -628,13 +664,112 @@ public class AssistantProfileChatMemoryTest {
 
         assertThat(uut.canUndo()).isTrue();
         uut.undo();
-        assertThat(uut.canRedo()).isTrue();
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("first question")
+            .doesNotContain("second question");
+    }
+
+    @Test
+    public void undoRebalancesWindowToIncludeEarlierTurnsWhenTheyFit() {
+        int maxTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"));
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        uut.undo();
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u2")
+            .doesNotContain("u3");
+    }
+
+    @Test
+    public void redoRebalancesWindowForwardWhenExpandedRangeExceedsLimit() {
+        int maxTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"));
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+        uut.undo();
+
         uut.redo();
 
         assertThat(uut.messages())
             .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
-            .doesNotContain("first question")
-            .contains("second question");
+            .contains("u2", "u3")
+            .doesNotContain("u1");
+    }
+
+    @Test
+    public void transcriptRestoreExpansionMovesBoundaryBackwardWhenUnderMax() {
+        int turn2And3Tokens = estimateTokens(
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        int turn3Tokens = estimateTokens(
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        int maxTokens = Math.max(turn2And3Tokens + 10, turn3Tokens * 5);
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.markContextWindowStart();
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+        uut.initializeUndoRedoFromMessages();
+
+        uut.expandWindowAfterTranscriptRestoreIfUnderutilized();
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u2", "u3");
+    }
+
+    @Test
+    public void transcriptRestoreExpansionKeepsBoundaryWhenWindowAlreadyAtMax() {
+        int turn3Tokens = estimateTokens(
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        int maxTokens = turn3Tokens;
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.markContextWindowStart();
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+        uut.initializeUndoRedoFromMessages();
+
+        uut.expandWindowAfterTranscriptRestoreIfUnderutilized();
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u3")
+            .doesNotContain("u1", "u2");
     }
 
     @Test
@@ -660,7 +795,7 @@ public class AssistantProfileChatMemoryTest {
         uut.add(AiMessage.from("second answer"));
         assertThat(uut.evictOldestTurn()).isTrue();
 
-        assertThat(uut.activeTranscriptEntries())
+        assertThat(uut.transcriptEntriesForPersistence())
             .extracting(entry -> entry.getRole().name() + ":" + entry.getText())
             .anyMatch(value -> value.contains("REMOVED_FOR_SPACE_SYSTEM:" + RemovedForSpaceSystemMessage.DEFAULT_TEXT))
             .anyMatch(value -> value.contains("first question"))

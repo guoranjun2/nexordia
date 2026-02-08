@@ -61,39 +61,56 @@ public class ChatRequestFlowTest {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
         ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
-        AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
         TokenUsage usage = mock(TokenUsage.class);
         when(usage.inputTokenCount()).thenReturn(120);
         when(usage.outputTokenCount()).thenReturn(80);
-        when(memory.onResponseTokenUsage(usage)).thenReturn(false);
-
-        uut.updateChatMemory(memory);
         uut.onProviderUsage(usage);
 
         verify(tokenUsageTracker, times(1)).recordProviderUsage(usage);
-        verify(memory, times(1)).onResponseTokenUsage(usage);
         assertThat(callbacks.postResponseEvictionCount).isZero();
         assertThat(callbacks.refreshTokenCountersCount).isZero();
     }
 
     @Test
-    public void onProviderUsageTriggersPostResponseEvictionWhenWindowAdvances() {
+    public void requestCompletionTriggersPostResponseEvictionWhenWindowAdvances() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
         ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
         AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
+        AIChatService chatService = mock(AIChatService.class);
+        when(chatService.chat("question")).thenReturn("ok");
+        when(memory.onResponseTokenUsage((TokenUsage) null)).thenReturn(true);
+
+        uut.updateChatMemory(memory);
+        uut.beginRequest("question");
+        uut.submitRequest(chatService);
+
+        assertThat(callbacks.awaitFinished()).isTrue();
+
+        verify(memory, times(1)).onResponseTokenUsage((TokenUsage) null);
+        assertThat(callbacks.postResponseEvictionCount).isEqualTo(1);
+        assertThat(callbacks.refreshTokenCountersCount).isZero();
+    }
+
+    @Test
+    public void requestCompletionUsesLatestProviderUsageForCompaction() throws Exception {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
+        AIChatService chatService = mock(AIChatService.class);
         TokenUsage usage = mock(TokenUsage.class);
-        when(usage.inputTokenCount()).thenReturn(120);
-        when(usage.outputTokenCount()).thenReturn(80);
-        when(memory.onResponseTokenUsage(usage)).thenReturn(true);
+        when(chatService.chat("question")).thenReturn("ok");
+        when(memory.onResponseTokenUsage(usage)).thenReturn(false);
 
         uut.updateChatMemory(memory);
         uut.onProviderUsage(usage);
+        uut.beginRequest("question");
+        uut.submitRequest(chatService);
 
-        verify(tokenUsageTracker, times(1)).recordProviderUsage(usage);
+        assertThat(callbacks.awaitFinished()).isTrue();
+
         verify(memory, times(1)).onResponseTokenUsage(usage);
-        assertThat(callbacks.postResponseEvictionCount).isEqualTo(1);
-        assertThat(callbacks.refreshTokenCountersCount).isZero();
     }
 
     @Test

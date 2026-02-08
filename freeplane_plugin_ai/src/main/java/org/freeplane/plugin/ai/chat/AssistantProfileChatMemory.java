@@ -128,6 +128,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         from = Math.max(from, activeStartIndex);
         int to = turnEndIndexes.get(turnIndex);
         currentTurnCount = turnIndex;
+        rebalanceActiveWindowForCurrentTurnRange();
         return findUserMessageInRange(from, to);
     }
 
@@ -136,10 +137,42 @@ public class AssistantProfileChatMemory implements ChatMemory {
             return;
         }
         currentTurnCount++;
+        rebalanceActiveWindowForCurrentTurnRange();
     }
 
     public void initializeUndoRedoFromMessages() {
         rebuildTurnBoundaries();
+    }
+
+    void expandWindowAfterTranscriptRestoreIfUnderutilized() {
+        rebuildTurnBoundaries();
+        int endIndex = activeConversationEndIndex();
+        if (endIndex <= 0) {
+            return;
+        }
+        int maxTokens = maxTokensProvider.apply(id);
+        ensureGreaterThanZero(maxTokens, "maxTokens");
+        int startIndex = Math.min(activeStartIndex, endIndex);
+        long activeTokens = estimateTotalTokensForRange(startIndex, endIndex);
+        if (activeTokens >= maxTokens) {
+            return;
+        }
+        int selectedStart = startIndex;
+        while (true) {
+            int previousTurnStart = previousTurnStartFor(selectedStart);
+            if (previousTurnStart < 0) {
+                break;
+            }
+            long expandedTokens = estimateTotalTokensForRange(previousTurnStart, endIndex);
+            if (expandedTokens > maxTokens) {
+                break;
+            }
+            selectedStart = previousTurnStart;
+            if (expandedTokens >= maxTokens) {
+                break;
+            }
+        }
+        activeStartIndex = selectedStart;
     }
 
     public boolean evictOldestTurn() {
@@ -150,7 +183,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         return advanceWindowByOneTurn();
     }
 
-    public List<ChatTranscriptEntry> activeTranscriptEntries() {
+    public List<ChatTranscriptEntry> transcriptEntriesForPersistence() {
         List<ChatTranscriptEntry> entries = new ArrayList<>();
         int endIndex = activeConversationEndIndex();
         int startIndex = Math.min(activeStartIndex, endIndex);
@@ -176,6 +209,14 @@ public class AssistantProfileChatMemory implements ChatMemory {
     }
 
     public List<ChatMemoryRenderEntry> activeConversationRenderEntries() {
+        return buildRenderEntries(false);
+    }
+
+    public List<ChatMemoryRenderEntry> panelConversationRenderEntries() {
+        return buildRenderEntries(true);
+    }
+
+    private List<ChatMemoryRenderEntry> buildRenderEntries(boolean includeMessagesBeforeActiveWindow) {
         int endIndex = activeConversationEndIndex();
         if (endIndex == 0) {
             return Collections.emptyList();
@@ -188,10 +229,11 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (startIndex > 0) {
             startIndex = alignVisibleStartIndex(startIndex, endIndex);
         }
-        if (startIndex > 0 && endIndex > startIndex) {
-            entries.add(ChatMemoryRenderEntry.forMessage(new RemovedForSpaceSystemMessage()));
-        }
-        for (int index = startIndex; index < endIndex; index++) {
+        int firstRenderedIndex = includeMessagesBeforeActiveWindow ? 0 : startIndex;
+        for (int index = firstRenderedIndex; index < endIndex; index++) {
+            if (index == startIndex && startIndex > 0 && endIndex > startIndex) {
+                entries.add(ChatMemoryRenderEntry.forMessage(new RemovedForSpaceSystemMessage()));
+            }
             ChatMessage message = conversationMessages.get(index);
             if (message instanceof ToolCallSummaryMessage) {
                 ToolCallSummaryMessage summaryMessage = (ToolCallSummaryMessage) message;
@@ -296,6 +338,16 @@ public class AssistantProfileChatMemory implements ChatMemory {
             int firstActive = firstActiveTurnIndex();
             if (currentTurnCount <= firstActive) {
                 return activeStartIndex;
+            }
+            return turnEndIndexes.get(currentTurnCount - 1);
+        }
+        return conversationMessages.size();
+    }
+
+    private int conversationEndIndexForCurrentTurnRange() {
+        if (canRedo()) {
+            if (currentTurnCount <= 0) {
+                return 0;
             }
             return turnEndIndexes.get(currentTurnCount - 1);
         }
@@ -449,6 +501,50 @@ public class AssistantProfileChatMemory implements ChatMemory {
         activeStartIndex = nextTurnEnd;
         rebuildTurnBoundaries();
         return true;
+    }
+
+    private void rebalanceActiveWindowForCurrentTurnRange() {
+        int maxTokens = maxTokensProvider.apply(id);
+        ensureGreaterThanZero(maxTokens, "maxTokens");
+        int endIndex = conversationEndIndexForCurrentTurnRange();
+        if (endIndex <= 0 || currentTurnCount <= 0) {
+            activeStartIndex = 0;
+            return;
+        }
+        int selectedStart = turnStartIndex(currentTurnCount - 1);
+        for (int turnIndex = currentTurnCount - 2; turnIndex >= 0; turnIndex--) {
+            int candidateStart = turnStartIndex(turnIndex);
+            if (estimateTotalTokensForRange(candidateStart, endIndex) <= maxTokens) {
+                selectedStart = candidateStart;
+                continue;
+            }
+            break;
+        }
+        activeStartIndex = selectedStart;
+    }
+
+    private int turnStartIndex(int turnIndex) {
+        if (turnIndex <= 0) {
+            return 0;
+        }
+        return turnEndIndexes.get(turnIndex - 1);
+    }
+
+    private int previousTurnStartFor(int startIndex) {
+        int safeStart = Math.max(0, startIndex);
+        int previousTurnIndex = -1;
+        for (int index = 0; index < turnEndIndexes.size(); index++) {
+            int turnEnd = turnEndIndexes.get(index);
+            if (turnEnd <= safeStart) {
+                previousTurnIndex = index;
+                continue;
+            }
+            break;
+        }
+        if (previousTurnIndex < 0) {
+            return -1;
+        }
+        return turnStartIndex(previousTurnIndex);
     }
 
     private boolean canAdvanceWindowByTurnWithMinimumRetention(int minimumTurnBlocksToKeep) {

@@ -228,6 +228,7 @@ public class LiveChatController {
         if (session == null) {
             return;
         }
+        session.setTranscriptEntries(transcriptMemoryMapper.toTranscriptEntries(session.getChatMemory()));
         storeTokenUsageState(session);
         if (session.getTranscriptEntries().isEmpty() && session.getTranscriptId() == null) {
             return;
@@ -359,6 +360,7 @@ public class LiveChatController {
         AssistantProfileChatMemory memory = activeAssistantProfileChatMemory(session);
         if (memory != null) {
             memory.initializeUndoRedoFromMessages();
+            memory.expandWindowAfterTranscriptRestoreIfUnderutilized();
         }
     }
 

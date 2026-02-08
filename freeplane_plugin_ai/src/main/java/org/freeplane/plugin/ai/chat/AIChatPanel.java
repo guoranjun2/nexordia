@@ -823,7 +823,7 @@ public class AIChatPanel extends JPanel {
     private List<ChatMemoryRenderEntry> historyMessages() {
         AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
         if (memory != null) {
-            return memory.activeConversationRenderEntries();
+            return memory.panelConversationRenderEntries();
         }
         if (chatMemory == null) {
             return Collections.emptyList();
