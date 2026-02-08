@@ -22,9 +22,7 @@ import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
-import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
-import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -247,6 +245,16 @@ public class AIChatPanel extends JPanel {
             @Override
             public void refreshTokenCounters() {
                 AIChatPanel.this.refreshTokenCounters();
+            }
+
+            @Override
+            public boolean isToolCallHistoryVisible() {
+                return chatDisplaySettings.isToolCallHistoryVisible();
+            }
+
+            @Override
+            public void onToolSummaryAppended(ChatMemoryRenderEntry entry) {
+                AIChatPanel.this.appendHistoryEntry(entry);
             }
         }, chatTokenUsageTracker, CONTEXT_TOO_LARGE_MAX_RETRIES);
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
@@ -650,13 +658,13 @@ public class AIChatPanel extends JPanel {
             return;
         }
         chatService = AIChatServiceFactory.createService(new AIToolSetBuilder()
-                .toolCallSummaryHandler(this::handleToolCallSummary)
+                .toolCallSummaryHandler(chatRequestFlow::onToolCallSummary)
                 .availableMaps(availableMaps)
                 .mapAccessListener(liveChatController.mapAccessListener())
                 .build(),
             chatMemory,
             chatTokenUsageTracker,
-            this::handleToolCallSummary,
+            chatRequestFlow::onToolCallSummary,
             chatRequestFlow.cancellationSupplier(),
             chatRequestFlow::onProviderUsage);
     }
@@ -691,29 +699,11 @@ public class AIChatPanel extends JPanel {
     }
 
     public ToolCallSummaryHandler toolCallSummaryHandler() {
-        return this::handleToolCallSummary;
+        return chatRequestFlow::onToolCallSummary;
     }
 
     public void persistCurrentChatIfNeeded() {
         liveChatController.persistCurrentSessionIfNeeded();
-    }
-
-    private void handleToolCallSummary(ToolCallSummary summary) {
-        if (summary == null || !chatDisplaySettings.isToolCallHistoryVisible()) {
-            return;
-        }
-        boolean isMcpCall = summary.getToolCaller() == ToolCaller.MCP;
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (!isMcpCall && memory != null) {
-            memory.addToolCallSummary(summary.getSummaryText(), summary.getToolCaller());
-        }
-        ChatMessageCategory category = isMcpCall
-                ? ChatMessageCategory.MCP_CALL
-                : ChatMessageCategory.TOOL_CALL;
-        String messageText = isMcpCall
-            ? "MCP: " + summary.getSummaryText()
-            : summary.getSummaryText();
-        appendChatMessage(messageText, category);
     }
 
     private void resetMessageHistory() {
@@ -820,6 +810,14 @@ public class AIChatPanel extends JPanel {
 
     private void rebuildHistoryFromMemory() {
         chatMemoryHistoryRenderer.rebuildFromMessages(historyMessages());
+    }
+
+    private void appendHistoryEntry(ChatMemoryRenderEntry entry) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            chatMemoryHistoryRenderer.appendEntry(entry);
+        } else {
+            SwingUtilities.invokeLater(() -> chatMemoryHistoryRenderer.appendEntry(entry));
+        }
     }
 
     private List<ChatMemoryRenderEntry> historyMessages() {

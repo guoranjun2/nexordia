@@ -154,6 +154,9 @@ public class AssistantProfileChatMemory implements ChatMemory {
         List<ChatTranscriptEntry> entries = new ArrayList<>();
         int endIndex = activeConversationEndIndex();
         int startIndex = Math.min(activeStartIndex, endIndex);
+        if (startIndex > 0) {
+            startIndex = alignVisibleStartIndex(startIndex, endIndex);
+        }
         for (int index = 0; index < endIndex; index++) {
             if (index == startIndex && startIndex > 0 && endIndex > startIndex) {
                 entries.add(new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,
@@ -182,6 +185,9 @@ public class AssistantProfileChatMemory implements ChatMemory {
             entries.add(ChatMemoryRenderEntry.forMessage(generalSystemMessage));
         }
         int startIndex = Math.min(activeStartIndex, endIndex);
+        if (startIndex > 0) {
+            startIndex = alignVisibleStartIndex(startIndex, endIndex);
+        }
         if (startIndex > 0 && endIndex > startIndex) {
             entries.add(ChatMemoryRenderEntry.forMessage(new RemovedForSpaceSystemMessage()));
         }
@@ -457,6 +463,19 @@ public class AssistantProfileChatMemory implements ChatMemory {
             }
         }
         return -1;
+    }
+
+    private int alignVisibleStartIndex(int startIndex, int endIndex) {
+        int alignedStart = Math.max(0, Math.min(startIndex, endIndex));
+        while (alignedStart < endIndex) {
+            ChatMessage message = conversationMessages.get(alignedStart);
+            if (message instanceof ToolCallSummaryMessage) {
+                alignedStart++;
+                continue;
+            }
+            break;
+        }
+        return alignedStart;
     }
 
     public static Builder builder() {

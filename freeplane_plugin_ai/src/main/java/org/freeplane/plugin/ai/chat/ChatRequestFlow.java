@@ -3,6 +3,7 @@ package org.freeplane.plugin.ai.chat;
 import dev.langchain4j.model.output.TokenUsage;
 import java.util.function.Supplier;
 import javax.swing.SwingWorker;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 
 class ChatRequestFlow {
 
@@ -19,6 +20,8 @@ class ChatRequestFlow {
         boolean evictOldestTurn();
         void onPostResponseEviction();
         void refreshTokenCounters();
+        boolean isToolCallHistoryVisible();
+        void onToolSummaryAppended(ChatMemoryRenderEntry entry);
     }
 
     private final RequestCallbacks callbacks;
@@ -55,6 +58,17 @@ class ChatRequestFlow {
 
     void updateChatMemory(AssistantProfileChatMemory chatMemory) {
         this.chatMemory = chatMemory;
+    }
+
+    void onToolCallSummary(ToolCallSummary summary) {
+        if (summary == null || !callbacks.isToolCallHistoryVisible()) {
+            return;
+        }
+        if (chatMemory != null) {
+            chatMemory.addToolCallSummary(summary.getSummaryText(), summary.getToolCaller());
+        }
+        callbacks.onToolSummaryAppended(
+            ChatMemoryRenderEntry.forToolSummary(summary.getSummaryText(), summary.getToolCaller()));
     }
 
     void onProviderUsage(TokenUsage usage) {

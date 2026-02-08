@@ -51,6 +51,13 @@ class ChatMemoryHistoryRenderer {
         }
     }
 
+    void appendEntry(ChatMemoryRenderEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        appendMessage(entry, entry.isToolSummary());
+    }
+
     private void appendMessage(ChatMemoryRenderEntry entry, boolean hasToolSummaries) {
         MessageHistoryEntry historyEntry = toMessageHistoryEntry(entry, hasToolSummaries);
         if (historyEntry == null || historyEntry.sourceText == null) {

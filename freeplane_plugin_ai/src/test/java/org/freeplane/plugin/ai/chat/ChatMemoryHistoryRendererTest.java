@@ -72,6 +72,32 @@ public class ChatMemoryHistoryRendererTest {
     }
 
     @Test
+    public void appendEntry_rendersMcpSummaryWithMcpStyle() {
+        RenderFixture fixture = new RenderFixture();
+
+        fixture.uut.appendEntry(ChatMemoryRenderEntry.forToolSummary("mcp summary", ToolCaller.MCP));
+
+        String html = fixture.html();
+        assertThat(html).contains("mcp summary");
+        assertThat(html).contains("message-mcp-call");
+    }
+
+    @Test
+    public void appendEntryAndRebuildUseEquivalentSummaryRendering() {
+        RenderFixture appendFixture = new RenderFixture();
+        RenderFixture rebuildFixture = new RenderFixture();
+        ChatMemoryRenderEntry entry = ChatMemoryRenderEntry.forToolSummary("searchNodes summary", ToolCaller.CHAT);
+
+        appendFixture.uut.appendEntry(entry);
+        rebuildFixture.uut.rebuildFromMessages(Collections.singletonList(entry));
+
+        assertThat(appendFixture.html()).contains("searchNodes summary");
+        assertThat(rebuildFixture.html()).contains("searchNodes summary");
+        assertThat(appendFixture.html()).contains("message-tool");
+        assertThat(rebuildFixture.html()).contains("message-tool");
+    }
+
+    @Test
     public void rebuildFromMessages_suppressesRawToolEntriesWhenSummaryExists() {
         RenderFixture fixture = new RenderFixture();
         ToolExecutionRequest toolRequest = ToolExecutionRequest.builder()

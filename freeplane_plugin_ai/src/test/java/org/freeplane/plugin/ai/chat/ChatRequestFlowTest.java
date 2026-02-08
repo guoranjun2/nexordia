@@ -11,6 +11,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import dev.langchain4j.model.output.TokenUsage;
 import org.junit.Test;
+import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
+import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 
 public class ChatRequestFlowTest {
 
@@ -94,6 +96,42 @@ public class ChatRequestFlowTest {
         assertThat(callbacks.refreshTokenCountersCount).isZero();
     }
 
+    @Test
+    public void onToolCallSummaryStoresSummaryAndAppendsRenderEntry() {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
+
+        uut.updateChatMemory(memory);
+        uut.onToolCallSummary(new ToolCallSummary("searchNodes", "mcp summary", false, ToolCaller.MCP));
+
+        assertThat(callbacks.toolSummaryAppendCount).isEqualTo(1);
+        assertThat(callbacks.lastSummaryEntry).isNotNull();
+        assertThat(callbacks.lastSummaryEntry.isToolSummary()).isTrue();
+        assertThat(callbacks.lastSummaryEntry.toolSummaryText()).isEqualTo("mcp summary");
+        assertThat(callbacks.lastSummaryEntry.toolCaller()).isEqualTo(ToolCaller.MCP);
+        assertThat(memory.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .extracting(ChatMemoryRenderEntry::toolSummaryText)
+            .contains("mcp summary");
+    }
+
+    @Test
+    public void onToolCallSummaryDoesNothingWhenToolHistoryHidden() {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        callbacks.toolCallHistoryVisible = false;
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
+
+        uut.updateChatMemory(memory);
+        uut.onToolCallSummary(new ToolCallSummary("searchNodes", "hidden summary", false, ToolCaller.MCP));
+
+        assertThat(callbacks.toolSummaryAppendCount).isZero();
+        assertThat(memory.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .isEmpty();
+    }
+
     private static class RecordingCallbacks implements ChatRequestFlow.RequestCallbacks {
 
         private final CountDownLatch finishedLatch = new CountDownLatch(1);
@@ -105,6 +143,9 @@ public class ChatRequestFlowTest {
         private int restoreCount;
         private int postResponseEvictionCount;
         private int refreshTokenCountersCount;
+        private boolean toolCallHistoryVisible = true;
+        private int toolSummaryAppendCount;
+        private ChatMemoryRenderEntry lastSummaryEntry;
 
         @Override
         public void onRequestStarted() {
@@ -163,6 +204,17 @@ public class ChatRequestFlowTest {
         @Override
         public void refreshTokenCounters() {
             refreshTokenCountersCount++;
+        }
+
+        @Override
+        public boolean isToolCallHistoryVisible() {
+            return toolCallHistoryVisible;
+        }
+
+        @Override
+        public void onToolSummaryAppended(ChatMemoryRenderEntry entry) {
+            toolSummaryAppendCount++;
+            lastSummaryEntry = entry;
         }
 
         boolean awaitFinished() throws InterruptedException {
