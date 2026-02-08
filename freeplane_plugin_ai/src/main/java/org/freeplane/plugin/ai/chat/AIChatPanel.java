@@ -77,6 +77,7 @@ public class AIChatPanel extends JPanel {
     private final Icon sendIcon;
     private final Icon stopIcon;
     private final Icon preferencesIcon;
+    private final Icon assistantProfileIcon;
     private String sendTooltipText;
     private String cancelTooltipText;
     private String undoTooltipText;
@@ -130,7 +131,7 @@ public class AIChatPanel extends JPanel {
             .getImageIcon("/images/ai_stop.svg?useAccentColor=true");
         preferencesIcon = ResourceController.getResourceController()
             .getImageIcon("/images/generic_settings.svg?useAccentColor=true");
-        Icon assistantProfileIcon = ResourceController.getResourceController()
+        assistantProfileIcon = ResourceController.getResourceController()
             .getImageIcon("/images/EggheadCB.svg?useAccentColor=true");
         Dimension sendButtonSize = sendButton.getPreferredSize();
         Dimension sideButtonSize = new Dimension(sendButtonSize.width, Math.max(1, sendButtonSize.height / 2));
@@ -407,6 +408,19 @@ public class AIChatPanel extends JPanel {
         JMenuItem preferencesMenuItem = TranslatedElementFactory.createMenuItem(openPreferencesAction, "preferences");
         preferencesMenuItem.setIcon(preferencesIcon);
         menuPopup.add(preferencesMenuItem);
+        Action manageProfilesAction = new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                assistantProfilePaneBuilder.openAssistantProfileManager();
+            }
+        };
+        JMenuItem manageProfilesMenuItem = TranslatedElementFactory.createMenuItem(
+            manageProfilesAction,
+            AssistantProfilePaneBuilder.MANAGE_PROFILES_TEXT_KEY);
+        manageProfilesMenuItem.setIcon(assistantProfileIcon);
+        menuPopup.add(manageProfilesMenuItem);
         addAiEditsMenuItems(menuPopup);
         return menuPopup;
     }

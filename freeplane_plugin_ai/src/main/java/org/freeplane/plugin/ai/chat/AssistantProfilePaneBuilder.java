@@ -7,8 +7,10 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 
 class AssistantProfilePaneBuilder {
+    static final String MANAGE_PROFILES_TEXT_KEY = "ai_chat_manage_profiles";
     private final AssistantProfileSelectionModel selectionModel;
     private final AssistantProfileSelectionSync selectionSync;
     private final JComboBox<AssistantProfile> selector = new JComboBox<>();
@@ -34,7 +36,7 @@ class AssistantProfilePaneBuilder {
         if (panel == null) {
             panel = new JPanel(new BorderLayout(5, 0));
             panel.add(selector, BorderLayout.CENTER);
-            manageProfilesButton.setToolTipText("Manage profiles");
+            TranslatedElementFactory.createTooltip(manageProfilesButton, MANAGE_PROFILES_TEXT_KEY);
             panel.add(manageProfilesButton, BorderLayout.EAST);
         }
         return panel;
@@ -56,7 +58,7 @@ class AssistantProfilePaneBuilder {
         selectionSync.handleUserSelection(profile);
     }
 
-    private void openAssistantProfileManager() {
+    void openAssistantProfileManager() {
         AssistantProfileManagerDialog dialog = new AssistantProfileManagerDialog(
             SwingUtilities.getWindowAncestor(panel),
             selectionModel);
