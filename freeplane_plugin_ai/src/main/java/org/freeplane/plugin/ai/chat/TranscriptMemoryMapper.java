@@ -73,11 +73,9 @@ class TranscriptMemoryMapper {
                 return null;
             }
             AssistantProfileTranscriptEntry assistantProfileEntry = (AssistantProfileTranscriptEntry) entry;
-            return new AssistantProfileControlInstructionMessage(
+            return new AssistantProfileSwitchMessage(
                 assistantProfileEntry.getProfileId(),
-                assistantProfileEntry.getProfileName(),
-                "",
-                assistantProfileEntry.containsProfileDefinition());
+                assistantProfileEntry.getProfileName());
         }
         if (entry.getRole() == ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM) {
             if (entry.getText() == null) {
@@ -95,12 +93,12 @@ class TranscriptMemoryMapper {
         if (message == null) {
             return null;
         }
-        if (message instanceof AssistantProfileControlInstructionMessage) {
-            AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
+        if (message instanceof AssistantProfileSwitchMessage) {
+            AssistantProfileSwitchMessage profileMessage = (AssistantProfileSwitchMessage) message;
             return new AssistantProfileTranscriptEntry(
                 profileMessage.getProfileId(),
                 profileMessage.getProfileName(),
-                profileMessage.containsProfileDefinition());
+                false);
         }
         if (message instanceof RemovedForSpaceSystemMessage) {
             return new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,

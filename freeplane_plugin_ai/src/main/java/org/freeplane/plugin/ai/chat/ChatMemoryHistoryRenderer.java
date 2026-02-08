@@ -83,9 +83,9 @@ class ChatMemoryHistoryRenderer {
         if (message == null) {
             return null;
         }
-        if (message instanceof AssistantProfileControlInstructionMessage) {
-            AssistantProfileControlInstructionMessage profileMessage =
-                (AssistantProfileControlInstructionMessage) message;
+        if (message instanceof AssistantProfileSwitchMessage) {
+            AssistantProfileSwitchMessage profileMessage =
+                (AssistantProfileSwitchMessage) message;
             return new MessageHistoryEntry(
                 buildProfilePaneMessage(profileMessage.getProfileName()),
                 RenderCategory.PROFILE);
@@ -172,7 +172,7 @@ class ChatMemoryHistoryRenderer {
         if (!(current instanceof InstructionAckMessage)) {
             return false;
         }
-        return previous instanceof AssistantProfileControlInstructionMessage
+        return previous instanceof AssistantProfileSwitchMessage
             || previous instanceof TranscriptHiddenSystemMessage;
     }
 

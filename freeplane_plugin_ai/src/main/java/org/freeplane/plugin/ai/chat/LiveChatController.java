@@ -98,7 +98,7 @@ public class LiveChatController {
         synchronizeTranscriptWithMemory();
     }
 
-    public void recordAssistantProfileMessage(AssistantProfileControlInstructionMessage message) {
+    public void recordAssistantProfileMessage(AssistantProfileSwitchMessage message) {
         synchronizeTranscriptWithMemory();
     }
 

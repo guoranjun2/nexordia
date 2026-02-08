@@ -23,7 +23,7 @@ public class ChatMemoryHistoryRendererTest {
         List<ChatMemoryRenderEntry> messages = Arrays.asList(
             ChatMemoryRenderEntry.forMessage(new GeneralSystemMessage("system hidden")),
             ChatMemoryRenderEntry.forMessage(UserMessage.from("u1")),
-            ChatMemoryRenderEntry.forMessage(new AssistantProfileControlInstructionMessage("profile", "Profile A", "definition", true)),
+            ChatMemoryRenderEntry.forMessage(new AssistantProfileSwitchMessage("profile", "Profile A")),
             ChatMemoryRenderEntry.forMessage(new InstructionAckMessage()),
             ChatMemoryRenderEntry.forMessage(AiMessage.from("a1")));
 
@@ -194,7 +194,7 @@ public class ChatMemoryHistoryRendererTest {
     public void rebuildFromMessages_keepsProfileControlToolSummaryOrder() {
         RenderFixture fixture = new RenderFixture();
         List<ChatMemoryRenderEntry> messages = Arrays.asList(
-            ChatMemoryRenderEntry.forMessage(new AssistantProfileControlInstructionMessage("p1", "Profile A", "definition", true)),
+            ChatMemoryRenderEntry.forMessage(new AssistantProfileSwitchMessage("p1", "Profile A")),
             ChatMemoryRenderEntry.forMessage(new InstructionAckMessage()),
             ChatMemoryRenderEntry.forMessage(UserMessage.from("question")),
             ChatMemoryRenderEntry.forToolSummary("tool summary", ToolCaller.CHAT),

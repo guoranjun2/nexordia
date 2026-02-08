@@ -17,8 +17,8 @@ public class LiveTranscriptAdapterTest {
             null,
             "test");
         LiveTranscriptAdapter adapter = new LiveTranscriptAdapter();
-        AssistantProfileControlInstructionMessage message =
-            new AssistantProfileControlInstructionMessage("profile-a", "A sayer", "Start with A", true);
+        AssistantProfileSwitchMessage message =
+            new AssistantProfileSwitchMessage("profile-a", "A sayer");
 
         adapter.appendAssistantProfileMessage(session, message);
 
@@ -29,6 +29,6 @@ public class LiveTranscriptAdapterTest {
         AssistantProfileTranscriptEntry entry = (AssistantProfileTranscriptEntry) entries.get(0);
         assertThat(entry.getProfileId()).isEqualTo("profile-a");
         assertThat(entry.getProfileName()).isEqualTo("A sayer");
-        assertThat(entry.containsProfileDefinition()).isTrue();
+        assertThat(entry.containsProfileDefinition()).isFalse();
     }
 }

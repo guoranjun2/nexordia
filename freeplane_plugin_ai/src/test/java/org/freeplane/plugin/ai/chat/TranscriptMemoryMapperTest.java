@@ -43,7 +43,7 @@ public class TranscriptMemoryMapperTest {
         TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
         List<ChatTranscriptEntry> entries = Arrays.asList(
-            new AssistantProfileTranscriptEntry("profile-a", "A sayer", true),
+            new AssistantProfileTranscriptEntry("profile-a", "A sayer", false),
             new ChatTranscriptEntry(ChatTranscriptRole.USER, "hello"));
 
         uut.seedTranscriptWithHiddenExchange(memory, entries, "hidden user");
@@ -66,7 +66,7 @@ public class TranscriptMemoryMapperTest {
     public void toTranscriptEntries_exportsConversationMessages() {
         TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
-        memory.add(new AssistantProfileControlInstructionMessage("profile-a", "A sayer", "Start with A", true));
+        memory.add(new AssistantProfileSwitchMessage("profile-a", "A sayer"));
         memory.add(UserMessage.from("hello"));
         memory.add(AiMessage.from("world"));
         memory.add(new TranscriptHiddenSystemMessage("hidden"));

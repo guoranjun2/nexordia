@@ -32,12 +32,10 @@ public class AssistantProfileSelectionSyncTest {
 
         uut.applyAssistantProfileSelection(profile);
 
-        verify(chatMemory).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory).add(any(AssistantProfileSwitchMessage.class));
         verify(liveChatController).recordAssistantProfileMessage(
             argThat(message -> "profile-id".equals(message.getProfileId())
-                && "A sayer".equals(message.getProfileName())
-                && "Start with A".equals(message.getProfileDefinition())
-                && message.containsProfileDefinition()));
+                && "A sayer".equals(message.getProfileName())));
         assertThat(paneMessages).containsExactly("A sayer");
     }
 
@@ -60,7 +58,7 @@ public class AssistantProfileSelectionSyncTest {
 
         assertThat(selected).isEqualTo(transcriptProfile);
         verify(selectionModel).setSelectedProfile(transcriptProfile, false);
-        verify(chatMemory).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory, never()).add(any(AssistantProfileSwitchMessage.class));
     }
 
     @Test
@@ -83,7 +81,7 @@ public class AssistantProfileSelectionSyncTest {
         uut.maybeInjectBeforeUserMessage();
 
         assertThat(selected).isEqualTo(current);
-        verify(chatMemory).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory).add(any(AssistantProfileSwitchMessage.class));
     }
 
     @Test
@@ -104,7 +102,7 @@ public class AssistantProfileSelectionSyncTest {
         uut.maybeInjectBeforeUserMessage();
 
         assertThat(selected).isEqualTo(transcriptProfile);
-        verify(chatMemory, never()).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory, never()).add(any(AssistantProfileSwitchMessage.class));
     }
 
     @Test
@@ -126,7 +124,7 @@ public class AssistantProfileSelectionSyncTest {
         uut.maybeInjectBeforeUserMessage();
 
         assertThat(selected).isEqualTo(current);
-        verify(chatMemory).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory).add(any(AssistantProfileSwitchMessage.class));
     }
 
     @Test
@@ -146,6 +144,6 @@ public class AssistantProfileSelectionSyncTest {
         uut.maybeInjectBeforeUserMessage();
 
         assertThat(selected).isEqualTo(current);
-        verify(chatMemory).add(any(AssistantProfileControlInstructionMessage.class));
+        verify(chatMemory).add(any(AssistantProfileSwitchMessage.class));
     }
 }

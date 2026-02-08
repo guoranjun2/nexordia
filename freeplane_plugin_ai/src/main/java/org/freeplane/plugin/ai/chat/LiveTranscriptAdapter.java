@@ -17,7 +17,7 @@ class LiveTranscriptAdapter {
         appendEntry(session, ChatTranscriptRole.ASSISTANT, text);
     }
 
-    void appendAssistantProfileMessage(LiveChatSession session, AssistantProfileControlInstructionMessage message) {
+    void appendAssistantProfileMessage(LiveChatSession session, AssistantProfileSwitchMessage message) {
         if (session == null || message == null) {
             return;
         }
@@ -29,7 +29,7 @@ class LiveTranscriptAdapter {
         AssistantProfileTranscriptEntry entry = new AssistantProfileTranscriptEntry(
             message.getProfileId(),
             message.getProfileName(),
-            message.containsProfileDefinition());
+            false);
         entries.add(entry);
     }
 

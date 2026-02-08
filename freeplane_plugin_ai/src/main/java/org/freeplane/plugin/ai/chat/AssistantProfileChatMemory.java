@@ -28,6 +28,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
     private final Object id;
     private final Function<Object, Integer> maxTokensProvider;
     private final ChatTokenEstimator tokenEstimator;
+    private ProfileInstructionFactory profileInstructionFactory;
     private GeneralSystemMessage generalSystemMessage;
     private final List<ChatMessage> conversationMessages = new ArrayList<>();
     private int activeStartIndex;
@@ -38,6 +39,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         this.id = ensureNotNull(builder.id, "id");
         this.maxTokensProvider = ensureNotNull(builder.maxTokensProvider, "maxTokensProvider");
         this.tokenEstimator = new ChatTokenEstimator(builder.tokenEstimatorModelNameProvider);
+        this.profileInstructionFactory = resolveProfileInstructionFactory(builder.profileInstructionFactory);
         ensureGreaterThanZero(this.maxTokensProvider.apply(this.id), "maxTokens");
     }
 
@@ -64,8 +66,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
             markContextWindowStart();
             return;
         }
-        if (message instanceof AssistantProfileControlInstructionMessage) {
-            shortenStoredProfileInstructions();
+        if (message instanceof AssistantProfileSwitchMessage) {
             addConversationMessage(message);
             addConversationMessage(new InstructionAckMessage());
             rebuildTurnBoundaries();
@@ -271,6 +272,10 @@ public class AssistantProfileChatMemory implements ChatMemory {
         return evictIfNeededAfterResponse();
     }
 
+    void setProfileInstructionFactory(ProfileInstructionFactory profileInstructionFactory) {
+        this.profileInstructionFactory = resolveProfileInstructionFactory(profileInstructionFactory);
+    }
+
     private boolean evictIfNeededAfterResponse() {
         int maxTokens = maxTokensProvider.apply(id);
         ensureGreaterThanZero(maxTokens, "maxTokens");
@@ -300,11 +305,18 @@ public class AssistantProfileChatMemory implements ChatMemory {
         }
         int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
         int startIndex = Math.min(activeStartIndex, endIndex);
+        int latestProfileSwitchIndex = findLatestProfileSwitchIndex(endIndex);
+        UserMessage latestProfileInstruction = buildProfileInstructionForIndex(latestProfileSwitchIndex);
+        if (latestProfileInstruction != null && latestProfileSwitchIndex >= 0
+            && latestProfileSwitchIndex < startIndex) {
+            messages.add(latestProfileInstruction);
+        }
         for (int index = startIndex; index < endIndex; index++) {
             ChatMessage message = conversationMessages.get(index);
-            if (message instanceof AssistantProfileControlInstructionMessage) {
-                messages.add(MessageBuilder.buildSystemInstructionUserMessage(
-                    ((AssistantProfileControlInstructionMessage) message).text()));
+            if (message instanceof AssistantProfileSwitchMessage) {
+                if (index == latestProfileSwitchIndex && latestProfileInstruction != null) {
+                    messages.add(latestProfileInstruction);
+                }
                 continue;
             }
             if (message instanceof ToolCallSummaryMessage) {
@@ -352,16 +364,6 @@ public class AssistantProfileChatMemory implements ChatMemory {
             return turnEndIndexes.get(currentTurnCount - 1);
         }
         return conversationMessages.size();
-    }
-
-    private void shortenStoredProfileInstructions() {
-        for (int index = 0; index < conversationMessages.size(); index++) {
-            ChatMessage message = conversationMessages.get(index);
-            if (message instanceof AssistantProfileControlInstructionMessage) {
-                AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
-                replaceConversationMessage(index, profileMessage.withoutProfileDefinition());
-            }
-        }
     }
 
     private boolean containsInstructionOfType(Class<? extends SystemMessage> messageClass) {
@@ -443,12 +445,12 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (message == null) {
             return null;
         }
-        if (message instanceof AssistantProfileControlInstructionMessage) {
-            AssistantProfileControlInstructionMessage profileMessage = (AssistantProfileControlInstructionMessage) message;
+        if (message instanceof AssistantProfileSwitchMessage) {
+            AssistantProfileSwitchMessage profileMessage = (AssistantProfileSwitchMessage) message;
             return new AssistantProfileTranscriptEntry(
                 profileMessage.getProfileId(),
                 profileMessage.getProfileName(),
-                profileMessage.containsProfileDefinition());
+                false);
         }
         if (message instanceof RemovedForSpaceSystemMessage) {
             return new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,
@@ -484,10 +486,6 @@ public class AssistantProfileChatMemory implements ChatMemory {
 
     private ChatMessage removeConversationMessage(int index) {
         return conversationMessages.remove(index);
-    }
-
-    private void replaceConversationMessage(int index, ChatMessage message) {
-        conversationMessages.set(index, message);
     }
 
     private boolean advanceWindowByOneTurn() {
@@ -574,6 +572,31 @@ public class AssistantProfileChatMemory implements ChatMemory {
         return alignedStart;
     }
 
+    private int findLatestProfileSwitchIndex(int endIndex) {
+        for (int index = endIndex - 1; index >= 0; index--) {
+            if (conversationMessages.get(index) instanceof AssistantProfileSwitchMessage) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private UserMessage buildProfileInstructionForIndex(int messageIndex) {
+        if (messageIndex < 0 || messageIndex >= conversationMessages.size()) {
+            return null;
+        }
+        ChatMessage message = conversationMessages.get(messageIndex);
+        if (!(message instanceof AssistantProfileSwitchMessage)) {
+            return null;
+        }
+        AssistantProfileInstructionMessage profileInstruction =
+            profileInstructionFactory.buildFor((AssistantProfileSwitchMessage) message);
+        if (profileInstruction == null) {
+            return null;
+        }
+        return MessageBuilder.buildSystemInstructionUserMessage(profileInstruction.singleText());
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -587,6 +610,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         private Object id = ChatMemoryService.DEFAULT;
         private Function<Object, Integer> maxTokensProvider;
         private Supplier<String> tokenEstimatorModelNameProvider = () -> null;
+        private ProfileInstructionFactory profileInstructionFactory;
 
         public Builder id(Object id) {
             this.id = id;
@@ -608,9 +632,33 @@ public class AssistantProfileChatMemory implements ChatMemory {
             return this;
         }
 
+        public Builder profileInstructionFactory(ProfileInstructionFactory profileInstructionFactory) {
+            this.profileInstructionFactory = profileInstructionFactory;
+            return this;
+        }
+
         public AssistantProfileChatMemory build() {
             return new AssistantProfileChatMemory(this);
         }
+    }
+
+    interface ProfileInstructionFactory {
+        AssistantProfileInstructionMessage buildFor(AssistantProfileSwitchMessage profileSwitchMessage);
+    }
+
+    private ProfileInstructionFactory resolveProfileInstructionFactory(ProfileInstructionFactory profileInstructionFactory) {
+        if (profileInstructionFactory != null) {
+            return profileInstructionFactory;
+        }
+        return profileSwitchMessage -> {
+            if (profileSwitchMessage == null) {
+                return null;
+            }
+            return new AssistantProfileInstructionMessage(
+                profileSwitchMessage.getProfileId(),
+                profileSwitchMessage.getProfileName(),
+                "");
+        };
     }
 
     private ChatUsageTotals estimateTokenUsageForRange(int startIndex, int endIndex) {
@@ -679,7 +727,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (message == null) {
             return false;
         }
-        if (message instanceof AssistantProfileControlInstructionMessage
+        if (message instanceof AssistantProfileSwitchMessage
             || message instanceof InstructionAckMessage
             || message instanceof TranscriptHiddenSystemMessage
             || message instanceof RemovedForSpaceSystemMessage

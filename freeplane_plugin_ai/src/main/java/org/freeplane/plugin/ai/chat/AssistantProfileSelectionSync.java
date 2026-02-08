@@ -22,6 +22,25 @@ class AssistantProfileSelectionSync {
 
     void setChatMemory(ChatMemory chatMemory) {
         this.chatMemory = chatMemory;
+        if (chatMemory instanceof AssistantProfileChatMemory) {
+            AssistantProfileChatMemory assistantProfileChatMemory =
+                (AssistantProfileChatMemory) chatMemory;
+            assistantProfileChatMemory.setProfileInstructionFactory(profileSwitchMessage -> {
+                if (profileSwitchMessage == null) {
+                    return null;
+                }
+                AssistantProfile selectedProfile = selectionModel.getSelectedProfile();
+                AssistantProfile resolvedProfile =
+                    selectionModel.findProfileById(profileSwitchMessage.getProfileId());
+                if (resolvedProfile == null) {
+                    resolvedProfile = selectedProfile == null ? AssistantProfile.defaultProfile() : selectedProfile;
+                }
+                return new AssistantProfileInstructionMessage(
+                    resolvedProfile.getId(),
+                    resolvedProfile.getName(),
+                    resolvedProfile.getPrompt());
+            });
+        }
     }
 
     void setProfileMessageConsumer(Consumer<String> profileMessageConsumer) {
@@ -32,13 +51,10 @@ class AssistantProfileSelectionSync {
         if (profile == null) {
             return;
         }
-        AssistantProfileControlInstructionMessage message = new AssistantProfileControlInstructionMessage(
+        AssistantProfileSwitchMessage message = new AssistantProfileSwitchMessage(
             profile.getId(),
-            profile.getName(),
-            profile.getPrompt(),
-            true);
-        String prompt = message.text();
-        if (prompt == null || prompt.trim().isEmpty()) {
+            profile.getName());
+        if (message.getProfileId().isEmpty() && message.getProfileName().isEmpty()) {
             return;
         }
         if (chatMemory != null) {
@@ -81,7 +97,11 @@ class AssistantProfileSelectionSync {
             }
         }
         if (fromTranscriptRestore) {
-            lastInjectedProfileId = null;
+            if (profileEntry != null && transcriptProfileExists) {
+                lastInjectedProfileId = profileId(selected);
+            } else {
+                lastInjectedProfileId = null;
+            }
             pendingProfile = selected;
             pendingProfileId = profileId(selected);
             return selected;

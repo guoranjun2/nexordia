@@ -9,7 +9,9 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.model.output.TokenUsage;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.freeplane.plugin.ai.chat.history.AssistantProfileTranscriptEntry;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
@@ -23,7 +25,7 @@ public class AssistantProfileChatMemoryTest {
 
         uut.add(UserMessage.from("hello"));
         uut.add(new TranscriptHiddenSystemMessage("hidden"));
-        uut.add(new AssistantProfileControlInstructionMessage("profile", "profile", "", true));
+        uut.add(new AssistantProfileSwitchMessage("profile", "profile"));
         uut.add(new GeneralSystemMessage("general"));
 
         List<ChatMessage> messages = uut.messages();
@@ -78,11 +80,7 @@ public class AssistantProfileChatMemoryTest {
             AiMessage.from("answer")) - 1);
         AssistantProfileChatMemory uut = createMemory(maxTokens);
 
-        uut.add(new AssistantProfileControlInstructionMessage("profile", "profile",
-            "word word word word word word word word word word "
-                + "word word word word word word word word word word "
-                + "word word word word word word word word word word ",
-            true));
+        uut.add(new AssistantProfileSwitchMessage("profile", "profile"));
         uut.add(UserMessage.from("first"));
         uut.add(AiMessage.from("answer"));
         uut.onResponseTokenUsage(new TokenUsage(1, 1));
@@ -201,55 +199,49 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
-    public void olderProfileInstructionsAreCompactedToMarkers() {
+    public void messagesIncludeOnlyLatestProfileSwitchInstruction() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("alpha", "Alpha", "First definition", true));
-        uut.add(new AssistantProfileControlInstructionMessage("beta", "Beta", "Second definition", true));
+        uut.add(new AssistantProfileSwitchMessage("alpha", "Alpha"));
+        uut.add(new AssistantProfileSwitchMessage("beta", "Beta"));
         uut.add(UserMessage.from("hello"));
 
         List<ChatMessage> messages = uut.messages();
 
-        assertThat(((UserMessage) messages.get(0)).singleText())
-            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX
-                + "Now you have the profile Alpha.");
-        assertThat(((UserMessage) messages.get(2)).singleText())
-            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX
-                + "Now you have the profile Beta.\nProfile definition: Second definition");
+        assertThat(messages)
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "Now you have the profile Beta.", "hello")
+            .doesNotContain(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "Now you have the profile Alpha.");
     }
 
     @Test
-    public void profileInstructionCompactionPreservesConversationOrder() {
+    public void profileSwitchInstructionPreservesConversationOrderForLatestMarker() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("default", "Default", "Default definition", true));
+        uut.add(new AssistantProfileSwitchMessage("default", "Default"));
         uut.add(UserMessage.from("u1"));
-        uut.add(new AssistantProfileControlInstructionMessage("a", "A", "A definition", true));
+        uut.add(new AssistantProfileSwitchMessage("a", "A"));
         uut.add(UserMessage.from("u2"));
-        uut.add(new AssistantProfileControlInstructionMessage("default", "Default", "Default definition", true));
+        uut.add(new AssistantProfileSwitchMessage("default", "Default"));
         uut.add(UserMessage.from("u3"));
 
         List<ChatMessage> messages = uut.messages();
 
-        assertThat(((UserMessage) messages.get(0)).singleText())
-            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX
-                + "Now you have the profile Default.");
-        assertThat(messages.get(1)).isInstanceOf(InstructionAckMessage.class);
-        assertThat(((UserMessage) messages.get(2)).singleText()).isEqualTo("u1");
-        assertThat(((UserMessage) messages.get(3)).singleText())
-            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX
-                + "Now you have the profile A.");
-        assertThat(messages.get(4)).isInstanceOf(InstructionAckMessage.class);
-        assertThat(((UserMessage) messages.get(5)).singleText()).isEqualTo("u2");
-        assertThat(((UserMessage) messages.get(6)).singleText())
-            .isEqualTo(MessageBuilder.CONTROL_INSTRUCTION_PREFIX
-                + "Now you have the profile Default.\nProfile definition: Default definition");
-        assertThat(messages.get(7)).isInstanceOf(InstructionAckMessage.class);
-        assertThat(((UserMessage) messages.get(8)).singleText()).isEqualTo("u3");
+        List<String> userTexts = messages.stream()
+            .filter(UserMessage.class::isInstance)
+            .map(UserMessage.class::cast)
+            .map(UserMessage::singleText)
+            .collect(Collectors.toList());
+        String latestDefaultMarker = MessageBuilder.CONTROL_INSTRUCTION_PREFIX
+            + "Now you have the profile Default.";
+        assertThat(userTexts).contains("u1", "u2", "u3", latestDefaultMarker);
+        assertThat(userTexts).doesNotContain(MessageBuilder.CONTROL_INSTRUCTION_PREFIX + "Now you have the profile A.");
+        assertThat(Collections.frequency(userTexts, latestDefaultMarker)).isEqualTo(1);
+        assertThat(userTexts.indexOf(latestDefaultMarker)).isLessThan(userTexts.indexOf("u3"));
     }
 
     @Test
     public void estimateTokenUsageExcludesControlMessages() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("p1", "Profile", "definition", true));
+        uut.add(new AssistantProfileSwitchMessage("p1", "Profile"));
         uut.add(new TranscriptHiddenSystemMessage("hidden"));
         uut.add(UserMessage.from("hello"));
         uut.add(AiMessage.from("response"));
@@ -406,7 +398,7 @@ public class AssistantProfileChatMemoryTest {
     @Test
     public void truncateConversationMessagesPreservesAssistantProfileMessageType() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("profile", "Profile", "definition", true));
+        uut.add(new AssistantProfileSwitchMessage("profile", "Profile"));
         int sizeAfterProfileInjection = uut.conversationMessageCount();
         uut.add(UserMessage.from("u1"));
 
@@ -431,7 +423,7 @@ public class AssistantProfileChatMemoryTest {
     @Test
     public void undoSingleTurnLeavesRenderEntriesEmpty() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("profile", "Profile", "definition", true));
+        uut.add(new AssistantProfileSwitchMessage("profile", "Profile"));
         uut.add(UserMessage.from("hello"));
         uut.add(AiMessage.from("answer"));
 
@@ -521,7 +513,7 @@ public class AssistantProfileChatMemoryTest {
     @Test
     public void undoRemovesProfileInstructionWhenItBelongsToOnlyTurn() {
         AssistantProfileChatMemory uut = createMemory(500);
-        uut.add(new AssistantProfileControlInstructionMessage("p1", "A sayer", "profile text", true));
+        uut.add(new AssistantProfileSwitchMessage("p1", "A sayer"));
         uut.add(UserMessage.from("hi"));
         uut.add(AiMessage.from("hello"));
 

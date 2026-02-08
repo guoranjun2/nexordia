@@ -148,6 +148,7 @@ public class AIChatPanel extends JPanel {
         chatDisplaySettings = new ChatDisplaySettings();
         modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
+        AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
         chatMemory = createChatMemory();
         singleTurnChatMemory = SingleTurnChatMemoryFactory.forMemory(chatMemory);
         tokenUsageLabel = new JLabel();
@@ -157,7 +158,6 @@ public class AIChatPanel extends JPanel {
         chatMemoryHistoryRenderer = new ChatMemoryHistoryRenderer(messageHistory, messageRenderer);
         availableMaps = new AvailableMaps(new ControllerMapModelProvider());
         chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
         liveChatController = new LiveChatController(
             this,
             availableMaps,
