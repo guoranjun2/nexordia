@@ -39,6 +39,7 @@ import java.util.Map;
 
 class ChatListDialog extends JDialog {
     private static final long serialVersionUID = 1L;
+    private static final MapRootShortTextCountsMerger MAP_COUNTS_MERGER = new MapRootShortTextCountsMerger();
 
     private final LiveChatSessionManager sessionManager;
     private final ChatTranscriptStore transcriptStore;
@@ -201,6 +202,11 @@ class ChatListDialog extends JDialog {
         closeDialogButton.setEnabled(true);
     }
 
+    static List<MapRootShortTextCount> mergeLiveMapCounts(List<MapRootShortTextCount> cachedCounts,
+                                                          List<MapRootShortTextCount> freshCounts) {
+        return MAP_COUNTS_MERGER.mergeByMax(cachedCounts, freshCounts);
+    }
+
     interface ChatListHandler {
         void switchTo(LiveChatSessionId sessionId);
         void close(LiveChatSessionId sessionId);
@@ -352,10 +358,9 @@ class ChatListDialog extends JDialog {
                 if (transcriptId != null) {
                     transcriptById.remove(transcriptId.getFileName());
                 }
-                List<MapRootShortTextCount> mapCounts = session.getMapRootShortTextCounts();
-                if (mapCounts == null || mapCounts.isEmpty()) {
-                    mapCounts = mapRootShortTextFormatter.buildCounts(session.getMapIds());
-                }
+                List<MapRootShortTextCount> mapCounts = mergeLiveMapCounts(
+                    session.getMapRootShortTextCounts(),
+                    mapRootShortTextFormatter.buildCounts(session.getMapIds()));
                 boolean currentLiveSession = session.getId() != null && session.getId().equals(currentSessionId);
                 results.add(new ChatListItem(ChatListItemStatus.LIVE, session.getId(), transcriptId,
                     session.getDisplayName(), mapCounts, session.getLastActivityTimestamp(), currentLiveSession));
