@@ -119,6 +119,52 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
+    public void contextBoundaryDoesNotShowToolSummaryFromRemovedTurn() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("u1"));
+        uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.addToolCallSummary("summary-2", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.addToolCallSummary("summary-3", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a3"));
+
+        assertThat(uut.evictOldestTurn()).isTrue();
+
+        assertThat(uut.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .extracting(ChatMemoryRenderEntry::toolSummaryText)
+            .contains("summary-2", "summary-3")
+            .doesNotContain("summary-1");
+    }
+
+    @Test
+    public void contextBoundaryKeepsUserMessageBeforeVisibleToolSummary() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("u1"));
+        uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.addToolCallSummary("summary-2", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(uut.evictOldestTurn()).isTrue();
+
+        List<ChatMemoryRenderEntry> entries = uut.activeConversationRenderEntries();
+        int markerIndex = indexOfMessage(entries, RemovedForSpaceSystemMessage.class);
+        int userIndex = indexOfUserText(entries, "u2");
+        int summaryIndex = indexOfSummary(entries, "summary-2");
+        int assistantIndex = indexOfAiText(entries, "a2");
+
+        assertThat(markerIndex).isGreaterThanOrEqualTo(0);
+        assertThat(userIndex).isGreaterThan(markerIndex);
+        assertThat(summaryIndex).isGreaterThan(userIndex);
+        assertThat(assistantIndex).isGreaterThan(summaryIndex);
+    }
+
+    @Test
     public void olderProfileInstructionsAreCompactedToMarkers() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(new AssistantProfileControlInstructionMessage("alpha", "Alpha", "First definition", true));
@@ -208,6 +254,8 @@ public class AssistantProfileChatMemoryTest {
         uut.add(AiMessage.from(List.of(toolRequest)));
         uut.add(ToolExecutionResultMessage.from("tool-1", "test", "result"));
         uut.add(AiMessage.from("done"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("answer"));
 
         assertThat(uut.evictOldestTurn()).isTrue();
 
@@ -215,6 +263,10 @@ public class AssistantProfileChatMemoryTest {
         assertThat(messages).noneMatch(message -> message instanceof ToolExecutionResultMessage);
         assertThat(messages).noneMatch(message -> message instanceof AiMessage
             && ((AiMessage) message).hasToolExecutionRequests());
+        assertThat(messages)
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u2")
+            .doesNotContain("u1");
     }
 
     @Test
@@ -396,11 +448,11 @@ public class AssistantProfileChatMemoryTest {
     public void undoKeepsPreviousToolSummaryAndHidesUndoneSummary() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("u1"));
-        uut.add(AiMessage.from("a1"));
         uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
         uut.add(UserMessage.from("u2"));
-        uut.add(AiMessage.from("a2"));
         uut.addToolCallSummary("summary-2", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a2"));
 
         uut.undo();
 
@@ -415,11 +467,11 @@ public class AssistantProfileChatMemoryTest {
     public void redoRestoresToolSummaryForRedoneTurn() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("u1"));
-        uut.add(AiMessage.from("a1"));
         uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
         uut.add(UserMessage.from("u2"));
-        uut.add(AiMessage.from("a2"));
         uut.addToolCallSummary("summary-2", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a2"));
 
         uut.undo();
         uut.redo();
@@ -486,6 +538,55 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
+    public void recordTokenUsageEvictsWhenTokenCountReachesHardLimit() {
+        int maxTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+
+        boolean evicted = uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        assertThat(evicted).isTrue();
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u2", "u3")
+            .doesNotContain("u1");
+    }
+
+    @Test
+    public void recordTokenUsageKeepsTwoTurnBlocksWhenTheyFitHardLimit() {
+        int maxTokens = estimateTokens(
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u2", "u3")
+            .doesNotContain("u1");
+    }
+
+    @Test
     public void truncateConversationMessagesAdjustsTokenTotalByDelta() {
         AssistantProfileChatMemory uut = createMemory(3);
         uut.add(UserMessage.from("u1"));
@@ -537,6 +638,20 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
+    public void evictOldestTurnKeepsSingleTurnBlock() {
+        AssistantProfileChatMemory uut = createMemory(500);
+        uut.add(UserMessage.from("first question"));
+        uut.add(AiMessage.from("first answer"));
+
+        boolean evicted = uut.evictOldestTurn();
+
+        assertThat(evicted).isFalse();
+        assertThat(uut.messages())
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("first question");
+    }
+
+    @Test
     public void transcriptEntriesExcludeEvictedOldestTurnContent() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("first question"));
@@ -568,5 +683,45 @@ public class AssistantProfileChatMemoryTest {
             total += estimator.estimateTokenCountInMessage(message);
         }
         return total;
+    }
+
+    private int indexOfMessage(List<ChatMemoryRenderEntry> entries, Class<? extends ChatMessage> messageClass) {
+        for (int index = 0; index < entries.size(); index++) {
+            ChatMessage message = entries.get(index).chatMessage();
+            if (message != null && messageClass.isInstance(message)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private int indexOfUserText(List<ChatMemoryRenderEntry> entries, String text) {
+        for (int index = 0; index < entries.size(); index++) {
+            ChatMessage message = entries.get(index).chatMessage();
+            if (message instanceof UserMessage && text.equals(((UserMessage) message).singleText())) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private int indexOfSummary(List<ChatMemoryRenderEntry> entries, String summaryText) {
+        for (int index = 0; index < entries.size(); index++) {
+            ChatMemoryRenderEntry entry = entries.get(index);
+            if (entry.isToolSummary() && summaryText.equals(entry.toolSummaryText())) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private int indexOfAiText(List<ChatMemoryRenderEntry> entries, String text) {
+        for (int index = 0; index < entries.size(); index++) {
+            ChatMessage message = entries.get(index).chatMessage();
+            if (message instanceof AiMessage && text.equals(((AiMessage) message).text())) {
+                return index;
+            }
+        }
+        return -1;
     }
 }

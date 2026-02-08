@@ -254,3 +254,162 @@
       remain coherent.
     - Verify runtime stability for OpenRouter, Gemini, and Ollama
       selections with token-window memory.
+
+## Subtask: Reset active window to quarter on overflow
+- **Status:** done
+- **Scope:**
+  Update overflow eviction behavior so memory is trimmed only after
+  reaching the absolute maximum token limit, and then reset to a
+  quarter of the configured maximum while preserving minimum turn-block
+  safety rules.
+- **Motivation:**
+  Current behavior tries to stay close to the maximum after each
+  eviction cycle. The requested behavior is burst-friendly: allow growth
+  up to max, then aggressively reset to 25% to reduce repeated
+  near-limit pressure.
+- **Developer Briefing:**
+  This subtask changes only the overflow eviction target and turn-block
+  retention guards. Keep existing transcript/profile/tool semantics and
+  keep removing only older turn-blocks from the beginning of history.
+- **Research:**
+  Overflow handling currently calls eviction in
+  `AssistantProfileChatMemory.evictIfNeededAfterResponse()` and in the
+  context-too-large retry path via `evictOldestTurn()`.
+
+  Existing logic already preserves at least one user turn-block in edge
+  cases and evicts old turns first.
+
+  In this task, retention/eviction unit is a turn-block (full
+  conversation turn), not a single low-level `ChatMessage`.
+  A turn-block includes the user/assistant turn content and the related tool
+  call/result messages handled by current memory rules.
+
+  Assistant-profile control messages continue to follow existing
+  compaction/instruction semantics and must remain consistent with block
+  eviction behavior, as in current trimming logic.
+
+  New rules required by user clarification:
+  - Do not evict while below hard max token limit.
+  - On overflow, trim to 25% of configured max.
+  - Keep one turn-block always, regardless of limits.
+  - Keep two turn-blocks when their total token estimate is within hard
+    max; otherwise keep one.
+- **Design:**
+
+```plantuml
+@startuml
+participant "AssistantProfileChatMemory" as Memory
+
+Memory -> Memory : onResponseTokenUsage(...)
+Memory -> Memory : if estimatedTokens < hardMax then no eviction
+Memory -> Memory : if estimatedTokens >= hardMax then evict old turns
+Memory -> Memory : targetTokens = hardMax / 4
+Memory -> Memory : stop when <= targetTokens
+Memory -> Memory : enforce retention guards\n(1 always, 2 if <= hardMax)
+@enduml
+```
+
+  Add explicit thresholds:
+  - `hardMaxTokens = configured maximum token count`
+  - `resetTargetTokens = floor(hardMaxTokens / 4)`
+
+  Eviction trigger:
+  - Start eviction only when estimated removable-token usage reaches or
+    exceeds `hardMaxTokens`.
+
+  Eviction stop condition:
+  - Continue evicting oldest completed turns until estimated removable
+    tokens are at or below `resetTargetTokens`, subject to retention
+    guards.
+
+  Retention guards:
+  - Never evict the last remaining turn-block.
+  - Allow keeping two turn-blocks only if their estimated token sum is
+    `<= hardMaxTokens`; otherwise keep one.
+- **Test specification:**
+  Automated tests:
+  - Overflow trigger test: no eviction below hard max; eviction starts
+    at/above hard max.
+  - Reset-target test: overflow eviction reduces active window to around
+    25% target rather than near hard max.
+  - Retention guard tests:
+    - one-turn-block conversation is always preserved;
+    - two-turn-block preservation happens only when both fit hard max;
+    - fallback to one turn-block when two exceed hard max.
+
+  Manual tests:
+  - Run a long chat and verify context grows to max before eviction.
+  - After overflow, verify old turn-blocks are removed and active window is
+    much smaller (about quarter of max), not near full.
+
+## Subtask: Preserve turn-block chronological order (including tool summaries)
+- **Status:** done
+- **Scope:**
+  Fix the same chronology bug by strengthening how tool summaries are
+  bound to turn-block rendering. A turn-block means one user turn plus
+  all associated tool activity and the assistant response. Rendering
+  must keep this block order stable after context eviction.
+- **Motivation:**
+  Current UI can show tool-call summaries before the related user
+  request, which makes conversation chronology confusing.
+- **Developer Briefing:**
+  This remains the same bug scope (chronology around the context
+  marker). It should be solved by stronger summary placement logic, not
+  by adding a separate workaround rule or separate subtask.
+- **Research:**
+  `AssistantProfileChatMemory.activeConversationRenderEntries()` mixes
+  context-boundary marker insertion with summary-row insertion by
+  `conversationIndex`, which can surface summary rows before the visible
+  user message of the same turn-block.
+
+  The root cause is split storage: messages and summaries are managed in
+  separate collections and merged later. This allows order drift and
+  requires cleanup glue when truncation/redo modifies only one side.
+- **Design:**
+
+```plantuml
+@startuml
+participant "AssistantProfileChatMemory" as Memory
+
+Memory -> Memory : store conversation in one message list
+Memory -> Memory : on tool callback\naddToolCallSummary(summary)
+Memory -> Memory : append ToolCallSummaryMessage to list tail
+Memory -> Memory : render entries by iterating active window messages
+Memory -> Memory : map ToolCallSummaryMessage to render-only tool row
+@enduml
+```
+
+  Design decisions:
+  - Keep one canonical storage collection for conversation state:
+    `conversationMessages`.
+  - Represent tool summaries with a dedicated internal message type
+    (`ToolCallSummaryMessage`) in that same collection.
+  - Keep `addToolCallSummary` as the public-to-package boundary for
+    summary insertion to hide summary-message implementation details.
+  - Make `addToolCallSummary` append-only under runtime contract:
+    callback order is authoritative, no index-search placement logic.
+  - Exclude `ToolCallSummaryMessage` from model-context `messages()` and
+    transcript export; include it only in render entries.
+  - Remove split-storage synchronization helpers tied to a second
+    summary collection.
+
+  Render-order rules:
+  - Render order follows `conversationMessages` order in the active
+    window.
+  - Tool summary rows appear where `ToolCallSummaryMessage` is stored.
+  - Context-boundary marker remains inserted once at the active-window
+    boundary when eviction occurred.
+- **Test specification:**
+  Automated tests:
+  - truncation and redo-branch removal remove summary rows together with
+    conversation tail (no orphan summaries);
+  - tool-call summary ordering follows append-only callback sequence;
+  - after context-marker insertion, visible summaries remain in stable
+    chronological order with adjacent messages;
+  - marker is inserted only at a turn-block boundary.
+  - implementation has no second summary collection and no global merge
+    pass by `conversationIndex`.
+
+  Manual tests:
+  - In a chat with tool calls and overflow, verify chronological
+    readability: user request appears before related tool summaries.
