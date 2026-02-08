@@ -535,6 +535,13 @@ public class OptionPanelBuilder {
 		}
 	}
 
+	private class SecretOptionCreator extends PropertyCreator {
+		@Override
+		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
+			return createSecretOptionCreator(name);
+		}
+	}
+
 	private class TextBoxOptionCreator extends PropertyCreator {
 		@Override
 		public IPropertyControlCreator getCreator(final String name, final XMLElement data) {
@@ -816,6 +823,20 @@ public class OptionPanelBuilder {
 		};
 	}
 
+	private IPropertyControlCreator createSecretOptionCreator(final String name) {
+		return new IPropertyControlCreator() {
+			@Override
+			public IPropertyControl createControl() {
+				return new SecretProperty(name);
+			}
+
+			@Override
+			public String getPropertyName() {
+				return name;
+			}
+		};
+	}
+
 	private IPropertyControlCreator createTextBoxOptionCreator(final String name, final int lines) {
 		return new IPropertyControlCreator() {
 			@Override
@@ -892,6 +913,7 @@ public class OptionPanelBuilder {
 		readManager.addElementHandler("separator", new SeparatorCreator());
 		readManager.addElementHandler("text", new TextCreator());
 		readManager.addElementHandler("string", new StringOptionCreator());
+		readManager.addElementHandler("secret", new SecretOptionCreator());
 		readManager.addElementHandler("textbox", new TextBoxOptionCreator());
 		readManager.addElementHandler("font", new FontOptionCreator());
 		readManager.addElementHandler("boolean", new BooleanOptionCreator());
