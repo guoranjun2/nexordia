@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     public static final String MCP_SERVER_ENABLED_PROPERTY = "ai_mcp_server_enabled";
     public static final String MCP_SERVER_PORT_PROPERTY = "ai_mcp_server_port";
+    public static final String MCP_SERVER_API_KEY_PROPERTY = "ai_mcp_server_api_key";
+    public static final String MCP_SERVER_API_KEY_HEADER = "X-Freeplane-MCP-API-Key";
     private static final String MCP_PROTOCOL_VERSION = "2024-11-05";
     private static final int DEFAULT_PORT = 6298;
     private static final int PORT_MINIMUM = 1024;
@@ -37,6 +39,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     private final ObjectMapper objectMapper;
     private final ModelContextProtocolToolRegistry toolRegistry;
     private final ModelContextProtocolToolDispatcher toolDispatcher;
+    private final ModelContextProtocolAuthValidator authValidator;
     private final AtomicBoolean running;
     private volatile HttpServer server;
 
@@ -45,9 +48,17 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     }
 
     public ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper) {
+        this(toolSet, objectMapper, new ModelContextProtocolAuthValidator(
+            ResourceController.getResourceController(),
+            MCP_SERVER_API_KEY_PROPERTY,
+            MCP_SERVER_API_KEY_HEADER));
+    }
+
+    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ModelContextProtocolAuthValidator authValidator) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.toolRegistry = new ModelContextProtocolToolRegistry(toolSet, this.objectMapper);
         this.toolDispatcher = new ModelContextProtocolToolDispatcher(toolSet, this.objectMapper);
+        this.authValidator = Objects.requireNonNull(authValidator, "authValidator");
         this.running = new AtomicBoolean(false);
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
@@ -123,6 +134,11 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
         public void handle(HttpExchange exchange) throws IOException {
             if (!"POST".equals(exchange.getRequestMethod())) {
                 sendStatus(exchange, 405);
+                return;
+            }
+            Object authFailureResponse = authValidator.validateRequest(exchange.getRequestHeaders());
+            if (authFailureResponse != null) {
+                writeJsonResponse(exchange, authFailureResponse, 401);
                 return;
             }
             JsonNode requestNode;
@@ -305,10 +321,14 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
         }
 
         private void writeJsonResponse(HttpExchange exchange, Object responseBody) throws IOException {
+            writeJsonResponse(exchange, responseBody, 200);
+        }
+
+        private void writeJsonResponse(HttpExchange exchange, Object responseBody, int statusCode) throws IOException {
             LogUtils.info("MCP response " + objectMapper.writeValueAsString(responseBody));
             byte[] responseBytes = objectMapper.writeValueAsBytes(responseBody);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, responseBytes.length);
+            exchange.sendResponseHeaders(statusCode, responseBytes.length);
             try (OutputStream outputStream = exchange.getResponseBody()) {
                 outputStream.write(responseBytes);
             }

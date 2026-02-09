@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.mcpserver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,12 +15,15 @@ import java.net.ServerSocket;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ModelContextProtocolServerIntegrationTest {
+    private static final String TEST_API_KEY = "integration-test-api-key";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ModelContextProtocolServer uut;
     private String serverUrl;
@@ -28,7 +32,17 @@ public class ModelContextProtocolServerIntegrationTest {
     public void setUp() throws Exception {
         int port = findAvailablePort();
         AIToolSet toolSet = mock(AIToolSet.class);
-        uut = new ModelContextProtocolServer(toolSet, objectMapper);
+        @SuppressWarnings("unchecked")
+        Consumer<String> generatedApiKeyNotifier = mock(Consumer.class);
+        ResourceController resourceController = mock(ResourceController.class);
+        when(resourceController.getProperty(ModelContextProtocolServer.MCP_SERVER_API_KEY_PROPERTY, "")).thenReturn(TEST_API_KEY);
+        ModelContextProtocolAuthValidator authValidator = new ModelContextProtocolAuthValidator(
+            resourceController,
+            ModelContextProtocolServer.MCP_SERVER_API_KEY_PROPERTY,
+            ModelContextProtocolServer.MCP_SERVER_API_KEY_HEADER,
+            () -> "generated-key",
+            generatedApiKeyNotifier);
+        uut = new ModelContextProtocolServer(toolSet, objectMapper, authValidator);
         uut.start(port);
         serverUrl = "http://127.0.0.1:" + port + "/";
     }
@@ -80,7 +94,18 @@ public class ModelContextProtocolServerIntegrationTest {
         assertThat(response.body).isEmpty();
     }
 
+    @Test
+    public void requestWithoutApiKeyHeader_returnsUnauthorized() throws Exception {
+        Response response = sendJsonRequest("initialize", 1, null, false);
+        assertThat(response.status).isEqualTo(401);
+    }
+
     private Response sendJsonRequest(String methodName, Object id, Map<String, Object> parameters) throws Exception {
+        return sendJsonRequest(methodName, id, parameters, true);
+    }
+
+    private Response sendJsonRequest(String methodName, Object id, Map<String, Object> parameters, boolean includeApiKeyHeader)
+        throws Exception {
         Map<String, Object> requestPayload = new LinkedHashMap<>();
         requestPayload.put("jsonrpc", "2.0");
         requestPayload.put("method", methodName);
@@ -95,6 +120,9 @@ public class ModelContextProtocolServerIntegrationTest {
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
+        if (includeApiKeyHeader) {
+            connection.setRequestProperty(ModelContextProtocolServer.MCP_SERVER_API_KEY_HEADER, TEST_API_KEY);
+        }
         connection.setFixedLengthStreamingMode(payloadBytes.length);
         try (OutputStream outputStream = connection.getOutputStream()) {
             outputStream.write(payloadBytes);

@@ -16,6 +16,7 @@
         <textbox name="ai_system_message" lines="5"/>
         <boolean name="ai_mcp_server_enabled"/>
         <number name="ai_mcp_server_port" min="1024" max="65535" />
+        <secret name="ai_mcp_server_api_key"/>
         <string name="ai_openrouter_service_address"/>
         <secret name="ai_openrouter_key"/>
         <textbox name="ai_openrouter_model_allowlist" lines="5"/>
