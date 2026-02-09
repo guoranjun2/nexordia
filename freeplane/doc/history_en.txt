@@ -1,4 +1,11 @@
 ==============================
+1.13.1
+==============================
+AI Chat history
+AI profiles
+MCP clients must send the authentication token in header X-Freeplane-MCP-Token
+
+==============================
 1.13.0
 ==============================
 AI integration (open router API key, Gemini API key, ollama, as local MCP server)
