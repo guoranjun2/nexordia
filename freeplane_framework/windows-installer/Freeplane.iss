@@ -24,7 +24,7 @@
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{D3941722-C4DD-4509-88C4-0E87F675A859}
-AppCopyright=Copyright © 2000-2025 Freeplane team and others
+AppCopyright=Copyright © 2000-2026 Freeplane team and others
 AppName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
@@ -32,7 +32,8 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={code:GetDefaultInstallDir}
 DefaultGroupName={#MyAppName}
-ArchitecturesInstallIn64BitMode=x64 ia64
+ArchitecturesAllowed=x64compatible and not arm64
+ArchitecturesInstallIn64BitMode=x64compatible and not arm64
 OutputDir=.
 OutputBaseFilename=Freeplane-Setup
 SetupIconFile=Setup.ico
