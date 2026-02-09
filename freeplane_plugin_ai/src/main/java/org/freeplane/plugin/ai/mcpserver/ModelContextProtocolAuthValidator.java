@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 class ModelContextProtocolAuthValidator {
     private static final int UNAUTHORIZED_ERROR_CODE = -32001;
     private static final String UNAUTHORIZED_MESSAGE = "Unauthorized";
-    private static final String GENERATED_API_KEY_MESSAGE = "ai_mcp_server_api_key_generated_message";
+    private static final String GENERATED_MCP_TOKEN_MESSAGE = "ai_mcp_token_generated_message";
 
     private final ResourceController resourceController;
     private final String apiKeyPropertyName;
@@ -30,7 +30,7 @@ class ModelContextProtocolAuthValidator {
             () -> UUID.randomUUID().toString(),
             apiKey -> SwingUtilities.invokeLater(() ->
                 UITools.showMessage(
-                    TextUtils.format(GENERATED_API_KEY_MESSAGE, apiKey),
+                    TextUtils.format(GENERATED_MCP_TOKEN_MESSAGE, apiKey),
                     JOptionPane.INFORMATION_MESSAGE)));
     }
 

@@ -40,26 +40,26 @@ package "freeplane_plugin_ai" {
   }
 }
 
-preferences.xml --> ResourceController : defines secret ai_mcp_server_api_key
+preferences.xml --> ResourceController : defines secret ai_mcp_token
 defaults.properties --> ResourceController : default empty api key
 ModelContextProtocolServer --> ModelContextProtocolHandler : delegates POST request
 ModelContextProtocolHandler --> ModelContextProtocolAuthValidator : validates request header
-ModelContextProtocolAuthValidator --> ResourceController : reads ai_mcp_server_api_key
+ModelContextProtocolAuthValidator --> ResourceController : reads ai_mcp_token
 ModelContextProtocolAuthValidator --> ResourceController : persists generated uuid key
 ModelContextProtocolAuthValidator --> UITools : shows copyable generated key message
 @enduml
 ```
 
 The API key is stored in a new secret property named
-`ai_mcp_server_api_key` and appears in the AI plugin preferences as a
+`ai_mcp_token` and appears in the AI plugin preferences as a
 `<secret>` field.
 
 Authentication is checked before JSON parsing and request dispatch in
 the MCP HTTP handler for every incoming `POST /` request.
 
-If `ai_mcp_server_api_key` is blank after trimming when the server
+If `ai_mcp_token` is blank after trimming when the server
 expects authentication, the server generates a random UUID key,
-persists it into `ai_mcp_server_api_key`, and immediately rejects the
+persists it into `ai_mcp_token`, and immediately rejects the
 current request.
 
 At the same moment, the plugin shows an information dialog using
@@ -72,16 +72,16 @@ texts:
 - generated-key information dialog text.
 
 Both texts must be translation keys and must state that clients should
-send header `X-Freeplane-MCP-API-Key`.
+send header `X-Freeplane-MCP-Token`.
 
 Suggested translation keys:
-- `OptionPanel.ai_mcp_server_api_key.tooltip`:
-  `MCP clients must send this key in header X-Freeplane-MCP-API-Key.`
-- `ai_mcp_server_api_key_generated_message`:
-  `A new MCP API key was generated.\nUse it in header X-Freeplane-MCP-API-Key:\n{0}`
+- `OptionPanel.ai_mcp_token.tooltip`:
+  `MCP clients must send this key in header X-Freeplane-MCP-Token.`
+- `ai_mcp_token_generated_message`:
+  `A new MCP API key was generated.\nUse it in header X-Freeplane-MCP-Token:\n{0}`
 
-If `ai_mcp_server_api_key` is set, the client must send
-`X-Freeplane-MCP-API-Key` with an exact value match. Missing or
+If `ai_mcp_token` is set, the client must send
+`X-Freeplane-MCP-Token` with an exact value match. Missing or
 mismatched key returns `401 Unauthorized` and a JSON-RPC error payload
 with code `-32001` and message `Unauthorized`. In this case, tool and
 resource methods are not executed.
@@ -91,5 +91,5 @@ resource methods are not executed.
       verifies UUID generation/persist+notify on blank key, accepts
       matching header, and rejects missing header.
     - `ModelContextProtocolServerIntegrationTest`:
-      verifies `401 Unauthorized` when `X-Freeplane-MCP-API-Key`
+      verifies `401 Unauthorized` when `X-Freeplane-MCP-Token`
       is missing.

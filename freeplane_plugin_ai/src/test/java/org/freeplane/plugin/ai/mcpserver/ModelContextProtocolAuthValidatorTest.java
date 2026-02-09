@@ -13,8 +13,8 @@ import org.freeplane.core.resources.ResourceController;
 import org.junit.Test;
 
 public class ModelContextProtocolAuthValidatorTest {
-    private static final String API_KEY_PROPERTY = "ai_mcp_server_api_key";
-    private static final String API_KEY_HEADER = "X-Freeplane-MCP-API-Key";
+    private static final String API_KEY_PROPERTY = "ai_mcp_token";
+    private static final String API_KEY_HEADER = "X-Freeplane-MCP-Token";
 
     @Test
     public void blankConfiguredApiKey_generatesAndPersistsAndRejectsCurrentRequest() {

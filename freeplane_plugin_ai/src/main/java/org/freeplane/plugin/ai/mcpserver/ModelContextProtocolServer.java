@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     public static final String MCP_SERVER_ENABLED_PROPERTY = "ai_mcp_server_enabled";
     public static final String MCP_SERVER_PORT_PROPERTY = "ai_mcp_server_port";
-    public static final String MCP_SERVER_API_KEY_PROPERTY = "ai_mcp_server_api_key";
-    public static final String MCP_SERVER_API_KEY_HEADER = "X-Freeplane-MCP-API-Key";
+    public static final String MCP_TOKEN_PROPERTY = "ai_mcp_token";
+    public static final String MCP_TOKEN_HEADER = "X-Freeplane-MCP-Token";
     private static final String MCP_PROTOCOL_VERSION = "2024-11-05";
     private static final int DEFAULT_PORT = 6298;
     private static final int PORT_MINIMUM = 1024;
@@ -50,8 +50,8 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     public ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper) {
         this(toolSet, objectMapper, new ModelContextProtocolAuthValidator(
             ResourceController.getResourceController(),
-            MCP_SERVER_API_KEY_PROPERTY,
-            MCP_SERVER_API_KEY_HEADER));
+            MCP_TOKEN_PROPERTY,
+            MCP_TOKEN_HEADER));
     }
 
     ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ModelContextProtocolAuthValidator authValidator) {

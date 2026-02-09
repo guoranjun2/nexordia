@@ -35,11 +35,11 @@ public class ModelContextProtocolServerIntegrationTest {
         @SuppressWarnings("unchecked")
         Consumer<String> generatedApiKeyNotifier = mock(Consumer.class);
         ResourceController resourceController = mock(ResourceController.class);
-        when(resourceController.getProperty(ModelContextProtocolServer.MCP_SERVER_API_KEY_PROPERTY, "")).thenReturn(TEST_API_KEY);
+        when(resourceController.getProperty(ModelContextProtocolServer.MCP_TOKEN_PROPERTY, "")).thenReturn(TEST_API_KEY);
         ModelContextProtocolAuthValidator authValidator = new ModelContextProtocolAuthValidator(
             resourceController,
-            ModelContextProtocolServer.MCP_SERVER_API_KEY_PROPERTY,
-            ModelContextProtocolServer.MCP_SERVER_API_KEY_HEADER,
+            ModelContextProtocolServer.MCP_TOKEN_PROPERTY,
+            ModelContextProtocolServer.MCP_TOKEN_HEADER,
             () -> "generated-key",
             generatedApiKeyNotifier);
         uut = new ModelContextProtocolServer(toolSet, objectMapper, authValidator);
@@ -121,7 +121,7 @@ public class ModelContextProtocolServerIntegrationTest {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
         if (includeApiKeyHeader) {
-            connection.setRequestProperty(ModelContextProtocolServer.MCP_SERVER_API_KEY_HEADER, TEST_API_KEY);
+            connection.setRequestProperty(ModelContextProtocolServer.MCP_TOKEN_HEADER, TEST_API_KEY);
         }
         connection.setFixedLengthStreamingMode(payloadBytes.length);
         try (OutputStream outputStream = connection.getOutputStream()) {
