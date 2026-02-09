@@ -2,8 +2,10 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.freeplane.plugin.ai.chat.history.ChatTranscriptId;
 import org.freeplane.plugin.ai.chat.history.MapRootShortTextCount;
 import org.junit.Test;
 
@@ -26,5 +28,27 @@ public class ChatListDialogTest {
             assertThat(entry.getText()).isEqualTo("Map B");
             assertThat(entry.getCount()).isEqualTo(1);
         });
+    }
+
+    @Test
+    public void deletionTargets_collectsAllSelectedLiveSessionsAndTranscripts() {
+        LiveChatSessionId firstLiveSessionId = LiveChatSessionId.create();
+        LiveChatSessionId secondLiveSessionId = LiveChatSessionId.create();
+        ChatTranscriptId transcriptIdFromLiveSession = new ChatTranscriptId("live-chat-1.json");
+        ChatTranscriptId transcriptOnlyId = new ChatTranscriptId("archived-chat-1.json");
+        List<ChatListItem> selectedItems = Arrays.asList(
+            new ChatListItem(ChatListItemStatus.LIVE, firstLiveSessionId, transcriptIdFromLiveSession,
+                "Live 1", new ArrayList<MapRootShortTextCount>(), 1L, false),
+            new ChatListItem(ChatListItemStatus.LIVE, secondLiveSessionId, null,
+                "Live 2", new ArrayList<MapRootShortTextCount>(), 2L, false),
+            new ChatListItem(ChatListItemStatus.TRANSCRIPT, null, transcriptOnlyId,
+                "Transcript 1", new ArrayList<MapRootShortTextCount>(), 3L, false));
+
+        ChatListDialog.DeletionTargets deletionTargets = ChatListDialog.deletionTargets(selectedItems);
+
+        assertThat(deletionTargets.liveSessionIds())
+            .containsExactlyInAnyOrder(firstLiveSessionId, secondLiveSessionId);
+        assertThat(deletionTargets.transcriptIds())
+            .containsExactlyInAnyOrder(transcriptIdFromLiveSession, transcriptOnlyId);
     }
 }

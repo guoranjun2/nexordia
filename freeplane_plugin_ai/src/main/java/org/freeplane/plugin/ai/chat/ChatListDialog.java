@@ -33,7 +33,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +67,7 @@ class ChatListDialog extends JDialog {
             listHandler, TextUtils.getText("ai_chat_chats_column_name"),
             TextUtils.getText("ai_chat_chats_column_maps"));
         this.table = new JTable(tableModel);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         table.setFillsViewportHeight(true);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_STATUS).setPreferredWidth(24);
         table.getColumnModel().getColumn(ChatListTableModel.COLUMN_NAME).setPreferredWidth(220);
@@ -150,24 +152,18 @@ class ChatListDialog extends JDialog {
     }
 
     private void deleteChat() {
-        ChatListItem item = tableModel.itemAt(table.getSelectedRow());
-        if (item == null) {
+        List<ChatListItem> selectedItems = selectedItems();
+        if (selectedItems.isEmpty()) {
             return;
         }
-        if (item.getStatus() == ChatListItemStatus.LIVE) {
-            if (item.getLiveSessionId() != null) {
-                listHandler.deleteLiveSession(item.getLiveSessionId());
-            }
-            if (item.getTranscriptId() != null) {
-                listHandler.deleteTranscript(item.getTranscriptId());
-            }
-            refresh();
-            return;
+        DeletionTargets deletionTargets = deletionTargets(selectedItems);
+        for (LiveChatSessionId liveSessionId : deletionTargets.liveSessionIds()) {
+            listHandler.deleteLiveSession(liveSessionId);
         }
-        if (item.getTranscriptId() != null) {
-            listHandler.deleteTranscript(item.getTranscriptId());
-            refresh();
+        for (ChatTranscriptId transcriptId : deletionTargets.transcriptIds()) {
+            listHandler.deleteTranscript(transcriptId);
         }
+        refresh();
     }
 
     private void selectCurrentSession() {
@@ -193,13 +189,54 @@ class ChatListDialog extends JDialog {
     }
 
     private void updateButtonState() {
-        ChatListItem item = tableModel.itemAt(table.getSelectedRow());
-        boolean hasSelection = item != null;
-        boolean isLive = hasSelection && item.getStatus() == ChatListItemStatus.LIVE;
-        boolean isTranscript = hasSelection && item.getStatus() == ChatListItemStatus.TRANSCRIPT;
-        openChatButton.setEnabled(isLive || isTranscript);
-        deleteChatButton.setEnabled(hasSelection && (isLive || isTranscript || item.getStatus() == ChatListItemStatus.ERROR));
+        List<ChatListItem> selectedItems = selectedItems();
+        boolean hasSelection = !selectedItems.isEmpty();
+        boolean hasSingleOpenableSelection = selectedItems.size() == 1
+            && (selectedItems.get(0).getStatus() == ChatListItemStatus.LIVE
+            || selectedItems.get(0).getStatus() == ChatListItemStatus.TRANSCRIPT);
+        openChatButton.setEnabled(hasSingleOpenableSelection);
+        deleteChatButton.setEnabled(hasSelection && hasDeletableSelection(selectedItems));
         closeDialogButton.setEnabled(true);
+    }
+
+    private static boolean hasDeletableSelection(List<ChatListItem> selectedItems) {
+        for (ChatListItem item : selectedItems) {
+            if (item.getStatus() == ChatListItemStatus.LIVE
+                || item.getStatus() == ChatListItemStatus.TRANSCRIPT
+                || item.getStatus() == ChatListItemStatus.ERROR) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<ChatListItem> selectedItems() {
+        int[] selectedRows = table.getSelectedRows();
+        List<ChatListItem> selectedItems = new ArrayList<>(selectedRows.length);
+        for (int selectedRow : selectedRows) {
+            ChatListItem item = tableModel.itemAt(selectedRow);
+            if (item != null) {
+                selectedItems.add(item);
+            }
+        }
+        return selectedItems;
+    }
+
+    static DeletionTargets deletionTargets(List<ChatListItem> items) {
+        Set<LiveChatSessionId> liveSessionIds = new HashSet<>();
+        Set<ChatTranscriptId> transcriptIds = new HashSet<>();
+        for (ChatListItem item : items) {
+            if (item == null) {
+                continue;
+            }
+            if (item.getLiveSessionId() != null) {
+                liveSessionIds.add(item.getLiveSessionId());
+            }
+            if (item.getTranscriptId() != null) {
+                transcriptIds.add(item.getTranscriptId());
+            }
+        }
+        return new DeletionTargets(liveSessionIds, transcriptIds);
     }
 
     static List<MapRootShortTextCount> mergeLiveMapCounts(List<MapRootShortTextCount> cachedCounts,
@@ -215,6 +252,24 @@ class ChatListDialog extends JDialog {
         void renameTranscript(ChatTranscriptId transcriptId, String displayName);
         void startChatFromTranscript(ChatTranscriptId transcriptId);
         void deleteTranscript(ChatTranscriptId transcriptId);
+    }
+
+    static class DeletionTargets {
+        private final Set<LiveChatSessionId> liveSessionIds;
+        private final Set<ChatTranscriptId> transcriptIds;
+
+        DeletionTargets(Set<LiveChatSessionId> liveSessionIds, Set<ChatTranscriptId> transcriptIds) {
+            this.liveSessionIds = new HashSet<>(liveSessionIds);
+            this.transcriptIds = new HashSet<>(transcriptIds);
+        }
+
+        Set<LiveChatSessionId> liveSessionIds() {
+            return new HashSet<>(liveSessionIds);
+        }
+
+        Set<ChatTranscriptId> transcriptIds() {
+            return new HashSet<>(transcriptIds);
+        }
     }
 
     private static class ChatListTableModel extends AbstractTableModel {
