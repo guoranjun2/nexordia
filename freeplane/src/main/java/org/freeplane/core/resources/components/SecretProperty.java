@@ -21,8 +21,8 @@ public class SecretProperty extends PropertyBean {
 	private static final String HIDE_TEXT_KEY = "OptionPanel.secret.hide";
 	private static final String SHOW_TEXT_FALLBACK = "Show";
 	private static final String HIDE_TEXT_FALLBACK = "Hide";
-	private static final String SHOW_ICON_PATH = "/org/freeplane/plugin/ai/eye.svg?useAccentColor=true";
-	private static final String HIDE_ICON_PATH = "/org/freeplane/plugin/ai/hide.svg?useAccentColor=true";
+	private static final String SHOW_ICON_PATH = "/images/eye.svg?useAccentColor=true";
+	private static final String HIDE_ICON_PATH = "/images/hide.svg?useAccentColor=true";
 
 	private final JPasswordField passwordField;
 	private final JButton toggleVisibilityButton;
