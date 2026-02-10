@@ -136,7 +136,8 @@ public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePr
 				isSettingComponent = false;
 			}
 		}
-		else super.setLeftComponent(comp);
+		else
+			super.setLeftComponent(comp);
 	}
 
 	@Override
@@ -150,6 +151,8 @@ public class AuxillaryEditorSplitPane extends JSplitPane implements IFreeplanePr
 				isSettingComponent = false;
 			}
 		}
+		else
+			super.setRightComponent(comp);
 	}
 
 	private void repositionComponent(Component component, String constraints) {
