@@ -11,6 +11,11 @@ MCP clients must send the authentication token in header X-Freeplane-MCP-Token
 AI integration (open router API key, Gemini API key, ollama, as local MCP server)
 
 ==============================
+1.12.18
+==============================
+Bug fix: note panel
+
+==============================
 1.12.17
 ==============================
 Bug fix: opening bookmark as root
