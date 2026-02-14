@@ -7,6 +7,7 @@ import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.LabelAndMnemonicSetter;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
+import org.freeplane.core.ui.components.html.ScaledEditorKit;
 import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.MenuUtils;
@@ -105,11 +106,16 @@ public class AIChatPanel extends JPanel {
         setLayout(new BorderLayout());
         messageHistoryPane = new JEditorPane();
         messageHistoryPane.setContentType("text/html");
+        messageHistoryEditorKit = ScaledEditorKit.create();
+        messageHistoryPane.setEditorKit(messageHistoryEditorKit);
         messageHistoryPane.setEditable(false);
         messageHistoryPane.setOpaque(true);
         messageHistoryPane.setBackground(Color.WHITE);
-        messageHistoryEditorKit = (HTMLEditorKit) messageHistoryPane.getEditorKit();
-        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit);
+        AIChatMessageStyleSettings aiChatMessageStyleSettings = new AIChatMessageStyleSettings();
+        new ChatMessageStyleApplier().apply(
+            messageHistoryPane,
+            messageHistoryEditorKit,
+            aiChatMessageStyleSettings.getChatFontSize());
         resetMessageHistory();
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));

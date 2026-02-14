@@ -6,10 +6,14 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 import java.awt.Color;
+import java.util.Locale;
+
+import org.freeplane.core.ui.components.html.ScaledStyleSheet;
 
 public class ChatMessageStyleApplier {
+    private static final float CONTEXT_BOUNDARY_FONT_RATIO = 5f / 6f;
 
-    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit) {
+    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, int mainFontSizePt) {
         Color baseBackground = UIManager.getColor("TextArea.background");
         Color baseForeground = UIManager.getColor("TextArea.foreground");
         if (baseBackground == null) {
@@ -33,11 +37,13 @@ public class ChatMessageStyleApplier {
         Color profileBorderColor = darkTheme ? new Color(0x3f, 0x70, 0x58) : new Color(0x4d, 0x9a, 0x72);
         messageHistoryPane.setBackground(baseBackground);
         StyleSheet baseStyleSheet = messageHistoryEditorKit.getStyleSheet();
-        StyleSheet styleSheet = new StyleSheet();
+        StyleSheet styleSheet = new ScaledStyleSheet();
         styleSheet.addStyleSheet(baseStyleSheet);
         HTMLDocument document = new HTMLDocument(styleSheet);
         messageHistoryPane.setDocument(document);
-        styleSheet.addRule("body { font-family: Sans-Serif; font-size: 12pt; margin: 6px; color: "
+        float contextBoundaryFontSizePt = mainFontSizePt * CONTEXT_BOUNDARY_FONT_RATIO;
+        styleSheet.addRule("body { font-family: Sans-Serif; font-size: " + formatPt(mainFontSizePt)
+            + "; margin: 6px; color: "
             + toCssColor(baseForeground) + "; background-color: " + toCssColor(baseBackground) + "; }");
         styleSheet.addRule(".message-user { margin: 6px 0; padding: 6px 8px; background-color: "
             + toCssColor(userBackground) + "; border-left: 4px solid " + toCssColor(userBorderColor) + "; }");
@@ -53,7 +59,8 @@ public class ChatMessageStyleApplier {
             + toCssColor(profileBackground) + "; border-left: 4px solid " + toCssColor(profileBorderColor) + "; }");
         styleSheet.addRule(".message-context-boundary { margin: 10px 0 6px 0; padding: 4px 8px 0 8px;"
             + " border-top: 2px dashed " + toCssColor(systemBorderColor) + ";"
-            + " color: " + toCssColor(systemBorderColor) + "; font-size: 10pt; }");
+            + " color: " + toCssColor(systemBorderColor) + "; font-size: "
+            + formatPt(contextBoundaryFontSizePt) + "; }");
     }
 
     private boolean isDark(Color color) {
@@ -63,5 +70,12 @@ public class ChatMessageStyleApplier {
 
     private String toCssColor(Color color) {
         return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    private String formatPt(float value) {
+        if (Math.rint(value) == value) {
+            return String.format(Locale.ROOT, "%.0fpt", value);
+        }
+        return String.format(Locale.ROOT, "%.2fpt", value);
     }
 }
