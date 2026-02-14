@@ -457,6 +457,8 @@ public abstract class ResourceController {
 
     abstract public void securePropertyForReadingAndModification(String key);
 
+    abstract public void persistPropertyInSecretsFile(String key);
+
     public boolean isPropertySetByUser(String key) {
         return false;
     }

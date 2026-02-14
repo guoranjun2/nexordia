@@ -62,13 +62,23 @@ public class ApplicationResourceController extends ResourceController {
         return autoPropertiesFile;
     }
 
+    private static File getUserSecretsFile() {
+        final String freeplaneDirectory = Compat.getApplicationUserDirectory();
+        final File userPropertiesFolder = new File(freeplaneDirectory);
+        final File secretsPropertiesFile = new File(userPropertiesFolder, "secrets.properties");
+        return secretsPropertiesFile;
+    }
+
 	private static final AllPermission ALL_PERMISSION = new AllPermission();
     final private File autoPropertiesFile;
+    final private File secretsPropertiesFile;
 	final private Properties defProps;
 	private LastOpenedList lastOpened;
 	final private Properties props;
+	final private Properties secretsProps;
 	final private Properties securedProps;
 	final private Set<String> securedForReadingPropertyKeys;
+	final private Set<String> persistedInSecretsFilePropertyKeys;
 	public static final String FREEPLANE_BASEDIRECTORY_PROPERTY = "org.freeplane.basedirectory";
 	public static final String FREEPLANE_GLOBALRESOURCEDIR_PROPERTY = "org.freeplane.globalresourcedir";
 	public static final String DEFAULT_FREEPLANE_GLOBALRESOURCEDIR = "resources";
@@ -116,11 +126,18 @@ public class ApplicationResourceController extends ResourceController {
 		super();
 		resourceDirectories = new ArrayList<File>(2);
 		defProps = readDefaultPreferences();
-		props = readUsersPreferences(defProps);
+		props = new SortedProperties(defProps);
+		boolean hasLoadedAutoProperties = loadUserProperties(props, getUserPreferencesFile());
+		secretsProps = new SortedProperties(props);
+		boolean hasLoadedSecretsProperties = loadUserProperties(secretsProps, getUserSecretsFile());
+		if (!hasLoadedAutoProperties && !hasLoadedSecretsProperties) {
+			System.err.println("User properties not found, new file created");
+		}
 		securedForReadingPropertyKeys = new HashSet<>();
+		persistedInSecretsFilePropertyKeys = new HashSet<>();
 		replacePropertyKey("keepSelectedNodeVisibleAfterZoom", "keepSelectedNodeVisible");
 		replacePropertyKey("foldingsymbolwidth", "foldingsymbolsize");
-		securedProps = new Properties(props);
+		securedProps = new Properties(secretsProps);
 		final File userDir = createUserDirectory();
 		final String resourceBaseDir = getResourceBaseDir();
 		if (resourceBaseDir != null) {
@@ -139,6 +156,7 @@ public class ApplicationResourceController extends ResourceController {
 		if(! getBooleanProperty(USE_SYSTEM_LOCALE_PROPERTY))
 		    setDefaultLocale(props.getProperty(ResourceBundles.RESOURCE_LANGUAGE));
 		autoPropertiesFile = getUserPreferencesFile();
+		secretsPropertiesFile = getUserSecretsFile();
 		addPropertyChangeListener(new IFreeplanePropertyListener() {
 			@Override
 			public void propertyChanged(final String propertyName, final String newValue, final String oldValue) {
@@ -150,9 +168,14 @@ public class ApplicationResourceController extends ResourceController {
 	}
 
     private void replacePropertyKey(String oldKey, String newKey) {
-        if(props.containsKey(oldKey) && ! props.containsKey(newKey))
-		    props.put(newKey, props.getProperty(oldKey));
+		replacePropertyKey(props, oldKey, newKey);
+		replacePropertyKey(secretsProps, oldKey, newKey);
     }
+
+	private void replacePropertyKey(Properties sourceProperties, String oldKey, String newKey) {
+		if(sourceProperties.containsKey(oldKey) && ! sourceProperties.containsKey(newKey))
+			sourceProperties.put(newKey, sourceProperties.getProperty(oldKey));
+	}
 
 	private File createUserDirectory() {
 		final File userPropertiesFolder = new File(getFreeplaneUserDirectory());
@@ -296,20 +319,18 @@ public class ApplicationResourceController extends ResourceController {
 		loadProperties(props, defaultPropsURL);
 	}
 
-	private Properties readUsersPreferences(final Properties defaultPreferences) {
-		final Properties auto = new SortedProperties(defaultPreferences);
-		try (InputStream in = new FileInputStream(getUserPreferencesFile())){
-			auto.load(in);
+	private boolean loadUserProperties(Properties target, File file) {
+		try (InputStream in = new FileInputStream(file)){
+			target.load(in);
+			return true;
 		}
 		catch (final Exception ex) {
-			System.err.println("User properties not found, new file created");
+			return false;
 		}
-		return auto;
 	}
 
 	@Override
 	public void saveProperties() {
-	    props.putAll(securedProps);
 		MModeController modeController = MModeController.getMModeController();
 		if(modeController != null) {
 			MIconController iconController = (MIconController)modeController.getExtension(IconController.class);
@@ -323,6 +344,20 @@ public class ApplicationResourceController extends ResourceController {
 			outputStreamWriter.write('\n');
 			outputStreamWriter.flush();
 			props.store(out, null);
+		}
+		catch (final Exception ex) {
+		}
+		try (OutputStream out = new FileOutputStream(secretsPropertiesFile)){
+			final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out, "8859_1");
+			outputStreamWriter.write("#Freeplane ");
+			outputStreamWriter.write(FreeplaneVersion.getVersion().toString());
+			outputStreamWriter.write('\n');
+			outputStreamWriter.flush();
+			secretsProps.store(out, null);
+		}
+		catch (final Exception ex) {
+		}
+		try {
 			((ResourceBundles)getResources()).saveUserResources();
 		}
 		catch (final Exception ex) {
@@ -371,7 +406,13 @@ public class ApplicationResourceController extends ResourceController {
 		    checkSecurityPermission();
             securedProps.setProperty(key, value);
         }
-		props.setProperty(key, value);
+		if (persistedInSecretsFilePropertyKeys.contains(key)) {
+			secretsProps.setProperty(key, value);
+			props.remove(key);
+		}
+		else {
+			props.setProperty(key, value);
+		}
 		firePropertyChanged(key, value, oldValue);
 	}
 
@@ -391,8 +432,12 @@ public class ApplicationResourceController extends ResourceController {
     @Override
     public void securePropertyForModification(String key) {
         checkSecurityPermission();
-        if(! securedProps.containsKey(key))
-            securedProps.setProperty(key, props.getProperty(key));
+        if(! securedProps.containsKey(key)) {
+			String propertyValue = getProperty(key);
+			if (propertyValue != null) {
+				securedProps.setProperty(key, propertyValue);
+			}
+		}
     }
     @Override
     public void securePropertyForReadingAndModification(String key) {
@@ -401,7 +446,20 @@ public class ApplicationResourceController extends ResourceController {
     }
 
     @Override
+    public void persistPropertyInSecretsFile(String key) {
+    	checkSecurityPermission();
+    	persistedInSecretsFilePropertyKeys.add(key);
+		if (props.containsKey(key)) {
+			String value = props.getProperty(key);
+			if (value != null) {
+				secretsProps.setProperty(key, value);
+			}
+			props.remove(key);
+		}
+    }
+
+    @Override
     public boolean isPropertySetByUser(String key) {
-        return props.containsKey(key);
+        return props.containsKey(key) || secretsProps.containsKey(key);
     }
 }
