@@ -3,33 +3,38 @@ package org.freeplane.plugin.ai.chat;
 import org.freeplane.core.resources.ResourceController;
 
 public class AIChatMessageStyleSettings {
-    static final String CHAT_FONT_SIZE_PROPERTY = "ai_chat_font_size";
-    private static final int DEFAULT_CHAT_FONT_SIZE = 12;
+    static final String CHAT_FONT_SCALING_PROPERTY = "ai_chat_font_scaling";
+    private static final int DEFAULT_CHAT_FONT_SCALING = 100;
+    private static final int MIN_CHAT_FONT_SCALING = 25;
+    private static final int MAX_CHAT_FONT_SCALING = 400;
 
-    private final int chatFontSize;
+    private final int chatFontScaling;
 
     public AIChatMessageStyleSettings() {
         this(ResourceController.getResourceController());
     }
 
     AIChatMessageStyleSettings(ResourceController resourceController) {
-        this.chatFontSize = parseChatFontSize(resourceController.getProperty(CHAT_FONT_SIZE_PROPERTY));
+        this.chatFontScaling = parseChatFontScaling(resourceController.getProperty(CHAT_FONT_SCALING_PROPERTY));
     }
 
-    public int getChatFontSize() {
-        return chatFontSize;
+    public int getChatFontScaling() {
+        return chatFontScaling;
     }
 
-    static int parseChatFontSize(String value) {
+    static int parseChatFontScaling(String value) {
         if (value == null || value.isEmpty()) {
-            return DEFAULT_CHAT_FONT_SIZE;
+            return DEFAULT_CHAT_FONT_SCALING;
         }
         try {
             int parsedValue = Integer.parseInt(value.trim());
-            return parsedValue > 0 ? parsedValue : DEFAULT_CHAT_FONT_SIZE;
+            if (parsedValue < MIN_CHAT_FONT_SCALING || parsedValue > MAX_CHAT_FONT_SCALING) {
+                return DEFAULT_CHAT_FONT_SCALING;
+            }
+            return parsedValue;
         }
         catch (NumberFormatException exception) {
-            return DEFAULT_CHAT_FONT_SIZE;
+            return DEFAULT_CHAT_FONT_SCALING;
         }
     }
 }

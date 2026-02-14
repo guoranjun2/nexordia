@@ -34,30 +34,40 @@ public class ScaledStyleSheet extends StyleSheet{
      * 
      */
     private static final long serialVersionUID = 1L;
+    private final float fontScaleFactor;
+
+    public ScaledStyleSheet() {
+        this(UITools.FONT_SCALE_FACTOR);
+    }
+
+    public ScaledStyleSheet(float fontScaleFactor) {
+        this.fontScaleFactor = fontScaleFactor;
+    }
+
 	public Font getFont(AttributeSet a) {
 	    final Font font = super.getFont(a);
-	    final float fontScaleFactor = getFontScaleFactor(a);
-	    return super.getFont(font.getFamily(), font.getStyle(), Math.round(font.getSize2D() * fontScaleFactor));
+	    final float effectiveFontScaleFactor = getFontScaleFactor(a);
+	    return super.getFont(font.getFamily(), font.getStyle(), Math.round(font.getSize2D() * effectiveFontScaleFactor));
     }
 
 	private float getFontScaleFactor(AttributeSet a) {
 		if(a == null)
-			return UITools.FONT_SCALE_FACTOR;
+			return fontScaleFactor;
 		final Object attribute = a.getAttribute(CSS.Attribute.FONT_SIZE);
 		if(attribute == null)
-			return UITools.FONT_SCALE_FACTOR;
+			return fontScaleFactor;
 		final String fontSize = attribute.toString();
 		final int fsLength = fontSize.length();
 		if(fsLength <= 1 
 				|| Character.isDigit(fontSize.charAt(fsLength-1))
 				|| fontSize.endsWith("pt"))
-			return UITools.FONT_SCALE_FACTOR;
+			return fontScaleFactor;
 		if(fontSize.endsWith("px"))
 			return 1/1.3f;
 		if(fontSize.endsWith("%") || fontSize.endsWith("em") || fontSize.endsWith("ex")
 				|| fontSize.endsWith("er"))
 			return getFontScaleFactor(a.getResolveParent());
-		return UITools.FONT_SCALE_FACTOR;
+		return fontScaleFactor;
     }
 
 

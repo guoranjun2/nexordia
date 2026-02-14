@@ -6,8 +6,10 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 import java.awt.Color;
+import java.awt.Font;
 import java.util.Locale;
 
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.html.ScaledStyleSheet;
 
 public class ChatMessageStyleApplier {
@@ -18,15 +20,18 @@ public class ChatMessageStyleApplier {
     private static final float CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO = 0.50f;
     private static final float CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO = 0.35f;
 
-    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, int mainFontSizePt) {
+    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, int fontScalingPercent) {
         Color baseBackground = UIManager.getColor("TextArea.background");
         Color baseForeground = UIManager.getColor("TextArea.foreground");
+        Font baseFont = UIManager.getFont("TextArea.font");
         if (baseBackground == null) {
             baseBackground = Color.WHITE;
         }
         if (baseForeground == null) {
             baseForeground = Color.BLACK;
         }
+        float baseFontSizePt = baseFont == null ? 12f : baseFont.getSize2D();
+        float effectiveScale = UITools.FONT_SCALE_FACTOR * fontScalingPercent / 100f;
         boolean darkTheme = isDark(baseBackground);
         Color userBackground = darkTheme ? new Color(0x45, 0x45, 0x45) : new Color(0xeb, 0xeb, 0xeb);
         Color assistantBackground = darkTheme ? new Color(0x2b, 0x2b, 0x2b) : new Color(0xf5, 0xf5, 0xf5);
@@ -42,14 +47,15 @@ public class ChatMessageStyleApplier {
         Color profileBorderColor = darkTheme ? new Color(0x3f, 0x70, 0x58) : new Color(0x4d, 0x9a, 0x72);
         messageHistoryPane.setBackground(baseBackground);
         StyleSheet baseStyleSheet = messageHistoryEditorKit.getStyleSheet();
-        StyleSheet styleSheet = new ScaledStyleSheet();
+        StyleSheet styleSheet = new ScaledStyleSheet(effectiveScale);
         styleSheet.addStyleSheet(baseStyleSheet);
         HTMLDocument document = new HTMLDocument(styleSheet);
         messageHistoryPane.setDocument(document);
-        float contextBoundaryFontSizePt = mainFontSizePt * CONTEXT_BOUNDARY_FONT_RATIO;
-        String messageBoxSpacing = messageBoxSpacingCss(mainFontSizePt);
-        String contextBoundarySpacing = contextBoundarySpacingCss(mainFontSizePt);
-        styleSheet.addRule("body { font-family: Sans-Serif; font-size: " + formatPt(mainFontSizePt)
+        float contextBoundaryFontSizePt = baseFontSizePt * CONTEXT_BOUNDARY_FONT_RATIO;
+        float effectiveBaseFontSizePt = baseFontSizePt * effectiveScale;
+        String messageBoxSpacing = messageBoxSpacingCss(effectiveBaseFontSizePt);
+        String contextBoundarySpacing = contextBoundarySpacingCss(effectiveBaseFontSizePt);
+        styleSheet.addRule("body { font-family: Sans-Serif; font-size: " + formatPt(baseFontSizePt)
             + "; margin: 6px; color: "
             + toCssColor(baseForeground) + "; background-color: " + toCssColor(baseBackground) + "; }");
         styleSheet.addRule(".message-user { " + messageBoxSpacing
@@ -92,10 +98,10 @@ public class ChatMessageStyleApplier {
         return String.format(Locale.ROOT, "%.2fpt", value);
     }
 
-    String messageBoxSpacingCss(int mainFontSizePt) {
-        float verticalPaddingPt = mainFontSizePt * MESSAGE_VERTICAL_PADDING_RATIO;
-        float externalSpacingPt = mainFontSizePt * MESSAGE_EXTERNAL_SPACING_RATIO;
-        float horizontalPaddingPt = mainFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
+    String messageBoxSpacingCss(float baseFontSizePt) {
+        float verticalPaddingPt = baseFontSizePt * MESSAGE_VERTICAL_PADDING_RATIO;
+        float externalSpacingPt = baseFontSizePt * MESSAGE_EXTERNAL_SPACING_RATIO;
+        float horizontalPaddingPt = baseFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
         return "margin-top: 0pt"
             + "; margin-bottom: " + formatPt(externalSpacingPt)
             + "; padding-top: " + formatPt(verticalPaddingPt)
@@ -104,10 +110,10 @@ public class ChatMessageStyleApplier {
             + "; padding-left: " + formatPt(horizontalPaddingPt);
     }
 
-    String contextBoundarySpacingCss(int mainFontSizePt) {
-        float verticalPaddingPt = mainFontSizePt * CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO;
-        float bottomSpacingPt = mainFontSizePt * CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO;
-        float horizontalPaddingPt = mainFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
+    String contextBoundarySpacingCss(float baseFontSizePt) {
+        float verticalPaddingPt = baseFontSizePt * CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO;
+        float bottomSpacingPt = baseFontSizePt * CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO;
+        float horizontalPaddingPt = baseFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
         return "margin-top: 0pt"
             + "; margin-bottom: " + formatPt(bottomSpacingPt)
             + "; padding-top: " + formatPt(verticalPaddingPt)

@@ -379,7 +379,7 @@ public class AIChatPanel extends JPanel {
         registerProviderConfigurationListener();
         registerModelSelectionRefreshListener();
         registerTokenCounterModeListener();
-        registerChatFontSizeListener();
+        registerChatFontScalingListener();
         refreshTokenCounterMode();
         updateInputState();
     }
@@ -519,12 +519,12 @@ public class AIChatPanel extends JPanel {
             });
     }
 
-    private void registerChatFontSizeListener() {
+    private void registerChatFontScalingListener() {
         ResourceController.getResourceController().addPropertyChangeListener(
             new IFreeplanePropertyListener() {
                 @Override
                 public void propertyChanged(String propertyName, String newValue, String oldValue) {
-                    if (!AIChatMessageStyleSettings.CHAT_FONT_SIZE_PROPERTY.equals(propertyName)) {
+                    if (!AIChatMessageStyleSettings.CHAT_FONT_SCALING_PROPERTY.equals(propertyName)) {
                         return;
                     }
                     SwingUtilities.invokeLater(() -> refreshChatMessageStyles());
@@ -542,7 +542,7 @@ public class AIChatPanel extends JPanel {
         new ChatMessageStyleApplier().apply(
             messageHistoryPane,
             messageHistoryEditorKit,
-            aiChatMessageStyleSettings.getChatFontSize());
+            aiChatMessageStyleSettings.getChatFontScaling());
     }
 
     private boolean isModelSelectionRefreshProperty(String propertyName) {

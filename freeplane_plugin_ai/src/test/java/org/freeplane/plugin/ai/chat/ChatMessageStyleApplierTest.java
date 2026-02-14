@@ -2,7 +2,11 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.awt.Font;
+import java.util.Locale;
+
 import javax.swing.JEditorPane;
+import javax.swing.UIManager;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.html.CSS;
 import javax.swing.text.html.HTMLDocument;
@@ -15,24 +19,37 @@ import org.junit.Test;
 public class ChatMessageStyleApplierTest {
 
     @Test
-    public void applyUsesScaledStyleSheetAndConfiguredFontSizes() {
+    public void applyUsesScaledStyleSheetAndConfiguredScaling() {
         JEditorPane messageHistoryPane = new JEditorPane();
         messageHistoryPane.setContentType("text/html");
         HTMLEditorKit messageHistoryEditorKit = new HTMLEditorKit();
 
-        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit, 18);
+        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit, 150);
 
         HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
         StyleSheet styleSheet = document.getStyleSheet();
         assertThat(styleSheet).isInstanceOf(ScaledStyleSheet.class);
 
-        assertThat(readFontSize(styleSheet, "body")).isEqualTo("18pt");
-        assertThat(readFontSize(styleSheet, ".message-context-boundary")).isEqualTo("15pt");
+        float baseFontSizePt = baseFontSizePt();
+        assertThat(readFontSize(styleSheet, "body")).isEqualTo(formatPt(baseFontSizePt));
+        assertThat(readFontSize(styleSheet, ".message-context-boundary")).isEqualTo(formatPt(baseFontSizePt * 5f / 6f));
     }
 
     private String readFontSize(StyleSheet styleSheet, String selector) {
         AttributeSet rule = styleSheet.getRule(selector);
         Object fontSize = rule == null ? null : rule.getAttribute(CSS.Attribute.FONT_SIZE);
         return fontSize == null ? null : fontSize.toString();
+    }
+
+    private float baseFontSizePt() {
+        Font baseFont = UIManager.getFont("TextArea.font");
+        return baseFont == null ? 12f : baseFont.getSize2D();
+    }
+
+    private String formatPt(float value) {
+        if (Math.rint(value) == value) {
+            return String.format(Locale.ROOT, "%.0fpt", value);
+        }
+        return String.format(Locale.ROOT, "%.2fpt", value);
     }
 }
