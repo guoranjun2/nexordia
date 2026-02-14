@@ -1,19 +1,114 @@
+import java.util.jar.Manifest
+
 java {
-    targetCompatibility=JavaVersion.VERSION_21
-    sourceCompatibility=JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_17
 }
+
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-parameters'
 }
+
+tasks.named('compileJava', JavaCompile) {
+    options.release = 17
+}
+
 sourceSets {
+    bootstrap {
+        java {
+            srcDir 'src/bootstrap/java'
+        }
+        resources {
+            srcDirs = []
+        }
+        compileClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
     test {
         resources {
             srcDir '../freeplane/src/viewer/resources'
         }
+        compileClasspath += sourceSets.bootstrap.output
+        runtimeClasspath += sourceSets.bootstrap.output
     }
 }
 
+configurations {
+    bootstrapImplementation.extendsFrom implementation
+}
+
+tasks.named('compileBootstrapJava', JavaCompile) {
+    options.release = 8
+}
+
+tasks.named('classes') {
+    dependsOn tasks.named('bootstrapClasses')
+}
+
+tasks.named('jar', Jar) {
+    from(sourceSets.bootstrap.output)
+}
+
+tasks.matching { it.name == 'pluginJar' }.configureEach {
+    from(sourceSets.bootstrap.output)
+}
+
 ext.bundleImports = 'io.github.gitbucket.markedj.*'
+ext.bundleActivator = 'org.freeplane.plugin.ai.bootstrap.Java8BootstrapActivator'
+ext.bundleBndInstructions = ['-noee': 'true']
+
+task verifyAiPluginManifest {
+    dependsOn tasks.named('jar')
+    doLast {
+        File manifestFile = file("$buildDir/manifest/MANIFEST.MF")
+        if (!manifestFile.exists()) {
+            throw new GradleException("Manifest file is missing: ${manifestFile}")
+        }
+        Manifest manifest = new Manifest(new FileInputStream(manifestFile))
+        String bundleActivator = manifest.mainAttributes.getValue('Bundle-Activator')
+        if (bundleActivator != project.ext.bundleActivator) {
+            throw new GradleException(
+                "Bundle-Activator expected ${project.ext.bundleActivator} but was ${bundleActivator}")
+        }
+        String requireCapability = manifest.mainAttributes.getValue('Require-Capability')
+        if (requireCapability != null && requireCapability.contains('osgi.ee')) {
+            throw new GradleException(
+                "Require-Capability must not constrain osgi.ee for bootstrap gating: ${requireCapability}")
+        }
+    }
+}
+
+task verifyAiPluginBytecodeLevels {
+    dependsOn tasks.named('classes')
+    doLast {
+        verifyClassMajorVersion(
+            sourceSets.bootstrap.output.classesDirs,
+            'org/freeplane/plugin/ai/bootstrap/Java8BootstrapActivator.class',
+            52)
+        verifyClassMajorVersion(
+            sourceSets.main.output.classesDirs,
+            'org/freeplane/plugin/ai/Activator.class',
+            61)
+    }
+}
+
+check.dependsOn verifyAiPluginManifest, verifyAiPluginBytecodeLevels
+
+void verifyClassMajorVersion(FileCollection classDirs, String classRelativePath, int expectedMajor) {
+    File classFile = classDirs.files.collect { new File(it, classRelativePath) }.find { it.exists() }
+    if (classFile == null) {
+        throw new GradleException("Class file not found for ${classRelativePath}")
+    }
+    byte[] classBytes = classFile.bytes
+    if (classBytes.length < 8) {
+        throw new GradleException("Invalid class file: ${classFile}")
+    }
+    int majorVersion = ((classBytes[6] & 0xFF) << 8) | (classBytes[7] & 0xFF)
+    if (majorVersion != expectedMajor) {
+        throw new GradleException(
+            "Class ${classRelativePath} has major version ${majorVersion}, expected ${expectedMajor}")
+    }
+}
 
 dependencies {
     implementation project(':freeplane')
@@ -28,9 +123,9 @@ eclipse {
     jdt {
         file {
             withProperties { properties ->
-                properties.setProperty('org.eclipse.jdt.core.compiler.codegen.targetPlatform', '21')
-                properties.setProperty('org.eclipse.jdt.core.compiler.compliance', '21')
-                properties.setProperty('org.eclipse.jdt.core.compiler.source', '21')
+                properties.setProperty('org.eclipse.jdt.core.compiler.codegen.targetPlatform', '17')
+                properties.setProperty('org.eclipse.jdt.core.compiler.compliance', '17')
+                properties.setProperty('org.eclipse.jdt.core.compiler.source', '17')
             }
         }
     }

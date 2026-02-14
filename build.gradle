@@ -210,6 +210,9 @@ configure(subprojects.findAll {it.name =~ /plugin/ || it.name =~ /^freeplane$/ }
         if (project.name =~ /plugin/) {
             bndConfiguration << ['Require-Bundle':'org.freeplane.core']
         }
+        if (project.hasProperty('bundleBndInstructions') && bundleBndInstructions != null) {
+            bndConfiguration << bundleBndInstructions
+        }
         bundle {
             bnd(bndConfiguration)
         }
@@ -297,4 +300,3 @@ task format_translation {
 
 apply from: './dist.gradle'
 apply from: './jdt-config.gradle'
-
