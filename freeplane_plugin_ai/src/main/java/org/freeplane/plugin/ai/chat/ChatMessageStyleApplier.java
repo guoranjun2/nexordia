@@ -12,6 +12,11 @@ import org.freeplane.core.ui.components.html.ScaledStyleSheet;
 
 public class ChatMessageStyleApplier {
     private static final float CONTEXT_BOUNDARY_FONT_RATIO = 5f / 6f;
+    private static final float MESSAGE_VERTICAL_PADDING_RATIO = 0.35f;
+    private static final float MESSAGE_EXTERNAL_SPACING_RATIO = 0.35f;
+    private static final float MESSAGE_HORIZONTAL_PADDING_RATIO = 0.60f;
+    private static final float CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO = 0.50f;
+    private static final float CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO = 0.35f;
 
     public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, int mainFontSizePt) {
         Color baseBackground = UIManager.getColor("TextArea.background");
@@ -42,23 +47,31 @@ public class ChatMessageStyleApplier {
         HTMLDocument document = new HTMLDocument(styleSheet);
         messageHistoryPane.setDocument(document);
         float contextBoundaryFontSizePt = mainFontSizePt * CONTEXT_BOUNDARY_FONT_RATIO;
+        String messageBoxSpacing = messageBoxSpacingCss(mainFontSizePt);
+        String contextBoundarySpacing = contextBoundarySpacingCss(mainFontSizePt);
         styleSheet.addRule("body { font-family: Sans-Serif; font-size: " + formatPt(mainFontSizePt)
             + "; margin: 6px; color: "
             + toCssColor(baseForeground) + "; background-color: " + toCssColor(baseBackground) + "; }");
-        styleSheet.addRule(".message-user { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-user { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(userBackground) + "; border-left: 4px solid " + toCssColor(userBorderColor) + "; }");
-        styleSheet.addRule(".message-assistant { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-assistant { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(assistantBackground) + "; border-left: 4px solid " + toCssColor(borderColor) + "; }");
-        styleSheet.addRule(".message-tool { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-tool { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(toolBackground) + "; border-left: 4px solid " + toCssColor(toolBorderColor) + "; }");
-        styleSheet.addRule(".message-mcp-call { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-mcp-call { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(mcpBackground) + "; border-left: 8px solid " + toCssColor(mcpBorderColor) + "; }");
-        styleSheet.addRule(".message-system { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-system { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(systemBackground) + "; border-left: 4px solid " + toCssColor(systemBorderColor) + "; }");
-        styleSheet.addRule(".message-profile { margin: 6px 0; padding: 6px 8px; background-color: "
+        styleSheet.addRule(".message-profile { " + messageBoxSpacing
+            + "; background-color: "
             + toCssColor(profileBackground) + "; border-left: 4px solid " + toCssColor(profileBorderColor) + "; }");
-        styleSheet.addRule(".message-context-boundary { margin: 10px 0 6px 0; padding: 4px 8px 0 8px;"
-            + " border-top: 2px dashed " + toCssColor(systemBorderColor) + ";"
+        styleSheet.addRule(".message-context-boundary { " + contextBoundarySpacing
+            + "; border-top: 2px dashed " + toCssColor(systemBorderColor) + ";"
             + " color: " + toCssColor(systemBorderColor) + "; font-size: "
             + formatPt(contextBoundaryFontSizePt) + "; }");
     }
@@ -77,5 +90,29 @@ public class ChatMessageStyleApplier {
             return String.format(Locale.ROOT, "%.0fpt", value);
         }
         return String.format(Locale.ROOT, "%.2fpt", value);
+    }
+
+    String messageBoxSpacingCss(int mainFontSizePt) {
+        float verticalPaddingPt = mainFontSizePt * MESSAGE_VERTICAL_PADDING_RATIO;
+        float externalSpacingPt = mainFontSizePt * MESSAGE_EXTERNAL_SPACING_RATIO;
+        float horizontalPaddingPt = mainFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
+        return "margin-top: 0pt"
+            + "; margin-bottom: " + formatPt(externalSpacingPt)
+            + "; padding-top: " + formatPt(verticalPaddingPt)
+            + "; padding-right: " + formatPt(horizontalPaddingPt)
+            + "; padding-bottom: " + formatPt(verticalPaddingPt)
+            + "; padding-left: " + formatPt(horizontalPaddingPt);
+    }
+
+    String contextBoundarySpacingCss(int mainFontSizePt) {
+        float verticalPaddingPt = mainFontSizePt * CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO;
+        float bottomSpacingPt = mainFontSizePt * CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO;
+        float horizontalPaddingPt = mainFontSizePt * MESSAGE_HORIZONTAL_PADDING_RATIO;
+        return "margin-top: 0pt"
+            + "; margin-bottom: " + formatPt(bottomSpacingPt)
+            + "; padding-top: " + formatPt(verticalPaddingPt)
+            + "; padding-right: " + formatPt(horizontalPaddingPt)
+            + "; padding-bottom: " + formatPt(verticalPaddingPt)
+            + "; padding-left: " + formatPt(horizontalPaddingPt);
     }
 }

@@ -111,11 +111,7 @@ public class AIChatPanel extends JPanel {
         messageHistoryPane.setEditable(false);
         messageHistoryPane.setOpaque(true);
         messageHistoryPane.setBackground(Color.WHITE);
-        AIChatMessageStyleSettings aiChatMessageStyleSettings = new AIChatMessageStyleSettings();
-        new ChatMessageStyleApplier().apply(
-            messageHistoryPane,
-            messageHistoryEditorKit,
-            aiChatMessageStyleSettings.getChatFontSize());
+        applyChatMessageStyles();
         resetMessageHistory();
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));
@@ -383,6 +379,7 @@ public class AIChatPanel extends JPanel {
         registerProviderConfigurationListener();
         registerModelSelectionRefreshListener();
         registerTokenCounterModeListener();
+        registerChatFontSizeListener();
         refreshTokenCounterMode();
         updateInputState();
     }
@@ -520,6 +517,32 @@ public class AIChatPanel extends JPanel {
                     SwingUtilities.invokeLater(() -> refreshTokenCounterMode());
                 }
             });
+    }
+
+    private void registerChatFontSizeListener() {
+        ResourceController.getResourceController().addPropertyChangeListener(
+            new IFreeplanePropertyListener() {
+                @Override
+                public void propertyChanged(String propertyName, String newValue, String oldValue) {
+                    if (!AIChatMessageStyleSettings.CHAT_FONT_SIZE_PROPERTY.equals(propertyName)) {
+                        return;
+                    }
+                    SwingUtilities.invokeLater(() -> refreshChatMessageStyles());
+                }
+            });
+    }
+
+    private void refreshChatMessageStyles() {
+        applyChatMessageStyles();
+        rebuildHistoryFromMemory();
+    }
+
+    private void applyChatMessageStyles() {
+        AIChatMessageStyleSettings aiChatMessageStyleSettings = new AIChatMessageStyleSettings();
+        new ChatMessageStyleApplier().apply(
+            messageHistoryPane,
+            messageHistoryEditorKit,
+            aiChatMessageStyleSettings.getChatFontSize());
     }
 
     private boolean isModelSelectionRefreshProperty(String propertyName) {
