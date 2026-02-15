@@ -38,7 +38,7 @@ public class ModelContextProtocolServerIntegrationTest {
             ModelContextProtocolServer.MCP_TOKEN_PROPERTY,
             ModelContextProtocolServer.MCP_TOKEN_HEADER,
             Runnable::run);
-        uut = new ModelContextProtocolServer(toolSet, objectMapper, authenticator);
+        uut = new ModelContextProtocolServer(toolSet, objectMapper, resourceController, authenticator);
         uut.start(port);
         serverUrl = "http://127.0.0.1:" + port + "/";
     }

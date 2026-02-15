@@ -41,35 +41,42 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     private final ModelContextProtocolToolRegistry toolRegistry;
     private final ModelContextProtocolToolDispatcher toolDispatcher;
     private final MCPAuthenticator authenticator;
+    private final ResourceController resourceController;
     private final AtomicBoolean running;
     private volatile HttpServer server;
 
     public ModelContextProtocolServer(AIToolSet toolSet, ViewController viewController) {
-        this(toolSet, new ObjectMapper(), viewController);
+        this(toolSet, new ObjectMapper(), ResourceController.getResourceController(), viewController);
     }
 
     public ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ViewController viewController) {
-        this(toolSet, objectMapper, new MCPAuthenticator(
-            ResourceController.getResourceController(),
+        this(toolSet, objectMapper, ResourceController.getResourceController(), viewController);
+    }
+
+    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ResourceController resourceController,
+                               ViewController viewController) {
+        this(toolSet, objectMapper, resourceController, new MCPAuthenticator(
+            resourceController,
             viewController,
             MCP_TOKEN_PROPERTY,
             MCP_TOKEN_HEADER));
     }
 
-    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, MCPAuthenticator authenticator) {
+    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ResourceController resourceController,
+                               MCPAuthenticator authenticator) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.toolRegistry = new ModelContextProtocolToolRegistry(toolSet, this.objectMapper);
         this.toolDispatcher = new ModelContextProtocolToolDispatcher(toolSet, this.objectMapper);
+        this.resourceController = Objects.requireNonNull(resourceController, "resourceController");
         this.authenticator = Objects.requireNonNull(authenticator, "authenticator");
         this.running = new AtomicBoolean(false);
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-        if(ResourceController.getResourceController().getBooleanProperty(MCP_SERVER_ENABLED_PROPERTY))
+        if (this.resourceController.getBooleanProperty(MCP_SERVER_ENABLED_PROPERTY))
             start();
     }
 
     public void start() {
-        int port = ResourceController.getResourceController()
-            .getIntProperty(MCP_SERVER_PORT_PROPERTY, DEFAULT_PORT);
+        int port = resourceController.getIntProperty(MCP_SERVER_PORT_PROPERTY, DEFAULT_PORT);
         start(port);
     }
 
