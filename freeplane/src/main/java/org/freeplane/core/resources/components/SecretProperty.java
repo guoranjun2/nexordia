@@ -98,6 +98,7 @@ public class SecretProperty extends PropertyBean {
 	private void setValueVisible(boolean valueVisible) {
 		this.valueVisible = valueVisible;
 		passwordField.setEchoChar(valueVisible ? (char) 0 : maskEchoChar);
+		passwordField.putClientProperty("JPasswordField.cutCopyAllowed", valueVisible ? Boolean.TRUE : Boolean.FALSE);
 		String textKey = valueVisible ? HIDE_TEXT_KEY : SHOW_TEXT_KEY;
 		String fallback = valueVisible ? HIDE_TEXT_FALLBACK : SHOW_TEXT_FALLBACK;
 		Icon icon = valueVisible ? hideIcon : showIcon;
