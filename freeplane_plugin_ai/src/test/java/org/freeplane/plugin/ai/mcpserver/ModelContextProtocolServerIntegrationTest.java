@@ -15,7 +15,6 @@ import java.net.ServerSocket;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.junit.After;
@@ -32,17 +31,14 @@ public class ModelContextProtocolServerIntegrationTest {
     public void setUp() throws Exception {
         int port = findAvailablePort();
         AIToolSet toolSet = mock(AIToolSet.class);
-        @SuppressWarnings("unchecked")
-        Consumer<String> generatedApiKeyNotifier = mock(Consumer.class);
         ResourceController resourceController = mock(ResourceController.class);
         when(resourceController.getProperty(ModelContextProtocolServer.MCP_TOKEN_PROPERTY, "")).thenReturn(TEST_API_KEY);
-        ModelContextProtocolAuthValidator authValidator = new ModelContextProtocolAuthValidator(
+        MCPAuthenticator authenticator = new MCPAuthenticator(
             resourceController,
             ModelContextProtocolServer.MCP_TOKEN_PROPERTY,
             ModelContextProtocolServer.MCP_TOKEN_HEADER,
-            () -> "generated-key",
-            generatedApiKeyNotifier);
-        uut = new ModelContextProtocolServer(toolSet, objectMapper, authValidator);
+            Runnable::run);
+        uut = new ModelContextProtocolServer(toolSet, objectMapper, authenticator);
         uut.start(port);
         serverUrl = "http://127.0.0.1:" + port + "/";
     }

@@ -11,6 +11,7 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.SetBooleanPropertyAction;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.map.MapController;
@@ -67,7 +68,7 @@ public class Activator implements BundleActivator {
 				    aiChatPanel = new AIChatPanel();
 				    tabs.addTab("", ResourceController.getResourceController().getIcon("/images/panelTabs/aiTab.svg?useAccentColor=true"),
 				        aiChatPanel, TextUtils.getText("ai_panel"));
-				    startModelContextProtocolServer(aiChatPanel);
+				    startModelContextProtocolServer(aiChatPanel, modeController);
 				    addPreferencesToOptionPanel();
 				}
 
@@ -157,16 +158,22 @@ public class Activator implements BundleActivator {
 					}
 				}
 
-				private void startModelContextProtocolServer(AIChatPanel aiChatPanel) {
-					if (modelContextProtocolServer == null) {
-						modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
-						    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
-						    .toolCaller(ToolCaller.MCP)
-						    .build());
-						ResourceController.getResourceController()
-							.addPropertyChangeListenerAndPropagate(modelContextProtocolServer);
+					private void startModelContextProtocolServer(AIChatPanel aiChatPanel, ModeController modeController) {
+						if (modelContextProtocolServer == null) {
+							Controller controller = modeController.getController();
+							if (controller == null || controller.getViewController() == null) {
+								LogUtils.severe("Cannot start MCP server: view controller is not available.");
+								return;
+							}
+							modelContextProtocolServer = new ModelContextProtocolServer(new AIToolSetBuilder()
+							    .toolCallSummaryHandler(aiChatPanel.toolCallSummaryHandler())
+							    .toolCaller(ToolCaller.MCP)
+							    .build(),
+								controller.getViewController());
+							ResourceController resourceController = ResourceController.getResourceController();
+							resourceController.addPropertyChangeListener(modelContextProtocolServer);
+						}
 					}
-				}
 		    }, properties);
 	}
 

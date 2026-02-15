@@ -11,6 +11,7 @@ import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.FreeplaneVersion;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.features.ui.ViewController;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 
 import java.io.IOException;
@@ -39,28 +40,31 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     private final ObjectMapper objectMapper;
     private final ModelContextProtocolToolRegistry toolRegistry;
     private final ModelContextProtocolToolDispatcher toolDispatcher;
-    private final ModelContextProtocolAuthValidator authValidator;
+    private final MCPAuthenticator authenticator;
     private final AtomicBoolean running;
     private volatile HttpServer server;
 
-    public ModelContextProtocolServer(AIToolSet toolSet) {
-        this(toolSet, new ObjectMapper());
+    public ModelContextProtocolServer(AIToolSet toolSet, ViewController viewController) {
+        this(toolSet, new ObjectMapper(), viewController);
     }
 
-    public ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper) {
-        this(toolSet, objectMapper, new ModelContextProtocolAuthValidator(
+    public ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ViewController viewController) {
+        this(toolSet, objectMapper, new MCPAuthenticator(
             ResourceController.getResourceController(),
+            viewController,
             MCP_TOKEN_PROPERTY,
             MCP_TOKEN_HEADER));
     }
 
-    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, ModelContextProtocolAuthValidator authValidator) {
+    ModelContextProtocolServer(AIToolSet toolSet, ObjectMapper objectMapper, MCPAuthenticator authenticator) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.toolRegistry = new ModelContextProtocolToolRegistry(toolSet, this.objectMapper);
         this.toolDispatcher = new ModelContextProtocolToolDispatcher(toolSet, this.objectMapper);
-        this.authValidator = Objects.requireNonNull(authValidator, "authValidator");
+        this.authenticator = Objects.requireNonNull(authenticator, "authenticator");
         this.running = new AtomicBoolean(false);
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+        if(ResourceController.getResourceController().getBooleanProperty(MCP_SERVER_ENABLED_PROPERTY))
+            start();
     }
 
     public void start() {
@@ -136,7 +140,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
                 sendStatus(exchange, 405);
                 return;
             }
-            Object authFailureResponse = authValidator.validateRequest(exchange.getRequestHeaders());
+            Object authFailureResponse = authenticator.authenticateRequest(exchange.getRequestHeaders());
             if (authFailureResponse != null) {
                 writeJsonResponse(exchange, authFailureResponse, 401);
                 return;
