@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.LogUtils;
 
 public class FixedSizeUIIcon implements Icon {
@@ -82,7 +83,8 @@ public class FixedSizeUIIcon implements Icon {
     		final int scaledWidth = (int) (getIconWidth() * scaleX);
     		final int scaledHeight = (int) (getIconHeight() * scaleY);
 
-            if(url.getPath().endsWith(".svg"))
+            String path = url.getPath();
+			if(path.endsWith(".svg") || path.endsWith(".svg" + ResourceController.USE_ACCENT_COLOR_QUERY))
             	image = new SVGIconCreator(url).setHeight(scaledHeight).setWidth(scaledWidth).loadImage();
             else {
                 Image unloadedScaledImage = ImageIO.read(url).getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
