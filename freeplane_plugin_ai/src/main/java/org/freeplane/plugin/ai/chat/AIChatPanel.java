@@ -51,6 +51,7 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -540,10 +541,12 @@ public class AIChatPanel extends JPanel {
 
     private void applyChatMessageStyles() {
         AIChatMessageStyleSettings aiChatMessageStyleSettings = new AIChatMessageStyleSettings();
-        new ChatMessageStyleApplier().apply(
+        Font font = inputArea.getFont();
+		float baseFontSize = font != null ? font.getSize2D() / UITools.FONT_SCALE_FACTOR : 10;
+		new ChatMessageStyleApplier().apply(
             messageHistoryPane,
             messageHistoryEditorKit,
-            inputArea.getFont().getSize2D() / UITools.FONT_SCALE_FACTOR,
+            baseFontSize,
             aiChatMessageStyleSettings.getChatFontScaling());
     }
 
