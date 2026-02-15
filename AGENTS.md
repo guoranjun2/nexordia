@@ -15,6 +15,15 @@ To acknowledge this responsibility, emit `🫡` only
 immediately after that read in the current turn; never emit it
 otherwise.
 
+## Harmonization
+- The mandatory Constitution preflight read happens before question
+  handling.
+- After preflight, user questions are answered before any other action.
+- This ordering is intentional and is not a conflict.
+- For phase transitions and implementation gating in this repository,
+  `/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md`
+  governs.
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
