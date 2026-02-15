@@ -123,7 +123,6 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (!canUndo()) {
             return "";
         }
-        int firstActive = firstActiveTurnIndex();
         int turnIndex = currentTurnCount - 1;
         int from = turnIndex == 0 ? 0 : turnEndIndexes.get(turnIndex - 1);
         from = Math.max(from, activeStartIndex);

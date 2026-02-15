@@ -118,13 +118,6 @@ public class IconsContentEditor {
         }
     }
 
-    private void addIcons(List<NamedIcon> target, Set<String> seenNames, Iterator<NamedIcon> iterator) {
-        if (iterator == null) {
-            return;
-        }
-        iterator.forEachRemaining(icon -> addIcon(target, seenNames, icon));
-    }
-
     private void addIcon(List<NamedIcon> target, Set<String> seenNames, NamedIcon icon) {
         if (icon == null || !seenNames.add(icon.getName())) {
             return;

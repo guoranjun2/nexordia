@@ -2,11 +2,9 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.awt.Font;
 import java.util.Locale;
 
 import javax.swing.JEditorPane;
-import javax.swing.UIManager;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.html.CSS;
 import javax.swing.text.html.HTMLDocument;

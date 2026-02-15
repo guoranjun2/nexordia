@@ -6,7 +6,6 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 import java.awt.Color;
-import java.awt.Font;
 import java.util.Locale;
 
 import org.freeplane.core.ui.components.UITools;

@@ -44,8 +44,6 @@ class ChatListDialog extends JDialog {
     private static final MapRootShortTextCountsMerger MAP_COUNTS_MERGER = new MapRootShortTextCountsMerger();
 
     private final LiveChatSessionManager sessionManager;
-    private final ChatTranscriptStore transcriptStore;
-    private final MapRootShortTextFormatter mapRootShortTextFormatter;
     private final ChatListHandler listHandler;
     private final ChatListTableModel tableModel;
     private final JTable table;
@@ -60,8 +58,6 @@ class ChatListDialog extends JDialog {
                    ChatListHandler listHandler) {
         super(findOwnerWindow(owner), TextUtils.getText("ai_chat_chats_dialog"), ModalityType.DOCUMENT_MODAL);
         this.sessionManager = sessionManager;
-        this.transcriptStore = transcriptStore;
-        this.mapRootShortTextFormatter = mapRootShortTextFormatter;
         this.listHandler = listHandler;
         this.tableModel = new ChatListTableModel(sessionManager, transcriptStore, mapRootShortTextFormatter,
             listHandler, TextUtils.getText("ai_chat_chats_column_name"),

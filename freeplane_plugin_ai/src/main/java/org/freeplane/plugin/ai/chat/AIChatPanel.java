@@ -23,7 +23,6 @@ import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
-import org.freeplane.plugin.ai.tools.MessageBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
 import dev.langchain4j.data.message.ChatMessage;
@@ -91,7 +90,6 @@ public class AIChatPanel extends JPanel {
     private final ChatDisplaySettings chatDisplaySettings;
     private final AIModelSelectionController modelSelectionController;
     private ChatMemory chatMemory;
-    private SingleTurnChatMemory singleTurnChatMemory;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
     private final ChatMessageRenderer messageRenderer;
@@ -154,7 +152,6 @@ public class AIChatPanel extends JPanel {
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
         AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
         chatMemory = createChatMemory();
-        singleTurnChatMemory = SingleTurnChatMemoryFactory.forMemory(chatMemory);
         tokenUsageLabel = new JLabel();
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
