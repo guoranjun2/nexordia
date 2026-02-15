@@ -447,15 +447,15 @@ public class ApplicationResourceController extends ResourceController {
 
     @Override
     public void persistPropertyInSecretsFile(String key) {
-    	checkSecurityPermission();
-    	persistedInSecretsFilePropertyKeys.add(key);
 		if (props.containsKey(key)) {
+	    	checkSecurityPermission();
 			String value = props.getProperty(key);
 			if (value != null) {
 				secretsProps.setProperty(key, value);
 			}
 			props.remove(key);
 		}
+    	persistedInSecretsFilePropertyKeys.add(key);
     }
 
     @Override
