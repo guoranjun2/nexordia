@@ -7,6 +7,7 @@ import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.LabelAndMnemonicSetter;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.html.ScaledEditorKit;
 import org.freeplane.core.ui.textchanger.TranslatedElement;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
@@ -111,6 +112,9 @@ public class AIChatPanel extends JPanel {
         messageHistoryPane.setEditable(false);
         messageHistoryPane.setOpaque(true);
         messageHistoryPane.setBackground(Color.WHITE);
+        inputArea = new JTextArea(3, 20);
+        inputArea.setLineWrap(true);
+        inputArea.setWrapStyleWord(true);
         applyChatMessageStyles();
         resetMessageHistory();
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
@@ -118,9 +122,6 @@ public class AIChatPanel extends JPanel {
         messageHistoryPane.setDragEnabled(true);
         scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        inputArea = new JTextArea(3, 20);
-        inputArea.setLineWrap(true);
-        inputArea.setWrapStyleWord(true);
         undoButton = new JButton("\u21B6");
         redoButton = new JButton("\u21B7");
         sendButton = new JButton();
@@ -542,6 +543,7 @@ public class AIChatPanel extends JPanel {
         new ChatMessageStyleApplier().apply(
             messageHistoryPane,
             messageHistoryEditorKit,
+            inputArea.getFont().getSize2D() / UITools.FONT_SCALE_FACTOR,
             aiChatMessageStyleSettings.getChatFontScaling());
     }
 

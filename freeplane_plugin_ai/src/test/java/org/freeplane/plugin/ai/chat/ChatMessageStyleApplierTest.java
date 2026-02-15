@@ -24,13 +24,13 @@ public class ChatMessageStyleApplierTest {
         messageHistoryPane.setContentType("text/html");
         HTMLEditorKit messageHistoryEditorKit = new HTMLEditorKit();
 
-        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit, 150);
+        float baseFontSizePt = 10f;
+        new ChatMessageStyleApplier().apply(messageHistoryPane, messageHistoryEditorKit, baseFontSizePt, 150);
 
         HTMLDocument document = (HTMLDocument) messageHistoryPane.getDocument();
         StyleSheet styleSheet = document.getStyleSheet();
         assertThat(styleSheet).isInstanceOf(ScaledStyleSheet.class);
 
-        float baseFontSizePt = baseFontSizePt();
         assertThat(readFontSize(styleSheet, "body")).isEqualTo(formatPt(baseFontSizePt));
         assertThat(readFontSize(styleSheet, ".message-context-boundary")).isEqualTo(formatPt(baseFontSizePt * 5f / 6f));
     }
@@ -39,11 +39,6 @@ public class ChatMessageStyleApplierTest {
         AttributeSet rule = styleSheet.getRule(selector);
         Object fontSize = rule == null ? null : rule.getAttribute(CSS.Attribute.FONT_SIZE);
         return fontSize == null ? null : fontSize.toString();
-    }
-
-    private float baseFontSizePt() {
-        Font baseFont = UIManager.getFont("TextArea.font");
-        return baseFont == null ? 12f : baseFont.getSize2D();
     }
 
     private String formatPt(float value) {

@@ -20,17 +20,15 @@ public class ChatMessageStyleApplier {
     private static final float CONTEXT_BOUNDARY_VERTICAL_PADDING_RATIO = 0.50f;
     private static final float CONTEXT_BOUNDARY_BOTTOM_MARGIN_RATIO = 0.35f;
 
-    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, int fontScalingPercent) {
+    public void apply(JEditorPane messageHistoryPane, HTMLEditorKit messageHistoryEditorKit, float baseFontSizePt, int fontScalingPercent) {
         Color baseBackground = UIManager.getColor("TextArea.background");
         Color baseForeground = UIManager.getColor("TextArea.foreground");
-        Font baseFont = UIManager.getFont("TextArea.font");
         if (baseBackground == null) {
             baseBackground = Color.WHITE;
         }
         if (baseForeground == null) {
             baseForeground = Color.BLACK;
         }
-        float baseFontSizePt = baseFont == null ? 12f : baseFont.getSize2D();
         float effectiveScale = UITools.FONT_SCALE_FACTOR * fontScalingPercent / 100f;
         boolean darkTheme = isDark(baseBackground);
         Color userBackground = darkTheme ? new Color(0x45, 0x45, 0x45) : new Color(0xeb, 0xeb, 0xeb);
