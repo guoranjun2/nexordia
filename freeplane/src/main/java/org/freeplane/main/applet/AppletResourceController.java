@@ -62,7 +62,7 @@ class AppletResourceController extends ResourceController {
 	}
 
 	@Override
-	public Properties getProperties() {
+	public Properties getUnsecuredProperties() {
 		return userProps;
 	}
 

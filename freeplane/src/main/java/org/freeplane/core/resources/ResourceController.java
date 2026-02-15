@@ -111,7 +111,7 @@ public abstract class ResourceController {
 	 */
 	public void addPropertyChangeListenerAndPropagate(final IFreeplanePropertyListener listener) {
 		addPropertyChangeListener(listener);
-		for (final Entry<Object, Object> entry : getProperties().entrySet()) {
+		for (final Entry<Object, Object> entry : getUnsecuredProperties().entrySet()) {
 			final String key = (String) entry.getKey();
 			listener.propertyChanged(key, (String) entry.getValue(), null);
 		}
@@ -237,17 +237,22 @@ public abstract class ResourceController {
         return file;
     }
 
-	abstract public Properties getProperties();
+	@Deprecated
+	public Properties getProperties() {
+		return getUnsecuredProperties();
+	}
+
+	abstract public Properties getUnsecuredProperties();
 
 	abstract public String getProperty(final String key);
 
 	/** register defaults in freeplane.properties respectively defaults.properties instead! */
 	public String getProperty(final String key, final String value) {
-		return getProperties().getProperty(key, value);
+		return getUnsecuredProperties().getProperty(key, value);
 	}
 
 	public boolean containsProperty(String key) {
-		return getProperties().containsKey(key);
+		return getUnsecuredProperties().containsKey(key);
 	}
 
 	public Collection<IFreeplanePropertyListener> getPropertyChangeListeners() {
