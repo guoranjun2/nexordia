@@ -8,8 +8,12 @@ completely read:
 If the constitution file is unavailable or unreadable, continuing
 without reading it is allowed.
 
-If the constitution file is read successfully, report:
-`CONSTITUTION READ: <same path as above>`
+If the constitution file is read successfully, you become
+responsible for complying with its rules unless the user
+explicitly overrides them.
+To acknowledge this responsibility, emit `🫡` only
+immediately after that read in the current turn; never emit it
+otherwise.
 
 # Repository Guidelines
 
