@@ -200,7 +200,8 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Fetch nodes for editing. Returns editable content only.")
+    @Tool("Fetch nodes for editing. Returns editable content only, including contentType for editable text/details/note. "
+        + "Use those contentType values as originalContentType in edit.")
     public FetchNodesForEditingResponse fetchNodesForEditing(FetchNodesForEditingRequest request) {
         try {
             FetchNodesForEditingResponse response = readNodesWithDescendantsTool.fetchNodesForEditing(request);
@@ -288,9 +289,10 @@ public class AIToolSet {
     }
 
     @Tool("Edit node content safely through undo-aware controllers.\n"
-        + "IMPORTANT RULE: Before editing, you must call fetchNodesForEditing tool to get the real edited node content "
-        + "and content type.\n "
-        + "Formatting: use HTML unless originalContentType is MARKDOWN or LATEX")
+        + "Before editing, call fetchNodesForEditing and pass originalContentType from that response.\n"
+        + "For TEXT/DETAILS/NOTE, only values starting with <html> are treated as HTML; all other values are treated "
+        + "as plain text.\n"
+        + "Markdown and LaTeX edits are allowed only when originalContentType is MARKDOWN or LATEX.")
     public List<NodeContentItem> edit(EditRequest request) {
         try {
             List<NodeContentItem> response = editNodes(request);
@@ -401,7 +403,13 @@ public class AIToolSet {
         return (MLinkController) linkController;
     }
 
-    @Tool("Create nodes and subtrees relative to an anchor node. Omit optional textual fields such as details and note when they are empty instead of sending empty strings so the tool leaves those values untouched.")
+    @Tool("Create nodes and subtrees relative to an anchor node.\n"
+        + "For content.text/content.details/content.note, only values starting with <html> are treated as HTML; all "
+        + "other values are treated as plain text.\n"
+        + "textContentType/detailsContentType/noteContentType choose conversion/validation behavior and do not bypass "
+        + "the <html> rule for raw HTML.\n"
+        + "Omit optional textual fields such as details and note when they are empty instead of sending empty strings "
+        + "so the tool leaves those values untouched.")
     public CreateNodesResponse createNodes(CreateNodesRequest request) {
         try {
             CreateNodesResponse response = createNodesTool.createNodes(request);
@@ -426,10 +434,11 @@ public class AIToolSet {
     }
 
     @Tool("Create summary content and a summary bracket for a summarized range. "
-        + "Summary anchor nodes must share the same parent node. Omit optional textual fields such as details and note "
-        + "when they are empty instead of sending empty strings so the tool leaves those values untouched. Tip: to "
-        + "create a summary of summaries, choose summary anchor nodes that already exist at the same summary level "
-        + "under the same parent node, regardless of how those summary nodes were created.")
+        + "Summary anchor nodes must share the same parent node. Textual field rules are the same as createNodes. "
+        + "Omit optional textual fields such as details and note when they are empty instead of sending empty strings "
+        + "so the tool leaves those values untouched. Tip: to create a summary of summaries, choose summary anchor "
+        + "nodes that already exist at the same summary level under the same parent node, regardless of how those "
+        + "summary nodes were created.")
     public CreateSummaryResponse createSummary(CreateSummaryRequest request) {
         try {
             CreateSummaryResponse response = createSummaryTool.createSummary(request);

@@ -10,15 +10,15 @@ import dev.langchain4j.model.output.structured.Description;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentWriteRequest {
     private final String text;
-    @Description("Optional text format (ContentType, default: PLAIN_TEXT).")
+    @Description("Optional text content type.")
     private final ContentType textContentType;
-    @Description("Optional details text.")
+    @Description("Optional details.")
     private final String details;
-    @Description("Optional details format (ContentType, default: PLAIN_TEXT).")
+    @Description("Optional details content type.")
     private final ContentType detailsContentType;
-    @Description("Optional note text.")
+    @Description("Optional note.")
     private final String note;
-    @Description("Optional note format (ContentType, default: PLAIN_TEXT).")
+    @Description("Optional note content type.")
     private final ContentType noteContentType;
     @Description("Optional attributes.")
     private final List<AttributeEntry> attributes;
