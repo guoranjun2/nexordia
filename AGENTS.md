@@ -1,11 +1,15 @@
+## ABSOLUTE PRE-FLIGHT RULE (NO EXCEPTIONS)
 
----
-**MANDATORY:**
-- Constitution preflight: completely read
-  `/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md` if available
-  whenever `AGENTS.md` is re-read in the current session or the user
-  explicitly asks to re-check it.
----
+When you are reading this text, the very first required action is to
+completely read:
+
+`/Users/dimitry/git-repo/ai/agile-spec-kit/CONSTITUTION.md`
+
+If the constitution file is unavailable or unreadable, continuing
+without reading it is allowed.
+
+If the constitution file is read successfully, report:
+`CONSTITUTION READ: <same path as above>`
 
 # Repository Guidelines
 
