@@ -5,7 +5,6 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.resources.SetBooleanPropertyAction;
 import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.LabelAndMnemonicSetter;
-import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.html.ScaledEditorKit;
@@ -30,7 +29,6 @@ import dev.langchain4j.memory.ChatMemory;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
@@ -44,13 +42,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -62,6 +60,7 @@ import java.util.List;
 
 public class AIChatPanel extends JPanel {
     private static final int CONTEXT_TOO_LARGE_MAX_RETRIES = 2;
+    private static final int TOP_BAR_HORIZONTAL_GAP = 2;
 
     /**
 	 * Comment for <code>serialVersionUID</code>
@@ -278,11 +277,7 @@ public class AIChatPanel extends JPanel {
         tokenUsagePanel.add(tokenUsageLabel, BorderLayout.EAST);
         inputContainer.add(tokenUsagePanel, BorderLayout.SOUTH);
 
-        FreeplaneToolBar toolbar = new FreeplaneToolBar(SwingConstants.HORIZONTAL);
-        configureToolbar(toolbar);
-        JPanel topBarContainer = new JPanel(new BorderLayout());
-        topBarContainer.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
-        topBarContainer.add(toolbar, BorderLayout.WEST);
+        JPanel topBarContainer = buildTopBarPanel();
 
         add(scrollPane, BorderLayout.CENTER);
         add(inputContainer, BorderLayout.SOUTH);
@@ -383,26 +378,30 @@ public class AIChatPanel extends JPanel {
         updateInputState();
     }
 
-    private void configureToolbar(FreeplaneToolBar toolbar) {
+    private JPanel buildTopBarPanel() {
+        JPanel topBar = new JPanel(new BorderLayout(TOP_BAR_HORIZONTAL_GAP, 0));
         JButton menuButton = new JButton("\u2261");
         TranslatedElementFactory.createTooltip(menuButton, "preferences");
         menuButton.addActionListener(event -> menuPopup.show(menuButton, 0, menuButton.getHeight()));
-        toolbar.add(menuButton);
-        toolbar.add(modelSelectionController.getModelSelectionComboBox());
+        topBar.add(menuButton, BorderLayout.WEST);
+        topBar.add(modelSelectionController.getModelSelectionComboBox(), BorderLayout.CENTER);
+        JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, TOP_BAR_HORIZONTAL_GAP, 0));
         String historyIconPath = "/images/ai_history.svg?useAccentColor=true";
         JButton chatsButton = TranslatedElementFactory.createButtonWithIcon(historyIconPath, "ai_chat_chats");
         chatsButton.addActionListener(event -> {
             cancelActiveRequest();
             liveChatController.openLiveChats();
         });
-        toolbar.add(chatsButton);
+        rightButtons.add(chatsButton);
         String clearIconPath = "/images/ai_new_chat.svg?useAccentColor=true";
         JButton newChatButton = TranslatedElementFactory.createButtonWithIcon(clearIconPath, "ai_chat_new_chat");
         newChatButton.addActionListener(event -> {
             cancelActiveRequest();
             liveChatController.startNewChat();
         });
-        toolbar.add(newChatButton);
+        rightButtons.add(newChatButton);
+        topBar.add(rightButtons, BorderLayout.EAST);
+        return topBar;
     }
 
     private JPopupMenu buildMenuPopup() {

@@ -6,6 +6,7 @@ import javax.swing.JComboBox;
 import javax.swing.JList;
 import javax.swing.SwingWorker;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -130,13 +131,49 @@ class AIModelSelectionController {
     }
 
     private static class ModelSelectionRenderer extends DefaultListCellRenderer {
+        private String preferredSizeText;
+        private boolean measuringPreferredSize;
+
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            preferredSizeText = null;
             if (value instanceof AIModelDescriptor) {
-                setText(((AIModelDescriptor) value).getDisplayName());
+                AIModelDescriptor modelDescriptor = (AIModelDescriptor) value;
+                preferredSizeText = index < 0 ? modelDescriptor.getDisplayName() : null;
+                String renderedText = index < 0
+                    ? renderSelectedModelName(modelDescriptor.getModelName())
+                    : modelDescriptor.getDisplayName();
+                setText(renderedText);
             }
             return component;
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            boolean previousMeasuringState = measuringPreferredSize;
+            measuringPreferredSize = true;
+            try {
+                return super.getPreferredSize();
+            } finally {
+                measuringPreferredSize = previousMeasuringState;
+            }
+        }
+
+        @Override
+        public String getText() {
+            if (measuringPreferredSize && preferredSizeText != null) {
+                return preferredSizeText;
+            }
+            return super.getText();
+        }
+
+        private String renderSelectedModelName(String modelName) {
+            int separatorIndex = modelName.indexOf('/');
+            if (separatorIndex >= 0 && separatorIndex < modelName.length() - 1) {
+                return modelName.substring(separatorIndex + 1);
+            }
+            return modelName;
         }
     }
 }
