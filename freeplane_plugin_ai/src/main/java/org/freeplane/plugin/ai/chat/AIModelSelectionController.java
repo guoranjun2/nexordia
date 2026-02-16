@@ -7,6 +7,8 @@ import javax.swing.JList;
 import javax.swing.SwingWorker;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -83,12 +85,14 @@ class AIModelSelectionController {
     private void applyModelSelectionList(List<AIModelDescriptor> modelDescriptors) {
         isModelSelectionUpdateInProgress = true;
         try {
+            List<AIModelDescriptor> sortedModelDescriptors = new ArrayList<>(modelDescriptors);
+            sortedModelDescriptors.sort(Comparator.comparing(AIModelDescriptor::getDisplayName, String.CASE_INSENSITIVE_ORDER));
             DefaultComboBoxModel<AIModelDescriptor> comboBoxModel = new DefaultComboBoxModel<>(
-                modelDescriptors.toArray(new AIModelDescriptor[0])
+                sortedModelDescriptors.toArray(new AIModelDescriptor[0])
             );
             modelSelectionComboBox.setModel(comboBoxModel);
             modelSelectionComboBox.setSelectedIndex(-1);
-            applySelectionFromConfiguration(modelDescriptors);
+            applySelectionFromConfiguration(sortedModelDescriptors);
             modelSelectionComboBox.setEnabled(hasAnyProviderEnabled());
         } finally {
             isModelSelectionUpdateInProgress = false;
