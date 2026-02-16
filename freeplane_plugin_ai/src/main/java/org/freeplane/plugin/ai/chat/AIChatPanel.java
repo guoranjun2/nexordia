@@ -52,6 +52,8 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -118,6 +120,7 @@ public class AIChatPanel extends JPanel {
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));
         messageHistoryPane.setDragEnabled(true);
+        configureEmptyHistoryFocusTransfer();
         scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         undoButton = new JButton("\u21B6");
@@ -631,6 +634,18 @@ public class AIChatPanel extends JPanel {
             setNoProviderState();
         }
         updateUndoRedoButtonState();
+    }
+
+    private void configureEmptyHistoryFocusTransfer() {
+        messageHistoryPane.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent event) {
+                if (messageHistory.size() != 0) {
+                    return;
+                }
+                SwingUtilities.invokeLater(inputArea::requestFocusInWindow);
+            }
+        });
     }
 
     private void setProviderReadyState() {
