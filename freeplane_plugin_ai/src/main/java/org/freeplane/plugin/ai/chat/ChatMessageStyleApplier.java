@@ -36,12 +36,14 @@ public class ChatMessageStyleApplier {
         Color mcpBackground = darkTheme ? new Color(0x25, 0x33, 0x54) : new Color(0xea, 0xf3, 0xff);
         Color systemBackground = darkTheme ? new Color(0x1f, 0x1f, 0x1f) : new Color(0xf0, 0xf0, 0xf0);
         Color profileBackground = darkTheme ? new Color(0x1c, 0x2c, 0x24) : new Color(0xe8, 0xf6, 0xec);
+        Color errorBackground = darkTheme ? new Color(0x3d, 0x1f, 0x1f) : new Color(0xff, 0xeb, 0xeb);
         Color userBorderColor = darkTheme ? new Color(0x6a, 0x6a, 0x6a) : new Color(0x3e, 0x3e, 0x3e);
         Color borderColor = darkTheme ? new Color(0x52, 0x52, 0x52) : new Color(0xd7, 0xd7, 0xd7);
         Color toolBorderColor = darkTheme ? new Color(0x5a, 0x6f, 0x8a) : new Color(0xbc, 0xd9, 0xff);
         Color mcpBorderColor = darkTheme ? new Color(0x6a, 0x7f, 0xb0) : new Color(0x5c, 0x79, 0xbd);
         Color systemBorderColor = darkTheme ? new Color(0x3a, 0x3a, 0x3a) : new Color(0xb0, 0xb0, 0xb0);
         Color profileBorderColor = darkTheme ? new Color(0x3f, 0x70, 0x58) : new Color(0x4d, 0x9a, 0x72);
+        Color errorBorderColor = darkTheme ? new Color(0xd3, 0x5a, 0x5a) : new Color(0xc6, 0x2f, 0x2f);
         messageHistoryPane.setBackground(baseBackground);
         StyleSheet baseStyleSheet = messageHistoryEditorKit.getStyleSheet();
         StyleSheet styleSheet = new ScaledStyleSheet(effectiveScale);
@@ -73,6 +75,9 @@ public class ChatMessageStyleApplier {
         styleSheet.addRule(".message-profile { " + messageBoxSpacing
             + "; background-color: "
             + toCssColor(profileBackground) + "; border-left: 4px solid " + toCssColor(profileBorderColor) + "; }");
+        styleSheet.addRule(".message-error { " + messageBoxSpacing
+            + "; background-color: "
+            + toCssColor(errorBackground) + "; border-left: 4px solid " + toCssColor(errorBorderColor) + "; }");
         styleSheet.addRule(".message-context-boundary { " + contextBoundarySpacing
             + "; border-top: 2px dashed " + toCssColor(systemBorderColor) + ";"
             + " color: " + toCssColor(systemBorderColor) + "; font-size: "

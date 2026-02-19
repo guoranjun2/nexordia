@@ -31,12 +31,20 @@ public class ChatMessageStyleApplierTest {
 
         assertThat(readFontSize(styleSheet, "body")).isEqualTo(formatPt(baseFontSizePt));
         assertThat(readFontSize(styleSheet, ".message-context-boundary")).isEqualTo(formatPt(baseFontSizePt * 5f / 6f));
+        assertThat(readColor(styleSheet, ".message-error", CSS.Attribute.BACKGROUND_COLOR)).isNotNull();
+        assertThat(readColor(styleSheet, ".message-error", CSS.Attribute.BORDER_LEFT_COLOR)).isNotNull();
     }
 
     private String readFontSize(StyleSheet styleSheet, String selector) {
         AttributeSet rule = styleSheet.getRule(selector);
         Object fontSize = rule == null ? null : rule.getAttribute(CSS.Attribute.FONT_SIZE);
         return fontSize == null ? null : fontSize.toString();
+    }
+
+    private String readColor(StyleSheet styleSheet, String selector, CSS.Attribute attribute) {
+        AttributeSet rule = styleSheet.getRule(selector);
+        Object color = rule == null ? null : rule.getAttribute(attribute);
+        return color == null ? null : color.toString();
     }
 
     private String formatPt(float value) {

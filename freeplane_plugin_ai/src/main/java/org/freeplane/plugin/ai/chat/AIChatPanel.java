@@ -193,9 +193,14 @@ public class AIChatPanel extends JPanel {
             }
 
             @Override
-            public void onRequestRestored(String pendingUserMessage) {
-                inputArea.setText(pendingUserMessage == null ? "" : pendingUserMessage);
+            public void onUserTextRestored(String userText) {
+                inputArea.setText(userText == null ? "" : userText);
                 inputArea.setCaretPosition(inputArea.getText().length());
+            }
+
+            @Override
+            public void onRequestFailed(String userText, String errorMessage) {
+                appendFailureMessages(userText, errorMessage);
             }
 
             @Override
@@ -206,7 +211,6 @@ public class AIChatPanel extends JPanel {
 
             @Override
             public void onAssistantError(String text) {
-                appendChatMessage(text, ChatMessageCategory.ASSISTANT);
             }
 
             @Override
@@ -577,14 +581,14 @@ public class AIChatPanel extends JPanel {
         }
         chatRequestFlow.beginRequest(userMessage);
         assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
-        chatRequestFlow.refreshPendingMemorySnapshot();
+        chatRequestFlow.captureChatSnapshot();
         appendChatMessage(userMessage, ChatMessageCategory.USER);
         chatRequestFlow.refreshTokenCounters();
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
         ensureChatService();
         if (chatService == null) {
-            chatRequestFlow.restorePendingRequest();
+            chatRequestFlow.restoreChatSnapshot();
             return;
         }
         chatRequestFlow.submitRequest(chatService);
@@ -743,6 +747,29 @@ public class AIChatPanel extends JPanel {
         appendChatMessage(messageText, ChatMessageCategory.PROFILE);
     }
 
+    private void appendFailureMessages(String userText, String errorMessage) {
+        String normalizedUserMessage = userText == null ? "" : userText.trim();
+        if (!normalizedUserMessage.isEmpty()) {
+            appendTransientMessage(
+                normalizedUserMessage,
+                ChatMessageCategory.SYSTEM,
+                false);
+        }
+        String normalizedErrorMessage = errorMessage == null ? "" : errorMessage.trim();
+        String errorNotice = normalizedErrorMessage.isEmpty()
+            ? "Request failed. Check model availability, account balance, or provider settings."
+            : "Request failed: " + normalizedErrorMessage;
+        appendTransientMessage(errorNotice, ChatMessageCategory.ERROR, true);
+    }
+
+    private void appendTransientMessage(String sourceText, ChatMessageCategory category, boolean renderAsAssistant) {
+        if (sourceText == null || category == null) {
+            return;
+        }
+        String renderedText = messageRenderer.renderMessage(sourceText, renderAsAssistant);
+        messageHistory.appendMessage(sourceText, renderedText, category.getStyleClassName());
+    }
+
     public ToolCallSummaryHandler toolCallSummaryHandler() {
         return chatRequestFlow::onToolCallSummary;
     }
@@ -770,7 +797,7 @@ public class AIChatPanel extends JPanel {
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         assistantProfileSelectionSync.setChatMemory(chatMemory);
         assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
-        chatRequestFlow.resetPendingState();
+        chatRequestFlow.resetRequestState();
         rebuildHistoryFromMemory();
         refreshTokenCounters();
         updateInputState();
@@ -935,6 +962,7 @@ public class AIChatPanel extends JPanel {
         TOOL_CALL("message-tool"),
         MCP_CALL("message-mcp-call"),
         PROFILE("message-profile"),
+        ERROR("message-error"),
         SYSTEM("message-system");
 
         private final String styleClassName;

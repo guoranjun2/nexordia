@@ -38,7 +38,7 @@ public class ChatRequestFlowTest {
     }
 
     @Test
-    public void contextTooLargeAfterMaxRetriesRestoresPendingRequest() throws Exception {
+    public void contextTooLargeAfterMaxRetriesRestoresChatSnapshot() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
         AIChatService chatService = mock(AIChatService.class);
@@ -54,6 +54,9 @@ public class ChatRequestFlowTest {
         assertThat(callbacks.assistantErrorCount).isEqualTo(1);
         assertThat(callbacks.evictOldestTurnCount).isEqualTo(1);
         assertThat(callbacks.restoreCount).isEqualTo(1);
+        assertThat(callbacks.failureRecoveryCount).isEqualTo(1);
+        assertThat(callbacks.lastFailureMessage).isEqualTo("context too large");
+        assertThat(callbacks.lastFailureUserMessage).isEqualTo("question");
     }
 
     @Test
@@ -154,6 +157,9 @@ public class ChatRequestFlowTest {
         private final CountDownLatch finishedLatch = new CountDownLatch(1);
         private int assistantResponseCount;
         private int assistantErrorCount;
+        private int failureRecoveryCount;
+        private String lastFailureUserMessage;
+        private String lastFailureMessage;
         private int evictOldestTurnCount;
         private int synchronizeTranscriptCount;
         private int rebuildHistoryCount;
@@ -174,8 +180,15 @@ public class ChatRequestFlowTest {
         }
 
         @Override
-        public void onRequestRestored(String pendingUserMessage) {
+        public void onUserTextRestored(String userText) {
             restoreCount++;
+        }
+
+        @Override
+        public void onRequestFailed(String userText, String errorMessage) {
+            failureRecoveryCount++;
+            lastFailureUserMessage = userText;
+            lastFailureMessage = errorMessage;
         }
 
         @Override

@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.chat;
 
 import dev.langchain4j.model.output.TokenUsage;
 import java.util.function.Supplier;
+import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 
@@ -10,7 +11,8 @@ class ChatRequestFlow {
     interface RequestCallbacks {
         void onRequestStarted();
         void onRequestFinished();
-        void onRequestRestored(String pendingUserMessage);
+        void onUserTextRestored(String userText);
+        void onRequestFailed(String userText, String errorMessage);
         void onAssistantResponse(String text);
         void onAssistantError(String text);
         int snapshotMemorySize();
@@ -32,10 +34,11 @@ class ChatRequestFlow {
     private SwingWorker<String, Void> activeWorker;
     private boolean requestInProgress;
     private int activeRequestId;
-    private int pendingMemorySize;
-    private String pendingUserMessage;
-    private int pendingContextTooLargeRetryCount;
-    private TokenUsage pendingResponseUsage;
+    private int snapshotChatSize;
+    private String snapshotUserText;
+    private int contextTooLargeRetryCount;
+    private TokenUsage responseUsage;
+    private String requestFailureMessage;
 
     ChatRequestFlow(RequestCallbacks callbacks, ChatTokenUsageTracker tokenUsageTracker,
                     int contextTooLargeMaxRetries) {
@@ -76,25 +79,26 @@ class ChatRequestFlow {
         if (usage != null && tokenUsageTracker != null) {
             tokenUsageTracker.recordProviderUsage(usage);
         }
-        pendingResponseUsage = usage;
+        responseUsage = usage;
     }
 
     void beginRequest(String userMessage) {
         requestCancellation.reset();
         activeRequestId++;
-        pendingUserMessage = userMessage;
-        pendingMemorySize = callbacks.snapshotMemorySize();
-        pendingContextTooLargeRetryCount = 0;
+        snapshotUserText = userMessage;
+        snapshotChatSize = callbacks.snapshotMemorySize();
+        contextTooLargeRetryCount = 0;
+        requestFailureMessage = null;
         requestInProgress = true;
         callbacks.onRequestStarted();
     }
 
     void submitRequest(AIChatService chatService) {
-        executeRequestWorker(chatService, pendingUserMessage, activeRequestId);
+        executeRequestWorker(chatService, snapshotUserText, activeRequestId);
     }
 
-    void refreshPendingMemorySnapshot() {
-        pendingMemorySize = callbacks.snapshotMemorySize();
+    void captureChatSnapshot() {
+        snapshotChatSize = callbacks.snapshotMemorySize();
     }
 
     void cancelActiveRequest() {
@@ -107,23 +111,26 @@ class ChatRequestFlow {
             activeWorker.cancel(true);
         }
         requestInProgress = false;
-        restorePendingRequest();
+        restoreChatSnapshot();
     }
 
-    void restorePendingRequest() {
-        callbacks.truncateMemoryToSize(pendingMemorySize);
+    void restoreChatSnapshot() {
+        callbacks.truncateMemoryToSize(snapshotChatSize);
         callbacks.synchronizeTranscriptWithMemory();
         callbacks.rebuildHistoryFromTranscript();
         activeWorker = null;
         requestInProgress = false;
-        callbacks.onRequestRestored(pendingUserMessage);
+        callbacks.onUserTextRestored(snapshotUserText);
+        if (requestFailureMessage != null) {
+            callbacks.onRequestFailed(snapshotUserText, requestFailureMessage);
+        }
         callbacks.onRequestFinished();
         callbacks.refreshTokenCounters();
-        clearPendingRequestState();
+        clearRequestState();
     }
 
-    void resetPendingState() {
-        clearPendingRequestState();
+    void resetRequestState() {
+        clearRequestState();
     }
 
     private void executeRequestWorker(AIChatService chatService, String userMessage, int requestId) {
@@ -145,8 +152,9 @@ class ChatRequestFlow {
                     if (retryAfterContextTooLarge(error, chatService, requestId)) {
                         return;
                     }
-                    callbacks.onAssistantError(String.valueOf(error.getMessage()));
-                    restorePendingRequest();
+                    requestFailureMessage = normalizeErrorMessage(error);
+                    callbacks.onAssistantError(requestFailureMessage);
+                    restoreChatSnapshot();
                 }
             }
         };
@@ -157,19 +165,31 @@ class ChatRequestFlow {
         if (!isContextTooLargeError(error)) {
             return false;
         }
-        if (pendingContextTooLargeRetryCount >= contextTooLargeMaxRetries) {
+        if (contextTooLargeRetryCount >= contextTooLargeMaxRetries) {
             return false;
         }
-        callbacks.truncateMemoryToSize(pendingMemorySize);
+        callbacks.truncateMemoryToSize(snapshotChatSize);
         if (!callbacks.evictOldestTurn()) {
             return false;
         }
-        pendingContextTooLargeRetryCount++;
+        contextTooLargeRetryCount++;
         callbacks.synchronizeTranscriptWithMemory();
         callbacks.rebuildHistoryFromTranscript();
         callbacks.refreshTokenCounters();
-        executeRequestWorker(chatService, pendingUserMessage, requestId);
+        executeRequestWorker(chatService, snapshotUserText, requestId);
         return true;
+    }
+
+    private String normalizeErrorMessage(Exception error) {
+        Throwable current = error;
+        while (current instanceof ExecutionException && current.getCause() != null) {
+            current = current.getCause();
+        }
+        String message = current == null ? null : current.getMessage();
+        if (message == null || message.trim().isEmpty()) {
+            return current == null ? "Unknown error" : current.getClass().getSimpleName();
+        }
+        return message;
     }
 
     private boolean isContextTooLargeError(Exception error) {
@@ -186,18 +206,19 @@ class ChatRequestFlow {
         activeWorker = null;
         requestInProgress = false;
         callbacks.onRequestFinished();
-        clearPendingRequestState();
+        clearRequestState();
     }
 
-    private void clearPendingRequestState() {
-        pendingMemorySize = 0;
-        pendingUserMessage = null;
-        pendingContextTooLargeRetryCount = 0;
-        pendingResponseUsage = null;
+    private void clearRequestState() {
+        snapshotChatSize = 0;
+        snapshotUserText = null;
+        contextTooLargeRetryCount = 0;
+        responseUsage = null;
+        requestFailureMessage = null;
     }
 
     private void applyPostResponseCompaction() {
-        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(pendingResponseUsage);
+        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(responseUsage);
         if (evicted) {
             callbacks.onPostResponseEviction();
         }
