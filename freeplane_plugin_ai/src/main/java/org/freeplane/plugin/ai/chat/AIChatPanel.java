@@ -119,6 +119,9 @@ public class AIChatPanel extends JPanel {
         messageHistory = new ChatMessageHistory(messageHistoryPane, messageHistoryEditorKit);
         messageHistoryPane.setTransferHandler(new ChatMessageTransferHandler(messageHistoryPane, messageHistory));
         messageHistoryPane.setDragEnabled(true);
+        messageHistoryPane.addHyperlinkListener(
+            new ChatHistoryHyperlinkHandler(
+                ChatHistoryHyperlinkHandler.defaultLinkControllerAdapter()).createListener());
         configureEmptyHistoryFocusTransfer();
         scrollPane = new JScrollPane(messageHistoryPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -758,7 +761,7 @@ public class AIChatPanel extends JPanel {
         String errorNotice = normalizedErrorMessage.isEmpty()
             ? "Request failed. Check model availability, account balance, or provider settings."
             : "Request failed: " + normalizedErrorMessage;
-        appendTransientMessage(errorNotice, ChatMessageCategory.ERROR, true);
+        appendFailureNotice(errorNotice);
     }
 
     private void appendTransientMessage(String sourceText, ChatMessageCategory category, boolean renderAsAssistant) {
@@ -767,6 +770,14 @@ public class AIChatPanel extends JPanel {
         }
         String renderedText = messageRenderer.renderMessage(sourceText, renderAsAssistant);
         messageHistory.appendMessage(sourceText, renderedText, category.getStyleClassName());
+    }
+
+    private void appendFailureNotice(String sourceText) {
+        if (sourceText == null) {
+            return;
+        }
+        String renderedText = messageRenderer.renderFailureMessage(sourceText);
+        messageHistory.appendMessage(sourceText, renderedText, ChatMessageCategory.ERROR.getStyleClassName());
     }
 
     public ToolCallSummaryHandler toolCallSummaryHandler() {
