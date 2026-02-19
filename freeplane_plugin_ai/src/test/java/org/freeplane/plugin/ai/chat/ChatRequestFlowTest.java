@@ -17,33 +17,52 @@ import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
 public class ChatRequestFlowTest {
 
     @Test
-    public void contextTooLargeRetryEvictsAndCompletesAfterSuccessfulRetry() throws Exception {
+    public void failureRestoresChatSnapshotWithoutAppLevelRetry() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 2);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
         AIChatService chatService = mock(AIChatService.class);
         when(chatService.chat("question"))
-            .thenThrow(new RuntimeException("context too large"))
-            .thenReturn("ok");
+            .thenThrow(new RuntimeException("HTTP 503 Service Unavailable"));
 
         uut.beginRequest("question");
         uut.submitRequest(chatService);
 
         assertThat(callbacks.awaitFinished()).isTrue();
-        assertThat(callbacks.assistantResponseCount).isEqualTo(1);
-        assertThat(callbacks.assistantErrorCount).isZero();
-        assertThat(callbacks.evictOldestTurnCount).isEqualTo(1);
-        assertThat(callbacks.synchronizeTranscriptCount).isEqualTo(1);
-        assertThat(callbacks.rebuildHistoryCount).isEqualTo(1);
-        assertThat(callbacks.restoreCount).isZero();
+        assertThat(callbacks.assistantResponseCount).isZero();
+        assertThat(callbacks.assistantErrorCount).isEqualTo(1);
+        assertThat(callbacks.restoreCount).isEqualTo(1);
+        assertThat(callbacks.failureRecoveryCount).isEqualTo(1);
+        assertThat(callbacks.lastFailureMessage).isEqualTo("HTTP 503 Service Unavailable");
+        verify(chatService, times(1)).chat("question");
     }
 
     @Test
-    public void contextTooLargeAfterMaxRetriesRestoresChatSnapshot() throws Exception {
+    public void cancelRestoresChatSnapshotWithoutFailureMessage() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
+        AIChatService chatService = mock(AIChatService.class);
+        when(chatService.chat("question")).thenAnswer(invocation -> {
+            Thread.sleep(200);
+            return "late";
+        });
+
+        uut.beginRequest("question");
+        uut.submitRequest(chatService);
+        uut.cancelActiveRequest();
+
+        assertThat(callbacks.awaitFinished()).isTrue();
+        assertThat(callbacks.assistantResponseCount).isZero();
+        assertThat(callbacks.assistantErrorCount).isZero();
+        assertThat(callbacks.restoreCount).isEqualTo(1);
+        assertThat(callbacks.failureRecoveryCount).isZero();
+    }
+
+    @Test
+    public void nonRetryableContextTooLargeFailureDoesNotRetry() throws Exception {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
         AIChatService chatService = mock(AIChatService.class);
         when(chatService.chat("question"))
-            .thenThrow(new RuntimeException("context too large"))
             .thenThrow(new RuntimeException("context too large"));
 
         uut.beginRequest("question");
@@ -52,18 +71,37 @@ public class ChatRequestFlowTest {
         assertThat(callbacks.awaitFinished()).isTrue();
         assertThat(callbacks.assistantResponseCount).isZero();
         assertThat(callbacks.assistantErrorCount).isEqualTo(1);
-        assertThat(callbacks.evictOldestTurnCount).isEqualTo(1);
         assertThat(callbacks.restoreCount).isEqualTo(1);
         assertThat(callbacks.failureRecoveryCount).isEqualTo(1);
         assertThat(callbacks.lastFailureMessage).isEqualTo("context too large");
-        assertThat(callbacks.lastFailureUserMessage).isEqualTo("question");
+        verify(chatService, times(1)).chat("question");
+    }
+
+    @Test
+    public void nonRetryableModelNotFoundFailureDoesNotRetry() throws Exception {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
+        AIChatService chatService = mock(AIChatService.class);
+        when(chatService.chat("question"))
+            .thenThrow(new RuntimeException("model not found"));
+
+        uut.beginRequest("question");
+        uut.submitRequest(chatService);
+
+        assertThat(callbacks.awaitFinished()).isTrue();
+        assertThat(callbacks.assistantResponseCount).isZero();
+        assertThat(callbacks.assistantErrorCount).isEqualTo(1);
+        assertThat(callbacks.restoreCount).isEqualTo(1);
+        assertThat(callbacks.failureRecoveryCount).isEqualTo(1);
+        assertThat(callbacks.lastFailureMessage).isEqualTo("model not found");
+        verify(chatService, times(1)).chat("question");
     }
 
     @Test
     public void onProviderUsageRecordsUsageAndRefreshesCounters() {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker);
         TokenUsage usage = mock(TokenUsage.class);
         when(usage.inputTokenCount()).thenReturn(120);
         when(usage.outputTokenCount()).thenReturn(80);
@@ -78,7 +116,7 @@ public class ChatRequestFlowTest {
     public void requestCompletionTriggersPostResponseEvictionWhenWindowAdvances() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker);
         AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
         AIChatService chatService = mock(AIChatService.class);
         when(chatService.chat("question")).thenReturn("ok");
@@ -99,7 +137,7 @@ public class ChatRequestFlowTest {
     public void requestCompletionUsesLatestProviderUsageForCompaction() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker, 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, tokenUsageTracker);
         AssistantProfileChatMemory memory = mock(AssistantProfileChatMemory.class);
         AIChatService chatService = mock(AIChatService.class);
         TokenUsage usage = mock(TokenUsage.class);
@@ -119,7 +157,7 @@ public class ChatRequestFlowTest {
     @Test
     public void onToolCallSummaryStoresSummaryAndAppendsRenderEntry() {
         RecordingCallbacks callbacks = new RecordingCallbacks();
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
 
         uut.updateChatMemory(memory);
@@ -140,7 +178,7 @@ public class ChatRequestFlowTest {
     public void onToolCallSummaryDoesNothingWhenToolHistoryHidden() {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         callbacks.toolCallHistoryVisible = false;
-        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}), 1);
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
 
         uut.updateChatMemory(memory);

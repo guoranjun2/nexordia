@@ -61,7 +61,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class AIChatPanel extends JPanel {
-    private static final int CONTEXT_TOO_LARGE_MAX_RETRIES = 2;
     private static final int TOP_BAR_HORIZONTAL_GAP = 2;
 
     /**
@@ -263,7 +262,7 @@ public class AIChatPanel extends JPanel {
             public void onToolSummaryAppended(ChatMemoryRenderEntry entry) {
                 AIChatPanel.this.appendHistoryEntry(entry);
             }
-        }, chatTokenUsageTracker, CONTEXT_TOO_LARGE_MAX_RETRIES);
+        }, chatTokenUsageTracker);
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         liveChatController.initialize(chatMemory);
         assistantProfilePaneBuilder.initialize();

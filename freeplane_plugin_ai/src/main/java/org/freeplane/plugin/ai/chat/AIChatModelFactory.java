@@ -13,6 +13,7 @@ public class AIChatModelFactory {
     public static final String PROVIDER_NAME_OLLAMA = "ollama";
     public static final String DEFAULT_OPENROUTER_SERVICE_ADDRESS = "https://openrouter.ai/api/v1";
     public static final String DEFAULT_OLLAMA_SERVICE_ADDRESS = "http://localhost:11434";
+    static final int CHAT_MODEL_MAX_RETRIES = 2;
 
     private AIChatModelFactory() {
     }
@@ -29,12 +30,14 @@ public class AIChatModelFactory {
                 .baseUrl(getOpenrouterServiceAddress(configuration))
                 .apiKey(configuration.getOpenRouterKey())
                 .modelName(modelName)
+                .maxRetries(CHAT_MODEL_MAX_RETRIES)
                 .build();
         }
         if (PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
             GoogleAiGeminiChatModel.GoogleAiGeminiChatModelBuilder builder = GoogleAiGeminiChatModel.builder()
                 .apiKey(configuration.getGeminiKey())
-                .modelName(modelName);
+                .modelName(modelName)
+                .maxRetries(CHAT_MODEL_MAX_RETRIES);
             String serviceAddress = configuration.getGeminiServiceAddress();
             if (serviceAddress != null && !serviceAddress.isEmpty()) {
                 builder.baseUrl(serviceAddress);
@@ -53,6 +56,7 @@ public class AIChatModelFactory {
             return OllamaChatModel.builder()
                 .baseUrl(getOllamaServiceAddress(configuration))
                 .modelName(modelName)
+                .maxRetries(CHAT_MODEL_MAX_RETRIES)
                 .build();
         }
         throw new IllegalArgumentException("Unknown provider name: " + providerName);

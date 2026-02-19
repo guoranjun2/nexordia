@@ -2,7 +2,6 @@ package org.freeplane.plugin.ai.chat;
 
 import dev.langchain4j.model.output.TokenUsage;
 import java.util.function.Supplier;
-import java.util.concurrent.ExecutionException;
 import javax.swing.SwingWorker;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 
@@ -28,7 +27,6 @@ class ChatRequestFlow {
 
     private final RequestCallbacks callbacks;
     private final ChatRequestCancellation requestCancellation;
-    private final int contextTooLargeMaxRetries;
     private final ChatTokenUsageTracker tokenUsageTracker;
     private AssistantProfileChatMemory chatMemory;
     private SwingWorker<String, Void> activeWorker;
@@ -36,15 +34,12 @@ class ChatRequestFlow {
     private int activeRequestId;
     private int snapshotChatSize;
     private String snapshotUserText;
-    private int contextTooLargeRetryCount;
     private TokenUsage responseUsage;
     private String requestFailureMessage;
 
-    ChatRequestFlow(RequestCallbacks callbacks, ChatTokenUsageTracker tokenUsageTracker,
-                    int contextTooLargeMaxRetries) {
+    ChatRequestFlow(RequestCallbacks callbacks, ChatTokenUsageTracker tokenUsageTracker) {
         this.callbacks = callbacks;
         this.tokenUsageTracker = tokenUsageTracker;
-        this.contextTooLargeMaxRetries = contextTooLargeMaxRetries;
         this.requestCancellation = new ChatRequestCancellation();
     }
 
@@ -87,7 +82,6 @@ class ChatRequestFlow {
         activeRequestId++;
         snapshotUserText = userMessage;
         snapshotChatSize = callbacks.snapshotMemorySize();
-        contextTooLargeRetryCount = 0;
         requestFailureMessage = null;
         requestInProgress = true;
         callbacks.onRequestStarted();
@@ -149,9 +143,6 @@ class ChatRequestFlow {
                     callbacks.onAssistantResponse(get());
                     finishRequest();
                 } catch (Exception error) {
-                    if (retryAfterContextTooLarge(error, chatService, requestId)) {
-                        return;
-                    }
                     requestFailureMessage = normalizeErrorMessage(error);
                     callbacks.onAssistantError(requestFailureMessage);
                     restoreChatSnapshot();
@@ -161,44 +152,21 @@ class ChatRequestFlow {
         activeWorker.execute();
     }
 
-    private boolean retryAfterContextTooLarge(Exception error, AIChatService chatService, int requestId) {
-        if (!isContextTooLargeError(error)) {
-            return false;
-        }
-        if (contextTooLargeRetryCount >= contextTooLargeMaxRetries) {
-            return false;
-        }
-        callbacks.truncateMemoryToSize(snapshotChatSize);
-        if (!callbacks.evictOldestTurn()) {
-            return false;
-        }
-        contextTooLargeRetryCount++;
-        callbacks.synchronizeTranscriptWithMemory();
-        callbacks.rebuildHistoryFromTranscript();
-        callbacks.refreshTokenCounters();
-        executeRequestWorker(chatService, snapshotUserText, requestId);
-        return true;
-    }
-
     private String normalizeErrorMessage(Exception error) {
-        Throwable current = error;
-        while (current instanceof ExecutionException && current.getCause() != null) {
-            current = current.getCause();
-        }
-        String message = current == null ? null : current.getMessage();
+        Throwable rootCause = rootCause(error);
+        String message = rootCause.getMessage();
         if (message == null || message.trim().isEmpty()) {
-            return current == null ? "Unknown error" : current.getClass().getSimpleName();
+            return rootCause.getClass().getSimpleName();
         }
         return message;
     }
 
-    private boolean isContextTooLargeError(Exception error) {
-        if (error == null || error.getMessage() == null) {
-            return false;
+    private Throwable rootCause(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
         }
-        String message = error.getMessage().toLowerCase();
-        return message.contains("context") && (message.contains("too large")
-            || message.contains("length") || message.contains("maximum context"));
+        return current;
     }
 
     private void finishRequest() {
@@ -212,7 +180,6 @@ class ChatRequestFlow {
     private void clearRequestState() {
         snapshotChatSize = 0;
         snapshotUserText = null;
-        contextTooLargeRetryCount = 0;
         responseUsage = null;
         requestFailureMessage = null;
     }
