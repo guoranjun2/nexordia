@@ -21,6 +21,7 @@ import org.freeplane.features.icon.TagCategorySnapshot;
 import org.freeplane.features.icon.TagCategorySnapshotBuilder;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoriesTest;
+import org.freeplane.features.icon.TagDescriptor;
 import org.freeplane.features.map.MapModel;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -101,6 +102,42 @@ public class FreeplaneTagCategoryAccessTest {
             .hasMessageContaining("Unknown tag category path");
         verify(iconController, never()).setTagCategories(any(), any());
         assertThat(initialTagCategories.serialize()).isEqualTo(serializedBefore);
+    }
+
+    @Test
+    public void moveSubtreeIntoUncategorizedFlattensMovedPaths() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+            + " BB#22334455\n"
+            + "  CC#33445566\n"
+            + "DD#44556677\n");
+        initialTagCategories.registerTag("UU");
+        initialTagCategories.registerTag("VV");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
+        TagCategoryEditBatch editBatch = new TagCategoryEditBatch(
+            expectedRevision,
+            Collections.singletonList(
+                TagCategoryEdit.move(
+                    Arrays.asList("AA", "BB"),
+                    Collections.singletonList(TagCategories.UNCATEGORIZED_NODE),
+                    null)));
+
+        TagCategorySnapshot responseSnapshot = uut.applyEdits(mapModel, editBatch);
+
+        ArgumentCaptor<TagCategories> committedCategoriesCaptor = ArgumentCaptor.forClass(TagCategories.class);
+        verify(iconController).setTagCategories(eq(mapModel), committedCategoriesCaptor.capture());
+        TagCategories committedTagCategories = committedCategoriesCaptor.getValue();
+        assertThat(collectQualifiedNames(responseSnapshot)).containsExactly("AA", "DD");
+        assertThat(responseSnapshot.getUncategorizedTags())
+            .extracting(TagDescriptor::getQualifiedName)
+            .containsExactly("BB", "CC", "UU", "VV");
+        assertThat(committedTagCategories.getTagsAsListModel()).extracting(tag -> tag.getContent())
+            .containsExactly("AA", "BB", "CC", "DD", "UU", "VV");
     }
 
     private List<String> collectQualifiedNames(TagCategorySnapshot snapshot) {

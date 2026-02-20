@@ -1,5 +1,6 @@
 package org.freeplane.features.icon.mindmapmode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -117,7 +118,8 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         int oldIndex = oldParent.getIndex(movedNode);
         DefaultMutableTreeNode newParent = resolveMoveParent(tagCategories, operation.getNewParentPath());
         if (newParent == tagCategories.getUncategorizedTagsNode() && movedNode.getChildCount() > 0) {
-            throw new IllegalArgumentException("Cannot move non-leaf category into uncategorized");
+            moveSubtreeIntoUncategorized(tagCategories, movedNode, oldQualifiedContent);
+            return;
         }
         int insertionIndex = insertionIndex(newParent, operation.getIndex(), tagCategories);
         if (oldParent == newParent && operation.getIndex() != null && oldIndex < insertionIndex) {
@@ -130,6 +132,37 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         DefaultMutableTreeNode resultingNode = keptNode == null ? movedNode : keptNode;
         String newQualifiedContent = tagCategories.categorizedContent(resultingNode);
         tagCategories.replaceReferencedTags(Arrays.asList(oldQualifiedContent, newQualifiedContent));
+    }
+
+    private void moveSubtreeIntoUncategorized(TagCategories tagCategories,
+                                              DefaultMutableTreeNode movedNode,
+                                              String oldQualifiedContent) {
+        List<Tag> flattenedTags = collectSubtreeTags(movedNode, tagCategories);
+        tagCategories.removeNodeFromParent(movedNode);
+        for (Tag flattenedTag : flattenedTags) {
+            tagCategories.registerTagReference(flattenedTag);
+        }
+        tagCategories.replaceReferencedTags(Arrays.asList(oldQualifiedContent, TagCategories.UNCATEGORIZED_NODE));
+    }
+
+    private List<Tag> collectSubtreeTags(DefaultMutableTreeNode node, TagCategories tagCategories) {
+        ArrayList<Tag> flattenedTags = new ArrayList<>();
+        collectSubtreeTags(node, tagCategories, flattenedTags);
+        return flattenedTags;
+    }
+
+    private void collectSubtreeTags(DefaultMutableTreeNode node,
+                                    TagCategories tagCategories,
+                                    List<Tag> flattenedTags) {
+        Tag tagWithoutCategories = tagCategories.tagWithoutCategories(node);
+        flattenedTags.add(new Tag(tagWithoutCategories.getContent(), tagWithoutCategories.getColor()));
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
+            if (!tagCategories.containsTag(childNode)) {
+                continue;
+            }
+            collectSubtreeTags(childNode, tagCategories, flattenedTags);
+        }
     }
 
     private void applySetColor(TagCategories tagCategories, TagCategoryEdit operation) {

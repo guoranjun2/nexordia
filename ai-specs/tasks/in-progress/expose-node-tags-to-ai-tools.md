@@ -426,6 +426,9 @@ Script-facing API should wrap the same contract, for example:
     `MIconController.setTagCategories(...)`.
   - Existing replacement and reference sync logic lives in
     `TagCategories.replaceReferencedTags(...)` and `updateTagReferences()`.
+  - UI transferable flows allow moving a non-leaf category subtree into
+    uncategorized; this flattens moved paths to uncategorized tags through
+    `UNCATEGORIZED_NODE` replacement semantics.
 - **Design:**
 
 ```plantuml
@@ -447,11 +450,16 @@ FreeplaneTagCategoryAccess --> MIconController : setTagCategories(...)
 
 Service applies edits to a working copy and performs one final commit to
 maintain undo and map-change notification behavior.
+`MOVE` into uncategorized preserves current UI parity: moving a non-leaf
+subtree flattens moved paths to uncategorized tags while keeping reference
+rewrites deterministic via `UNCATEGORIZED_NODE` semantics.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
       - [S1] Core service applies `ADD`, `DELETE`, `RENAME`, `MOVE`,
         `SET_COLOR`, and `SET_SEPARATOR` correctly.
+      - [S1a] `MOVE` of non-leaf subtree to uncategorized flattens moved
+        paths and rewrites references with UI-equivalent outcomes.
       - [S2] Mixed batch apply is atomic when one operation fails.
       - [S3] Stale revision conflict performs zero writes.
       - [S4] Undo/redo restores exact pre/post states.
