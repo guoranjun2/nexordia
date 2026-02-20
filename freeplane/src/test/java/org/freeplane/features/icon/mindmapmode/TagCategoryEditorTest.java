@@ -6,6 +6,7 @@
 package org.freeplane.features.icon.mindmapmode;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.freeplane.features.icon.TagAssertions.assertThatReferencedTags;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -33,6 +34,7 @@ import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagAssertions;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagCategoryConflictException;
 import org.freeplane.features.icon.TagCategoriesTest;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
@@ -467,6 +469,24 @@ public class TagCategoryEditorTest {
                 copy.getTagsAsListModel()
                 .forEach(tag -> copy.registerTagReferenceIfUnknown(tag));
             });
+        }
+    }
+
+    @Test
+    public void submitRejectsStaleRevisionWithoutOverwritingExternalCategories() {
+        try (TagTestSteps steps = new TagTestSteps()) {
+            TagCategories initialCategories = TagCategoriesTest.tagCategories("AA#11223344\n");
+            TagCategories externallyUpdatedCategories = TagCategoriesTest.tagCategories("BB#22334455\n");
+            steps.given().tagCategoryEditor(initialCategories)
+                .when().selectNode(0)
+                .renameSelectedNode("LOCAL");
+            Mockito.when(steps.iconRegistry.getTagCategories()).thenReturn(externallyUpdatedCategories);
+
+            assertThatThrownBy(() -> steps.uut.submit())
+                .isInstanceOf(TagCategoryConflictException.class)
+                .hasMessageContaining("stale revision");
+
+            verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
         }
     }
 }

@@ -560,7 +560,7 @@ the shared service.
     - Ask AI to rename and move categories, then verify map state and undo.
 
 ## Subtask: Migrate Tag Category Editor to Shared Service
-- **Status:** backlog
+- **Status:** in-progress
 - **Scope:** Rewire `TagCategoryEditor` to call shared category access
   operations while preserving existing UI interactions, transferable support,
   and visible behavior.
@@ -582,10 +582,12 @@ the shared service.
 set separator none
 package "ui migration" {
   class TagCategoryEditor
+  class TagCategoryConflictGuard
   interface TagCategoryAccess
   class TagRenamerAdapter
 }
 
+TagCategoryEditor --> TagCategoryConflictGuard : verify base revision
 TagCategoryEditor --> TagRenamerAdapter : collect edit intents
 TagRenamerAdapter --> TagCategoryAccess : applyEdits(batch)
 @enduml
@@ -596,6 +598,11 @@ shared service for parity and maintainability.
 On stale revision conflicts, UI policy is to discard the local unsaved draft
 and reload from latest state immediately, rather than attempting in-dialog
 merge of transient tree-event state.
+Migration is incremental:
+1. Add revision conflict guard in `submit()` and reject stale apply without
+   writing map categories.
+2. Keep current transferable/copy tree behavior unchanged while switching final
+   apply path to shared access operations.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -604,6 +611,10 @@ merge of transient tree-event state.
       - [U3] External update conflict rejects stale submit and hard-reloads
         latest snapshot.
       - [U4] UI results remain parity-equivalent to script/AI outputs.
+      - [U3a] `submit()` rejects stale revision and does not call
+        `setTagCategories`.
+      - [U3b] Conflict path discards local draft and reopens editor on latest
+        categories.
     - Existing `TagCategoryEditorTest` scenarios continue to pass.
     - Transferable copy/cut/paste behavior remains unchanged.
     - UI results match script/AI snapshots for equivalent edit sequences.

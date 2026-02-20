@@ -92,6 +92,8 @@ import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategorySnapshotBuilder;
 import org.freeplane.features.icon.TreeTagChangeListener;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.Controller;
@@ -411,6 +413,8 @@ class TagCategoryEditor implements IExtension {
 
     private final MapModel map;
 
+    private final String openedRevision;
+
     private String lastTransferableId;
 
     private List<String> lastSelectionParentsNodes;
@@ -454,10 +458,7 @@ class TagCategoryEditor implements IExtension {
         LabelAndMnemonicSetter.setLabelAndMnemonic(enterConfirms, TextUtils.getRawText(
                 "enter_confirms"));
         modifyColorAction.setEnabled(false);
-        okButton.addActionListener(e -> {
-            if(close())
-                submit();
-        });
+        okButton.addActionListener(e -> submitAndClose());
         cancelButton.addActionListener(e -> close());
 
         final JPanel buttonPane = new JPanel(new ResponsiveFlowLayout());
@@ -470,7 +471,9 @@ class TagCategoryEditor implements IExtension {
         final Container contentPane = dialog.getContentPane();
 
         final IconRegistry iconRegistry = map.getIconRegistry();
-        this.tagCategories = iconRegistry.getTagCategories().copy();
+        TagCategories openedCategories = iconRegistry.getTagCategories();
+        this.tagCategories = openedCategories.copy();
+        this.openedRevision = TagCategorySnapshotBuilder.from(openedCategories).getRevision();
         tree = new JTagTree(tagCategories, iconController.getTagFont(map.getRootNode()));
         tree.setTransferHandler(new TreeTransferHandler());
         if(! GraphicsEnvironment.isHeadless()) {
@@ -514,8 +517,7 @@ class TagCategoryEditor implements IExtension {
                             addNode((e.getModifiersEx() & (InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK)) != 0);
                             break;
                         }
-                        if (close())
-                            submit();
+                        submitAndClose();
                     }
                     break;
                 }
@@ -897,8 +899,13 @@ class TagCategoryEditor implements IExtension {
     }
 
     protected void submit() {
-        String oldSeparator = tagCategories.getTagCategorySeparator();
         TagCategories lastStateCategories = map.getIconRegistry().getTagCategories();
+        String currentRevision = TagCategorySnapshotBuilder.from(lastStateCategories).getRevision();
+        if(! openedRevision.equals(currentRevision)) {
+            throw new TagCategoryConflictException(
+                "stale revision: expected " + openedRevision + ", current " + currentRevision);
+        }
+        String oldSeparator = tagCategories.getTagCategorySeparator();
         String newSeparator = lastStateCategories.getTagCategorySeparator();
         tagCategories.updateTagCategorySeparator(newSeparator);
         lastStateCategories.getTagsAsListModel()
@@ -922,13 +929,51 @@ class TagCategoryEditor implements IExtension {
                         "long_node_changed_submit"), "", JOptionPane.YES_NO_CANCEL_OPTION);
 
                 if (action == JOptionPane.YES_OPTION) {
-                    submit();
+                    submitAndClose();
+                    return;
                 } else if (action == JOptionPane.CANCEL_OPTION || action == JOptionPane.CLOSED_OPTION) {
                     return;
                 }
             }
             close();
         }
+    }
+
+    private void submitAndClose() {
+        if(tree.isEditing()) {
+            return;
+        }
+        try {
+            submit();
+            close();
+        } catch (TagCategoryConflictException conflictException) {
+            reloadLatestAfterConflict();
+        } catch (Exception exception) {
+            UITools.errorMessage(exception);
+        }
+    }
+
+    private void reloadLatestAfterConflict() {
+        RootPaneContainer ownerContainer = resolveOwnerContainer();
+        dialog.setVisible(false);
+        map.removeExtension(this);
+        if(ownerContainer == null) {
+            return;
+        }
+        TagCategoryEditor refreshedEditor = new TagCategoryEditor(ownerContainer, iconController, map);
+        map.addExtension(refreshedEditor);
+        refreshedEditor.show();
+    }
+
+    private RootPaneContainer resolveOwnerContainer() {
+        if(dialog.getOwner() instanceof RootPaneContainer) {
+            return (RootPaneContainer) dialog.getOwner();
+        }
+        Component currentRootComponent = UITools.getCurrentRootComponent();
+        if(currentRootComponent instanceof RootPaneContainer) {
+            return (RootPaneContainer) currentRootComponent;
+        }
+        return null;
     }
 
     private void updateColorButton(@SuppressWarnings("unused") TreeSelectionEvent e) {
