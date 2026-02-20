@@ -12,8 +12,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
+
 import org.freeplane.features.icon.IconRegistry;
+import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
 import org.freeplane.features.icon.TagCategoryEdit;
 import org.freeplane.features.icon.TagCategoryEditBatch;
 import org.freeplane.features.icon.TagCategoryNode;
@@ -102,6 +107,60 @@ public class FreeplaneTagCategoryAccessTest {
             .hasMessageContaining("Unknown tag category path");
         verify(iconController, never()).setTagCategories(any(), any());
         assertThat(initialTagCategories.serialize()).isEqualTo(serializedBefore);
+    }
+
+    @Test
+    public void applyEditorDraftCommitsDraftAndUpdatesReferences() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+            + " BB#22334455\n");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        TagCategories draftCategories = initialTagCategories.copy();
+        DefaultMutableTreeNode categoryNode = (DefaultMutableTreeNode) ((DefaultMutableTreeNode) draftCategories
+            .getRootNode()
+            .getChildAt(0))
+            .getChildAt(0);
+        draftCategories.getNodes().valueForPathChanged(
+            new TreePath(draftCategories.getNodes().getPathToRoot(categoryNode)),
+            new Tag("STATE", draftCategories.tagWithoutCategories(categoryNode).getColor()));
+        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
+        TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
+            expectedRevision,
+            draftCategories,
+            Arrays.asList("AA::BB", "AA::STATE"));
+
+        TagCategorySnapshot responseSnapshot = uut.applyEditorDraft(mapModel, draftSubmission);
+
+        verify(iconController).setTagCategories(eq(mapModel), eq(draftCategories));
+        assertThat(collectQualifiedNames(responseSnapshot)).containsExactly("AA", "AA::STATE");
+        assertThat(draftCategories.getTagsAsListModel()).extracting(tag -> tag.getContent())
+            .containsExactly("AA", "AA::STATE");
+    }
+
+    @Test
+    public void applyEditorDraftRejectsStaleRevisionWithoutCommit() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+            + " BB#22334455\n");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        TagCategories draftCategories = initialTagCategories.copy();
+        TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
+            "stale-revision",
+            draftCategories,
+            Arrays.asList("AA::BB", "AA::STATE"));
+
+        assertThatThrownBy(() -> uut.applyEditorDraft(mapModel, draftSubmission))
+            .isInstanceOf(TagCategoryConflictException.class)
+            .hasMessageContaining("stale revision");
+        verify(iconController, never()).setTagCategories(any(), any());
     }
 
     @Test

@@ -32,13 +32,17 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.Tag;
+import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagAssertions;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
+import org.freeplane.features.icon.TagCategorySnapshotBuilder;
 import org.freeplane.features.icon.TagCategoriesTest;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -105,6 +109,15 @@ public class TagCategoryEditorTest {
             Mockito.when(iconController.getTagFont(any())).thenReturn(new Font(Font.DIALOG, 0, 10));
             Mockito.when(dialog.getContentPane()).thenReturn(new JPanel());
             this.uut = new TagCategoryEditor(dialog, iconController, mapModel);
+            this.updatedTagCategories = uut.getTagCategories();
+            return me();
+        }
+
+        TagTestSteps tagCategoryEditor(TagCategories tagCategories, TagCategoryAccess tagCategoryAccess) {
+            Mockito.when(iconRegistry.getTagCategories()).thenReturn(tagCategories);
+            Mockito.when(iconController.getTagFont(any())).thenReturn(new Font(Font.DIALOG, 0, 10));
+            Mockito.when(dialog.getContentPane()).thenReturn(new JPanel());
+            this.uut = new TagCategoryEditor(dialog, iconController, mapModel, tagCategoryAccess);
             this.updatedTagCategories = uut.getTagCategories();
             return me();
         }
@@ -505,6 +518,32 @@ public class TagCategoryEditorTest {
             verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
             verify(steps.mapModel).removeExtension(steps.uut);
             verify(steps.dialog).setVisible(false);
+        }
+    }
+
+    @Test
+    public void submitDelegatesEditorDraftToTagCategoryAccess() {
+        try (TagTestSteps steps = new TagTestSteps()) {
+            TagCategories initialCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+                + " BB#22334455\n");
+            TagCategoryAccess tagCategoryAccess = Mockito.mock(TagCategoryAccess.class);
+            Mockito.when(tagCategoryAccess.applyEditorDraft(any(), any()))
+                .thenReturn(TagCategorySnapshotBuilder.from(initialCategories));
+            steps.given().tagCategoryEditor(initialCategories, tagCategoryAccess)
+                .when().selectNode(0, 0)
+                .renameSelectedNode("STATE");
+
+            steps.uut.submit();
+
+            ArgumentCaptor<TagCategoryEditorDraftSubmission> submissionCaptor =
+                ArgumentCaptor.forClass(TagCategoryEditorDraftSubmission.class);
+            verify(tagCategoryAccess).applyEditorDraft(Mockito.eq(steps.mapModel), submissionCaptor.capture());
+            TagCategoryEditorDraftSubmission submittedDraft = submissionCaptor.getValue();
+            assertThat(submittedDraft.getExpectedRevision())
+                .isEqualTo(TagCategorySnapshotBuilder.from(initialCategories).getRevision());
+            assertThat(submittedDraft.getDraftCategories()).isSameAs(steps.updatedTagCategories);
+            assertThat(submittedDraft.getReplacementPairs()).containsExactly("AA::BB", "AA::STATE");
+            verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
         }
     }
 }

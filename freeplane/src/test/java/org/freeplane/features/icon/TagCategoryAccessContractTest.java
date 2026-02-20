@@ -33,6 +33,24 @@ public class TagCategoryAccessContractTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("operations");
 
+        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("",
+            TagCategoriesTest.tagCategories("Project\n"),
+            Collections.emptyList()))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("expectedRevision");
+
+        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("rev",
+            null,
+            Collections.emptyList()))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("draftCategories");
+
+        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("rev",
+            TagCategoriesTest.tagCategories("Project\n"),
+            Collections.singletonList("only-old")))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("replacementPairs");
+
         assertThatThrownBy(() -> TagCategoryEdit.rename(Collections.emptyList(), "Renamed"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("path");

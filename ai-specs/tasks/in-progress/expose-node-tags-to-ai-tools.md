@@ -213,7 +213,7 @@ hard-reloaded to the latest snapshot (local unsaved edits are discarded).
       and script outputs for parity.
 
 ## Subtask: Characterization Coverage for Existing Category Behavior
-- **Status:** completed
+- **Status:** review
 - **Scope:** Expand automated tests that characterize current
   `TagCategories` and `TagCategoryEditor` behavior, including transferable
   copy/cut/paste, merge semantics, separator rewrites, and persistence.
@@ -277,7 +277,7 @@ merge outcomes.
       and verify visible behavior matches automated baseline outcomes.
 
 ## Subtask: Define Tag Category Access Contract
-- **Status:** completed
+- **Status:** review
 - **Scope:** Define map-level domain contract for category read/write:
   snapshot DTO, edit operations, revision token, conflict signaling, and
   deterministic ordering rules. Define shared data structures consumable from
@@ -409,7 +409,7 @@ Script-facing API should wrap the same contract, for example:
     - N/A
 
 ## Subtask: Implement Core Tag Category Access Service
-- **Status:** in-progress
+- **Status:** review
 - **Scope:** Implement the contract-backed service on top of
   `TagCategories` and `MIconController.setTagCategories(...)`, preserving
   undo/redo and node-traversal-free category update behavior.
@@ -453,6 +453,10 @@ maintain undo and map-change notification behavior.
 `MOVE` into uncategorized preserves current UI parity: moving a non-leaf
 subtree flattens moved paths to uncategorized tags while keeping reference
 rewrites deterministic via `UNCATEGORIZED_NODE` semantics.
+Service also exposes UI draft-submit apply (`applyEditorDraft`) that accepts
+opened revision, editor draft categories, and collected replacement pairs, so
+existing editor semantics can delegate without direct `setTagCategories(...)`
+logic in the dialog class.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -460,6 +464,8 @@ rewrites deterministic via `UNCATEGORIZED_NODE` semantics.
         `SET_COLOR`, and `SET_SEPARATOR` correctly.
       - [S1a] `MOVE` of non-leaf subtree to uncategorized flattens moved
         paths and rewrites references with UI-equivalent outcomes.
+      - [S1b] Core `applyEditorDraft` preserves current submit behavior:
+        single commit, replacement-pair rewrites, and stale-revision reject.
       - [S2] Mixed batch apply is atomic when one operation fails.
       - [S3] Stale revision conflict performs zero writes.
       - [S4] Undo/redo restores exact pre/post states.
@@ -474,7 +480,7 @@ rewrites deterministic via `UNCATEGORIZED_NODE` semantics.
     - Run one mixed edit batch and verify map refresh and undo/redo behavior.
 
 ## Subtask: Expose Map-Level Tag Categories to Scripting
-- **Status:** in-progress
+- **Status:** review
 - **Scope:** Add script API surface for reading and applying map-level
   category edits through the shared access service.
 - **Motivation:** Scripts currently can edit node tags only; map taxonomy
@@ -518,7 +524,7 @@ requests to the core service.
     - Execute sample script on a map and verify category tree and node tags.
 
 ## Subtask: Expose Map-Level Tag Categories to AI Tools
-- **Status:** in-progress
+- **Status:** review
 - **Scope:** Add AI tool requests/responses for category snapshot read and
   edit batch apply, using the same shared access service.
 - **Motivation:** AI currently edits node tag values but cannot manage map
@@ -568,7 +574,7 @@ the shared service.
     - Ask AI to rename and move categories, then verify map state and undo.
 
 ## Subtask: Migrate Tag Category Editor to Shared Service
-- **Status:** in-progress
+- **Status:** review
 - **Scope:** Rewire `TagCategoryEditor` to call shared category access
   operations while preserving existing UI interactions, transferable support,
   and visible behavior.
@@ -611,6 +617,9 @@ Migration is incremental:
    writing map categories.
 2. Keep current transferable/copy tree behavior unchanged while switching final
    apply path to shared access operations.
+3. Delegate `submit()` to `TagCategoryAccess.applyEditorDraft(...)` using
+   explicit editor draft submission payload (opened revision + draft categories
+   + replacement pairs), keeping conflict reload policy unchanged.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -623,6 +632,8 @@ Migration is incremental:
         `setTagCategories`.
       - [U3b] Conflict path discards local draft and reopens editor on latest
         categories.
+      - [U3c] `submit()` delegates draft payload to shared access service,
+        including opened revision and replacement pairs.
     - Existing `TagCategoryEditorTest` scenarios continue to pass.
     - Transferable copy/cut/paste behavior remains unchanged.
     - UI results match script/AI snapshots for equivalent edit sequences.

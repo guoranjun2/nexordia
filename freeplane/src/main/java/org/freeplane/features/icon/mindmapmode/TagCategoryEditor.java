@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventObject;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,7 +93,9 @@ import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
 import org.freeplane.features.icon.TagCategorySnapshotBuilder;
 import org.freeplane.features.icon.TreeTagChangeListener;
 import org.freeplane.features.map.MapModel;
@@ -349,13 +352,8 @@ class TagCategoryEditor implements IExtension {
             lastSelectionParentsNodes = Collections.emptyList();
         }
 
-        public void apply(String oldSeparator, String newSeparator) {
-            if(! oldSeparator.equals(newSeparator)) {
-                for(int i = 0; i < replacements.size(); i++) {
-                    replacements.set(i, replacements.get(i).replace(oldSeparator, newSeparator));
-                }
-            }
-            tagCategories.replaceReferencedTags(replacements);
+        List<String> replacementPairs() {
+            return new ArrayList<>(replacements);
         }
 
         @Override
@@ -413,6 +411,8 @@ class TagCategoryEditor implements IExtension {
 
     private final MapModel map;
 
+    private final TagCategoryAccess tagCategoryAccess;
+
     private final String openedRevision;
 
     private String lastTransferableId;
@@ -428,13 +428,21 @@ class TagCategoryEditor implements IExtension {
     }
 
     TagCategoryEditor(RootPaneContainer frame, MIconController iconController, MapModel map) {
-        this(createDialog(frame), iconController, map);
+        this(createDialog(frame), iconController, map, new FreeplaneTagCategoryAccess(iconController));
     }
 
     TagCategoryEditor(JDialog dialog, MIconController iconController, MapModel map) {
+        this(dialog, iconController, map, new FreeplaneTagCategoryAccess(iconController));
+    }
+
+    TagCategoryEditor(JDialog dialog,
+                      MIconController iconController,
+                      MapModel map,
+                      TagCategoryAccess tagCategoryAccess) {
         this.dialog = dialog;
         this.iconController = iconController;
         this.map = map;
+        this.tagCategoryAccess = Objects.requireNonNull(tagCategoryAccess, "tagCategoryAccess must not be null");
         this.lastSelectionParentsNodes = Collections.emptyList();
         contentWasModified = false;
         lastTransferableId = "";
@@ -899,20 +907,11 @@ class TagCategoryEditor implements IExtension {
     }
 
     protected void submit() {
-        TagCategories lastStateCategories = map.getIconRegistry().getTagCategories();
-        String currentRevision = TagCategorySnapshotBuilder.from(lastStateCategories).getRevision();
-        if(! openedRevision.equals(currentRevision)) {
-            throw new TagCategoryConflictException(
-                "stale revision: expected " + openedRevision + ", current " + currentRevision);
-        }
-        String oldSeparator = tagCategories.getTagCategorySeparator();
-        String newSeparator = lastStateCategories.getTagCategorySeparator();
-        tagCategories.updateTagCategorySeparator(newSeparator);
-        lastStateCategories.getTagsAsListModel()
-            .forEach(tag -> tagCategories.registerTagReferenceIfUnknown(tag));
-        tagRenamer.apply(oldSeparator, newSeparator);
-
-        iconController.setTagCategories(map, tagCategories);
+        TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
+            openedRevision,
+            tagCategories,
+            tagRenamer.replacementPairs());
+        tagCategoryAccess.applyEditorDraft(map, draftSubmission);
     }
 
     private JRestrictedSizeScrollPane createScrollPane() {

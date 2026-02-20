@@ -6,4 +6,6 @@ public interface TagCategoryAccess {
     TagCategorySnapshot readSnapshot(MapModel mapModel);
 
     TagCategorySnapshot applyEdits(MapModel mapModel, TagCategoryEditBatch editBatch);
+
+    TagCategorySnapshot applyEditorDraft(MapModel mapModel, TagCategoryEditorDraftSubmission draftSubmission);
 }

@@ -12,6 +12,7 @@ import javax.swing.tree.TreePath;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoryAccess;
+import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
 import org.freeplane.features.icon.TagCategoryEdit;
 import org.freeplane.features.icon.TagCategoryEditBatch;
 import org.freeplane.features.icon.TagCategoryEditType;
@@ -43,6 +44,41 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         }
         iconController.setTagCategories(mapModel, workingCopy);
         return TagCategorySnapshotBuilder.from(workingCopy);
+    }
+
+    @Override
+    public TagCategorySnapshot applyEditorDraft(MapModel mapModel,
+                                                TagCategoryEditorDraftSubmission draftSubmission) {
+        Objects.requireNonNull(draftSubmission, "draftSubmission must not be null");
+        TagCategories currentTagCategories = getTagCategories(mapModel);
+        TagCategorySnapshot currentSnapshot = TagCategorySnapshotBuilder.from(currentTagCategories);
+        draftSubmission.requireMatchingRevision(currentSnapshot.getRevision());
+        TagCategories draftCategories = draftSubmission.getDraftCategories();
+        String oldSeparator = draftCategories.getTagCategorySeparator();
+        String newSeparator = currentTagCategories.getTagCategorySeparator();
+        draftCategories.updateTagCategorySeparator(newSeparator);
+        currentTagCategories.getTagsAsListModel()
+            .forEach(tag -> draftCategories.registerTagReferenceIfUnknown(tag));
+        List<String> replacementPairs = rebaseReplacementPairs(
+            draftSubmission.getReplacementPairs(),
+            oldSeparator,
+            newSeparator);
+        draftCategories.replaceReferencedTags(replacementPairs);
+        iconController.setTagCategories(mapModel, draftCategories);
+        return TagCategorySnapshotBuilder.from(draftCategories);
+    }
+
+    private List<String> rebaseReplacementPairs(List<String> replacementPairs,
+                                                String oldSeparator,
+                                                String newSeparator) {
+        if (oldSeparator.equals(newSeparator)) {
+            return replacementPairs;
+        }
+        ArrayList<String> rebasedReplacementPairs = new ArrayList<>(replacementPairs.size());
+        for (String replacementPair : replacementPairs) {
+            rebasedReplacementPairs.add(replacementPair.replace(oldSeparator, newSeparator));
+        }
+        return rebasedReplacementPairs;
     }
 
     private TagCategories getTagCategories(MapModel mapModel) {
