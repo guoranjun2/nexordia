@@ -287,4 +287,7 @@ public interface MindMap extends MindMapRO {
         * @throws IllegalArgumentException if any bookmark references a node not in this map
         * @since 1.12.12 */
        void setBookmarks(List<NodeBookmark> bookmarks);
+
+	@Override
+	MapTagCategories getTagCategories();
 }

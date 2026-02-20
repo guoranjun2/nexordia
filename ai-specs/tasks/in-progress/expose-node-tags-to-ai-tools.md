@@ -466,7 +466,7 @@ maintain undo and map-change notification behavior.
     - Run one mixed edit batch and verify map refresh and undo/redo behavior.
 
 ## Subtask: Expose Map-Level Tag Categories to Scripting
-- **Status:** backlog
+- **Status:** in-progress
 - **Scope:** Add script API surface for reading and applying map-level
   category edits through the shared access service.
 - **Motivation:** Scripts currently can edit node tags only; map taxonomy

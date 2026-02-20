@@ -71,4 +71,6 @@ public interface MindMapRO {
         * @return a list of all bookmarks in this map
         * @since 1.12.12 */
        List<NodeBookmark> getBookmarks();
+
+	   MapTagCategoriesRO getTagCategories();
 }

@@ -211,6 +211,10 @@ public interface Proxy {
 
 	interface MindMap extends MindMapRO , org.freeplane.api.MindMap {	}
 
+	interface MapTagCategoriesRO extends org.freeplane.api.MapTagCategoriesRO { }
+
+	interface MapTagCategories extends MapTagCategoriesRO, org.freeplane.api.MapTagCategories { }
+
 	/**
 	 * Deprecated mind map interface name.
 	 *

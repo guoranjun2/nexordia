@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 
 import org.freeplane.api.BookmarkType;
 import org.freeplane.api.ConditionalStyles;
+import org.freeplane.api.MapTagCategories;
 import org.freeplane.api.NodeChangeListener;
 import org.freeplane.api.NodeCondition;
 import org.freeplane.core.resources.ResourceController;
@@ -112,6 +113,11 @@ public class MapProxy extends AbstractProxy<MapModel> implements MindMap, Map {
 	@Override
 	public ConditionalStyles getConditionalStyles() {
 		return new MapConditionalStylesProxy(getDelegate(), getScriptContext());
+	}
+
+	@Override
+	public MapTagCategories getTagCategories() {
+		return new MapTagCategoriesProxy(getDelegate(), getScriptContext());
 	}
 
 	@Override
