@@ -213,7 +213,7 @@ hard-reloaded to the latest snapshot (local unsaved edits are discarded).
       and script outputs for parity.
 
 ## Subtask: Characterization Coverage for Existing Category Behavior
-- **Status:** in-progress
+- **Status:** completed
 - **Scope:** Expand automated tests that characterize current
   `TagCategories` and `TagCategoryEditor` behavior, including transferable
   copy/cut/paste, merge semantics, separator rewrites, and persistence.
@@ -277,7 +277,7 @@ merge outcomes.
       and verify visible behavior matches automated baseline outcomes.
 
 ## Subtask: Define Tag Category Access Contract
-- **Status:** backlog
+- **Status:** completed
 - **Scope:** Define map-level domain contract for category read/write:
   snapshot DTO, edit operations, revision token, conflict signaling, and
   deterministic ordering rules. Define shared data structures consumable from
