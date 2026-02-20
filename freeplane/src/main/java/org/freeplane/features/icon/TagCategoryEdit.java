@@ -18,6 +18,22 @@ public class TagCategoryEdit {
         return new TagCategoryEdit(TagCategoryEditType.RENAME, path, newName, null, null, null, null);
     }
 
+    public static TagCategoryEdit add(List<String> path) {
+        return new TagCategoryEdit(TagCategoryEditType.ADD, path, null, null, null, null, null);
+    }
+
+    public static TagCategoryEdit delete(List<String> path) {
+        return new TagCategoryEdit(TagCategoryEditType.DELETE, path, null, null, null, null, null);
+    }
+
+    public static TagCategoryEdit move(List<String> path, List<String> newParentPath, Integer index) {
+        return new TagCategoryEdit(TagCategoryEditType.MOVE, path, null, newParentPath, index, null, null);
+    }
+
+    public static TagCategoryEdit setColor(List<String> path, String color) {
+        return new TagCategoryEdit(TagCategoryEditType.SET_COLOR, path, null, null, null, color, null);
+    }
+
     public static TagCategoryEdit setSeparator(String newSeparator) {
         return new TagCategoryEdit(TagCategoryEditType.SET_SEPARATOR, null, null, null, null, null, newSeparator);
     }

@@ -409,7 +409,7 @@ Script-facing API should wrap the same contract, for example:
     - N/A
 
 ## Subtask: Implement Core Tag Category Access Service
-- **Status:** backlog
+- **Status:** in-progress
 - **Scope:** Implement the contract-backed service on top of
   `TagCategories` and `MIconController.setTagCategories(...)`, preserving
   undo/redo and node-traversal-free category update behavior.
