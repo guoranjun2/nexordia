@@ -144,6 +144,11 @@ public class TagCategoryEditorTest {
             return me();
         }
 
+        TagTestSteps copy() {
+            assertThat(uut.copyNodes()).isTrue();
+            return me();
+        }
+
         TagTestSteps paste() {
             uut.pasteNodes();
             return me();
@@ -335,6 +340,29 @@ public class TagCategoryEditorTest {
                 containsExactly("AA", "BB", "CC", "DD",
                         "UU", "VV");
             });
+        }
+    }
+
+    @Test
+    public void copyAndPasteTagToUncategorizedKeepsSourceTag() {
+        try (TagTestSteps steps = new TagTestSteps()) {
+            TagCategories tagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+                + " BB#22334455\n"
+                + "DD#44556677\n");
+            steps.given().tagCategoryEditor(tagCategories)
+                .when().selectNode(0, 0)
+                .copy()
+                .selectNode(2)
+                .paste()
+                .and().submit()
+                .then().assertThatUpdatedTagCategories()
+                .satisfies(tc -> {
+                    TagAssertions.assertThatSerialized(tc).isEqualTo("AA#11223344\n"
+                        + " BB#22334455\n"
+                        + "DD#44556677\n");
+                    assertThat(tc.getTagsAsListModel()).map(Tag::getContent)
+                        .containsExactly("AA", "AA::BB", "BB", "DD");
+                });
         }
     }
 
