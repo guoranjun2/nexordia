@@ -510,7 +510,7 @@ requests to the core service.
     - Execute sample script on a map and verify category tree and node tags.
 
 ## Subtask: Expose Map-Level Tag Categories to AI Tools
-- **Status:** backlog
+- **Status:** in-progress
 - **Scope:** Add AI tool requests/responses for category snapshot read and
   edit batch apply, using the same shared access service.
 - **Motivation:** AI currently edits node tag values but cannot manage map

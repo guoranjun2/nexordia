@@ -11,7 +11,9 @@ import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.mindmapmode.MAttributeController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.NamedIcon;
+import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.factory.IconStoreFactory;
+import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.link.LinkController;
 import org.freeplane.features.link.mindmapmode.MLinkController;
@@ -77,6 +79,11 @@ import org.freeplane.plugin.ai.tools.selection.SelectSingleNodeTool;
 import org.freeplane.plugin.ai.tools.selection.SelectedMapAndNodeIdentifiersTool;
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersRequest;
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersResponse;
+import org.freeplane.plugin.ai.tools.tagcategories.EditTagCategoriesTool;
+import org.freeplane.plugin.ai.tools.tagcategories.FetchTagCategoriesRequest;
+import org.freeplane.plugin.ai.tools.tagcategories.FetchTagCategoriesTool;
+import org.freeplane.plugin.ai.tools.tagcategories.TagCategoryEditBatchPayload;
+import org.freeplane.plugin.ai.tools.tagcategories.TagCategorySnapshotPayload;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
@@ -101,6 +108,8 @@ public class AIToolSet {
     private final ListTool listTool;
     private final ConnectorEditTool connectorEditTool;
     private final NodeContentEditor nodeContentEditor;
+    private final FetchTagCategoriesTool fetchTagCategoriesTool;
+    private final EditTagCategoriesTool editTagCategoriesTool;
     private final AvailableMaps availableMaps;
     private final AvailableMaps.MapAccessListener mapAccessListener;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
@@ -129,6 +138,7 @@ public class AIToolSet {
             textContentWriteController, noteContentWriteController);
         AttributesContentEditor attributesContentEditor = new AttributesContentEditor(attributeController);
         TagsContentEditor tagsContentEditor = new TagsContentEditor(iconController);
+        TagCategoryAccess tagCategoryAccess = new FreeplaneTagCategoryAccess(iconController);
         List<NamedIcon> iconCandidates = new ArrayList<>(IconStoreFactory.ICON_STORE.getMindIcons());
         iconCandidates.addAll(IconStoreFactory.ICON_STORE.getUserIcons());
         IconsContentEditor iconsContentEditor = new IconsContentEditor(
@@ -166,6 +176,10 @@ public class AIToolSet {
         ListTool listTool = new ListTool(
             nodeContentFactories.iconDescriptionResolver, availableMaps, mapAccessListener);
         ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, mapAccessListener, linkController);
+        FetchTagCategoriesTool fetchTagCategoriesTool = new FetchTagCategoriesTool(
+            availableMaps, mapAccessListener, tagCategoryAccess);
+        EditTagCategoriesTool editTagCategoriesTool = new EditTagCategoriesTool(
+            availableMaps, mapAccessListener, tagCategoryAccess);
         this.messageBuilder = Objects.requireNonNull(messageBuilder, "messageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
             "readNodesWithDescendantsTool");
@@ -181,6 +195,8 @@ public class AIToolSet {
         this.listTool = Objects.requireNonNull(listTool, "listTool");
         this.connectorEditTool = Objects.requireNonNull(connectorEditTool, "connectorEditTool");
         this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
+        this.fetchTagCategoriesTool = Objects.requireNonNull(fetchTagCategoriesTool, "fetchTagCategoriesTool");
+        this.editTagCategoriesTool = Objects.requireNonNull(editTagCategoriesTool, "editTagCategoriesTool");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolCaller = toolCaller == null
             ? ToolCaller.CHAT
@@ -252,6 +268,30 @@ public class AIToolSet {
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(searchNodesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("Fetch map-level tag category snapshot including revision, separator, and category tree.")
+    public TagCategorySnapshotPayload fetchTagCategories(FetchTagCategoriesRequest request) {
+        try {
+            TagCategorySnapshotPayload response = fetchTagCategoriesTool.fetchTagCategories(request);
+            publishToolCallSummary(fetchTagCategoriesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(fetchTagCategoriesTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("Apply map-level tag category edit batch with optimistic revision check and return updated snapshot.")
+    public TagCategorySnapshotPayload editTagCategories(TagCategoryEditBatchPayload request) {
+        try {
+            TagCategorySnapshotPayload response = editTagCategoriesTool.editTagCategories(request);
+            publishToolCallSummary(editTagCategoriesTool.buildToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(editTagCategoriesTool.buildToolCallErrorSummary(request, error));
             throw error;
         }
     }
