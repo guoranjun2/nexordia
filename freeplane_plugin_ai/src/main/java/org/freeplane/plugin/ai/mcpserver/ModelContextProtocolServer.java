@@ -30,6 +30,7 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     public static final String MCP_SERVER_PORT_PROPERTY = "ai_mcp_server_port";
     public static final String MCP_TOKEN_PROPERTY = "ai_mcp_token";
     public static final String MCP_TOKEN_HEADER = "X-Freeplane-MCP-Token";
+    public static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String MCP_PROTOCOL_VERSION = "2024-11-05";
     private static final int DEFAULT_PORT = 6298;
     private static final int PORT_MINIMUM = 1024;

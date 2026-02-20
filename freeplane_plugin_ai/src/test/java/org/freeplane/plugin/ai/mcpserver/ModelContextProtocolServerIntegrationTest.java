@@ -96,11 +96,37 @@ public class ModelContextProtocolServerIntegrationTest {
         assertThat(response.status).isEqualTo(401);
     }
 
+    @Test
+    public void requestWithBearerHeader_returnsSuccess() throws Exception {
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put(ModelContextProtocolServer.AUTHORIZATION_HEADER, "Bearer " + TEST_API_KEY);
+        Response response = sendJsonRequest("initialize", 1, null, headers);
+        assertThat(response.status).isEqualTo(200);
+    }
+
+    @Test
+    public void requestWithMismatchedBearerAndLegacyHeaders_returnsUnauthorized() throws Exception {
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put(ModelContextProtocolServer.AUTHORIZATION_HEADER, "Bearer " + TEST_API_KEY);
+        headers.put(ModelContextProtocolServer.MCP_TOKEN_HEADER, "different-token");
+        Response response = sendJsonRequest("initialize", 1, null, headers);
+        assertThat(response.status).isEqualTo(401);
+    }
+
     private Response sendJsonRequest(String methodName, Object id, Map<String, Object> parameters) throws Exception {
         return sendJsonRequest(methodName, id, parameters, true);
     }
 
     private Response sendJsonRequest(String methodName, Object id, Map<String, Object> parameters, boolean includeApiKeyHeader)
+        throws Exception {
+        Map<String, String> requestHeaders = new LinkedHashMap<>();
+        if (includeApiKeyHeader) {
+            requestHeaders.put(ModelContextProtocolServer.MCP_TOKEN_HEADER, TEST_API_KEY);
+        }
+        return sendJsonRequest(methodName, id, parameters, requestHeaders);
+    }
+
+    private Response sendJsonRequest(String methodName, Object id, Map<String, Object> parameters, Map<String, String> requestHeaders)
         throws Exception {
         Map<String, Object> requestPayload = new LinkedHashMap<>();
         requestPayload.put("jsonrpc", "2.0");
@@ -116,8 +142,8 @@ public class ModelContextProtocolServerIntegrationTest {
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
-        if (includeApiKeyHeader) {
-            connection.setRequestProperty(ModelContextProtocolServer.MCP_TOKEN_HEADER, TEST_API_KEY);
+        for (Map.Entry<String, String> requestHeader : requestHeaders.entrySet()) {
+            connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
         }
         connection.setFixedLengthStreamingMode(payloadBytes.length);
         try (OutputStream outputStream = connection.getOutputStream()) {

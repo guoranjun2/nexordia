@@ -19,6 +19,8 @@ class MCPAuthenticator {
     private static final int UNAUTHORIZED_ERROR_CODE = -32001;
     private static final String UNAUTHORIZED_MESSAGE = "Unauthorized";
     private static final String GENERATED_MCP_TOKEN_MESSAGE = "ai_mcp_token_generated_message";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final ResourceController resourceController;
     private final String apiKeyPropertyName;
@@ -71,11 +73,34 @@ class MCPAuthenticator {
             notifyTokenGenerated(generatedApiKey);
             return buildUnauthorizedResponse();
         }
-        String providedApiKey = trimToEmpty(requestHeaders == null ? null : requestHeaders.getFirst(apiKeyHeaderName));
+        String legacyHeaderToken = trimToEmpty(requestHeaders == null ? null : requestHeaders.getFirst(apiKeyHeaderName));
+        BearerToken bearerToken = parseBearerToken(requestHeaders);
+        if (!bearerToken.valid) {
+            return buildUnauthorizedResponse();
+        }
+        if (!legacyHeaderToken.isEmpty() && !bearerToken.token.isEmpty() && !legacyHeaderToken.equals(bearerToken.token)) {
+            return buildUnauthorizedResponse();
+        }
+        String providedApiKey = !bearerToken.token.isEmpty() ? bearerToken.token : legacyHeaderToken;
         if (!configuredApiKey.equals(providedApiKey)) {
             return buildUnauthorizedResponse();
         }
         return null;
+    }
+
+    private BearerToken parseBearerToken(Headers requestHeaders) {
+        String authorizationHeader = trimToEmpty(requestHeaders == null ? null : requestHeaders.getFirst(AUTHORIZATION_HEADER));
+        if (authorizationHeader.isEmpty()) {
+            return BearerToken.missing();
+        }
+        if (!authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return BearerToken.invalid();
+        }
+        String tokenValue = trimToEmpty(authorizationHeader.substring(BEARER_PREFIX.length()));
+        if (tokenValue.isEmpty()) {
+            return BearerToken.invalid();
+        }
+        return BearerToken.valid(tokenValue);
     }
 
     String generateToken() {
@@ -113,5 +138,27 @@ class MCPAuthenticator {
     @FunctionalInterface
     interface EventDispatchInvoker {
         void invokeAndWait(Runnable runnable) throws InterruptedException, InvocationTargetException;
+    }
+
+    private static class BearerToken {
+        private final boolean valid;
+        private final String token;
+
+        private BearerToken(boolean valid, String token) {
+            this.valid = valid;
+            this.token = token;
+        }
+
+        static BearerToken missing() {
+            return new BearerToken(true, "");
+        }
+
+        static BearerToken valid(String token) {
+            return new BearerToken(true, token);
+        }
+
+        static BearerToken invalid() {
+            return new BearerToken(false, "");
+        }
     }
 }

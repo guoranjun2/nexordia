@@ -22,6 +22,7 @@ import org.junit.Test;
 public class MCPAuthenticatorTest {
     private static final String API_KEY_PROPERTY = "ai_mcp_token";
     private static final String API_KEY_HEADER = "X-Freeplane-MCP-Token";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
     @Test
     public void blankConfiguredApiKey_generatesAndPersistsAndRejectsCurrentRequest() {
@@ -80,6 +81,58 @@ public class MCPAuthenticatorTest {
 
         assertUnauthorized(response);
         verify(resourceController, never()).setProperty(API_KEY_PROPERTY, "generated-key");
+    }
+
+    @Test
+    public void matchingBearerHeader_allowsRequest() {
+        ResourceController resourceController = mock(ResourceController.class);
+        when(resourceController.getProperty(API_KEY_PROPERTY, "")).thenReturn("expected-key");
+        Headers requestHeaders = new Headers();
+        requestHeaders.add(AUTHORIZATION_HEADER, "Bearer expected-key");
+        MCPAuthenticator uut = new MCPAuthenticator(
+            resourceController,
+            API_KEY_PROPERTY,
+            API_KEY_HEADER,
+            Runnable::run);
+
+        Object response = uut.authenticateRequest(requestHeaders);
+
+        assertThat(response).isNull();
+    }
+
+    @Test
+    public void invalidBearerHeader_rejectsRequestWhenApiKeyIsConfigured() {
+        ResourceController resourceController = mock(ResourceController.class);
+        when(resourceController.getProperty(API_KEY_PROPERTY, "")).thenReturn("expected-key");
+        Headers requestHeaders = new Headers();
+        requestHeaders.add(AUTHORIZATION_HEADER, "Token expected-key");
+        MCPAuthenticator uut = new MCPAuthenticator(
+            resourceController,
+            API_KEY_PROPERTY,
+            API_KEY_HEADER,
+            Runnable::run);
+
+        Object response = uut.authenticateRequest(requestHeaders);
+
+        assertUnauthorized(response);
+    }
+
+    @Test
+    public void mismatchedBearerAndLegacyHeaders_rejectRequestWhenApiKeyIsConfigured() {
+        ResourceController resourceController = mock(ResourceController.class);
+        when(resourceController.getProperty(API_KEY_PROPERTY, "")).thenReturn("expected-key");
+        Headers requestHeaders = new Headers();
+        requestHeaders.add(AUTHORIZATION_HEADER, "Bearer expected-key");
+        requestHeaders.add(API_KEY_HEADER, "different-key");
+        MCPAuthenticator uut = new MCPAuthenticator(
+            resourceController,
+            API_KEY_PROPERTY,
+            API_KEY_HEADER,
+            Runnable::run);
+
+        Object response = uut.authenticateRequest(requestHeaders);
+
+        assertUnauthorized(response);
     }
 
     @Test

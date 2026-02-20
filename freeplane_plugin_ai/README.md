@@ -15,3 +15,11 @@ Local model setup with Ollama
 - Optional remote token:
   `ai_ollama_api_key=<ollama-api-key>`
   (sent as `Authorization: Bearer <token>` only when non-empty)
+
+MCP server authentication
+- Enable MCP server with `ai_mcp_server_enabled=true`.
+- Configure token in `ai_mcp_token`.
+- MCP clients can authenticate with either:
+  - `Authorization: Bearer <token>` (recommended)
+  - `X-Freeplane-MCP-Token: <token>` (legacy compatibility)
+- If both headers are sent, token values must match.
