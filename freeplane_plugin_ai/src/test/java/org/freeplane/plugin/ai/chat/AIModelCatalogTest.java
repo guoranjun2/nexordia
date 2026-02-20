@@ -2,14 +2,27 @@ package org.freeplane.plugin.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
 import org.junit.Test;
 
 public class AIModelCatalogTest {
+    @After
+    public void resetOllamaCache() {
+        AIModelCatalog.resetOllamaCacheForTests();
+    }
+
     @Test
     public void parseOpenrouterModelsResponse_returnsModels() throws Exception {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
@@ -83,5 +96,162 @@ public class AIModelCatalogTest {
 
         assertThat(filteredDescriptors).extracting(AIModelDescriptor::getModelName)
             .containsExactly("openai/gpt-5", "gemini-3-flash-preview");
+    }
+
+    @Test
+    public void applyRequestHeaders_setsAllConfiguredHeaders() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        AIModelCatalog uut = new AIModelCatalog(configuration);
+        RecordingHttpURLConnection connection = new RecordingHttpURLConnection();
+        Map<String, String> requestHeaders = new HashMap<>();
+        requestHeaders.put("Authorization", "Bearer token-123");
+        requestHeaders.put("X-Test", "value");
+
+        uut.applyRequestHeaders(connection, requestHeaders);
+
+        assertThat(connection.getHeader("Authorization")).isEqualTo("Bearer token-123");
+        assertThat(connection.getHeader("X-Test")).isEqualTo("value");
+    }
+
+    @Test
+    public void applyRequestHeaders_doesNothingForEmptyHeaders() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        AIModelCatalog uut = new AIModelCatalog(configuration);
+        RecordingHttpURLConnection connection = new RecordingHttpURLConnection();
+
+        uut.applyRequestHeaders(connection, Collections.<String, String>emptyMap());
+
+        assertThat(connection.headerCount()).isZero();
+    }
+
+    @Test
+    public void getAvailableModels_retriesAfterFailedOllamaFetchWithoutCachingFailure() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.hasOllamaServiceAddress()).thenReturn(true);
+        when(configuration.getOllamaServiceAddress()).thenReturn("https://ollama.example");
+        when(configuration.getOllamaRequestHeaders()).thenReturn(Collections.emptyMap());
+        TestableAIModelCatalog uut = new TestableAIModelCatalog(configuration,
+            AIModelCatalog.OllamaModelsFetchResult.failed(),
+            AIModelCatalog.OllamaModelsFetchResult.success(Collections.singletonList(
+                new AIModelDescriptor("ollama", "llama3", "Ollama: llama3", false))));
+
+        List<AIModelDescriptor> firstResponse = uut.getAvailableModels(true);
+        List<AIModelDescriptor> secondResponse = uut.getAvailableModels(true);
+
+        assertThat(firstResponse).isEmpty();
+        assertThat(secondResponse).extracting(AIModelDescriptor::getModelName).containsExactly("llama3");
+        assertThat(uut.fetchCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void getAvailableModels_refreshesImmediatelyWhenOllamaServiceAddressChanges() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        AtomicReference<String> serviceAddress = new AtomicReference<>("https://ollama.one");
+        when(configuration.hasOllamaServiceAddress()).thenReturn(true);
+        when(configuration.getOllamaServiceAddress()).thenAnswer(invocation -> serviceAddress.get());
+        when(configuration.getOllamaRequestHeaders()).thenReturn(Collections.emptyMap());
+        TestableAIModelCatalog uut = new TestableAIModelCatalog(configuration,
+            AIModelCatalog.OllamaModelsFetchResult.success(Collections.singletonList(
+                new AIModelDescriptor("ollama", "first-model", "Ollama: first-model", false))),
+            AIModelCatalog.OllamaModelsFetchResult.success(Collections.singletonList(
+                new AIModelDescriptor("ollama", "second-model", "Ollama: second-model", false))));
+
+        List<AIModelDescriptor> firstResponse = uut.getAvailableModels(true);
+        serviceAddress.set("https://ollama.two");
+        List<AIModelDescriptor> secondResponse = uut.getAvailableModels(true);
+
+        assertThat(firstResponse).extracting(AIModelDescriptor::getModelName).containsExactly("first-model");
+        assertThat(secondResponse).extracting(AIModelDescriptor::getModelName).containsExactly("second-model");
+        assertThat(uut.fetchCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void getAvailableModels_refreshesImmediatelyWhenOllamaTokenHeadersChange() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        AtomicReference<Map<String, String>> requestHeaders =
+            new AtomicReference<>(Collections.singletonMap("Authorization", "Bearer token-a"));
+        when(configuration.hasOllamaServiceAddress()).thenReturn(true);
+        when(configuration.getOllamaServiceAddress()).thenReturn("https://ollama.example");
+        when(configuration.getOllamaRequestHeaders()).thenAnswer(invocation -> requestHeaders.get());
+        TestableAIModelCatalog uut = new TestableAIModelCatalog(configuration,
+            AIModelCatalog.OllamaModelsFetchResult.success(Collections.singletonList(
+                new AIModelDescriptor("ollama", "token-a-model", "Ollama: token-a-model", false))),
+            AIModelCatalog.OllamaModelsFetchResult.success(Collections.singletonList(
+                new AIModelDescriptor("ollama", "token-b-model", "Ollama: token-b-model", false))));
+
+        List<AIModelDescriptor> firstResponse = uut.getAvailableModels(true);
+        requestHeaders.set(Collections.singletonMap("Authorization", "Bearer token-b"));
+        List<AIModelDescriptor> secondResponse = uut.getAvailableModels(true);
+
+        assertThat(firstResponse).extracting(AIModelDescriptor::getModelName).containsExactly("token-a-model");
+        assertThat(secondResponse).extracting(AIModelDescriptor::getModelName).containsExactly("token-b-model");
+        assertThat(uut.fetchCount()).isEqualTo(2);
+    }
+
+    private static class TestableAIModelCatalog extends AIModelCatalog {
+        private final List<OllamaModelsFetchResult> fetchResults;
+        private int fetchIndex;
+        private int fetchCount;
+
+        private TestableAIModelCatalog(AIProviderConfiguration configuration,
+                                       OllamaModelsFetchResult... fetchResults) {
+            super(configuration);
+            this.fetchResults = Arrays.asList(fetchResults);
+        }
+
+        @Override
+        OllamaModelsFetchResult fetchOllamaModels() {
+            fetchCount++;
+            int selectedIndex = Math.min(fetchIndex, fetchResults.size() - 1);
+            OllamaModelsFetchResult fetchResult = fetchResults.get(selectedIndex);
+            fetchIndex++;
+            return fetchResult;
+        }
+
+        private int fetchCount() {
+            return fetchCount;
+        }
+    }
+
+    private static class RecordingHttpURLConnection extends HttpURLConnection {
+        private final Map<String, String> headers = new HashMap<>();
+
+        private RecordingHttpURLConnection() {
+            super(createUnusedUrl());
+        }
+
+        @Override
+        public void disconnect() {
+        }
+
+        @Override
+        public boolean usingProxy() {
+            return false;
+        }
+
+        @Override
+        public void connect() {
+        }
+
+        @Override
+        public void setRequestProperty(String key, String value) {
+            headers.put(key, value);
+        }
+
+        private String getHeader(String key) {
+            return headers.get(key);
+        }
+
+        private int headerCount() {
+            return headers.size();
+        }
+
+        private static URL createUnusedUrl() {
+            try {
+                return new URL("http://localhost");
+            } catch (Exception exception) {
+                throw new RuntimeException(exception);
+            }
+        }
     }
 }

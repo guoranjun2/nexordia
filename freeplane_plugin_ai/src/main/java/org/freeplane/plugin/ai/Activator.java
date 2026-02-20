@@ -42,6 +42,7 @@ public class Activator implements BundleActivator {
 	private static final String SYSTEM_MESSAGE_PROPERTY = MessageBuilder.SYSTEM_MESSAGE_PROPERTY;
 	private static final String OPENROUTER_KEY_PROPERTY = "ai_openrouter_key";
 	private static final String GEMINI_KEY_PROPERTY = "ai_gemini_key";
+	private static final String OLLAMA_API_KEY_PROPERTY = "ai_ollama_api_key";
 	private static final String MCP_TOKEN_PROPERTY = "ai_mcp_token";
 	private ModelContextProtocolServer modelContextProtocolServer;
 	private AIChatPanel aiChatPanel;
@@ -99,6 +100,7 @@ public class Activator implements BundleActivator {
 				private void markSecretsForSeparatePersistence(ResourceController resourceController) {
 					resourceController.persistPropertyInSecretsFile(OPENROUTER_KEY_PROPERTY);
 					resourceController.persistPropertyInSecretsFile(GEMINI_KEY_PROPERTY);
+					resourceController.persistPropertyInSecretsFile(OLLAMA_API_KEY_PROPERTY);
 					resourceController.persistPropertyInSecretsFile(MCP_TOKEN_PROPERTY);
 				}
 

@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 class AIModelCatalog {
@@ -26,6 +28,7 @@ class AIModelCatalog {
     private static final Object ollamaLock = new Object();
     private static long lastOllamaRefreshTime;
     private static List<AIModelDescriptor> cachedOllamaModels = Collections.emptyList();
+    private static String cachedOllamaCacheKey = "";
 
     private final AIProviderConfiguration configuration;
     private final ObjectMapper objectMapper;
@@ -45,7 +48,7 @@ class AIModelCatalog {
         if (hasGeminiKey()) {
             modelDescriptors.addAll(getGeminiModelsFromList());
         }
-        if (configuration.isOllamaEnabled()) {
+        if (configuration.hasOllamaServiceAddress()) {
             List<AIModelDescriptor> ollamaModels = getOllamaModels(allowsRefresh);
             modelDescriptors.addAll(filterModelDescriptors(ollamaModels,
                 configuration.getOllamaModelAllowlistValue()));
@@ -80,19 +83,43 @@ class AIModelCatalog {
     }
 
     private List<AIModelDescriptor> getOllamaModels(boolean allowsRefresh) {
+        String currentCacheKey = getOllamaCacheKey();
+        invalidateOllamaCacheIfConfigurationChanged(currentCacheKey);
         if (!allowsRefresh) {
             return cachedOllamaModels;
         }
         synchronized (ollamaLock) {
+            currentCacheKey = getOllamaCacheKey();
+            invalidateOllamaCacheIfConfigurationChanged(currentCacheKey);
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastOllamaRefreshTime < OPENROUTER_REFRESH_INTERVAL_MILLISECONDS) {
                 return cachedOllamaModels;
             }
-            List<AIModelDescriptor> refreshedModels = fetchOllamaModels();
-            cachedOllamaModels = refreshedModels;
-            lastOllamaRefreshTime = currentTime;
+            OllamaModelsFetchResult refreshedModels = fetchOllamaModels();
+            if (refreshedModels.successful) {
+                cachedOllamaModels = refreshedModels.models;
+                lastOllamaRefreshTime = currentTime;
+            }
             return cachedOllamaModels;
         }
+    }
+
+    private void invalidateOllamaCacheIfConfigurationChanged(String currentCacheKey) {
+        if (!currentCacheKey.equals(cachedOllamaCacheKey)) {
+            cachedOllamaModels = Collections.emptyList();
+            lastOllamaRefreshTime = 0L;
+            cachedOllamaCacheKey = currentCacheKey;
+        }
+    }
+
+    private String getOllamaCacheKey() {
+        String serviceAddress = configuration.getOllamaServiceAddress();
+        Map<String, String> requestHeaders = configuration.getOllamaRequestHeaders();
+        return normalize(serviceAddress) + "|" + new TreeMap<>(requestHeaders).toString();
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private List<AIModelDescriptor> fetchOpenrouterModels() {
@@ -121,28 +148,38 @@ class AIModelCatalog {
         }
     }
 
-    private List<AIModelDescriptor> fetchOllamaModels() {
+    OllamaModelsFetchResult fetchOllamaModels() {
         String serviceAddress = configuration.getOllamaServiceAddress();
-        if (serviceAddress == null || serviceAddress.isEmpty()) {
-            serviceAddress = AIChatModelFactory.DEFAULT_OLLAMA_SERVICE_ADDRESS;
-        }
         String modelsAddress = serviceAddress.endsWith("/") ? serviceAddress + "api/tags" : serviceAddress + "/api/tags";
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(modelsAddress).openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(10000);
+            applyRequestHeaders(connection, configuration.getOllamaRequestHeaders());
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                return Collections.emptyList();
+                return OllamaModelsFetchResult.failed();
             }
             try (InputStream inputStream = connection.getInputStream();
                  InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-                return parseOllamaModelsResponse(reader);
+                return OllamaModelsFetchResult.success(parseOllamaModelsResponse(reader));
             }
         } catch (IOException exception) {
-            return Collections.emptyList();
+            return OllamaModelsFetchResult.failed();
         }
+    }
+
+    void applyRequestHeaders(HttpURLConnection connection, Map<String, String> requestHeaders) {
+        for (Map.Entry<String, String> requestHeader : requestHeaders.entrySet()) {
+            connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
+        }
+    }
+
+    static void resetOllamaCacheForTests() {
+        cachedOllamaModels = Collections.emptyList();
+        lastOllamaRefreshTime = 0L;
+        cachedOllamaCacheKey = "";
     }
 
     List<AIModelDescriptor> parseOpenrouterModelsResponse(Reader reader) throws IOException {
@@ -321,6 +358,24 @@ class AIModelCatalog {
     private static class OllamaModelItem {
         @JsonProperty("name")
         private String modelName;
+    }
+
+    static class OllamaModelsFetchResult {
+        private final boolean successful;
+        private final List<AIModelDescriptor> models;
+
+        private OllamaModelsFetchResult(boolean successful, List<AIModelDescriptor> models) {
+            this.successful = successful;
+            this.models = models;
+        }
+
+        static OllamaModelsFetchResult success(List<AIModelDescriptor> models) {
+            return new OllamaModelsFetchResult(true, models);
+        }
+
+        static OllamaModelsFetchResult failed() {
+            return new OllamaModelsFetchResult(false, Collections.<AIModelDescriptor>emptyList());
+        }
     }
 
     List<AIModelDescriptor> parseGeminiModelList(String modelListValue) {

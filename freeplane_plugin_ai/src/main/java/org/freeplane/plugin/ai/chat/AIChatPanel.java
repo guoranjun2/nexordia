@@ -566,14 +566,14 @@ public class AIChatPanel extends JPanel {
             || "ai_openrouter_service_address".equals(propertyName)
             || "ai_gemini_key".equals(propertyName)
             || "ai_gemini_service_address".equals(propertyName)
-            || "ai_use_ollama".equals(propertyName)
+            || "ai_ollama_api_key".equals(propertyName)
             || "ai_ollama_service_address".equals(propertyName);
     }
 
     private boolean isProviderConfigurationProperty(String propertyName) {
         return "ai_openrouter_key".equals(propertyName)
             || "ai_gemini_key".equals(propertyName)
-            || "ai_use_ollama".equals(propertyName);
+            || "ai_ollama_service_address".equals(propertyName);
     }
 
     private void sendMessage() {
@@ -672,7 +672,7 @@ public class AIChatPanel extends JPanel {
     private boolean isProviderConfigured() {
         return isNonEmptyText(configuration.getOpenRouterKey())
             || isNonEmptyText(configuration.getGeminiKey())
-            || configuration.isOllamaEnabled();
+            || configuration.hasOllamaServiceAddress();
     }
 
     private boolean isNonEmptyText(String value) {
@@ -700,8 +700,8 @@ public class AIChatPanel extends JPanel {
                 return;
             }
         } else if (AIChatModelFactory.PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
-            if (!configuration.isOllamaEnabled()) {
-                appendChatMessage("Ollama usage is disabled.", ChatMessageCategory.ASSISTANT);
+            if (!configuration.hasOllamaServiceAddress()) {
+                appendChatMessage("Missing Ollama service address setting.", ChatMessageCategory.ASSISTANT);
                 return;
             }
         } else {

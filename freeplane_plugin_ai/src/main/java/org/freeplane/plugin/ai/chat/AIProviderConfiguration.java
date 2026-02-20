@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.chat;
 
+import java.util.Collections;
+import java.util.Map;
 import org.freeplane.core.resources.ResourceController;
 
 public class AIProviderConfiguration {
@@ -13,13 +15,17 @@ public class AIProviderConfiguration {
     private static final String AI_GEMINI_KEY_PROPERTY = "ai_gemini_key";
     private static final String AI_GEMINI_MODEL_LIST_PROPERTY = "ai_gemini_model_list";
     private static final String AI_OLLAMA_SERVICE_ADDRESS_PROPERTY = "ai_ollama_service_address";
-    private static final String AI_USE_OLLAMA_PROPERTY = "ai_use_ollama";
+    private static final String AI_OLLAMA_API_KEY_PROPERTY = "ai_ollama_api_key";
     private static final String AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY = "ai_ollama_model_allowlist";
 
     private final ResourceController resourceController;
 
     public AIProviderConfiguration() {
-        this.resourceController = ResourceController.getResourceController();
+        this(ResourceController.getResourceController());
+    }
+
+    AIProviderConfiguration(ResourceController resourceController) {
+        this.resourceController = resourceController;
     }
 
     public String getSelectedModelValue() {
@@ -71,11 +77,31 @@ public class AIProviderConfiguration {
         return resourceController.getProperty(AI_OLLAMA_SERVICE_ADDRESS_PROPERTY);
     }
 
-    public boolean isOllamaEnabled() {
-        return resourceController.getBooleanProperty(AI_USE_OLLAMA_PROPERTY);
+    public String getOllamaApiKey() {
+        return resourceController.getProperty(AI_OLLAMA_API_KEY_PROPERTY);
+    }
+
+    public boolean hasOllamaServiceAddress() {
+        return hasNonBlankText(getOllamaServiceAddress());
+    }
+
+    public Map<String, String> getOllamaRequestHeaders() {
+        String apiKey = trimToEmpty(getOllamaApiKey());
+        if (apiKey.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Collections.singletonMap("Authorization", "Bearer " + apiKey);
     }
 
     public String getOllamaModelAllowlistValue() {
         return resourceController.getProperty(AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY);
+    }
+
+    private boolean hasNonBlankText(String value) {
+        return !trimToEmpty(value).isEmpty();
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 }

@@ -5,6 +5,7 @@ import dev.langchain4j.model.googleai.GeminiThinkingConfig;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.util.Map;
 
 public class AIChatModelFactory {
 
@@ -12,7 +13,6 @@ public class AIChatModelFactory {
     public static final String PROVIDER_NAME_GEMINI = "gemini";
     public static final String PROVIDER_NAME_OLLAMA = "ollama";
     public static final String DEFAULT_OPENROUTER_SERVICE_ADDRESS = "https://openrouter.ai/api/v1";
-    public static final String DEFAULT_OLLAMA_SERVICE_ADDRESS = "http://localhost:11434";
     static final int CHAT_MODEL_MAX_RETRIES = 2;
 
     private AIChatModelFactory() {
@@ -53,11 +53,15 @@ public class AIChatModelFactory {
             return builder.build();
         }
         if (PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
-            return OllamaChatModel.builder()
+            OllamaChatModel.OllamaChatModelBuilder builder = OllamaChatModel.builder()
                 .baseUrl(getOllamaServiceAddress(configuration))
                 .modelName(modelName)
-                .maxRetries(CHAT_MODEL_MAX_RETRIES)
-                .build();
+                .maxRetries(CHAT_MODEL_MAX_RETRIES);
+            Map<String, String> requestHeaders = configuration.getOllamaRequestHeaders();
+            if (!requestHeaders.isEmpty()) {
+                builder.customHeaders(requestHeaders);
+            }
+            return builder.build();
         }
         throw new IllegalArgumentException("Unknown provider name: " + providerName);
     }
@@ -71,10 +75,6 @@ public class AIChatModelFactory {
     }
 
     private static String getOllamaServiceAddress(AIProviderConfiguration configuration) {
-        String serviceAddress = configuration.getOllamaServiceAddress();
-        if (serviceAddress == null || serviceAddress.isEmpty()) {
-            return DEFAULT_OLLAMA_SERVICE_ADDRESS;
-        }
-        return serviceAddress;
+        return configuration.getOllamaServiceAddress();
     }
 }
