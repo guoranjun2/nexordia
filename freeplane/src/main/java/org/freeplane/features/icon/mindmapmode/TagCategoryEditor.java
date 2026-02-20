@@ -939,7 +939,7 @@ class TagCategoryEditor implements IExtension {
         }
     }
 
-    private void submitAndClose() {
+    void submitAndClose() {
         if(tree.isEditing()) {
             return;
         }
@@ -968,6 +968,9 @@ class TagCategoryEditor implements IExtension {
     private RootPaneContainer resolveOwnerContainer() {
         if(dialog.getOwner() instanceof RootPaneContainer) {
             return (RootPaneContainer) dialog.getOwner();
+        }
+        if(FORCE_HEADLESS_GRAPHICS_FOR_TEST || GraphicsEnvironment.isHeadless()) {
+            return null;
         }
         Component currentRootComponent = UITools.getCurrentRootComponent();
         if(currentRootComponent instanceof RootPaneContainer) {

@@ -489,4 +489,22 @@ public class TagCategoryEditorTest {
             verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
         }
     }
+
+    @Test
+    public void submitAndCloseOnStaleRevisionDiscardsDraftAndClosesEditor() {
+        try (TagTestSteps steps = new TagTestSteps()) {
+            TagCategories initialCategories = TagCategoriesTest.tagCategories("AA#11223344\n");
+            TagCategories externallyUpdatedCategories = TagCategoriesTest.tagCategories("BB#22334455\n");
+            steps.given().tagCategoryEditor(initialCategories)
+                .when().selectNode(0)
+                .renameSelectedNode("LOCAL");
+            Mockito.when(steps.iconRegistry.getTagCategories()).thenReturn(externallyUpdatedCategories);
+
+            steps.uut.submitAndClose();
+
+            verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
+            verify(steps.mapModel).removeExtension(steps.uut);
+            verify(steps.dialog).setVisible(false);
+        }
+    }
 }
