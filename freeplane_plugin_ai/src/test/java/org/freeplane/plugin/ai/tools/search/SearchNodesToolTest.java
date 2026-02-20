@@ -48,8 +48,8 @@ public class SearchNodesToolTest {
         when(rootNode.createID()).thenReturn("ID_root");
         when(childNode.createID()).thenReturn("ID_child");
         when(otherNode.createID()).thenReturn("ID_other");
-        NodeContentResponse rootBriefContent = new NodeContentResponse("Root", null, null, null, null, null);
-        NodeContentResponse childBriefContent = new NodeContentResponse("Alpha", null, null, null, null, null);
+        NodeContentResponse rootBriefContent = new NodeContentResponse("Root", null, null, null, null, null, null, null);
+        NodeContentResponse childBriefContent = new NodeContentResponse("Alpha", null, null, null, null, null, null, null);
         when(nodeContentItemReader.matchesNodeContent(eq(childNode), any(NodeContentRequest.class),
             any(NodeContentValueMatcher.class)))
             .thenReturn(true);
@@ -171,9 +171,9 @@ public class SearchNodesToolTest {
                 return matcher.matchesValue("Priority 3");
             });
         when(nodeContentItemReader.readNodeContent(rootNode, null, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContentResponse("Root", null, null, null, null, null));
+            .thenReturn(new NodeContentResponse("Root", null, null, null, null, null, null, null));
         when(nodeContentItemReader.readNodeContent(childNode, null, NodeContentPreset.BRIEF))
-            .thenReturn(new NodeContentResponse("Alpha", null, null, null, null, null));
+            .thenReturn(new NodeContentResponse("Alpha", null, null, null, null, null, null, null));
         TextController textController = mock(TextController.class);
         SearchNodesTool uut = new SearchNodesTool(availableMaps, null, nodeContentItemReader, textController,
             objectMapper);

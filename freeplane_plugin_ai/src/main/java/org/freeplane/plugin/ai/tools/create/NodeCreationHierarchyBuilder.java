@@ -11,14 +11,18 @@ import java.util.Set;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.ai.tools.content.NodeContentApplier;
+import org.freeplane.plugin.ai.tools.edit.NodeStyleContentEditor;
 
 public class NodeCreationHierarchyBuilder {
     private final NodeModelCreator nodeModelCreator;
     private final NodeContentApplier nodeContentApplier;
+    private final NodeStyleContentEditor nodeStyleContentEditor;
 
-    public NodeCreationHierarchyBuilder(NodeModelCreator nodeModelCreator, NodeContentApplier nodeContentApplier) {
+    public NodeCreationHierarchyBuilder(NodeModelCreator nodeModelCreator, NodeContentApplier nodeContentApplier,
+                                        NodeStyleContentEditor nodeStyleContentEditor) {
         this.nodeModelCreator = Objects.requireNonNull(nodeModelCreator, "nodeModelCreator");
         this.nodeContentApplier = Objects.requireNonNull(nodeContentApplier, "nodeContentApplier");
+        this.nodeStyleContentEditor = Objects.requireNonNull(nodeStyleContentEditor, "nodeStyleContentEditor");
     }
 
     public NodeCreationHierarchy buildHierarchy(List<NodeCreationItem> items, MapModel mapModel) {
@@ -50,6 +54,7 @@ public class NodeCreationHierarchyBuilder {
             nodesByIndex.put(index, nodeModel);
             createdNodes.add(nodeModel);
             nodeContentApplier.apply(nodeModel, item.getContent());
+            nodeStyleContentEditor.setInitialMainStyle(nodeModel, item.getMainStyle());
             Integer parentIndex = item.getParentIndex();
             if (parentIndex != null && parentIndex >= 0) {
                 parentIndices.add(parentIndex);

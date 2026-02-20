@@ -6,5 +6,6 @@ public enum EditableContentField {
     NOTE,
     ATTRIBUTES,
     TAGS,
-    ICONS
+    ICONS,
+    STYLE
 }

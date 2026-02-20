@@ -4,16 +4,13 @@
 package org.freeplane.plugin.script.proxy;
 
 import java.awt.Color;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.freeplane.api.HorizontalTextAlignment;
 import org.freeplane.api.LengthUnit;
+import org.freeplane.api.MindMap;
 import org.freeplane.api.Quantity;
-import org.freeplane.core.resources.TranslatedObject;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
@@ -27,7 +24,7 @@ import org.freeplane.features.styles.LogicalStyleController;
 import org.freeplane.features.styles.LogicalStyleController.StyleOption;
 import org.freeplane.features.styles.LogicalStyleModel;
 import org.freeplane.features.styles.MapStyleModel;
-import org.freeplane.features.styles.StyleFactory;
+import org.freeplane.features.styles.StyleNameMappingHelper;
 import org.freeplane.features.styles.StyleTranslatedObject;
 import org.freeplane.features.styles.mindmapmode.MLogicalStyleController;
 import org.freeplane.plugin.script.ScriptContext;
@@ -36,43 +33,17 @@ import org.freeplane.plugin.script.proxy.Proxy.Node;
 class NodeStyleProxy extends AbstractProxy<NodeModel> implements Proxy.NodeStyle {
 	static final String STYLE_NAME_MUST_NOT_BE_NULL = "styleName mustn't be null";
 
-    static IStyle styleByName(org.freeplane.api.MindMap map, String styleName) {
+    static IStyle styleByName(MindMap map, String styleName) {
         return styleByName(((MapProxy)map).getDelegate(), styleName);
     }
 
     static IStyle styleByName(MapModel map, String styleName) {
-        final MapStyleModel sourceStyleModel = MapStyleModel.getExtension(map);
-        IStyle sourceStyle = null;
-        // actually styles is a HashSet so lookup is fast
-        final Set<IStyle> styles = sourceStyleModel.getStyles();
-        // search for user defined styles
-        final IStyle styleString = StyleFactory.create(styleName);
-        if (styles.contains(styleString)) {
-            sourceStyle = styleString;
-        }
-        else {
-            // search for predefined styles by key
-            final IStyle styleNamedObject = StyleFactory.create(new TranslatedObject(styleName));
-            if (styles.contains(styleNamedObject)) {
-                sourceStyle = styleNamedObject;
-            }
-            // search for predefined styles by their translated name (style.toString())
-            else for (IStyle style : styles) {
-                if (style.toString().equals(styleName)) {
-                    sourceStyle = style;
-                    break;
-                }
-            }
-        }
-        return sourceStyle;
+        return styleName == null ? null : StyleNameMappingHelper.findStyleByName(map, styleName);
     }
 
 	static IStyle styleByNameOrThrowException(MapModel map, String styleName) {
-		IStyle style = styleByName(map, Objects.requireNonNull(styleName, STYLE_NAME_MUST_NOT_BE_NULL));
-		if (style == null)
-			throw new IllegalArgumentException("style '" + styleName + "' not found");
-		else
-			return style;
+		return StyleNameMappingHelper.findStyleByNameOrThrow(
+		    map, Objects.requireNonNull(styleName, STYLE_NAME_MUST_NOT_BE_NULL));
 	}
 
 	NodeStyleProxy(final NodeModel delegate, final ScriptContext scriptContext) {
@@ -84,14 +55,11 @@ class NodeStyleProxy extends AbstractProxy<NodeModel> implements Proxy.NodeStyle
 	}
 
 	public List<String> getAllActiveStyles() {
-        return getLogicalStyleController().getStyles(getDelegate(), StyleOption.STYLES_ONLY)
-        .stream().map(StyleTranslatedObject::toKeyString)
-        .collect(Collectors.toList());
+        return StyleNameMappingHelper.readActiveStyleNames(getDelegate());
     }
 
     public String getName() {
-        final IStyle style = getStyle();
-        return style == null ? null : StyleTranslatedObject.toKeyString(style);
+        return StyleNameMappingHelper.readMainStyleName(getDelegate());
     }
 
 	public Node getStyleNode() {
@@ -208,12 +176,10 @@ class NodeStyleProxy extends AbstractProxy<NodeModel> implements Proxy.NodeStyle
     }
 
 	public static boolean hasStyle(NodeModel nodeModel, String styleName) {
-		final Collection<IStyle> styles = LogicalStyleController.getController().getStyles(nodeModel, StyleOption.FOR_UNSELECTED_NODE);
-		for (IStyle style : styles) {
-			if (StyleTranslatedObject.toKeyString(style).equals(styleName))
-				return true;
-		}
-		return false;
+	    if (styleName == null) {
+	        return false;
+	    }
+	    return StyleNameMappingHelper.readActiveStyleNames(nodeModel).contains(styleName);
     }
 
     public void setMinNodeWidth(int width) {

@@ -8,10 +8,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Optional;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.freeplane.core.util.Hyperlink;
@@ -66,7 +68,8 @@ public class ReadNodesWithDescendantsToolTest {
         when(focusNode.createID()).thenReturn("ID_focus");
         when(firstChildNode.createID()).thenReturn("ID_child_1");
         when(secondChildNode.createID()).thenReturn("ID_child_2");
-        NodeContentResponse focusContent = new NodeContentResponse(null, new TextualContent("Focus full", null, null), null, null, null, null);
+        NodeContentResponse focusContent = new NodeContentResponse(
+            null, new TextualContent("Focus full", null, null), null, null, null, null, null, null);
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL))).thenReturn(focusContent);
         TextController textController = mock(TextController.class);
         when(textController.getShortPlainText(focusNode)).thenReturn("Focus");
@@ -168,9 +171,11 @@ public class ReadNodesWithDescendantsToolTest {
         when(focusNode.getChildren()).thenReturn(Collections.emptyList());
         when(secondFocusNode.getChildren()).thenReturn(Collections.emptyList());
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL)))
-            .thenReturn(new NodeContentResponse(null, new TextualContent("Focus", null, null), null, null, null, null));
+            .thenReturn(new NodeContentResponse(
+                null, new TextualContent("Focus", null, null), null, null, null, null, null, null));
         when(nodeContentItemReader.readNodeContent(eq(secondFocusNode), any(), eq(NodeContentPreset.FULL)))
-            .thenReturn(new NodeContentResponse(null, new TextualContent("Focus 2", null, null), null, null, null, null));
+            .thenReturn(new NodeContentResponse(
+                null, new TextualContent("Focus 2", null, null), null, null, null, null, null, null));
         TextController textController = mock(TextController.class);
         ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(
             availableMaps, null, nodeContentItemReader, textController, objectMapper);
@@ -208,8 +213,10 @@ public class ReadNodesWithDescendantsToolTest {
         when(childNode.getChildren()).thenReturn(Collections.emptyList());
         when(focusNode.createID()).thenReturn("ID_focus");
         when(childNode.createID()).thenReturn("ID_child");
-        NodeContentResponse focusFullContent = new NodeContentResponse(null, new TextualContent("Focus full", null, null), null, null, null, null);
-        NodeContentResponse childFullContent = new NodeContentResponse(null, new TextualContent("Child full", null, null), null, null, null, null);
+        NodeContentResponse focusFullContent = new NodeContentResponse(
+            null, new TextualContent("Focus full", null, null), null, null, null, null, null, null);
+        NodeContentResponse childFullContent = new NodeContentResponse(
+            null, new TextualContent("Child full", null, null), null, null, null, null, null, null);
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL))).thenReturn(focusFullContent);
         when(nodeContentItemReader.readNodeContent(eq(childNode), any(), eq(NodeContentPreset.FULL))).thenReturn(childFullContent);
         TextController textController = mock(TextController.class);
@@ -257,7 +264,7 @@ public class ReadNodesWithDescendantsToolTest {
         when(focusNode.isCloneTreeNode()).thenReturn(false);
         when(focusNode.allClones()).thenReturn(new TestClones(Arrays.asList(focusNode, cloneNode)));
         NodeContentResponse focusContent = new NodeContentResponse(null,
-            new TextualContent("Focus full", null, null), null, null, null, null);
+            new TextualContent("Focus full", null, null), null, null, null, null, null, null);
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL)))
             .thenReturn(focusContent);
         TextController textController = mock(TextController.class);
@@ -331,7 +338,7 @@ public class ReadNodesWithDescendantsToolTest {
         when(mapModel.getNodeForID("ID_focus")).thenReturn(focusNode);
         when(focusNode.createID()).thenReturn("ID_focus");
         EditableContent editableContent = mock(EditableContent.class);
-        NodeContentResponse content = new NodeContentResponse(null, null, null, null, null, editableContent);
+        NodeContentResponse content = new NodeContentResponse(null, null, null, null, null, null, null, editableContent);
         when(nodeContentItemReader.readNodeContent(eq(focusNode), any(), eq(NodeContentPreset.FULL)))
             .thenReturn(content);
         NodeContentItem item = new NodeContentItem("ID_focus", content, null, null, null, null, null);
@@ -376,7 +383,7 @@ public class ReadNodesWithDescendantsToolTest {
         }
 
         @Override
-        public java.util.Collection<NodeModel> toCollection() {
+        public Collection<NodeModel> toCollection() {
             return nodes;
         }
 
@@ -396,7 +403,7 @@ public class ReadNodesWithDescendantsToolTest {
         }
 
         @Override
-        public java.util.Iterator<NodeModel> iterator() {
+        public Iterator<NodeModel> iterator() {
             return nodes.iterator();
         }
     }

@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.tools.content;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,6 +13,8 @@ public class NodeContentResponse {
     private final AttributesContent attributesContent;
     private final TagsContent tagsContent;
     private final IconsContent iconsContent;
+    private final List<String> activeStyles;
+    private final String mainStyle;
     private final EditableContent editableContent;
 
     @JsonCreator
@@ -19,12 +23,16 @@ public class NodeContentResponse {
                                @JsonProperty("attributesContent") AttributesContent attributesContent,
                                @JsonProperty("tagsContent") TagsContent tagsContent,
                                @JsonProperty("iconsContent") IconsContent iconsContent,
+                               @JsonProperty("activeStyles") List<String> activeStyles,
+                               @JsonProperty("mainStyle") String mainStyle,
                                @JsonProperty("editableContent") EditableContent editableContent) {
         this.briefText = briefText;
         this.textualContent = textualContent;
         this.attributesContent = attributesContent;
         this.tagsContent = tagsContent;
         this.iconsContent = iconsContent;
+        this.activeStyles = activeStyles;
+        this.mainStyle = mainStyle;
         this.editableContent = editableContent;
     }
 
@@ -46,6 +54,14 @@ public class NodeContentResponse {
 
     public IconsContent getIconsContent() {
         return iconsContent;
+    }
+
+    public List<String> getActiveStyles() {
+        return activeStyles;
+    }
+
+    public String getMainStyle() {
+        return mainStyle;
     }
 
     public EditableContent getEditableContent() {

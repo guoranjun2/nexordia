@@ -16,16 +16,21 @@ public class NodeCreationItem {
     @JsonProperty(required = false)
     @Description("Optional folding state for new non-leaf nodes (default: UNFOLD).")
     private final NodeFoldingState foldingState;
+    @JsonProperty(required = false)
+    @Description("Optional logical style name for the new node.")
+    private final String mainStyle;
 
     @JsonCreator
     public NodeCreationItem(@JsonProperty("index") Integer index,
                             @JsonProperty("parentIndex") Integer parentIndex,
                             @JsonProperty("content") NodeContentWriteRequest content,
-                            @JsonProperty(value = "foldingState", required = false) NodeFoldingState foldingState) {
+                            @JsonProperty(value = "foldingState", required = false) NodeFoldingState foldingState,
+                            @JsonProperty(value = "mainStyle", required = false) String mainStyle) {
         this.index = index;
         this.parentIndex = parentIndex;
         this.content = content;
         this.foldingState = foldingState;
+        this.mainStyle = mainStyle;
     }
 
     public Integer getIndex() {
@@ -42,5 +47,9 @@ public class NodeCreationItem {
 
     public NodeFoldingState getFoldingState() {
         return foldingState;
+    }
+
+    public String getMainStyle() {
+        return mainStyle;
     }
 }

@@ -24,8 +24,8 @@ import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.text.mindmapmode.MTextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.content.ListAvailableIconsResponse;
-import org.freeplane.plugin.ai.tools.content.ListAvailableIconsTool;
+import org.freeplane.plugin.ai.tools.content.ListAvailableResponse;
+import org.freeplane.plugin.ai.tools.content.ListTool;
 import org.freeplane.plugin.ai.tools.content.ModifiedNodeSummaryBuilder;
 import org.freeplane.plugin.ai.tools.content.NodeContentApplier;
 import org.freeplane.plugin.ai.tools.content.NodeContentFactories;
@@ -49,6 +49,7 @@ import org.freeplane.plugin.ai.tools.edit.NodeContentEditItem;
 import org.freeplane.plugin.ai.tools.edit.NodeContentEditor;
 import org.freeplane.plugin.ai.tools.edit.NoteContentWriteController;
 import org.freeplane.plugin.ai.tools.edit.NoteContentWriteControllerAdapter;
+import org.freeplane.plugin.ai.tools.edit.NodeStyleContentEditor;
 import org.freeplane.plugin.ai.tools.edit.TagsContentEditor;
 import org.freeplane.plugin.ai.tools.edit.TextContentWriteController;
 import org.freeplane.plugin.ai.tools.edit.TextContentWriteControllerAdapter;
@@ -97,7 +98,7 @@ public class AIToolSet {
     private final DeleteNodesTool deleteNodesTool;
     private final CreateSummaryTool createSummaryTool;
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
-    private final ListAvailableIconsTool listAvailableIconsTool;
+    private final ListTool listTool;
     private final ConnectorEditTool connectorEditTool;
     private final NodeContentEditor nodeContentEditor;
     private final AvailableMaps availableMaps;
@@ -132,13 +133,15 @@ public class AIToolSet {
         iconCandidates.addAll(IconStoreFactory.ICON_STORE.getUserIcons());
         IconsContentEditor iconsContentEditor = new IconsContentEditor(
             nodeContentFactories.iconDescriptionResolver, iconCandidates, iconController);
+        NodeStyleContentEditor nodeStyleContentEditor = new NodeStyleContentEditor();
         HyperlinkContentEditor hyperlinkContentEditor = new HyperlinkContentEditor(linkController);
         NodeContentApplier nodeContentApplier = new NodeContentApplier(textualContentEditor, attributesContentEditor,
             tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
         NodeCreationHierarchyBuilder nodeCreationHierarchyBuilder = new NodeCreationHierarchyBuilder(
-            nodeModelCreator, nodeContentApplier);
+            nodeModelCreator, nodeContentApplier, nodeStyleContentEditor);
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
-            textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor, hyperlinkContentEditor);
+            textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor,
+            nodeStyleContentEditor, hyperlinkContentEditor);
         MessageBuilder messageBuilder = new MessageBuilder();
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, mapAccessListener, nodeContentFactories.nodeContentItemReader, textController);
@@ -160,8 +163,8 @@ public class AIToolSet {
             nodeCreationHierarchyBuilder, nodeInserter, summaryNodeCreator, modifiedNodeSummaryBuilder);
         MoveNodesIntoSummaryTool moveNodesIntoSummaryTool = new MoveNodesIntoSummaryTool(availableMaps,
             mapAccessListener, mapController, summaryNodeCreator);
-        ListAvailableIconsTool listAvailableIconsTool = new ListAvailableIconsTool(
-            nodeContentFactories.iconDescriptionResolver);
+        ListTool listTool = new ListTool(
+            nodeContentFactories.iconDescriptionResolver, availableMaps, mapAccessListener);
         ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, mapAccessListener, linkController);
         this.messageBuilder = Objects.requireNonNull(messageBuilder, "messageBuilder");
         this.readNodesWithDescendantsTool = Objects.requireNonNull(readNodesWithDescendantsTool,
@@ -175,7 +178,7 @@ public class AIToolSet {
         this.deleteNodesTool = Objects.requireNonNull(deleteNodesTool, "deleteNodesTool");
         this.createSummaryTool = Objects.requireNonNull(createSummaryTool, "createSummaryTool");
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
-        this.listAvailableIconsTool = Objects.requireNonNull(listAvailableIconsTool, "listAvailableIconsTool");
+        this.listTool = Objects.requireNonNull(listTool, "listTool");
         this.connectorEditTool = Objects.requireNonNull(connectorEditTool, "connectorEditTool");
         this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
@@ -263,15 +266,27 @@ public class AIToolSet {
         }
     }
 
-    @Tool("List available built-in and user-defined icons. Emoji icons are referenced by the emoji character itself "
+    @Tool("Lists application-wide icons (not map-specific). Emoji icons are referenced by the emoji character itself "
         + "and are not listed here.")
-    public ListAvailableIconsResponse listAvailableIcons() {
+    public ListAvailableResponse listAvailableIcons() {
         try {
-            ListAvailableIconsResponse response = listAvailableIconsTool.listAvailableIcons();
-            publishToolCallSummary(listAvailableIconsTool.buildToolCallSummary(response));
+            ListAvailableResponse response = listTool.listAvailableIcons();
+            publishToolCallSummary(listTool.buildToolCallSummary("listAvailableIcons", response));
             return response;
         } catch (RuntimeException error) {
-            publishToolCallSummary(listAvailableIconsTool.buildToolCallErrorSummary(error));
+            publishToolCallSummary(listTool.buildToolCallErrorSummary("listAvailableIcons", error));
+            throw error;
+        }
+    }
+
+    @Tool("Lists styles defined in the target map. Each style includes a stable value and a localized label.")
+    public ListAvailableResponse listMapStyles(String mapIdentifier) {
+        try {
+            ListAvailableResponse response = listTool.listMapStyles(mapIdentifier);
+            publishToolCallSummary(listTool.buildToolCallSummary("listMapStyles", response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(listTool.buildToolCallErrorSummary("listMapStyles", error));
             throw error;
         }
     }
@@ -292,6 +307,7 @@ public class AIToolSet {
         + "Before editing, call fetchNodesForEditing and pass originalContentType from that response.\n"
         + "For TEXT/DETAILS/NOTE, only values starting with <html> are treated as HTML; all other values are treated "
         + "as plain text.\n"
+        + "For STYLE, use REPLACE with style.value from listMapStyles for the same map, or DELETE to clear it.\n"
         + "Markdown and LaTeX edits are allowed only when originalContentType is MARKDOWN or LATEX.")
     public List<NodeContentItem> edit(EditRequest request) {
         try {
@@ -404,6 +420,7 @@ public class AIToolSet {
     }
 
     @Tool("Create nodes and subtrees relative to an anchor node.\n"
+        + "Optional fields override defaults. Omit them to keep defaults.\n"
         + "For content.text/content.details/content.note, only values starting with <html> are treated as HTML; all "
         + "other values are treated as plain text.\n"
         + "textContentType/detailsContentType/noteContentType choose conversion/validation behavior and do not bypass "
@@ -434,6 +451,7 @@ public class AIToolSet {
     }
 
     @Tool("Create summary content and a summary bracket for a summarized range. "
+        + "Optional fields override defaults. Omit them to keep defaults. "
         + "Summary anchor nodes must share the same parent node. Textual field rules are the same as createNodes. "
         + "Omit optional textual fields such as details and note when they are empty instead of sending empty strings "
         + "so the tool leaves those values untouched. Tip: to create a summary of summaries, choose summary anchor "

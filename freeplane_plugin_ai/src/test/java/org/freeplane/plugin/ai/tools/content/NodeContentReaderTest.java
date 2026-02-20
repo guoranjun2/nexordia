@@ -22,11 +22,13 @@ public class NodeContentReaderTest {
         AttributesContentReader attributesContentReader = mock(AttributesContentReader.class);
         TagsContentReader tagsContentReader = mock(TagsContentReader.class);
         IconsContentReader iconsContentReader = mock(IconsContentReader.class);
+        NodeStyleContentReader nodeStyleContentReader = mock(NodeStyleContentReader.class);
         EditableContentReader editableContentReader = mock(EditableContentReader.class);
         NodeModel nodeModel = mock(NodeModel.class);
         when(textualContentReader.readBriefText(nodeModel)).thenReturn("Brief text");
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
 
         NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.BRIEF);
 
@@ -36,7 +38,8 @@ public class NodeContentReaderTest {
         assertThat(content.getTagsContent()).isNull();
         assertThat(content.getIconsContent()).isNull();
         verify(textualContentReader).readBriefText(nodeModel);
-        verifyNoInteractions(attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+        verifyNoInteractions(attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
     }
 
     @Test
@@ -45,6 +48,7 @@ public class NodeContentReaderTest {
         AttributesContentReader attributesContentReader = mock(AttributesContentReader.class);
         TagsContentReader tagsContentReader = mock(TagsContentReader.class);
         IconsContentReader iconsContentReader = mock(IconsContentReader.class);
+        NodeStyleContentReader nodeStyleContentReader = mock(NodeStyleContentReader.class);
         EditableContentReader editableContentReader = mock(EditableContentReader.class);
         NodeModel nodeModel = mock(NodeModel.class);
         TextualContent textualContent = new TextualContent("Text", "Details", "Note");
@@ -55,8 +59,11 @@ public class NodeContentReaderTest {
         when(attributesContentReader.readAttributesContent(nodeModel, NodeContentPreset.FULL)).thenReturn(attributesContent);
         when(tagsContentReader.readTagsContent(nodeModel, NodeContentPreset.FULL)).thenReturn(tagsContent);
         when(iconsContentReader.readIconsContent(nodeModel, NodeContentPreset.FULL)).thenReturn(iconsContent);
+        when(nodeStyleContentReader.readActiveStyles(nodeModel)).thenReturn(Collections.singletonList("default"));
+        when(nodeStyleContentReader.readMainStyle(nodeModel)).thenReturn("default");
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
 
         NodeContentResponse content = nodeContentReader.readNodeContent(nodeModel, NodeContentPreset.FULL);
 
@@ -65,6 +72,8 @@ public class NodeContentReaderTest {
         assertThat(content.getAttributesContent()).isSameAs(attributesContent);
         assertThat(content.getTagsContent()).isSameAs(tagsContent);
         assertThat(content.getIconsContent()).isSameAs(iconsContent);
+        assertThat(content.getActiveStyles()).containsExactly("default");
+        assertThat(content.getMainStyle()).isEqualTo("default");
         assertThat(content.getEditableContent()).isNull();
         verify(textualContentReader).readTextualContent(nodeModel, NodeContentPreset.FULL);
         verify(attributesContentReader).readAttributesContent(nodeModel, NodeContentPreset.FULL);
@@ -78,9 +87,11 @@ public class NodeContentReaderTest {
         AttributesContentReader attributesContentReader = mock(AttributesContentReader.class);
         TagsContentReader tagsContentReader = mock(TagsContentReader.class);
         IconsContentReader iconsContentReader = mock(IconsContentReader.class);
+        NodeStyleContentReader nodeStyleContentReader = mock(NodeStyleContentReader.class);
         EditableContentReader editableContentReader = mock(EditableContentReader.class);
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
         NodeModel nodeModel = mock(NodeModel.class);
         IconsContentRequest iconsContentRequest = new IconsContentRequest(true);
         NodeContentRequest request = new NodeContentRequest(null, null, null, iconsContentRequest, null);
@@ -103,9 +114,11 @@ public class NodeContentReaderTest {
         AttributesContentReader attributesContentReader = mock(AttributesContentReader.class);
         TagsContentReader tagsContentReader = mock(TagsContentReader.class);
         IconsContentReader iconsContentReader = mock(IconsContentReader.class);
+        NodeStyleContentReader nodeStyleContentReader = mock(NodeStyleContentReader.class);
         EditableContentReader editableContentReader = mock(EditableContentReader.class);
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
         NodeModel nodeModel = mock(NodeModel.class);
         EditableContentRequest editableContentRequest = new EditableContentRequest(
             Collections.singletonList(EditableContentField.TEXT));

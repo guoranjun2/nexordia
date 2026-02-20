@@ -15,6 +15,7 @@ public class NodeContentEditor {
     private final AttributesContentEditor attributesContentEditor;
     private final TagsContentEditor tagsContentEditor;
     private final IconsContentEditor iconsContentEditor;
+    private final NodeStyleContentEditor nodeStyleContentEditor;
     private final HyperlinkContentEditor hyperlinkContentEditor;
     private final AiEditsMarker aiEditsMarker;
 
@@ -23,6 +24,7 @@ public class NodeContentEditor {
                              AttributesContentEditor attributesContentEditor,
                              TagsContentEditor tagsContentEditor,
                              IconsContentEditor iconsContentEditor,
+                             NodeStyleContentEditor nodeStyleContentEditor,
                              HyperlinkContentEditor hyperlinkContentEditor) {
         this.textController = textController;
         this.nodeContentItemReader = nodeContentItemReader;
@@ -30,6 +32,7 @@ public class NodeContentEditor {
         this.attributesContentEditor = attributesContentEditor;
         this.tagsContentEditor = tagsContentEditor;
         this.iconsContentEditor = iconsContentEditor;
+        this.nodeStyleContentEditor = nodeStyleContentEditor;
         this.hyperlinkContentEditor = hyperlinkContentEditor;
         this.aiEditsMarker = new AiEditsMarker();
     }
@@ -75,6 +78,9 @@ public class NodeContentEditor {
             case ICONS:
                 applyIcons(nodeModel, edit);
                 break;
+            case STYLE:
+                applyStyle(nodeModel, edit);
+                break;
             case HYPERLINK:
                 applyHyperlink(nodeModel, edit);
                 break;
@@ -118,6 +124,10 @@ public class NodeContentEditor {
             edit.getTargetKey(),
             edit.getIndex(),
             edit.getValue());
+    }
+
+    private void applyStyle(NodeModel nodeModel, NodeContentEditItem edit) {
+        nodeStyleContentEditor.editMainStyle(nodeModel, edit.getOperation(), edit.getValue());
     }
 
     private void applyHyperlink(NodeModel nodeModel, NodeContentEditItem edit) {

@@ -19,6 +19,7 @@ import org.freeplane.plugin.ai.tools.content.IconsContentReader;
 import org.freeplane.plugin.ai.tools.content.NodeContentFactories;
 import org.freeplane.plugin.ai.tools.content.NodeContentItemReader;
 import org.freeplane.plugin.ai.tools.content.NodeContentReader;
+import org.freeplane.plugin.ai.tools.content.NodeStyleContentReader;
 import org.freeplane.plugin.ai.tools.content.TagsContentReader;
 import org.freeplane.plugin.ai.tools.content.TextualContentReader;
 import org.freeplane.plugin.ai.tools.text.DefaultEnglishTextProvider;
@@ -157,8 +158,10 @@ public class AIToolSetBuilder {
         IconsContentReader iconsContentReader = new IconsContentReader(iconDescriptionResolver, iconController);
         EditableContentReader editableContentReader = new EditableContentReader(
             textController, iconDescriptionResolver, new ContentTypeConverter());
+        NodeStyleContentReader nodeStyleContentReader = new NodeStyleContentReader();
         NodeContentReader nodeContentReader = new NodeContentReader(
-            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader, editableContentReader);
+            textualContentReader, attributesContentReader, tagsContentReader, iconsContentReader,
+            nodeStyleContentReader, editableContentReader);
         return new NodeContentItemReader(nodeContentReader);
     }
 }

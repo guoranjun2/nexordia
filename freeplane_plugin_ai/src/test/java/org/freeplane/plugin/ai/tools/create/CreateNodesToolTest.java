@@ -39,8 +39,8 @@ public class CreateNodesToolTest {
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
         when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
-        NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null, null);
-        NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null, null);
+        NodeCreationItem firstNodeItem = new NodeCreationItem(0, -1, null, null, null);
+        NodeCreationItem secondNodeItem = new NodeCreationItem(1, -1, null, null, null);
         NodeModel firstNodeModel = new NodeModel("first", mapModel);
         NodeModel secondNodeModel = new NodeModel("second", mapModel);
         firstNodeModel.setID("ID_first");
@@ -90,7 +90,7 @@ public class CreateNodesToolTest {
         NodeModel anchorNode = new NodeModel("anchor", mapModel);
         anchorNode.setID("ID_anchor");
         when(availableMaps.findMapModel(eq(mapIdentifier), any())).thenReturn(mapModel);
-        NodeCreationItem nodeItem = new NodeCreationItem(0, -1, null, null);
+        NodeCreationItem nodeItem = new NodeCreationItem(0, -1, null, null, null);
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         NodeModel nodeModel = nodeModelCreator.createNodeModel(mapModel);
         nodeModel.setText("node");

@@ -12,6 +12,7 @@ import org.freeplane.features.icon.TagReference;
 import org.freeplane.features.icon.Tags;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.note.NoteModel;
+import org.freeplane.features.styles.StyleNameMappingHelper;
 import org.freeplane.features.text.DetailModel;
 import org.freeplane.features.text.TextController;
 
@@ -51,12 +52,16 @@ public class EditableContentReader {
         List<EditableIcon> editableIcons = request.includesField(EditableContentField.ICONS)
             ? buildEditableIcons(nodeModel)
             : null;
+        String editableMainStyle = request.includesField(EditableContentField.STYLE)
+            ? StyleNameMappingHelper.readMainStyleName(nodeModel)
+            : null;
         if (editableText == null && editableDetails == null && editableNote == null
-            && editableAttributes == null && editableTags == null && editableIcons == null) {
+            && editableAttributes == null && editableTags == null && editableIcons == null
+            && editableMainStyle == null) {
             return null;
         }
         return new EditableContent(editableText, editableDetails, editableNote,
-            editableAttributes, editableTags, editableIcons);
+            editableAttributes, editableTags, editableIcons, editableMainStyle);
     }
 
     private EditableText buildEditableTextForNodeText(NodeModel nodeModel) {

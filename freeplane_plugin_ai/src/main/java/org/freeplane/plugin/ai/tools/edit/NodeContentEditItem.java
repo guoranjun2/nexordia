@@ -23,7 +23,7 @@ public class NodeContentEditItem {
     private final Integer index;
     @JsonProperty(required = false)
     @Description("Operations: TEXT=REPLACE; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; "
-        + "HYPERLINK=REPLACE/DELETE.")
+        + "STYLE=REPLACE/DELETE; HYPERLINK=REPLACE/DELETE.")
     private final EditOperation operation;
     @JsonProperty(required = false)
     private final String targetKey;
