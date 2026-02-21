@@ -357,6 +357,42 @@ public class ReadNodesWithDescendantsToolTest {
         assertThat(response.getItems()).containsExactly(item);
     }
 
+    @Test
+    public void fetchNodesForEditing_throwsOnMissingEditableContentFields() {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextController textController = mock(TextController.class);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, null,
+            nodeContentItemReader, textController);
+        UUID mapIdentifier = UUID.fromString("58d1888f-151a-4b12-ac54-7f6ff94c876f");
+        FetchNodesForEditingRequest request = new FetchNodesForEditingRequest(
+            mapIdentifier.toString(),
+            Collections.singletonList("ID_focus"),
+            null);
+
+        assertThatThrownBy(() -> readTool.fetchNodesForEditing(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Missing editableContentFields");
+    }
+
+    @Test
+    public void fetchNodesForEditing_throwsOnEmptyEditableContentFields() {
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        NodeContentItemReader nodeContentItemReader = mock(NodeContentItemReader.class);
+        TextController textController = mock(TextController.class);
+        ReadNodesWithDescendantsTool readTool = new ReadNodesWithDescendantsTool(availableMaps, null,
+            nodeContentItemReader, textController);
+        UUID mapIdentifier = UUID.fromString("ebf35466-149f-472f-95f8-13b07bd634cb");
+        FetchNodesForEditingRequest request = new FetchNodesForEditingRequest(
+            mapIdentifier.toString(),
+            Collections.singletonList("ID_focus"),
+            Collections.<EditableContentField>emptyList());
+
+        assertThatThrownBy(() -> readTool.fetchNodesForEditing(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Missing editableContentFields");
+    }
+
     private static class TestClones implements Clones {
         private final List<NodeModel> nodes;
 

@@ -203,7 +203,7 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Fetch nodes for editing. editableContentFields: TEXT, DETAILS, NOTE, ATTRIBUTES, TAGS, ICONS. "
+    @Tool("Fetch nodes for editing. editableContentFields (required): TEXT, DETAILS, NOTE, ATTRIBUTES, TAGS, ICONS. "
         + "Returns editable text/details/note/attributes/tags/icons; text/details/note include contentType for "
         + "edit.originalContentType. Style is in content.mainStyle. Read hyperlinks via readNodesWithDescendants "
         + "with ContextSection.HYPERLINK.")
@@ -312,14 +312,16 @@ public class AIToolSet {
     @Tool("Edit node content through undo-aware controllers.\n"
         + "Before TEXT/DETAILS/NOTE edits, call fetchNodesForEditing and pass originalContentType from that response.\n"
         + "For TEXT/DETAILS/NOTE, values starting with <html> are HTML; all others are plain text.\n"
+        + "TEXT supports REPLACE only; to clear TEXT, use REPLACE with an empty value.\n"
         + "STYLE: REPLACE with a style from listMapStyles (same map), or DELETE.\n"
         + "HYPERLINK: REPLACE uses value as URL; DELETE clears it.\n"
         + "ATTRIBUTES/TAGS/ICONS REPLACE/DELETE: use index first, then targetKey.\n"
         + "ATTRIBUTES ADD: targetKey is attribute name; value is attribute value.\n"
         + "TAGS ADD: value is tag text; optional index inserts at position.\n"
-        + "ICONS ADD: value is icon description from listAvailableIcons (or emoji); index/targetKey ignored.\n"
+        + "ICONS ADD: value is icon description from listAvailableIcons (or emoji); icons append, so index/targetKey ignored.\n"
         + "originalContentType is required for TEXT/DETAILS/NOTE and ignored otherwise.\n"
-        + "Markdown/LaTeX edits are allowed only when originalContentType is MARKDOWN/LATEX.")
+        + "For TEXT/DETAILS/NOTE, Markdown/LaTeX formatting applies only when originalContentType is MARKDOWN/LATEX; "
+        + "otherwise it is literal text.")
     public List<NodeContentItem> edit(EditRequest request) {
         try {
             List<NodeContentItem> response = editNodes(request);
@@ -434,8 +436,8 @@ public class AIToolSet {
         + "Optional fields override defaults. Omit them to keep defaults.\n"
         + "For content.text/content.details/content.note, only values starting with <html> are treated as HTML; all "
         + "other values are treated as plain text.\n"
-        + "textContentType/detailsContentType/noteContentType choose conversion/validation behavior and do not bypass "
-        + "the <html> rule for raw HTML.\n"
+        + "textContentType/detailsContentType/noteContentType control conversion/validation only; HTML input still "
+        + "requires the <html> prefix.\n"
         + "Omit optional textual fields such as details and note when they are empty instead of sending empty strings "
         + "so the tool leaves those values untouched.")
     public CreateNodesResponse createNodes(CreateNodesRequest request) {

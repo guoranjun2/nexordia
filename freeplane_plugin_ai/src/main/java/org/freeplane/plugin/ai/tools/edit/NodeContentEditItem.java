@@ -23,7 +23,7 @@ public class NodeContentEditItem {
     @Description("List index for ATTRIBUTES/TAGS/ICONS. For ATTRIBUTES/TAGS ADD, inserts at this index when provided. For REPLACE/DELETE, index is preferred over targetKey. Ignored for TEXT/DETAILS/NOTE/STYLE/HYPERLINK and ICONS ADD.")
     private final Integer index;
     @JsonProperty(required = false)
-    @Description("Operations: TEXT=REPLACE only; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; STYLE/HYPERLINK=REPLACE/DELETE.")
+    @Description("Optional operation (default REPLACE). Allowed values: TEXT=REPLACE only; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; STYLE/HYPERLINK=REPLACE/DELETE.")
     private final EditOperation operation;
     @JsonProperty(required = false)
     @Description("Fallback selector for ATTRIBUTES/TAGS/ICONS when index is absent. ATTRIBUTES: attribute name (required for ADD). TAGS: existing tag text for REPLACE/DELETE. ICONS: existing icon description for REPLACE/DELETE. Ignored for TAGS/ICONS ADD and for TEXT/DETAILS/NOTE/STYLE/HYPERLINK.")

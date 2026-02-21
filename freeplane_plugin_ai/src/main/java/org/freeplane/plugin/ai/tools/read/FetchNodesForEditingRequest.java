@@ -15,14 +15,14 @@ public class FetchNodesForEditingRequest {
     @JsonProperty(required = false)
     @Description("Node IDs to fetch (default: root).")
     private final List<String> nodeIdentifiers;
-    @JsonProperty(required = false)
-    @Description("Editable content fields to include (all representations returned).")
+    @JsonProperty(required = true)
+    @Description("Editable content fields to include.")
     private final List<EditableContentField> editableContentFields;
 
     @JsonCreator
     public FetchNodesForEditingRequest(@JsonProperty("mapIdentifier") String mapIdentifier,
                                        @JsonProperty("nodeIdentifiers") List<String> nodeIdentifiers,
-                                       @JsonProperty("editableContentFields") List<EditableContentField> editableContentFields) {
+                                       @JsonProperty(value = "editableContentFields", required = true) List<EditableContentField> editableContentFields) {
         this.mapIdentifier = mapIdentifier;
         this.nodeIdentifiers = nodeIdentifiers;
         this.editableContentFields = editableContentFields;

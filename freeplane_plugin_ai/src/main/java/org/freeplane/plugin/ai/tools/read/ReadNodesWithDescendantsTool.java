@@ -144,6 +144,9 @@ public class ReadNodesWithDescendantsTool {
         if (request == null) {
             throw new IllegalArgumentException("Missing request");
         }
+        if (request.getEditableContentFields() == null || request.getEditableContentFields().isEmpty()) {
+            throw new IllegalArgumentException("Missing editableContentFields");
+        }
         String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
         UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
         MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
