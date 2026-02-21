@@ -32,11 +32,11 @@ public class ListTool {
         this.mapAccessListener = mapAccessListener;
     }
 
-    public ListAvailableResponse listAvailableIcons() {
-        return new ListAvailableResponse("application", null, listAvailableIconValues(), ICONS_NOTE);
+    public ListResponse listAvailableIcons() {
+        return new ListResponse("application", null, listAvailableIconValues(), ICONS_NOTE);
     }
 
-    public ListAvailableResponse listMapStyles(String mapIdentifierValue) {
+    public ListResponse listMapStyles(String mapIdentifierValue) {
         if (mapIdentifierValue == null || mapIdentifierValue.trim().isEmpty()) {
             throw new IllegalArgumentException("Missing mapIdentifier.");
         }
@@ -50,11 +50,11 @@ public class ListTool {
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }
-        return new ListAvailableResponse("map", mapIdentifierValue, StyleNameMappingHelper.listAvailableStyleNames(mapModel),
+        return new ListResponse("map", mapIdentifierValue, StyleNameMappingHelper.listAvailableStyleNames(mapModel),
             null);
     }
 
-    public ToolCallSummary buildToolCallSummary(String toolName, ListAvailableResponse response) {
+    public ToolCallSummary buildToolCallSummary(String toolName, ListResponse response) {
         int valueCount = response == null || response.getValues() == null ? 0 : response.getValues().size();
         String summaryText = toolName + ": values=" + valueCount;
         if (response != null && response.getMapIdentifier() != null) {

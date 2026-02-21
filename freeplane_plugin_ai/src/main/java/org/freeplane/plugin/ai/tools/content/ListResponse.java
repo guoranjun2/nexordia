@@ -7,14 +7,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ListAvailableResponse {
+public class ListResponse {
     private final String scope;
     private final String mapIdentifier;
     private final List<String> values;
     private final String note;
 
     @JsonCreator
-    public ListAvailableResponse(@JsonProperty("scope") String scope,
+    public ListResponse(@JsonProperty("scope") String scope,
                                  @JsonProperty("mapIdentifier") String mapIdentifier,
                                  @JsonProperty("values") List<String> values,
                                  @JsonProperty("note") String note) {

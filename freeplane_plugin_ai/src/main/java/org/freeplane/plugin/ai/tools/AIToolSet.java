@@ -24,7 +24,7 @@ import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.text.mindmapmode.MTextController;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
-import org.freeplane.plugin.ai.tools.content.ListAvailableResponse;
+import org.freeplane.plugin.ai.tools.content.ListResponse;
 import org.freeplane.plugin.ai.tools.content.ListTool;
 import org.freeplane.plugin.ai.tools.content.ModifiedNodeSummaryBuilder;
 import org.freeplane.plugin.ai.tools.content.NodeContentApplier;
@@ -268,9 +268,9 @@ public class AIToolSet {
 
     @Tool("Lists application-wide icons (not map-specific). Emoji icons are referenced by the emoji character itself "
         + "and are not listed here.")
-    public ListAvailableResponse listAvailableIcons() {
+    public ListResponse listAvailableIcons() {
         try {
-            ListAvailableResponse response = listTool.listAvailableIcons();
+            ListResponse response = listTool.listAvailableIcons();
             publishToolCallSummary(listTool.buildToolCallSummary("listAvailableIcons", response));
             return response;
         } catch (RuntimeException error) {
@@ -279,10 +279,10 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Lists styles defined in the target map. Each style includes a stable value and a localized label.")
-    public ListAvailableResponse listMapStyles(String mapIdentifier) {
+    @Tool("Lists styles defined in the target map.")
+    public ListResponse listMapStyles(String mapIdentifier) {
         try {
-            ListAvailableResponse response = listTool.listMapStyles(mapIdentifier);
+            ListResponse response = listTool.listMapStyles(mapIdentifier);
             publishToolCallSummary(listTool.buildToolCallSummary("listMapStyles", response));
             return response;
         } catch (RuntimeException error) {
