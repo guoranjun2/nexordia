@@ -304,10 +304,14 @@ public class AIToolSet {
     }
 
     @Tool("Edit node content safely through undo-aware controllers.\n"
-        + "Before editing, call fetchNodesForEditing and pass originalContentType from that response.\n"
+        + "Before editing TEXT/DETAILS/NOTE, call fetchNodesForEditing and pass originalContentType from that response.\n"
         + "For TEXT/DETAILS/NOTE, only values starting with <html> are treated as HTML; all other values are treated "
         + "as plain text.\n"
-        + "For STYLE, use REPLACE with style.value from listMapStyles for the same map, or DELETE to clear it.\n"
+        + "For STYLE, use REPLACE with a style name from listMapStyles for the same map, or DELETE to clear it.\n"
+        + "For HYPERLINK, use value as the hyperlink URL with REPLACE, or DELETE to clear it.\n"
+        + "For ATTRIBUTES/TAGS/ICONS, use index as the primary selector for REPLACE/DELETE; use targetKey when index is absent.\n"
+        + "For ATTRIBUTES ADD, targetKey is required and becomes the attribute name.\n"
+        + "originalContentType is ignored for ATTRIBUTES/TAGS/ICONS/STYLE/HYPERLINK.\n"
         + "Markdown and LaTeX edits are allowed only when originalContentType is MARKDOWN or LATEX.")
     public List<NodeContentItem> edit(EditRequest request) {
         try {

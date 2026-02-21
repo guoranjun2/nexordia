@@ -90,6 +90,9 @@ public class NodeContentEditor {
     }
 
     private void applyTextualContent(NodeModel nodeModel, NodeContentEditItem edit) {
+        if (edit.getOriginalContentType() == null) {
+            throw new IllegalArgumentException("Missing originalContentType for textual content edits.");
+        }
         String value = resolveTextualValue(edit);
         textualContentEditor.editExistingTextualContent(
             nodeModel,
@@ -131,7 +134,7 @@ public class NodeContentEditor {
     }
 
     private void applyHyperlink(NodeModel nodeModel, NodeContentEditItem edit) {
-        hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getHyperlink());
+        hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getValue());
     }
 
     private String resolveTextualValue(NodeContentEditItem edit) {
