@@ -203,8 +203,10 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Fetch nodes for editing. Returns editable content only, including contentType for editable text/details/note. "
-        + "Use those contentType values as originalContentType in edit.")
+    @Tool("Fetch nodes for editing. editableContentFields: TEXT, DETAILS, NOTE, ATTRIBUTES, TAGS, ICONS. "
+        + "Returns editable text/details/note/attributes/tags/icons; text/details/note include contentType for "
+        + "edit.originalContentType. Style is in content.mainStyle. Read hyperlinks via readNodesWithDescendants "
+        + "with ContextSection.HYPERLINK.")
     public FetchNodesForEditingResponse fetchNodesForEditing(FetchNodesForEditingRequest request) {
         try {
             FetchNodesForEditingResponse response = readNodesWithDescendantsTool.fetchNodesForEditing(request);
@@ -291,7 +293,11 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Edit connectors by source and target node identifier.")
+    @Tool("Edit connectors by source and target node identifier.\n"
+        + "For REPLACE/DELETE, matchSourceLabel/matchMiddleLabel/matchTargetLabel select the connector; "
+        + "sourceLabel/middleLabel/targetLabel are replacement values.\n"
+        + "For ADD, match* fields are ignored.\n"
+        + "In match* fields, null is wildcard and empty string matches an empty label.")
     public ConnectorEditResponse editConnectors(ConnectorEditRequest request) {
         try {
             ConnectorEditResponse response = connectorEditTool.editConnectors(request);
@@ -303,16 +309,17 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Edit node content safely through undo-aware controllers.\n"
-        + "Before editing TEXT/DETAILS/NOTE, call fetchNodesForEditing and pass originalContentType from that response.\n"
-        + "For TEXT/DETAILS/NOTE, only values starting with <html> are treated as HTML; all other values are treated "
-        + "as plain text.\n"
-        + "For STYLE, use REPLACE with a style name from listMapStyles for the same map, or DELETE to clear it.\n"
-        + "For HYPERLINK, use value as the hyperlink URL with REPLACE, or DELETE to clear it.\n"
-        + "For ATTRIBUTES/TAGS/ICONS, use index as the primary selector for REPLACE/DELETE; use targetKey when index is absent.\n"
-        + "For ATTRIBUTES ADD, targetKey is required and becomes the attribute name.\n"
-        + "originalContentType is ignored for ATTRIBUTES/TAGS/ICONS/STYLE/HYPERLINK.\n"
-        + "Markdown and LaTeX edits are allowed only when originalContentType is MARKDOWN or LATEX.")
+    @Tool("Edit node content through undo-aware controllers.\n"
+        + "Before TEXT/DETAILS/NOTE edits, call fetchNodesForEditing and pass originalContentType from that response.\n"
+        + "For TEXT/DETAILS/NOTE, values starting with <html> are HTML; all others are plain text.\n"
+        + "STYLE: REPLACE with a style from listMapStyles (same map), or DELETE.\n"
+        + "HYPERLINK: REPLACE uses value as URL; DELETE clears it.\n"
+        + "ATTRIBUTES/TAGS/ICONS REPLACE/DELETE: use index first, then targetKey.\n"
+        + "ATTRIBUTES ADD: targetKey is attribute name; value is attribute value.\n"
+        + "TAGS ADD: value is tag text; optional index inserts at position.\n"
+        + "ICONS ADD: value is icon description from listAvailableIcons (or emoji); index/targetKey ignored.\n"
+        + "originalContentType is required for TEXT/DETAILS/NOTE and ignored otherwise.\n"
+        + "Markdown/LaTeX edits are allowed only when originalContentType is MARKDOWN/LATEX.")
     public List<NodeContentItem> edit(EditRequest request) {
         try {
             List<NodeContentItem> response = editNodes(request);

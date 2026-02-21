@@ -10,22 +10,31 @@ import dev.langchain4j.model.output.structured.Description;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeContentWriteRequest {
     private final String text;
+    @JsonProperty(required = false)
     @Description("Optional text content type.")
     private final ContentType textContentType;
+    @JsonProperty(required = false)
     @Description("Optional details.")
     private final String details;
+    @JsonProperty(required = false)
     @Description("Optional details content type.")
     private final ContentType detailsContentType;
+    @JsonProperty(required = false)
     @Description("Optional note.")
     private final String note;
+    @JsonProperty(required = false)
     @Description("Optional note content type.")
     private final ContentType noteContentType;
+    @JsonProperty(required = false)
     @Description("Optional attributes.")
     private final List<AttributeEntry> attributes;
+    @JsonProperty(required = false)
     @Description("Optional tags.")
     private final List<String> tags;
+    @JsonProperty(required = false)
     @Description("Optional icons.")
     private final List<String> icons;
+    @JsonProperty(required = false)
     @Description("Optional hyperlink for the new node.")
     private final String hyperlink;
 

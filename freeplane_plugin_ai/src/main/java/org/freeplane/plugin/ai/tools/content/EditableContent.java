@@ -14,7 +14,6 @@ public class EditableContent {
     private final List<EditableAttribute> editableAttributes;
     private final List<EditableTag> editableTags;
     private final List<EditableIcon> editableIcons;
-    private final String editableMainStyle;
 
     @JsonCreator
     public EditableContent(@JsonProperty("editableText") EditableText editableText,
@@ -22,15 +21,13 @@ public class EditableContent {
                            @JsonProperty("editableNote") EditableText editableNote,
                            @JsonProperty("editableAttributes") List<EditableAttribute> editableAttributes,
                            @JsonProperty("editableTags") List<EditableTag> editableTags,
-                           @JsonProperty("editableIcons") List<EditableIcon> editableIcons,
-                           @JsonProperty("editableMainStyle") String editableMainStyle) {
+                           @JsonProperty("editableIcons") List<EditableIcon> editableIcons) {
         this.editableText = editableText;
         this.editableDetails = editableDetails;
         this.editableNote = editableNote;
         this.editableAttributes = editableAttributes;
         this.editableTags = editableTags;
         this.editableIcons = editableIcons;
-        this.editableMainStyle = editableMainStyle;
     }
 
     public EditableText getEditableText() {
@@ -55,9 +52,5 @@ public class EditableContent {
 
     public List<EditableIcon> getEditableIcons() {
         return editableIcons;
-    }
-
-    public String getEditableMainStyle() {
-        return editableMainStyle;
     }
 }

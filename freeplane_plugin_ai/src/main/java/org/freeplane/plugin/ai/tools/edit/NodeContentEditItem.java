@@ -14,20 +14,19 @@ public class NodeContentEditItem {
     private final String nodeIdentifier;
     private final EditedElement editedElement;
     @JsonProperty(value = "originalContentType", required = false)
-    @Description("Original content type from fetchNodesForEditing. Optional globally; required for TEXT/DETAILS/NOTE, ignored otherwise.")
+    @Description("From fetchNodesForEditing. Required for TEXT/DETAILS/NOTE; ignored for other elements.")
     private final ContentType originalContentType;
     @JsonProperty(required = false)
-    @Description("New value for the edited element. For PLAIN_TEXT formatting use HTML; Markdown is literal unless originalContentType is MARKDOWN.")
+    @Description("New value. For PLAIN_TEXT formatting, use HTML; Markdown is literal unless originalContentType is MARKDOWN.")
     private final String value;
     @JsonProperty(required = false)
-    @Description("Target list index for ATTRIBUTES/TAGS/ICONS edits. For REPLACE/DELETE, index is preferred over targetKey when both are provided. Ignored for TEXT/DETAILS/NOTE/STYLE/HYPERLINK.")
+    @Description("List index for ATTRIBUTES/TAGS/ICONS. For ATTRIBUTES/TAGS ADD, inserts at this index when provided. For REPLACE/DELETE, index is preferred over targetKey. Ignored for TEXT/DETAILS/NOTE/STYLE/HYPERLINK and ICONS ADD.")
     private final Integer index;
     @JsonProperty(required = false)
-    @Description("Operations: TEXT=REPLACE; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; "
-        + "STYLE=REPLACE/DELETE; HYPERLINK=REPLACE/DELETE.")
+    @Description("Operations: TEXT=REPLACE only; DETAILS/NOTE=REPLACE or DELETE; ATTRIBUTES/TAGS/ICONS=ADD/REPLACE/DELETE; STYLE/HYPERLINK=REPLACE/DELETE.")
     private final EditOperation operation;
     @JsonProperty(required = false)
-    @Description("Selector key for ATTRIBUTES/TAGS/ICONS edits when index is absent. ATTRIBUTES: attribute name (required for ADD). TAGS: existing tag text for REPLACE/DELETE. ICONS: existing icon description for REPLACE/DELETE. Ignored for TEXT/DETAILS/NOTE/STYLE/HYPERLINK.")
+    @Description("Fallback selector for ATTRIBUTES/TAGS/ICONS when index is absent. ATTRIBUTES: attribute name (required for ADD). TAGS: existing tag text for REPLACE/DELETE. ICONS: existing icon description for REPLACE/DELETE. Ignored for TAGS/ICONS ADD and for TEXT/DETAILS/NOTE/STYLE/HYPERLINK.")
     private final String targetKey;
 
     @JsonCreator

@@ -10,12 +10,19 @@ public class ConnectorEditRequestItem {
     private final String sourceNodeIdentifier;
     @Description("Target node ID.")
     private final String targetNodeIdentifier;
+    @Description("Connector operation: ADD, REPLACE, or DELETE.")
     private final EditOperation operation;
+    @Description("Replacement source label. Used for ADD/REPLACE; ignored for DELETE.")
     private final String sourceLabel;
+    @Description("Replacement middle label. Used for ADD/REPLACE; ignored for DELETE.")
     private final String middleLabel;
+    @Description("Replacement target label. Used for ADD/REPLACE; ignored for DELETE.")
     private final String targetLabel;
+    @Description("Match source label for REPLACE/DELETE selection. Null is wildcard; empty string matches empty label.")
     private final String matchSourceLabel;
+    @Description("Match middle label for REPLACE/DELETE selection. Null is wildcard; empty string matches empty label.")
     private final String matchMiddleLabel;
+    @Description("Match target label for REPLACE/DELETE selection. Null is wildcard; empty string matches empty label.")
     private final String matchTargetLabel;
 
     @JsonCreator
