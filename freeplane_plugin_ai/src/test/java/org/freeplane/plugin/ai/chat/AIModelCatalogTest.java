@@ -19,8 +19,9 @@ import org.junit.Test;
 
 public class AIModelCatalogTest {
     @After
-    public void resetOllamaCache() {
+    public void resetCatalogCaches() {
         AIModelCatalog.resetOllamaCacheForTests();
+        AIModelCatalog.resetOpenrouterCacheForTests();
     }
 
     @Test
@@ -77,6 +78,20 @@ public class AIModelCatalogTest {
         AIModelDescriptor descriptor = modelDescriptors.get(0);
         assertThat(descriptor.getProviderName()).isEqualTo(AIChatModelFactory.PROVIDER_NAME_GEMINI);
         assertThat(descriptor.getModelName()).isEqualTo("gemini-3-pro-preview");
+    }
+
+    @Test
+    public void parseLiteralProviderModelList_ignoresWildcardEntries() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        AIModelCatalog uut = new AIModelCatalog(configuration);
+
+        List<AIModelDescriptor> modelDescriptors = uut.parseLiteralProviderModelList(
+            AIChatModelFactory.PROVIDER_NAME_OPENROUTER,
+            "openai/gpt-5,\nopenai/*,\n?\nclaude-sonnet-4"
+        );
+
+        assertThat(modelDescriptors).extracting(AIModelDescriptor::getModelName)
+            .containsExactly("openai/gpt-5", "claude-sonnet-4");
     }
 
     @Test
@@ -188,15 +203,49 @@ public class AIModelCatalogTest {
         assertThat(uut.fetchCount()).isEqualTo(2);
     }
 
+    @Test
+    public void getAvailableModels_usesOpenrouterAllowlistLiteralsWhenDiscoveryFails() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getOpenRouterKey()).thenReturn("test-key");
+        when(configuration.getOpenrouterModelAllowlistValue()).thenReturn("openai/gpt-5,\nopenai/*,\nanthropic/claude-sonnet-4");
+        TestableAIModelCatalog uut = new TestableAIModelCatalog(configuration);
+        uut.setOpenrouterModels(Collections.<AIModelDescriptor>emptyList());
+
+        List<AIModelDescriptor> modelDescriptors = uut.getAvailableModels(true);
+
+        assertThat(modelDescriptors).extracting(AIModelDescriptor::getModelName)
+            .containsExactly("openai/gpt-5", "anthropic/claude-sonnet-4");
+    }
+
+    @Test
+    public void getAvailableModels_prefersOpenrouterDiscoveryResultsOverAllowlistFallback() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getOpenRouterKey()).thenReturn("test-key");
+        when(configuration.getOpenrouterModelAllowlistValue()).thenReturn("");
+        TestableAIModelCatalog uut = new TestableAIModelCatalog(configuration);
+        uut.setOpenrouterModels(Collections.singletonList(
+            new AIModelDescriptor("openrouter", "remote-model", "OpenRouter: remote-model", false)));
+
+        List<AIModelDescriptor> modelDescriptors = uut.getAvailableModels(true);
+
+        assertThat(modelDescriptors).extracting(AIModelDescriptor::getModelName).containsExactly("remote-model");
+    }
+
     private static class TestableAIModelCatalog extends AIModelCatalog {
         private final List<OllamaModelsFetchResult> fetchResults;
         private int fetchIndex;
         private int fetchCount;
+        private List<AIModelDescriptor> openrouterModels = Collections.emptyList();
 
         private TestableAIModelCatalog(AIProviderConfiguration configuration,
                                        OllamaModelsFetchResult... fetchResults) {
             super(configuration);
             this.fetchResults = Arrays.asList(fetchResults);
+        }
+
+        @Override
+        List<AIModelDescriptor> fetchOpenrouterModels() {
+            return openrouterModels;
         }
 
         @Override
@@ -210,6 +259,10 @@ public class AIModelCatalogTest {
 
         private int fetchCount() {
             return fetchCount;
+        }
+
+        private void setOpenrouterModels(List<AIModelDescriptor> openrouterModels) {
+            this.openrouterModels = openrouterModels;
         }
     }
 

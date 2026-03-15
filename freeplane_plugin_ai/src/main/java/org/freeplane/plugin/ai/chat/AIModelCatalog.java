@@ -42,6 +42,12 @@ class AIModelCatalog {
         List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
         if (hasOpenrouterKey()) {
             List<AIModelDescriptor> openrouterModels = getOpenrouterModels(allowsRefresh);
+            if (openrouterModels.isEmpty()) {
+                openrouterModels = parseLiteralProviderModelList(
+                    AIChatModelFactory.PROVIDER_NAME_OPENROUTER,
+                    configuration.getOpenrouterModelAllowlistValue()
+                );
+            }
             modelDescriptors.addAll(filterModelDescriptors(openrouterModels,
                 configuration.getOpenrouterModelAllowlistValue()));
         }
@@ -50,6 +56,12 @@ class AIModelCatalog {
         }
         if (configuration.hasOllamaServiceAddress()) {
             List<AIModelDescriptor> ollamaModels = getOllamaModels(allowsRefresh);
+            if (ollamaModels.isEmpty()) {
+                ollamaModels = parseLiteralProviderModelList(
+                    AIChatModelFactory.PROVIDER_NAME_OLLAMA,
+                    configuration.getOllamaModelAllowlistValue()
+                );
+            }
             modelDescriptors.addAll(filterModelDescriptors(ollamaModels,
                 configuration.getOllamaModelAllowlistValue()));
         }
@@ -122,7 +134,7 @@ class AIModelCatalog {
         return value == null ? "" : value.trim();
     }
 
-    private List<AIModelDescriptor> fetchOpenrouterModels() {
+    List<AIModelDescriptor> fetchOpenrouterModels() {
         String serviceAddress = configuration.getOpenrouterServiceAddress();
         if (serviceAddress == null || serviceAddress.isEmpty()) {
             serviceAddress = AIChatModelFactory.DEFAULT_OPENROUTER_SERVICE_ADDRESS;
@@ -182,6 +194,11 @@ class AIModelCatalog {
         cachedOllamaCacheKey = "";
     }
 
+    static void resetOpenrouterCacheForTests() {
+        cachedOpenrouterModels = Collections.emptyList();
+        lastOpenrouterRefreshTime = 0L;
+    }
+
     List<AIModelDescriptor> parseOpenrouterModelsResponse(Reader reader) throws IOException {
         OpenrouterModelsResponse response = objectMapper.readValue(reader, OpenrouterModelsResponse.class);
         if (response == null || response.models == null) {
@@ -193,10 +210,9 @@ class AIModelCatalog {
                 continue;
             }
             boolean isFreeModel = isFreePricing(modelItem.pricing);
-            modelDescriptors.add(new AIModelDescriptor(
+            modelDescriptors.add(createModelDescriptor(
                 AIChatModelFactory.PROVIDER_NAME_OPENROUTER,
                 modelItem.modelIdentifier,
-                buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OPENROUTER, modelItem.modelIdentifier, isFreeModel),
                 isFreeModel
             ));
         }
@@ -213,10 +229,9 @@ class AIModelCatalog {
             if (modelItem == null || modelItem.modelName == null || modelItem.modelName.isEmpty()) {
                 continue;
             }
-            modelDescriptors.add(new AIModelDescriptor(
+            modelDescriptors.add(createModelDescriptor(
                 AIChatModelFactory.PROVIDER_NAME_OLLAMA,
                 modelItem.modelName,
-                buildDisplayName(AIChatModelFactory.PROVIDER_NAME_OLLAMA, modelItem.modelName, false),
                 false
             ));
         }
@@ -260,6 +275,22 @@ class AIModelCatalog {
         return patterns;
     }
 
+    List<AIModelDescriptor> parseLiteralProviderModelList(String providerName, String modelListValue) {
+        if (modelListValue == null || modelListValue.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
+        String[] entries = modelListValue.split("[,\\r\\n]+");
+        for (String entry : entries) {
+            String trimmedEntry = entry.trim();
+            if (trimmedEntry.isEmpty() || containsWildcard(trimmedEntry)) {
+                continue;
+            }
+            modelDescriptors.add(createModelDescriptor(providerName, trimmedEntry, false));
+        }
+        return modelDescriptors;
+    }
+
     private boolean matchesAllowlist(String modelName, List<Pattern> allowlistPatterns) {
         if (modelName == null || modelName.isEmpty()) {
             return false;
@@ -288,6 +319,15 @@ class AIModelCatalog {
             }
         }
         return builder.toString();
+    }
+
+    private AIModelDescriptor createModelDescriptor(String providerName, String modelName, boolean isFreeModel) {
+        return new AIModelDescriptor(
+            providerName,
+            modelName,
+            buildDisplayName(providerName, modelName, isFreeModel),
+            isFreeModel
+        );
     }
 
     private String buildDisplayName(String providerName, String modelName, boolean isFreeModel) {
@@ -397,6 +437,10 @@ class AIModelCatalog {
             ));
         }
         return modelDescriptors;
+    }
+
+    private boolean containsWildcard(String value) {
+        return value.indexOf('*') >= 0 || value.indexOf('?') >= 0;
     }
 
     private List<AIModelDescriptor> getGeminiModelsFromList() {
