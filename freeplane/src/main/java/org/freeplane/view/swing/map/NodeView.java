@@ -1961,7 +1961,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
      * event.TreeModelEvent)
      */
     private void treeStructureChanged() {
-        if(isFolded()) {
+        if(isFolded() || ! viewedNode.hasChildren()) {
             for (NodeView child : getChildrenViews()) {
                 child.remove();
             }
