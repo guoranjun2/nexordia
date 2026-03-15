@@ -3,9 +3,9 @@ package org.freeplane.features.icon;
 import org.freeplane.features.map.MapModel;
 
 public interface TagCategoryAccess {
-    TagCategorySnapshot readSnapshot(MapModel mapModel);
+    TagCategoryState readCurrentCategoryState(MapModel mapModel);
 
-    TagCategorySnapshot applyEdits(MapModel mapModel, TagCategoryEditBatch editBatch);
+    TagCategoryState applyInstructionRequest(MapModel mapModel, TagCategoryInstructionRequest instructionRequest);
 
-    TagCategorySnapshot applyEditorDraft(MapModel mapModel, TagCategoryEditorDraftSubmission draftSubmission);
+    TagCategoryState applyEditorDraftSubmission(MapModel mapModel, TagCategoryEditorDraftSubmission draftSubmission);
 }

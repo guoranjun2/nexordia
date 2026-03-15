@@ -17,16 +17,18 @@ import javax.swing.tree.TreePath;
 
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.Tag;
-import org.freeplane.features.icon.TagCategoryConflictException;
-import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditBatch;
-import org.freeplane.features.icon.TagCategoryNode;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoriesTest;
-import org.freeplane.features.icon.TagDescriptor;
+import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategoryDraftState;
+import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
+import org.freeplane.features.icon.TagCategoryNode;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
+import org.freeplane.features.icon.TagItem;
+import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.map.MapModel;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -34,7 +36,7 @@ import org.mockito.Mockito;
 
 public class FreeplaneTagCategoryAccessTest {
     @Test
-    public void appliesMixedBatchAndCommitsExactlyOnce() {
+    public void appliesMixedInstructionRequestAndCommitsExactlyOnce() {
         TagCategories initialTagCategories = TagCategoriesTest.tagCategories("Project\n"
             + " Status\n"
             + " Owner\n"
@@ -46,24 +48,24 @@ public class FreeplaneTagCategoryAccessTest {
         Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
         Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
-        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
-        TagCategoryEditBatch editBatch = new TagCategoryEditBatch(expectedRevision, Arrays.asList(
-            TagCategoryEdit.add(Arrays.asList("Project", "Priority")),
-            TagCategoryEdit.rename(Arrays.asList("Project", "Owner"), "Lead"),
-            TagCategoryEdit.move(Arrays.asList("Team", "Member"), Collections.singletonList("Project"), 1),
-            TagCategoryEdit.setColor(Arrays.asList("Project", "Member"), "#11223344"),
-            TagCategoryEdit.delete(Arrays.asList("Project", "Status")),
-            TagCategoryEdit.setSeparator("/")));
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(expectedRevision, Arrays.asList(
+            TagCategoryInstruction.addCategory(Arrays.asList("Project", "Priority")),
+            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Owner"), "Lead"),
+            TagCategoryInstruction.moveCategory(Arrays.asList("Team", "Member"), Collections.singletonList("Project"), 1),
+            TagCategoryInstruction.setColor(Arrays.asList("Project", "Member"), "#11223344"),
+            TagCategoryInstruction.deleteCategory(Arrays.asList("Project", "Status")),
+            TagCategoryInstruction.setCategorySeparator("/")));
 
-        TagCategorySnapshot responseSnapshot = uut.applyEdits(mapModel, editBatch);
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
 
         ArgumentCaptor<TagCategories> committedCategoriesCaptor = ArgumentCaptor.forClass(TagCategories.class);
         verify(iconController).setTagCategories(eq(mapModel), committedCategoriesCaptor.capture());
         TagCategories committedTagCategories = committedCategoriesCaptor.getValue();
         assertThat(committedTagCategories.getTagCategorySeparator()).isEqualTo("/");
-        assertThat(collectQualifiedNames(responseSnapshot))
+        assertThat(collectQualifiedNames(responseState))
             .containsExactly("Project", "Project/Member", "Project/Lead", "Project/Priority", "Team");
-        assertThat(collectQualifiedNames(TagCategorySnapshotBuilder.from(committedTagCategories)))
+        assertThat(collectQualifiedNames(TagCategoryStateBuilder.from(committedTagCategories)))
             .containsExactly("Project", "Project/Member", "Project/Lead", "Project/Priority", "Team");
     }
 
@@ -77,17 +79,18 @@ public class FreeplaneTagCategoryAccessTest {
         Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
         Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
-        TagCategoryEditBatch editBatch = new TagCategoryEditBatch("stale-revision",
-            Collections.singletonList(TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State")));
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            "stale-revision",
+            Collections.singletonList(TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State")));
 
-        assertThatThrownBy(() -> uut.applyEdits(mapModel, editBatch))
+        assertThatThrownBy(() -> uut.applyInstructionRequest(mapModel, instructionRequest))
             .isInstanceOf(TagCategoryConflictException.class)
             .hasMessageContaining("stale revision");
         verify(iconController, never()).setTagCategories(any(), any());
     }
 
     @Test
-    public void failingBatchIsAtomicAndDoesNotCommit() {
+    public void failingInstructionRequestIsAtomicAndDoesNotCommit() {
         TagCategories initialTagCategories = TagCategoriesTest.tagCategories("Project\n"
             + " Status\n");
         String serializedBefore = initialTagCategories.serialize();
@@ -97,12 +100,12 @@ public class FreeplaneTagCategoryAccessTest {
         Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
         Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
-        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
-        TagCategoryEditBatch editBatch = new TagCategoryEditBatch(expectedRevision, Arrays.asList(
-            TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State"),
-            TagCategoryEdit.rename(Arrays.asList("Project", "Unknown"), "Renamed")));
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(expectedRevision, Arrays.asList(
+            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Unknown"), "Renamed")));
 
-        assertThatThrownBy(() -> uut.applyEdits(mapModel, editBatch))
+        assertThatThrownBy(() -> uut.applyInstructionRequest(mapModel, instructionRequest))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Unknown tag category path");
         verify(iconController, never()).setTagCategories(any(), any());
@@ -110,7 +113,7 @@ public class FreeplaneTagCategoryAccessTest {
     }
 
     @Test
-    public void applyEditorDraftCommitsDraftAndUpdatesReferences() {
+    public void applyEditorDraftSubmissionCommitsDraftAndUpdatesReferences() {
         TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
             + " BB#22334455\n");
         MapModel mapModel = Mockito.mock(MapModel.class);
@@ -127,22 +130,22 @@ public class FreeplaneTagCategoryAccessTest {
         draftCategories.getNodes().valueForPathChanged(
             new TreePath(draftCategories.getNodes().getPathToRoot(categoryNode)),
             new Tag("STATE", draftCategories.tagWithoutCategories(categoryNode).getColor()));
-        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
         TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
             expectedRevision,
-            draftCategories,
-            Arrays.asList("AA::BB", "AA::STATE"));
+            TagCategoryDraftState.fromTagCategories(draftCategories),
+            TagReferenceRewrite.fromPairs(Arrays.asList("AA::BB", "AA::STATE")));
 
-        TagCategorySnapshot responseSnapshot = uut.applyEditorDraft(mapModel, draftSubmission);
+        TagCategoryState responseState = uut.applyEditorDraftSubmission(mapModel, draftSubmission);
 
         verify(iconController).setTagCategories(eq(mapModel), eq(draftCategories));
-        assertThat(collectQualifiedNames(responseSnapshot)).containsExactly("AA", "AA::STATE");
+        assertThat(collectQualifiedNames(responseState)).containsExactly("AA", "AA::STATE");
         assertThat(draftCategories.getTagsAsListModel()).extracting(tag -> tag.getContent())
             .containsExactly("AA", "AA::STATE");
     }
 
     @Test
-    public void applyEditorDraftRejectsStaleRevisionWithoutCommit() {
+    public void applyEditorDraftSubmissionRejectsStaleRevisionWithoutCommit() {
         TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
             + " BB#22334455\n");
         MapModel mapModel = Mockito.mock(MapModel.class);
@@ -154,10 +157,10 @@ public class FreeplaneTagCategoryAccessTest {
         TagCategories draftCategories = initialTagCategories.copy();
         TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
             "stale-revision",
-            draftCategories,
-            Arrays.asList("AA::BB", "AA::STATE"));
+            TagCategoryDraftState.fromTagCategories(draftCategories),
+            TagReferenceRewrite.fromPairs(Arrays.asList("AA::BB", "AA::STATE")));
 
-        assertThatThrownBy(() -> uut.applyEditorDraft(mapModel, draftSubmission))
+        assertThatThrownBy(() -> uut.applyEditorDraftSubmission(mapModel, draftSubmission))
             .isInstanceOf(TagCategoryConflictException.class)
             .hasMessageContaining("stale revision");
         verify(iconController, never()).setTagCategories(any(), any());
@@ -177,31 +180,31 @@ public class FreeplaneTagCategoryAccessTest {
         Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
         Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
-        String expectedRevision = TagCategorySnapshotBuilder.from(initialTagCategories).getRevision();
-        TagCategoryEditBatch editBatch = new TagCategoryEditBatch(
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             expectedRevision,
             Collections.singletonList(
-                TagCategoryEdit.move(
+                TagCategoryInstruction.moveCategory(
                     Arrays.asList("AA", "BB"),
                     Collections.singletonList(TagCategories.UNCATEGORIZED_NODE),
                     null)));
 
-        TagCategorySnapshot responseSnapshot = uut.applyEdits(mapModel, editBatch);
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
 
         ArgumentCaptor<TagCategories> committedCategoriesCaptor = ArgumentCaptor.forClass(TagCategories.class);
         verify(iconController).setTagCategories(eq(mapModel), committedCategoriesCaptor.capture());
         TagCategories committedTagCategories = committedCategoriesCaptor.getValue();
-        assertThat(collectQualifiedNames(responseSnapshot)).containsExactly("AA", "DD");
-        assertThat(responseSnapshot.getUncategorizedTags())
-            .extracting(TagDescriptor::getQualifiedName)
+        assertThat(collectQualifiedNames(responseState)).containsExactly("AA", "DD");
+        assertThat(responseState.getUncategorizedTags())
+            .extracting(TagItem::getQualifiedName)
             .containsExactly("BB", "CC", "UU", "VV");
         assertThat(committedTagCategories.getTagsAsListModel()).extracting(tag -> tag.getContent())
             .containsExactly("AA", "BB", "CC", "DD", "UU", "VV");
     }
 
-    private List<String> collectQualifiedNames(TagCategorySnapshot snapshot) {
+    private List<String> collectQualifiedNames(TagCategoryState categoryState) {
         ArrayList<String> qualifiedNames = new ArrayList<>();
-        for (TagCategoryNode category : snapshot.getCategories()) {
+        for (TagCategoryNode category : categoryState.getCategories()) {
             collectQualifiedNames(category, qualifiedNames);
         }
         return qualifiedNames;

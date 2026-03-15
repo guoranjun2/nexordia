@@ -3,16 +3,16 @@ package org.freeplane.plugin.ai.tools.tagcategories;
 import java.util.List;
 import java.util.Objects;
 
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditType;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TagCategoryEditPayload {
-    private final TagCategoryEditType type;
+public class TagCategoryInstructionPayload {
+    private final TagCategoryInstructionType type;
     private final List<String> path;
     private final String newName;
     private final List<String> newParentPath;
@@ -21,13 +21,13 @@ public class TagCategoryEditPayload {
     private final String newSeparator;
 
     @JsonCreator
-    public TagCategoryEditPayload(@JsonProperty("type") TagCategoryEditType type,
-                                  @JsonProperty("path") List<String> path,
-                                  @JsonProperty("newName") String newName,
-                                  @JsonProperty("newParentPath") List<String> newParentPath,
-                                  @JsonProperty("index") Integer index,
-                                  @JsonProperty("color") String color,
-                                  @JsonProperty("newSeparator") String newSeparator) {
+    public TagCategoryInstructionPayload(@JsonProperty("type") TagCategoryInstructionType type,
+                                         @JsonProperty("path") List<String> path,
+                                         @JsonProperty("newName") String newName,
+                                         @JsonProperty("newParentPath") List<String> newParentPath,
+                                         @JsonProperty("index") Integer index,
+                                         @JsonProperty("color") String color,
+                                         @JsonProperty("newSeparator") String newSeparator) {
         this.type = type;
         this.path = path;
         this.newName = newName;
@@ -37,22 +37,22 @@ public class TagCategoryEditPayload {
         this.newSeparator = newSeparator;
     }
 
-    static TagCategoryEditPayload fromEdit(TagCategoryEdit edit) {
-        return new TagCategoryEditPayload(
-            edit.getType(),
-            edit.getPath(),
-            edit.getNewName(),
-            edit.getNewParentPath(),
-            edit.getIndex(),
-            edit.getColor(),
-            edit.getNewSeparator());
+    static TagCategoryInstructionPayload fromInstruction(TagCategoryInstruction instruction) {
+        return new TagCategoryInstructionPayload(
+            instruction.getType(),
+            instruction.getPath(),
+            instruction.getNewName(),
+            instruction.getNewParentPath(),
+            instruction.getIndex(),
+            instruction.getColor(),
+            instruction.getNewSeparator());
     }
 
-    TagCategoryEdit toEdit() {
-        return new TagCategoryEdit(type, path, newName, newParentPath, index, color, newSeparator);
+    TagCategoryInstruction toInstruction() {
+        return new TagCategoryInstruction(type, path, newName, newParentPath, index, color, newSeparator);
     }
 
-    public TagCategoryEditType getType() {
+    public TagCategoryInstructionType getType() {
         return type;
     }
 
@@ -87,10 +87,10 @@ public class TagCategoryEditPayload {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof TagCategoryEditPayload)) {
+        if (!(obj instanceof TagCategoryInstructionPayload)) {
             return false;
         }
-        TagCategoryEditPayload other = (TagCategoryEditPayload) obj;
+        TagCategoryInstructionPayload other = (TagCategoryInstructionPayload) obj;
         return type == other.type
             && Objects.equals(path, other.path)
             && Objects.equals(newName, other.newName)

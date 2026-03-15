@@ -12,12 +12,14 @@ import javax.swing.tree.TreePath;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoryAccess;
+import org.freeplane.features.icon.TagCategoryConflictException;
 import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditBatch;
-import org.freeplane.features.icon.TagCategoryEditType;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
+import org.freeplane.features.icon.TagCategoryInstructionType;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
+import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.map.MapModel;
 
 public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
@@ -28,44 +30,44 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
     }
 
     @Override
-    public TagCategorySnapshot readSnapshot(MapModel mapModel) {
-        return TagCategorySnapshotBuilder.from(getTagCategories(mapModel));
+    public TagCategoryState readCurrentCategoryState(MapModel mapModel) {
+        return TagCategoryStateBuilder.from(getTagCategories(mapModel));
     }
 
     @Override
-    public TagCategorySnapshot applyEdits(MapModel mapModel, TagCategoryEditBatch editBatch) {
-        Objects.requireNonNull(editBatch, "editBatch must not be null");
+    public TagCategoryState applyInstructionRequest(MapModel mapModel,
+                                                    TagCategoryInstructionRequest instructionRequest) {
+        Objects.requireNonNull(instructionRequest, "instructionRequest must not be null");
         TagCategories currentTagCategories = getTagCategories(mapModel);
-        TagCategorySnapshot currentSnapshot = TagCategorySnapshotBuilder.from(currentTagCategories);
-        editBatch.requireMatchingRevision(currentSnapshot.getRevision());
+        TagCategoryState currentState = TagCategoryStateBuilder.from(currentTagCategories);
+        instructionRequest.requireMatchingRevision(currentState.getRevision());
         TagCategories workingCopy = currentTagCategories.copy();
-        for (TagCategoryEdit operation : editBatch.getOperations()) {
-            applyOperation(workingCopy, operation);
+        for (TagCategoryInstruction instruction : instructionRequest.getInstructions()) {
+            applyInstruction(workingCopy, instruction);
         }
         iconController.setTagCategories(mapModel, workingCopy);
-        return TagCategorySnapshotBuilder.from(workingCopy);
+        return TagCategoryStateBuilder.from(workingCopy);
     }
 
     @Override
-    public TagCategorySnapshot applyEditorDraft(MapModel mapModel,
-                                                TagCategoryEditorDraftSubmission draftSubmission) {
+    public TagCategoryState applyEditorDraftSubmission(MapModel mapModel,
+                                                       TagCategoryEditorDraftSubmission draftSubmission) {
         Objects.requireNonNull(draftSubmission, "draftSubmission must not be null");
         TagCategories currentTagCategories = getTagCategories(mapModel);
-        TagCategorySnapshot currentSnapshot = TagCategorySnapshotBuilder.from(currentTagCategories);
-        draftSubmission.requireMatchingRevision(currentSnapshot.getRevision());
-        TagCategories draftCategories = draftSubmission.getDraftCategories();
+        TagCategoryState currentState = TagCategoryStateBuilder.from(currentTagCategories);
+        draftSubmission.requireMatchingRevision(currentState.getRevision());
+        TagCategories draftCategories = draftSubmission.getDraftState().toTagCategories();
         String oldSeparator = draftCategories.getTagCategorySeparator();
         String newSeparator = currentTagCategories.getTagCategorySeparator();
         draftCategories.updateTagCategorySeparator(newSeparator);
-        currentTagCategories.getTagsAsListModel()
-            .forEach(tag -> draftCategories.registerTagReferenceIfUnknown(tag));
+        currentTagCategories.getTagsAsListModel().forEach(tag -> draftCategories.registerTagReferenceIfUnknown(tag));
         List<String> replacementPairs = rebaseReplacementPairs(
-            draftSubmission.getReplacementPairs(),
+            TagReferenceRewrite.toPairs(draftSubmission.getReferenceRewrites()),
             oldSeparator,
             newSeparator);
         draftCategories.replaceReferencedTags(replacementPairs);
         iconController.setTagCategories(mapModel, draftCategories);
-        return TagCategorySnapshotBuilder.from(draftCategories);
+        return TagCategoryStateBuilder.from(draftCategories);
     }
 
     private List<String> rebaseReplacementPairs(List<String> replacementPairs,
@@ -93,72 +95,72 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         return tagCategories;
     }
 
-    private void applyOperation(TagCategories tagCategories, TagCategoryEdit operation) {
-        TagCategoryEditType type = operation.getType();
-        if (type == TagCategoryEditType.ADD) {
-            applyAdd(tagCategories, operation);
+    private void applyInstruction(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        TagCategoryInstructionType type = instruction.getType();
+        if (type == TagCategoryInstructionType.ADD_CATEGORY || type == TagCategoryInstructionType.ADD_TAG) {
+            applyAdd(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryEditType.DELETE) {
-            applyDelete(tagCategories, operation);
+        if (type == TagCategoryInstructionType.DELETE_CATEGORY || type == TagCategoryInstructionType.DELETE_TAG) {
+            applyDelete(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryEditType.RENAME) {
-            applyRename(tagCategories, operation);
+        if (type == TagCategoryInstructionType.RENAME_CATEGORY || type == TagCategoryInstructionType.RENAME_TAG) {
+            applyRename(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryEditType.MOVE) {
-            applyMove(tagCategories, operation);
+        if (type == TagCategoryInstructionType.MOVE_CATEGORY || type == TagCategoryInstructionType.MOVE_TAG) {
+            applyMove(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryEditType.SET_COLOR) {
-            applySetColor(tagCategories, operation);
+        if (type == TagCategoryInstructionType.SET_COLOR) {
+            applySetColor(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryEditType.SET_SEPARATOR) {
-            tagCategories.updateTagCategorySeparator(operation.getNewSeparator());
+        if (type == TagCategoryInstructionType.SET_CATEGORY_SEPARATOR) {
+            tagCategories.updateTagCategorySeparator(instruction.getNewSeparator());
             return;
         }
-        throw new IllegalArgumentException("Unsupported edit type: " + type);
+        throw new IllegalArgumentException("Unsupported instruction type: " + type);
     }
 
-    private void applyAdd(TagCategories tagCategories, TagCategoryEdit operation) {
-        String qualifiedContent = qualifiedContent(tagCategories, operation.getPath());
+    private void applyAdd(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        String qualifiedContent = qualifiedContent(tagCategories, instruction.getPath());
         tagCategories.createTagReference(qualifiedContent);
-        if (operation.getColor() != null && !operation.getColor().trim().isEmpty()) {
-            tagCategories.setTagColor(qualifiedContent, operation.getColor());
+        if (instruction.getColor() != null && !instruction.getColor().trim().isEmpty()) {
+            tagCategories.setTagColor(qualifiedContent, instruction.getColor());
         }
     }
 
-    private void applyDelete(TagCategories tagCategories, TagCategoryEdit operation) {
-        DefaultMutableTreeNode node = resolveNode(tagCategories, operation.getPath());
+    private void applyDelete(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        DefaultMutableTreeNode node = resolveNode(tagCategories, instruction.getPath());
         String oldQualifiedContent = tagCategories.categorizedContent(node);
         tagCategories.removeNodeFromParent(node);
         tagCategories.replaceReferencedTags(Arrays.asList(oldQualifiedContent, ""));
     }
 
-    private void applyRename(TagCategories tagCategories, TagCategoryEdit operation) {
-        DefaultMutableTreeNode node = resolveNode(tagCategories, operation.getPath());
+    private void applyRename(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        DefaultMutableTreeNode node = resolveNode(tagCategories, instruction.getPath());
         String oldQualifiedContent = tagCategories.categorizedContent(node);
         Tag existingTag = tagCategories.tagWithoutCategories(node);
         TreePath nodePath = new TreePath(tagCategories.getNodes().getPathToRoot(node));
-        tagCategories.getNodes().valueForPathChanged(nodePath, new Tag(operation.getNewName(), existingTag.getColor()));
+        tagCategories.getNodes().valueForPathChanged(nodePath, new Tag(instruction.getNewName(), existingTag.getColor()));
         String newQualifiedContent = tagCategories.categorizedContent(node);
         tagCategories.replaceReferencedTags(Arrays.asList(oldQualifiedContent, newQualifiedContent));
     }
 
-    private void applyMove(TagCategories tagCategories, TagCategoryEdit operation) {
-        DefaultMutableTreeNode movedNode = resolveNode(tagCategories, operation.getPath());
+    private void applyMove(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        DefaultMutableTreeNode movedNode = resolveNode(tagCategories, instruction.getPath());
         String oldQualifiedContent = tagCategories.categorizedContent(movedNode);
         DefaultMutableTreeNode oldParent = (DefaultMutableTreeNode) movedNode.getParent();
         int oldIndex = oldParent.getIndex(movedNode);
-        DefaultMutableTreeNode newParent = resolveMoveParent(tagCategories, operation.getNewParentPath());
+        DefaultMutableTreeNode newParent = resolveMoveParent(tagCategories, instruction.getNewParentPath());
         if (newParent == tagCategories.getUncategorizedTagsNode() && movedNode.getChildCount() > 0) {
             moveSubtreeIntoUncategorized(tagCategories, movedNode, oldQualifiedContent);
             return;
         }
-        int insertionIndex = insertionIndex(newParent, operation.getIndex(), tagCategories);
-        if (oldParent == newParent && operation.getIndex() != null && oldIndex < insertionIndex) {
+        int insertionIndex = insertionIndex(newParent, instruction.getIndex(), tagCategories);
+        if (oldParent == newParent && instruction.getIndex() != null && oldIndex < insertionIndex) {
             insertionIndex--;
         }
         tagCategories.removeNodeFromParent(movedNode);
@@ -201,10 +203,10 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         }
     }
 
-    private void applySetColor(TagCategories tagCategories, TagCategoryEdit operation) {
-        DefaultMutableTreeNode node = resolveNode(tagCategories, operation.getPath());
+    private void applySetColor(TagCategories tagCategories, TagCategoryInstruction instruction) {
+        DefaultMutableTreeNode node = resolveNode(tagCategories, instruction.getPath());
         String qualifiedContent = tagCategories.categorizedContent(node);
-        tagCategories.setTagColor(qualifiedContent, operation.getColor());
+        tagCategories.setTagColor(qualifiedContent, instruction.getColor());
         tagCategories.fireNodeChanged(node);
     }
 
@@ -277,7 +279,8 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         return currentNode;
     }
 
-    private DefaultMutableTreeNode findChildBySegment(TagCategories tagCategories, DefaultMutableTreeNode node,
+    private DefaultMutableTreeNode findChildBySegment(TagCategories tagCategories,
+                                                      DefaultMutableTreeNode node,
                                                       String segment) {
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);

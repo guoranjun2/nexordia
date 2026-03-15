@@ -4,25 +4,26 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.freeplane.features.icon.TagCategoryAccess;
-import org.freeplane.features.icon.TagCategorySnapshot;
+import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 
-public class FetchTagCategoriesTool {
+public class GetTagCategoriesTool {
     private final AvailableMaps availableMaps;
     private final AvailableMaps.MapAccessListener mapAccessListener;
     private final TagCategoryAccess tagCategoryAccess;
 
-    public FetchTagCategoriesTool(AvailableMaps availableMaps, AvailableMaps.MapAccessListener mapAccessListener,
-                                  TagCategoryAccess tagCategoryAccess) {
+    public GetTagCategoriesTool(AvailableMaps availableMaps,
+                                AvailableMaps.MapAccessListener mapAccessListener,
+                                TagCategoryAccess tagCategoryAccess) {
         this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
         this.mapAccessListener = mapAccessListener;
         this.tagCategoryAccess = Objects.requireNonNull(tagCategoryAccess, "tagCategoryAccess");
     }
 
-    public TagCategorySnapshotPayload fetchTagCategories(FetchTagCategoriesRequest request) {
+    public TagCategoryStatePayload getTagCategories(GetTagCategoriesRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Missing request");
         }
@@ -32,28 +33,26 @@ public class FetchTagCategoriesTool {
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }
-        TagCategorySnapshot snapshot = tagCategoryAccess.readSnapshot(mapModel);
-        return TagCategorySnapshotPayload.fromSnapshot(mapIdentifierValue, snapshot);
+        TagCategoryState categoryState = tagCategoryAccess.readCurrentCategoryState(mapModel);
+        return TagCategoryStatePayload.fromState(mapIdentifierValue, categoryState);
     }
 
-    public ToolCallSummary buildToolCallSummary(FetchTagCategoriesRequest request, TagCategorySnapshotPayload response) {
-        int categoryCount = response == null || response.getCategories() == null
-            ? 0
-            : response.getCategories().size();
-        String summaryText = "fetchTagCategories: categories=" + categoryCount;
+    public ToolCallSummary buildToolCallSummary(GetTagCategoriesRequest request, TagCategoryStatePayload response) {
+        int categoryCount = response == null || response.getCategories() == null ? 0 : response.getCategories().size();
+        String summaryText = "getTagCategories: categories=" + categoryCount;
         String revision = response == null ? "" : ToolCallSummaryFormatter.sanitizeValue(response.getRevision());
         if (!revision.isEmpty()) {
             summaryText = summaryText + ", revision=" + revision;
         }
-        return new ToolCallSummary("fetchTagCategories", summaryText, false);
+        return new ToolCallSummary("getTagCategories", summaryText, false);
     }
 
-    public ToolCallSummary buildToolCallErrorSummary(FetchTagCategoriesRequest request, RuntimeException error) {
+    public ToolCallSummary buildToolCallErrorSummary(GetTagCategoriesRequest request, RuntimeException error) {
         String message = error == null ? "Unknown error" : error.getMessage();
         String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
             ? error.getClass().getSimpleName()
             : message);
-        return new ToolCallSummary("fetchTagCategories", "fetchTagCategories error: " + safeMessage, true);
+        return new ToolCallSummary("getTagCategories", "getTagCategories error: " + safeMessage, true);
     }
 
     private String requireValue(String value, String fieldName) {

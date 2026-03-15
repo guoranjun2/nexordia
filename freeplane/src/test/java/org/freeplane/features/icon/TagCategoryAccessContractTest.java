@@ -13,55 +13,72 @@ import org.junit.Test;
 
 public class TagCategoryAccessContractTest {
     @Test
-    public void rejectsMissingRequiredSnapshotFields() {
-        assertThatThrownBy(() -> new TagCategorySnapshot(null, "::", Collections.emptyList(), Collections.emptyList()))
+    public void rejectsMissingRequiredCategoryStateFields() {
+        assertThatThrownBy(() -> new TagCategoryState(null, "::", Collections.emptyList(), Collections.emptyList()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("revision");
 
-        assertThatThrownBy(() -> new TagCategorySnapshot("rev", "", Collections.emptyList(), Collections.emptyList()))
+        assertThatThrownBy(() -> new TagCategoryState("rev", "", Collections.emptyList(), Collections.emptyList()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("separator");
+            .hasMessageContaining("categorySeparator");
     }
 
     @Test
-    public void rejectsMissingRequiredEditFields() {
-        assertThatThrownBy(() -> new TagCategoryEditBatch(null, Collections.singletonList(TagCategoryEdit.setSeparator("/"))))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("expectedRevision");
-
-        assertThatThrownBy(() -> new TagCategoryEditBatch("rev", Collections.emptyList()))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("operations");
-
-        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("",
-            TagCategoriesTest.tagCategories("Project\n"),
-            Collections.emptyList()))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("expectedRevision");
-
-        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("rev",
+    public void rejectsMissingRequiredInstructionFields() {
+        assertThatThrownBy(() -> new TagCategoryInstructionRequest(
             null,
+            Collections.singletonList(TagCategoryInstruction.setCategorySeparator("/"))))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("baseRevision");
+
+        assertThatThrownBy(() -> new TagCategoryInstructionRequest("rev", Collections.emptyList()))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("instructions");
+
+        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission(
+            "",
+            TagCategoryDraftState.fromTagCategories(TagCategoriesTest.tagCategories("Project\n")),
             Collections.emptyList()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("draftCategories");
+            .hasMessageContaining("expectedRevision");
 
-        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("rev",
-            TagCategoriesTest.tagCategories("Project\n"),
-            Collections.singletonList("only-old")))
+        assertThatThrownBy(() -> new TagCategoryEditorDraftSubmission("rev", null, Collections.emptyList()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("replacementPairs");
+            .hasMessageContaining("draftState");
 
-        assertThatThrownBy(() -> TagCategoryEdit.rename(Collections.emptyList(), "Renamed"))
+        assertThatThrownBy(() -> TagReferenceRewrite.fromPairs(Collections.singletonList("only-old")))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("pairs");
+
+        assertThatThrownBy(() -> TagCategoryInstruction.renameCategory(Collections.emptyList(), "Renamed"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("path");
 
-        assertThatThrownBy(() -> TagCategoryEdit.rename(Arrays.asList("Project", "Status"), ""))
+        assertThatThrownBy(() -> TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), ""))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("newName");
     }
 
     @Test
-    public void snapshotOrderingIsDeterministicForEquivalentState() {
+    public void preservesLegacyEditorRewritePlaceholders() {
+        assertThat(TagReferenceRewrite.toPairs(TagReferenceRewrite.fromPairs(Arrays.asList(
+            "",
+            "Project::State",
+            "Project::Old",
+            TagCategories.UNCATEGORIZED_NODE,
+            "Project::Temp",
+            ""))))
+            .containsExactly(
+                "",
+                "Project::State",
+                "Project::Old",
+                TagCategories.UNCATEGORIZED_NODE,
+                "Project::Temp",
+                "");
+    }
+
+    @Test
+    public void categoryStateOrderingIsDeterministicForEquivalentState() {
         TagCategories firstCategories = TagCategoriesTest.tagCategories("Project\n"
             + " Status\n");
         firstCategories.setTagColor("urgent", Color.RED);
@@ -75,39 +92,39 @@ public class TagCategoryAccessContractTest {
         secondCategories.createTagReference("Project");
         secondCategories.setTagColor("urgent", Color.RED);
 
-        TagCategorySnapshot firstSnapshot = TagCategorySnapshotBuilder.from(firstCategories);
-        TagCategorySnapshot secondSnapshot = TagCategorySnapshotBuilder.from(secondCategories);
+        TagCategoryState firstState = TagCategoryStateBuilder.from(firstCategories);
+        TagCategoryState secondState = TagCategoryStateBuilder.from(secondCategories);
 
-        assertThat(firstSnapshot).isEqualTo(secondSnapshot);
-        assertThat(firstSnapshot.getRevision()).isEqualTo(secondSnapshot.getRevision());
+        assertThat(firstState).isEqualTo(secondState);
+        assertThat(firstState.getRevision()).isEqualTo(secondState.getRevision());
     }
 
     @Test
     public void revisionIsStableUntilStateChanges() {
         TagCategories uut = TagCategoriesTest.tagCategories("Project\n"
             + " Status\n");
-        TagCategorySnapshot firstSnapshot = TagCategorySnapshotBuilder.from(uut);
-        TagCategorySnapshot secondSnapshot = TagCategorySnapshotBuilder.from(uut);
+        TagCategoryState firstState = TagCategoryStateBuilder.from(uut);
+        TagCategoryState secondState = TagCategoryStateBuilder.from(uut);
 
         uut.createTagReference("Project::Owner");
 
-        TagCategorySnapshot changedSnapshot = TagCategorySnapshotBuilder.from(uut);
+        TagCategoryState changedState = TagCategoryStateBuilder.from(uut);
 
-        assertThat(firstSnapshot.getRevision()).isEqualTo(secondSnapshot.getRevision());
-        assertThat(changedSnapshot.getRevision()).isNotEqualTo(firstSnapshot.getRevision());
+        assertThat(firstState.getRevision()).isEqualTo(secondState.getRevision());
+        assertThat(changedState.getRevision()).isNotEqualTo(firstState.getRevision());
     }
 
     @Test
-    public void staleExpectedRevisionFailsWithoutMutation() {
+    public void staleBaseRevisionFailsWithoutMutation() {
         TagCategories uut = TagCategoriesTest.tagCategories("Project\n"
             + " Status\n");
         String serializedBefore = uut.serialize();
-        TagCategorySnapshot snapshot = TagCategorySnapshotBuilder.from(uut);
-        TagCategoryEditBatch batch = new TagCategoryEditBatch(
+        TagCategoryState state = TagCategoryStateBuilder.from(uut);
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             "stale-revision",
-            Collections.singletonList(TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State")));
+            Collections.singletonList(TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State")));
 
-        assertThatThrownBy(() -> batch.requireMatchingRevision(snapshot.getRevision()))
+        assertThatThrownBy(() -> instructionRequest.requireMatchingRevision(state.getRevision()))
             .isInstanceOf(TagCategoryConflictException.class)
             .hasMessageContaining("revision");
         assertThat(uut.serialize()).isEqualTo(serializedBefore);

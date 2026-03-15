@@ -95,8 +95,10 @@ import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
+import org.freeplane.features.icon.TagCategoryDraftState;
 import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
+import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.icon.TreeTagChangeListener;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.Controller;
@@ -481,7 +483,7 @@ class TagCategoryEditor implements IExtension {
         final IconRegistry iconRegistry = map.getIconRegistry();
         TagCategories openedCategories = iconRegistry.getTagCategories();
         this.tagCategories = openedCategories.copy();
-        this.openedRevision = TagCategorySnapshotBuilder.from(openedCategories).getRevision();
+        this.openedRevision = TagCategoryStateBuilder.from(openedCategories).getRevision();
         tree = new JTagTree(tagCategories, iconController.getTagFont(map.getRootNode()));
         tree.setTransferHandler(new TreeTransferHandler());
         if(! GraphicsEnvironment.isHeadless()) {
@@ -909,9 +911,9 @@ class TagCategoryEditor implements IExtension {
     protected void submit() {
         TagCategoryEditorDraftSubmission draftSubmission = new TagCategoryEditorDraftSubmission(
             openedRevision,
-            tagCategories,
-            tagRenamer.replacementPairs());
-        tagCategoryAccess.applyEditorDraft(map, draftSubmission);
+            TagCategoryDraftState.fromTagCategories(tagCategories),
+            TagReferenceRewrite.fromPairs(tagRenamer.replacementPairs()));
+        tagCategoryAccess.applyEditorDraftSubmission(map, draftSubmission);
     }
 
     private JRestrictedSizeScrollPane createScrollPane() {

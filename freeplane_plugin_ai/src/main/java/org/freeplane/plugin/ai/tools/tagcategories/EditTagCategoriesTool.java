@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.freeplane.features.icon.TagCategoryAccess;
-import org.freeplane.features.icon.TagCategoryEditBatch;
-import org.freeplane.features.icon.TagCategorySnapshot;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
+import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
@@ -23,7 +23,7 @@ public class EditTagCategoriesTool {
         this.tagCategoryAccess = Objects.requireNonNull(tagCategoryAccess, "tagCategoryAccess");
     }
 
-    public TagCategorySnapshotPayload editTagCategories(TagCategoryEditBatchPayload request) {
+    public TagCategoryStatePayload editTagCategories(TagCategoryInstructionRequestPayload request) {
         if (request == null) {
             throw new IllegalArgumentException("Missing request");
         }
@@ -33,17 +33,17 @@ public class EditTagCategoriesTool {
         if (mapModel == null) {
             throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
         }
-        TagCategoryEditBatch editBatch = request.toEditBatch();
-        TagCategorySnapshot updatedSnapshot = tagCategoryAccess.applyEdits(mapModel, editBatch);
-        return TagCategorySnapshotPayload.fromSnapshot(mapIdentifierValue, updatedSnapshot);
+        TagCategoryInstructionRequest instructionRequest = request.toInstructionRequest();
+        TagCategoryState updatedState = tagCategoryAccess.applyInstructionRequest(mapModel, instructionRequest);
+        return TagCategoryStatePayload.fromState(mapIdentifierValue, updatedState);
     }
 
-    public ToolCallSummary buildToolCallSummary(TagCategoryEditBatchPayload request,
-                                                TagCategorySnapshotPayload response) {
-        int operationCount = request == null || request.getOperations() == null
+    public ToolCallSummary buildToolCallSummary(TagCategoryInstructionRequestPayload request,
+                                                TagCategoryStatePayload response) {
+        int instructionCount = request == null || request.getInstructions() == null
             ? 0
-            : request.getOperations().size();
-        String summaryText = "editTagCategories: operations=" + operationCount;
+            : request.getInstructions().size();
+        String summaryText = "editTagCategories: instructions=" + instructionCount;
         String revision = response == null ? "" : ToolCallSummaryFormatter.sanitizeValue(response.getRevision());
         if (!revision.isEmpty()) {
             summaryText = summaryText + ", revision=" + revision;
@@ -51,7 +51,8 @@ public class EditTagCategoriesTool {
         return new ToolCallSummary("editTagCategories", summaryText, false);
     }
 
-    public ToolCallSummary buildToolCallErrorSummary(TagCategoryEditBatchPayload request, RuntimeException error) {
+    public ToolCallSummary buildToolCallErrorSummary(TagCategoryInstructionRequestPayload request,
+                                                     RuntimeException error) {
         String message = error == null ? "Unknown error" : error.getMessage();
         String safeMessage = ToolCallSummaryFormatter.sanitizeValue(message == null
             ? error.getClass().getSimpleName()

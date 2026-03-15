@@ -37,8 +37,9 @@ import org.freeplane.features.icon.TagAssertions;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagCategoryConflictException;
 import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagCategoriesTest;
+import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.junit.Test;
@@ -527,8 +528,8 @@ public class TagCategoryEditorTest {
             TagCategories initialCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
                 + " BB#22334455\n");
             TagCategoryAccess tagCategoryAccess = Mockito.mock(TagCategoryAccess.class);
-            Mockito.when(tagCategoryAccess.applyEditorDraft(any(), any()))
-                .thenReturn(TagCategorySnapshotBuilder.from(initialCategories));
+            Mockito.when(tagCategoryAccess.applyEditorDraftSubmission(any(), any()))
+                .thenReturn(TagCategoryStateBuilder.from(initialCategories));
             steps.given().tagCategoryEditor(initialCategories, tagCategoryAccess)
                 .when().selectNode(0, 0)
                 .renameSelectedNode("STATE");
@@ -537,12 +538,13 @@ public class TagCategoryEditorTest {
 
             ArgumentCaptor<TagCategoryEditorDraftSubmission> submissionCaptor =
                 ArgumentCaptor.forClass(TagCategoryEditorDraftSubmission.class);
-            verify(tagCategoryAccess).applyEditorDraft(Mockito.eq(steps.mapModel), submissionCaptor.capture());
+            verify(tagCategoryAccess).applyEditorDraftSubmission(Mockito.eq(steps.mapModel), submissionCaptor.capture());
             TagCategoryEditorDraftSubmission submittedDraft = submissionCaptor.getValue();
             assertThat(submittedDraft.getExpectedRevision())
-                .isEqualTo(TagCategorySnapshotBuilder.from(initialCategories).getRevision());
-            assertThat(submittedDraft.getDraftCategories()).isSameAs(steps.updatedTagCategories);
-            assertThat(submittedDraft.getReplacementPairs()).containsExactly("AA::BB", "AA::STATE");
+                .isEqualTo(TagCategoryStateBuilder.from(initialCategories).getRevision());
+            assertThat(submittedDraft.getDraftState().toTagCategories()).isSameAs(steps.updatedTagCategories);
+            assertThat(TagReferenceRewrite.toPairs(submittedDraft.getReferenceRewrites()))
+                .containsExactly("AA::BB", "AA::STATE");
             verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
         }
     }

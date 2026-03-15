@@ -12,23 +12,26 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import org.freeplane.api.MapTagCategoryInstruction;
+import org.freeplane.api.MapTagCategoryInstructionRequest;
+import org.freeplane.api.MapTagCategoryInstructionType;
+import org.freeplane.api.MapTagCategoryNode;
+import org.freeplane.api.MapTagCategoryState;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditBatch;
-import org.freeplane.features.icon.TagCategoryEditType;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
+import org.freeplane.features.icon.TagCategoryInstructionType;
 import org.freeplane.features.icon.TagCategoryNode;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagCategories;
-import org.freeplane.features.icon.TagDescriptor;
+import org.freeplane.features.icon.TagItem;
 import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.map.MapModel;
@@ -38,10 +41,10 @@ import org.mockito.ArgumentCaptor;
 
 public class MapTagCategoriesProxyTest {
     @Test
-    public void snapshotReturnsDeterministicPayload() {
+    public void readReturnsDeterministicState() {
         MapModel mapModel = mock(MapModel.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
-        TagCategorySnapshot snapshot = new TagCategorySnapshot(
+        TagCategoryState categoryState = new TagCategoryState(
             "sha256:test",
             "::",
             Collections.singletonList(new TagCategoryNode(
@@ -55,29 +58,28 @@ public class MapTagCategoriesProxyTest {
                     "Project::Status",
                     "#22334455",
                     Collections.emptyList())))),
-            Collections.singletonList(new TagDescriptor(
+            Collections.singletonList(new TagItem(
                 Collections.singletonList("urgent"),
                 "urgent",
                 "urgent",
                 "#ff0000ff")));
-        when(tagCategoryAccess.readSnapshot(mapModel)).thenReturn(snapshot);
+        when(tagCategoryAccess.readCurrentCategoryState(mapModel)).thenReturn(categoryState);
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), tagCategoryAccess);
 
-        Map<String, Object> firstSnapshot = uut.snapshot();
-        Map<String, Object> secondSnapshot = uut.snapshot();
+        MapTagCategoryState firstState = uut.read();
+        MapTagCategoryState secondState = uut.read();
 
-        assertThat(firstSnapshot).isEqualTo(secondSnapshot);
-        assertThat(firstSnapshot.get("revision")).isEqualTo("sha256:test");
-        assertThat(collectQualifiedNames(firstSnapshot))
-            .containsExactly("Project", "Project::Status");
-        verify(tagCategoryAccess, times(2)).readSnapshot(mapModel);
+        assertThat(firstState).isEqualTo(secondState);
+        assertThat(firstState.getRevision()).isEqualTo("sha256:test");
+        assertThat(collectQualifiedNames(firstState)).containsExactly("Project", "Project::Status");
+        verify(tagCategoryAccess, times(2)).readCurrentCategoryState(mapModel);
     }
 
     @Test
-    public void applyConvertsOrderedOperationsAndReturnsSnapshot() {
+    public void editConvertsOrderedInstructionsAndReturnsState() {
         MapModel mapModel = mock(MapModel.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
-        TagCategorySnapshot appliedSnapshot = new TagCategorySnapshot(
+        TagCategoryState appliedState = new TagCategoryState(
             "sha256:applied",
             "/",
             Collections.singletonList(new TagCategoryNode(
@@ -87,56 +89,69 @@ public class MapTagCategoriesProxyTest {
                 "#11223344",
                 Collections.emptyList())),
             Collections.emptyList());
-        when(tagCategoryAccess.applyEdits(eq(mapModel), any())).thenReturn(appliedSnapshot);
+        when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any())).thenReturn(appliedState);
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), tagCategoryAccess);
-        Map<String, Object> renameOperation = new LinkedHashMap<>();
-        renameOperation.put("type", "RENAME");
-        renameOperation.put("path", Arrays.asList("Project", "Status"));
-        renameOperation.put("newName", "State");
-        Map<String, Object> separatorOperation = new LinkedHashMap<>();
-        separatorOperation.put("type", "SET_SEPARATOR");
-        separatorOperation.put("newSeparator", "/");
-        Map<String, Object> editBatch = new LinkedHashMap<>();
-        editBatch.put("expectedRevision", "sha256:expected");
-        editBatch.put("operations", Arrays.asList(renameOperation, separatorOperation));
+        MapTagCategoryInstruction renameInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.RENAME_CATEGORY,
+            Arrays.asList("Project", "Status"),
+            "State",
+            null,
+            null,
+            null,
+            null);
+        MapTagCategoryInstruction separatorInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "/");
+        MapTagCategoryInstructionRequest instructionRequest = new MapTagCategoryInstructionRequest(
+            "sha256:expected",
+            Arrays.asList(renameInstruction, separatorInstruction));
 
-        Map<String, Object> result = uut.apply(editBatch);
+        MapTagCategoryState result = uut.edit(instructionRequest);
 
-        ArgumentCaptor<TagCategoryEditBatch> batchCaptor = ArgumentCaptor.forClass(TagCategoryEditBatch.class);
-        verify(tagCategoryAccess).applyEdits(eq(mapModel), batchCaptor.capture());
-        TagCategoryEditBatch submittedBatch = batchCaptor.getValue();
-        assertThat(submittedBatch.getExpectedRevision()).isEqualTo("sha256:expected");
-        assertThat(submittedBatch.getOperations()).extracting(TagCategoryEdit::getType)
-            .containsExactly(TagCategoryEditType.RENAME, TagCategoryEditType.SET_SEPARATOR);
-        assertThat(submittedBatch.getOperations().get(0).getPath())
-            .containsExactly("Project", "Status");
-        assertThat(submittedBatch.getOperations().get(0).getNewName()).isEqualTo("State");
-        assertThat(submittedBatch.getOperations().get(1).getNewSeparator()).isEqualTo("/");
-        assertThat(result.get("revision")).isEqualTo("sha256:applied");
-        assertThat(result.get("separator")).isEqualTo("/");
+        ArgumentCaptor<TagCategoryInstructionRequest> requestCaptor = ArgumentCaptor.forClass(TagCategoryInstructionRequest.class);
+        verify(tagCategoryAccess).applyInstructionRequest(eq(mapModel), requestCaptor.capture());
+        TagCategoryInstructionRequest submittedRequest = requestCaptor.getValue();
+        assertThat(submittedRequest.getBaseRevision()).isEqualTo("sha256:expected");
+        assertThat(submittedRequest.getInstructions()).extracting(TagCategoryInstruction::getType)
+            .containsExactly(TagCategoryInstructionType.RENAME_CATEGORY, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
+        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Status");
+        assertThat(submittedRequest.getInstructions().get(0).getNewName()).isEqualTo("State");
+        assertThat(submittedRequest.getInstructions().get(1).getNewSeparator()).isEqualTo("/");
+        assertThat(result.getRevision()).isEqualTo("sha256:applied");
+        assertThat(result.getCategorySeparator()).isEqualTo("/");
     }
 
     @Test
-    public void applyPropagatesStaleRevisionConflict() {
+    public void editPropagatesStaleRevisionConflict() {
         MapModel mapModel = mock(MapModel.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
-        when(tagCategoryAccess.applyEdits(eq(mapModel), any()))
+        when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any()))
             .thenThrow(new TagCategoryConflictException("stale revision"));
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), tagCategoryAccess);
-        Map<String, Object> separatorOperation = new LinkedHashMap<>();
-        separatorOperation.put("type", "SET_SEPARATOR");
-        separatorOperation.put("newSeparator", "/");
-        Map<String, Object> editBatch = new LinkedHashMap<>();
-        editBatch.put("expectedRevision", "sha256:expected");
-        editBatch.put("operations", Collections.singletonList(separatorOperation));
+        MapTagCategoryInstruction separatorInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "/");
+        MapTagCategoryInstructionRequest instructionRequest = new MapTagCategoryInstructionRequest(
+            "sha256:expected",
+            Collections.singletonList(separatorInstruction));
 
-        assertThatThrownBy(() -> uut.apply(editBatch))
+        assertThatThrownBy(() -> uut.edit(instructionRequest))
             .isInstanceOf(TagCategoryConflictException.class)
             .hasMessageContaining("stale revision");
     }
 
     @Test
-    public void applyResultMatchesCoreServiceOutcomeForEquivalentBatch() {
+    public void editResultMatchesCoreServiceOutcomeForEquivalentRequest() {
         TagCategories tagCategories = new TagCategories(
             new DefaultMutableTreeNode("tags"),
             new DefaultMutableTreeNode("uncategorized_tags"),
@@ -150,55 +165,60 @@ public class MapTagCategoriesProxyTest {
         MIconController iconController = mock(MIconController.class);
         FreeplaneTagCategoryAccess access = new FreeplaneTagCategoryAccess(iconController);
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), access);
-        String expectedRevision = TagCategorySnapshotBuilder.from(tagCategories).getRevision();
-        TagCategoryEditBatch directBatch = new TagCategoryEditBatch(
+        String expectedRevision = TagCategoryStateBuilder.from(tagCategories).getRevision();
+        TagCategoryInstructionRequest directRequest = new TagCategoryInstructionRequest(
             expectedRevision,
             Arrays.asList(
-                TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State"),
-                TagCategoryEdit.setSeparator("/")));
-        TagCategorySnapshot expectedSnapshot = access.applyEdits(mapModel, directBatch);
-        Map<String, Object> renameOperation = new LinkedHashMap<>();
-        renameOperation.put("type", "RENAME");
-        renameOperation.put("path", Arrays.asList("Project", "Status"));
-        renameOperation.put("newName", "State");
-        Map<String, Object> separatorOperation = new LinkedHashMap<>();
-        separatorOperation.put("type", "SET_SEPARATOR");
-        separatorOperation.put("newSeparator", "/");
-        Map<String, Object> editBatch = new LinkedHashMap<>();
-        editBatch.put("expectedRevision", expectedRevision);
-        editBatch.put("operations", Arrays.asList(renameOperation, separatorOperation));
+                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.setCategorySeparator("/")));
+        TagCategoryState expectedState = access.applyInstructionRequest(mapModel, directRequest);
+        MapTagCategoryInstruction renameInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.RENAME_CATEGORY,
+            Arrays.asList("Project", "Status"),
+            "State",
+            null,
+            null,
+            null,
+            null);
+        MapTagCategoryInstruction separatorInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "/");
+        MapTagCategoryInstructionRequest request = new MapTagCategoryInstructionRequest(
+            expectedRevision,
+            Arrays.asList(renameInstruction, separatorInstruction));
 
-        Map<String, Object> proxyResult = uut.apply(editBatch);
+        MapTagCategoryState proxyResult = uut.edit(request);
 
-        assertThat(proxyResult.get("revision")).isEqualTo(expectedSnapshot.getRevision());
-        assertThat(proxyResult.get("separator")).isEqualTo(expectedSnapshot.getSeparator());
+        assertThat(proxyResult.getRevision()).isEqualTo(expectedState.getRevision());
+        assertThat(proxyResult.getCategorySeparator()).isEqualTo(expectedState.getCategorySeparator());
         assertThat(collectQualifiedNames(proxyResult))
-            .containsExactlyElementsOf(collectQualifiedNames(expectedSnapshot));
+            .containsExactlyElementsOf(collectQualifiedNames(expectedState));
     }
 
-    private List<String> collectQualifiedNames(TagCategorySnapshot snapshot) {
+    private List<String> collectQualifiedNames(TagCategoryState categoryState) {
         ArrayList<String> qualifiedNames = new ArrayList<>();
-        for (TagCategoryNode categoryNode : snapshot.getCategories()) {
+        for (TagCategoryNode categoryNode : categoryState.getCategories()) {
             collectQualifiedNames(categoryNode, qualifiedNames);
         }
         return qualifiedNames;
     }
 
-    @SuppressWarnings("unchecked")
-    private List<String> collectQualifiedNames(Map<String, Object> snapshotMap) {
+    private List<String> collectQualifiedNames(MapTagCategoryState categoryState) {
         ArrayList<String> qualifiedNames = new ArrayList<>();
-        List<Map<String, Object>> categories = (List<Map<String, Object>>) snapshotMap.get("categories");
-        for (Map<String, Object> category : categories) {
-            collectQualifiedNames(category, qualifiedNames);
+        for (MapTagCategoryNode categoryNode : categoryState.getCategories()) {
+            collectQualifiedNames(categoryNode, qualifiedNames);
         }
         return qualifiedNames;
     }
 
-    @SuppressWarnings("unchecked")
-    private void collectQualifiedNames(Map<String, Object> category, List<String> qualifiedNames) {
-        qualifiedNames.add((String) category.get("qualifiedName"));
-        List<Map<String, Object>> children = (List<Map<String, Object>>) category.get("children");
-        for (Map<String, Object> child : children) {
+    private void collectQualifiedNames(MapTagCategoryNode categoryNode, List<String> qualifiedNames) {
+        qualifiedNames.add(categoryNode.getQualifiedName());
+        for (MapTagCategoryNode child : categoryNode.getChildren()) {
             collectQualifiedNames(child, qualifiedNames);
         }
     }

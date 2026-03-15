@@ -11,23 +11,23 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.map.MapModel;
 
-public class TagCategorySnapshotBuilder {
-    public static TagCategorySnapshot from(MapModel mapModel) {
+public class TagCategoryStateBuilder {
+    public static TagCategoryState from(MapModel mapModel) {
         if (mapModel == null) {
             throw new IllegalArgumentException("mapModel must not be null");
         }
         return from(mapModel.getIconRegistry().getTagCategories());
     }
 
-    public static TagCategorySnapshot from(TagCategories tagCategories) {
+    public static TagCategoryState from(TagCategories tagCategories) {
         if (tagCategories == null) {
             throw new IllegalArgumentException("tagCategories must not be null");
         }
-        String separator = tagCategories.getTagCategorySeparator();
+        String categorySeparator = tagCategories.getTagCategorySeparator();
         List<TagCategoryNode> categories = buildCategories(tagCategories);
-        List<TagDescriptor> uncategorizedTags = buildUncategorizedTags(tagCategories);
-        String revision = revision(separator, categories, uncategorizedTags);
-        return new TagCategorySnapshot(revision, separator, categories, uncategorizedTags);
+        List<TagItem> uncategorizedTags = buildUncategorizedTags(tagCategories);
+        String revision = revision(categorySeparator, categories, uncategorizedTags);
+        return new TagCategoryState(revision, categorySeparator, categories, uncategorizedTags);
     }
 
     private static List<TagCategoryNode> buildCategories(TagCategories tagCategories) {
@@ -39,7 +39,7 @@ public class TagCategorySnapshotBuilder {
             if (childNode == uncategorizedNode || !tagCategories.containsTag(childNode)) {
                 continue;
             }
-            categories.add(buildNode(tagCategories, childNode, new ArrayList<>()));
+            categories.add(buildNode(tagCategories, childNode, new ArrayList<String>()));
         }
         return categories;
     }
@@ -59,27 +59,32 @@ public class TagCategorySnapshotBuilder {
             children.add(buildNode(tagCategories, childNode, path));
         }
         String qualifiedName = tagCategories.categorizedContent(node);
-        return new TagCategoryNode(path, categoryTag.getContent(), qualifiedName,
-            ColorUtils.colorToRGBAString(categoryTag.getColor()), children);
+        return new TagCategoryNode(
+            TagCategoryNodeKind.CATEGORY,
+            path,
+            categoryTag.getContent(),
+            qualifiedName,
+            ColorUtils.colorToRGBAString(categoryTag.getColor()),
+            children);
     }
 
-    private static List<TagDescriptor> buildUncategorizedTags(TagCategories tagCategories) {
-        ArrayList<TagDescriptor> uncategorizedTags = new ArrayList<>();
+    private static List<TagItem> buildUncategorizedTags(TagCategories tagCategories) {
+        ArrayList<TagItem> uncategorizedTags = new ArrayList<>();
         for (Tag tag : tagCategories.getUncategorizedTags()) {
             ArrayList<String> path = new ArrayList<>(1);
             path.add(tag.getContent());
-            uncategorizedTags.add(new TagDescriptor(path, tag.getContent(), tag.getContent(),
+            uncategorizedTags.add(new TagItem(path, tag.getContent(), tag.getContent(),
                 ColorUtils.colorToRGBAString(tag.getColor())));
         }
         return uncategorizedTags;
     }
 
-    private static String revision(String separator,
+    private static String revision(String categorySeparator,
                                    List<TagCategoryNode> categories,
-                                   List<TagDescriptor> uncategorizedTags) {
+                                   List<TagItem> uncategorizedTags) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-            update(messageDigest, separator);
+            update(messageDigest, categorySeparator);
             appendCategories(messageDigest, categories);
             appendUncategorizedTags(messageDigest, uncategorizedTags);
             byte[] digest = messageDigest.digest();
@@ -105,6 +110,7 @@ public class TagCategorySnapshotBuilder {
     }
 
     private static void appendCategory(MessageDigest messageDigest, TagCategoryNode category) {
+        update(messageDigest, category.getKind().name());
         appendPath(messageDigest, category.getPath());
         update(messageDigest, category.getName());
         update(messageDigest, category.getQualifiedName());
@@ -112,13 +118,13 @@ public class TagCategorySnapshotBuilder {
         appendCategories(messageDigest, category.getChildren());
     }
 
-    private static void appendUncategorizedTags(MessageDigest messageDigest, List<TagDescriptor> uncategorizedTags) {
+    private static void appendUncategorizedTags(MessageDigest messageDigest, List<TagItem> uncategorizedTags) {
         update(messageDigest, Integer.toString(uncategorizedTags.size()));
-        for (TagDescriptor descriptor : uncategorizedTags) {
-            appendPath(messageDigest, descriptor.getPath());
-            update(messageDigest, descriptor.getName());
-            update(messageDigest, descriptor.getQualifiedName());
-            update(messageDigest, descriptor.getColor());
+        for (TagItem item : uncategorizedTags) {
+            appendPath(messageDigest, item.getPath());
+            update(messageDigest, item.getName());
+            update(messageDigest, item.getQualifiedName());
+            update(messageDigest, item.getColor());
         }
     }
 

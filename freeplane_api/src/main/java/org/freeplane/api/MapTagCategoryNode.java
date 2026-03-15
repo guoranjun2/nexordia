@@ -1,45 +1,31 @@
-package org.freeplane.features.icon;
+package org.freeplane.api;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class TagCategoryNode {
-    private final TagCategoryNodeKind kind;
+public class MapTagCategoryNode {
+    private final MapTagCategoryNodeKind kind;
     private final List<String> path;
     private final String name;
     private final String qualifiedName;
     private final String color;
-    private final List<TagCategoryNode> children;
+    private final List<MapTagCategoryNode> children;
 
-    public TagCategoryNode(List<String> path,
-                           String name,
-                           String qualifiedName,
-                           String color,
-                           List<TagCategoryNode> children) {
-        this(TagCategoryNodeKind.CATEGORY, path, name, qualifiedName, color, children);
-    }
-
-    public TagCategoryNode(TagCategoryNodeKind kind,
-                           List<String> path,
-                           String name,
-                           String qualifiedName,
-                           String color,
-                           List<TagCategoryNode> children) {
+    public MapTagCategoryNode(MapTagCategoryNodeKind kind,
+                              List<String> path,
+                              String name,
+                              String qualifiedName,
+                              String color,
+                              List<MapTagCategoryNode> children) {
         this.kind = Objects.requireNonNull(kind, "kind must not be null");
         this.path = copyPath(path);
-        if (isBlank(name)) {
-            throw new IllegalArgumentException("name must not be blank");
-        }
-        if (isBlank(qualifiedName)) {
-            throw new IllegalArgumentException("qualifiedName must not be blank");
-        }
+        this.name = requireText(name, "name");
+        this.qualifiedName = requireText(qualifiedName, "qualifiedName");
         if (children == null) {
             throw new IllegalArgumentException("children must not be null");
         }
-        this.name = name;
-        this.qualifiedName = qualifiedName;
         this.color = color;
         this.children = Collections.unmodifiableList(new ArrayList<>(children));
     }
@@ -50,19 +36,19 @@ public class TagCategoryNode {
         }
         ArrayList<String> copy = new ArrayList<>(sourcePath.size());
         for (String pathPart : sourcePath) {
-            if (isBlank(pathPart)) {
-                throw new IllegalArgumentException("path contains blank segment");
-            }
-            copy.add(pathPart);
+            copy.add(requireText(pathPart, "path"));
         }
         return Collections.unmodifiableList(copy);
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return value;
     }
 
-    public TagCategoryNodeKind getKind() {
+    public MapTagCategoryNodeKind getKind() {
         return kind;
     }
 
@@ -82,7 +68,7 @@ public class TagCategoryNode {
         return color;
     }
 
-    public List<TagCategoryNode> getChildren() {
+    public List<MapTagCategoryNode> getChildren() {
         return children;
     }
 
@@ -93,10 +79,10 @@ public class TagCategoryNode {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof TagCategoryNode)) {
+        if (!(obj instanceof MapTagCategoryNode)) {
             return false;
         }
-        TagCategoryNode other = (TagCategoryNode) obj;
+        MapTagCategoryNode other = (MapTagCategoryNode) obj;
         return kind == other.kind
             && Objects.equals(path, other.path)
             && Objects.equals(name, other.name)

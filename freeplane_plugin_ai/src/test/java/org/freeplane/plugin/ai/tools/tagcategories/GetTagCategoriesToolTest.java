@@ -12,22 +12,20 @@ import java.util.UUID;
 
 import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryNode;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagDescriptor;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagItem;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.junit.Test;
 
-public class FetchTagCategoriesToolTest {
+public class GetTagCategoriesToolTest {
     @Test
-    public void fetchTagCategoriesReturnsSnapshotPayloadWithRevisionAndTree() {
+    public void getTagCategoriesReturnsStatePayloadWithRevisionAndTree() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
         MapModel mapModel = mock(MapModel.class);
         String mapIdentifier = UUID.randomUUID().toString();
-        UUID parsedMapIdentifier = UUID.fromString(mapIdentifier);
-        when(availableMaps.findMapModel(parsedMapIdentifier, null)).thenReturn(mapModel);
-        TagCategorySnapshot snapshot = new TagCategorySnapshot(
+        TagCategoryState categoryState = new TagCategoryState(
             "sha256:test",
             "::",
             Collections.singletonList(new TagCategoryNode(
@@ -41,46 +39,45 @@ public class FetchTagCategoriesToolTest {
                     "Project::Status",
                     "#22334455",
                     Collections.emptyList())))),
-            Collections.singletonList(new TagDescriptor(
+            Collections.singletonList(new TagItem(
                 Collections.singletonList("urgent"),
                 "urgent",
                 "urgent",
                 "#ff0000ff")));
-        when(tagCategoryAccess.readSnapshot(mapModel)).thenReturn(snapshot);
-        FetchTagCategoriesTool uut = new FetchTagCategoriesTool(availableMaps, null, tagCategoryAccess);
+        when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModel);
+        when(tagCategoryAccess.readCurrentCategoryState(mapModel)).thenReturn(categoryState);
+        GetTagCategoriesTool uut = new GetTagCategoriesTool(availableMaps, null, tagCategoryAccess);
 
-        TagCategorySnapshotPayload result = uut.fetchTagCategories(new FetchTagCategoriesRequest(mapIdentifier));
+        TagCategoryStatePayload result = uut.getTagCategories(new GetTagCategoriesRequest(mapIdentifier));
 
         assertThat(result.getMapIdentifier()).isEqualTo(mapIdentifier);
         assertThat(result.getRevision()).isEqualTo("sha256:test");
-        assertThat(result.getSeparator()).isEqualTo("::");
+        assertThat(result.getCategorySeparator()).isEqualTo("::");
         assertThat(result.getCategories()).hasSize(1);
-        assertThat(result.getCategories().get(0).getQualifiedName()).isEqualTo("Project");
         assertThat(result.getCategories().get(0).getChildren()).hasSize(1);
-        assertThat(result.getCategories().get(0).getChildren().get(0).getQualifiedName())
-            .isEqualTo("Project::Status");
-        verify(tagCategoryAccess).readSnapshot(mapModel);
+        assertThat(result.getUncategorizedTags()).hasSize(1);
+        verify(tagCategoryAccess).readCurrentCategoryState(mapModel);
     }
 
     @Test
-    public void fetchTagCategoriesRejectsUnknownMapIdentifier() {
+    public void getTagCategoriesRejectsUnknownMapIdentifier() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
-        FetchTagCategoriesTool uut = new FetchTagCategoriesTool(availableMaps, null, tagCategoryAccess);
         String mapIdentifier = UUID.randomUUID().toString();
+        GetTagCategoriesTool uut = new GetTagCategoriesTool(availableMaps, null, tagCategoryAccess);
 
-        assertThatThrownBy(() -> uut.fetchTagCategories(new FetchTagCategoriesRequest(mapIdentifier)))
+        assertThatThrownBy(() -> uut.getTagCategories(new GetTagCategoriesRequest(mapIdentifier)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Unknown map identifier");
     }
 
     @Test
-    public void fetchTagCategoriesRejectsInvalidMapIdentifier() {
+    public void getTagCategoriesRejectsInvalidMapIdentifier() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
-        FetchTagCategoriesTool uut = new FetchTagCategoriesTool(availableMaps, null, tagCategoryAccess);
+        GetTagCategoriesTool uut = new GetTagCategoriesTool(availableMaps, null, tagCategoryAccess);
 
-        assertThatThrownBy(() -> uut.fetchTagCategories(new FetchTagCategoriesRequest("invalid")))
+        assertThatThrownBy(() -> uut.getTagCategories(new GetTagCategoriesRequest("invalid")))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Invalid map identifier");
     }

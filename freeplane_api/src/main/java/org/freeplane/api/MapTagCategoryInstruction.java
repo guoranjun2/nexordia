@@ -1,12 +1,12 @@
-package org.freeplane.features.icon;
+package org.freeplane.api;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class TagCategoryEdit {
-    private final TagCategoryEditType type;
+public class MapTagCategoryInstruction {
+    private final MapTagCategoryInstructionType type;
     private final List<String> path;
     private final String newName;
     private final List<String> newParentPath;
@@ -14,75 +14,53 @@ public class TagCategoryEdit {
     private final String color;
     private final String newSeparator;
 
-    public static TagCategoryEdit rename(List<String> path, String newName) {
-        return new TagCategoryEdit(TagCategoryEditType.RENAME, path, newName, null, null, null, null);
-    }
-
-    public static TagCategoryEdit add(List<String> path) {
-        return new TagCategoryEdit(TagCategoryEditType.ADD, path, null, null, null, null, null);
-    }
-
-    public static TagCategoryEdit delete(List<String> path) {
-        return new TagCategoryEdit(TagCategoryEditType.DELETE, path, null, null, null, null, null);
-    }
-
-    public static TagCategoryEdit move(List<String> path, List<String> newParentPath, Integer index) {
-        return new TagCategoryEdit(TagCategoryEditType.MOVE, path, null, newParentPath, index, null, null);
-    }
-
-    public static TagCategoryEdit setColor(List<String> path, String color) {
-        return new TagCategoryEdit(TagCategoryEditType.SET_COLOR, path, null, null, null, color, null);
-    }
-
-    public static TagCategoryEdit setSeparator(String newSeparator) {
-        return new TagCategoryEdit(TagCategoryEditType.SET_SEPARATOR, null, null, null, null, null, newSeparator);
-    }
-
-    public TagCategoryEdit(TagCategoryEditType type,
-                           List<String> path,
-                           String newName,
-                           List<String> newParentPath,
-                           Integer index,
-                           String color,
-                           String newSeparator) {
+    public MapTagCategoryInstruction(MapTagCategoryInstructionType type,
+                                     List<String> path,
+                                     String newName,
+                                     List<String> newParentPath,
+                                     Integer index,
+                                     String color,
+                                     String newSeparator) {
         this.type = Objects.requireNonNull(type, "type must not be null");
-        this.path = copyPath(path);
+        this.path = copyPathOrNull(path);
         this.newName = newName;
-        this.newParentPath = copyPath(newParentPath);
+        this.newParentPath = copyPathOrNull(newParentPath);
         this.index = index;
         this.color = color;
         this.newSeparator = newSeparator;
         validate();
     }
 
-    private List<String> copyPath(List<String> inputPath) {
-        if (inputPath == null) {
+    private List<String> copyPathOrNull(List<String> sourcePath) {
+        if (sourcePath == null) {
             return null;
         }
-        ArrayList<String> copy = new ArrayList<>(inputPath.size());
-        for (String pathItem : inputPath) {
-            if (isBlank(pathItem)) {
-                throw new IllegalArgumentException("path contains blank segment");
+        ArrayList<String> copy = new ArrayList<>(sourcePath.size());
+        for (String pathPart : sourcePath) {
+            if (pathPart == null || pathPart.trim().isEmpty()) {
+                throw new IllegalArgumentException("path segment must not be blank");
             }
-            copy.add(pathItem);
+            copy.add(pathPart);
         }
         return Collections.unmodifiableList(copy);
     }
 
     private void validate() {
         switch (type) {
-            case SET_SEPARATOR:
-                if (isBlank(newSeparator)) {
+            case SET_CATEGORY_SEPARATOR:
+                if (newSeparator == null || newSeparator.trim().isEmpty()) {
                     throw new IllegalArgumentException("newSeparator must not be blank");
                 }
                 break;
-            case RENAME:
+            case RENAME_CATEGORY:
+            case RENAME_TAG:
                 requirePath();
-                if (isBlank(newName)) {
+                if (newName == null || newName.trim().isEmpty()) {
                     throw new IllegalArgumentException("newName must not be blank");
                 }
                 break;
-            case MOVE:
+            case MOVE_CATEGORY:
+            case MOVE_TAG:
                 requirePath();
                 if (newParentPath == null) {
                     throw new IllegalArgumentException("newParentPath must not be null");
@@ -90,16 +68,18 @@ public class TagCategoryEdit {
                 break;
             case SET_COLOR:
                 requirePath();
-                if (isBlank(color)) {
+                if (color == null || color.trim().isEmpty()) {
                     throw new IllegalArgumentException("color must not be blank");
                 }
                 break;
-            case ADD:
-            case DELETE:
+            case ADD_CATEGORY:
+            case ADD_TAG:
+            case DELETE_CATEGORY:
+            case DELETE_TAG:
                 requirePath();
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported edit type: " + type);
+                throw new IllegalArgumentException("Unsupported instruction type: " + type);
         }
     }
 
@@ -109,11 +89,7 @@ public class TagCategoryEdit {
         }
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
-    public TagCategoryEditType getType() {
+    public MapTagCategoryInstructionType getType() {
         return type;
     }
 
@@ -148,10 +124,10 @@ public class TagCategoryEdit {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof TagCategoryEdit)) {
+        if (!(obj instanceof MapTagCategoryInstruction)) {
             return false;
         }
-        TagCategoryEdit other = (TagCategoryEdit) obj;
+        MapTagCategoryInstruction other = (MapTagCategoryInstruction) obj;
         return type == other.type
             && Objects.equals(path, other.path)
             && Objects.equals(newName, other.newName)

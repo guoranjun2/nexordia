@@ -17,11 +17,12 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditBatch;
-import org.freeplane.features.icon.TagCategoryEditType;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagCategorySnapshotBuilder;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
+import org.freeplane.features.icon.TagCategoryInstructionType;
+import org.freeplane.features.icon.TagCategoryNode;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
@@ -32,56 +33,58 @@ import org.mockito.ArgumentCaptor;
 
 public class EditTagCategoriesToolTest {
     @Test
-    public void editTagCategoriesConvertsOrderedOperationsAndReturnsSnapshot() {
+    public void editTagCategoriesConvertsOrderedInstructionsAndReturnsState() {
         AvailableMaps availableMaps = mock(AvailableMaps.class);
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
         MapModel mapModel = mock(MapModel.class);
         String mapIdentifier = UUID.randomUUID().toString();
-        UUID parsedMapIdentifier = UUID.fromString(mapIdentifier);
-        when(availableMaps.findMapModel(parsedMapIdentifier, null)).thenReturn(mapModel);
-        TagCategorySnapshot appliedSnapshot = new TagCategorySnapshot(
+        TagCategoryState appliedState = new TagCategoryState(
             "sha256:applied",
             "/",
-            Collections.emptyList(),
+            Collections.singletonList(new TagCategoryNode(
+                Collections.singletonList("Project"),
+                "Project",
+                "Project",
+                "#11223344",
+                Collections.emptyList())),
             Collections.emptyList());
-        when(tagCategoryAccess.applyEdits(eq(mapModel), any())).thenReturn(appliedSnapshot);
+        when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModel);
+        when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any())).thenReturn(appliedState);
         EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, tagCategoryAccess);
-        TagCategoryEditPayload renameOperation = new TagCategoryEditPayload(
-            TagCategoryEditType.RENAME,
+        TagCategoryInstructionPayload renameInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.RENAME_CATEGORY,
             Arrays.asList("Project", "Status"),
             "State",
             null,
             null,
             null,
             null);
-        TagCategoryEditPayload separatorOperation = new TagCategoryEditPayload(
-            TagCategoryEditType.SET_SEPARATOR,
+        TagCategoryInstructionPayload separatorInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
             null,
             null,
             null,
             null,
             null,
             "/");
-        TagCategoryEditBatchPayload request = new TagCategoryEditBatchPayload(
+        TagCategoryInstructionRequestPayload request = new TagCategoryInstructionRequestPayload(
             mapIdentifier,
             "sha256:expected",
-            Arrays.asList(renameOperation, separatorOperation));
+            Arrays.asList(renameInstruction, separatorInstruction));
 
-        TagCategorySnapshotPayload result = uut.editTagCategories(request);
+        TagCategoryStatePayload result = uut.editTagCategories(request);
 
-        ArgumentCaptor<TagCategoryEditBatch> batchCaptor = ArgumentCaptor.forClass(TagCategoryEditBatch.class);
-        verify(tagCategoryAccess).applyEdits(eq(mapModel), batchCaptor.capture());
-        TagCategoryEditBatch submittedBatch = batchCaptor.getValue();
-        assertThat(submittedBatch.getExpectedRevision()).isEqualTo("sha256:expected");
-        assertThat(submittedBatch.getOperations()).extracting(TagCategoryEdit::getType)
-            .containsExactly(TagCategoryEditType.RENAME, TagCategoryEditType.SET_SEPARATOR);
-        assertThat(submittedBatch.getOperations().get(0).getPath())
-            .containsExactly("Project", "Status");
-        assertThat(submittedBatch.getOperations().get(0).getNewName()).isEqualTo("State");
-        assertThat(submittedBatch.getOperations().get(1).getNewSeparator()).isEqualTo("/");
-        assertThat(result.getMapIdentifier()).isEqualTo(mapIdentifier);
+        ArgumentCaptor<TagCategoryInstructionRequest> requestCaptor = ArgumentCaptor.forClass(TagCategoryInstructionRequest.class);
+        verify(tagCategoryAccess).applyInstructionRequest(eq(mapModel), requestCaptor.capture());
+        TagCategoryInstructionRequest submittedRequest = requestCaptor.getValue();
+        assertThat(submittedRequest.getBaseRevision()).isEqualTo("sha256:expected");
+        assertThat(submittedRequest.getInstructions()).extracting(TagCategoryInstruction::getType)
+            .containsExactly(TagCategoryInstructionType.RENAME_CATEGORY, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
+        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Status");
+        assertThat(submittedRequest.getInstructions().get(0).getNewName()).isEqualTo("State");
+        assertThat(submittedRequest.getInstructions().get(1).getNewSeparator()).isEqualTo("/");
         assertThat(result.getRevision()).isEqualTo("sha256:applied");
-        assertThat(result.getSeparator()).isEqualTo("/");
+        assertThat(result.getCategorySeparator()).isEqualTo("/");
     }
 
     @Test
@@ -90,23 +93,22 @@ public class EditTagCategoriesToolTest {
         TagCategoryAccess tagCategoryAccess = mock(TagCategoryAccess.class);
         MapModel mapModel = mock(MapModel.class);
         String mapIdentifier = UUID.randomUUID().toString();
-        UUID parsedMapIdentifier = UUID.fromString(mapIdentifier);
-        when(availableMaps.findMapModel(parsedMapIdentifier, null)).thenReturn(mapModel);
-        when(tagCategoryAccess.applyEdits(eq(mapModel), any()))
+        when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModel);
+        when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any()))
             .thenThrow(new TagCategoryConflictException("stale revision"));
         EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, tagCategoryAccess);
-        TagCategoryEditPayload separatorOperation = new TagCategoryEditPayload(
-            TagCategoryEditType.SET_SEPARATOR,
+        TagCategoryInstructionPayload separatorInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
             null,
             null,
             null,
             null,
             null,
             "/");
-        TagCategoryEditBatchPayload request = new TagCategoryEditBatchPayload(
+        TagCategoryInstructionRequestPayload request = new TagCategoryInstructionRequestPayload(
             mapIdentifier,
             "sha256:expected",
-            Collections.singletonList(separatorOperation));
+            Collections.singletonList(separatorInstruction));
 
         assertThatThrownBy(() -> uut.editTagCategories(request))
             .isInstanceOf(TagCategoryConflictException.class)
@@ -115,59 +117,60 @@ public class EditTagCategoriesToolTest {
 
     @Test
     public void editTagCategoriesMatchesCoreAccessOutcomeForEquivalentPayload() {
-        String mapIdentifier = UUID.randomUUID().toString();
-        MapModel mapModelForTool = createMapModelWithProjectStatusCategory();
-        MapModel mapModelForDirectApply = createMapModelWithProjectStatusCategory();
-        AvailableMaps availableMaps = mock(AvailableMaps.class);
-        when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModelForTool);
-        MIconController iconController = mock(MIconController.class);
-        FreeplaneTagCategoryAccess access = new FreeplaneTagCategoryAccess(iconController);
-        EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, access);
-        String expectedRevision = TagCategorySnapshotBuilder
-            .from(mapModelForTool.getIconRegistry().getTagCategories())
-            .getRevision();
-        TagCategoryEditPayload renameOperation = new TagCategoryEditPayload(
-            TagCategoryEditType.RENAME,
-            Arrays.asList("Project", "Status"),
-            "State",
-            null,
-            null,
-            null,
-            null);
-        TagCategoryEditPayload separatorOperation = new TagCategoryEditPayload(
-            TagCategoryEditType.SET_SEPARATOR,
-            null,
-            null,
-            null,
-            null,
-            null,
-            "/");
-        TagCategoryEditBatchPayload request = new TagCategoryEditBatchPayload(
-            mapIdentifier,
-            expectedRevision,
-            Arrays.asList(renameOperation, separatorOperation));
-        TagCategoryEditBatch directBatch = new TagCategoryEditBatch(
-            expectedRevision,
-            Arrays.asList(
-                TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State"),
-                TagCategoryEdit.setSeparator("/")));
-        TagCategorySnapshot expectedSnapshot = access.applyEdits(mapModelForDirectApply, directBatch);
-
-        TagCategorySnapshotPayload actualPayload = uut.editTagCategories(request);
-
-        assertThat(actualPayload.toSnapshot()).isEqualTo(expectedSnapshot);
-    }
-
-    private MapModel createMapModelWithProjectStatusCategory() {
         TagCategories tagCategories = new TagCategories(
             new DefaultMutableTreeNode("tags"),
             new DefaultMutableTreeNode("uncategorized_tags"),
             "::");
         tagCategories.load("Project\n"
             + " Status\n");
-        return new MapModel(
+        MapModel mapModelForTool = new MapModel(
             (source, targetMap, withChildren) -> null,
             new IconRegistry(tagCategories),
             null);
+        MapModel mapModelForDirectApply = new MapModel(
+            (source, targetMap, withChildren) -> null,
+            new IconRegistry(tagCategories.copy()),
+            null);
+        AvailableMaps availableMaps = mock(AvailableMaps.class);
+        String mapIdentifier = UUID.randomUUID().toString();
+        when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModelForTool);
+        MIconController iconController = mock(MIconController.class);
+        FreeplaneTagCategoryAccess access = new FreeplaneTagCategoryAccess(iconController);
+        EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, access);
+        String expectedRevision = TagCategoryStateBuilder
+            .from(tagCategories)
+            .getRevision();
+        TagCategoryInstructionPayload renameInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.RENAME_CATEGORY,
+            Arrays.asList("Project", "Status"),
+            "State",
+            null,
+            null,
+            null,
+            null);
+        TagCategoryInstructionPayload separatorInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "/");
+        TagCategoryInstructionRequestPayload request = new TagCategoryInstructionRequestPayload(
+            mapIdentifier,
+            expectedRevision,
+            Arrays.asList(renameInstruction, separatorInstruction));
+        TagCategoryInstructionRequest directRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Arrays.asList(
+                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.setCategorySeparator("/")));
+        TagCategoryState expectedState = access.applyInstructionRequest(mapModelForDirectApply, directRequest);
+
+        TagCategoryStatePayload actualPayload = uut.editTagCategories(request);
+
+        assertThat(actualPayload.getRevision()).isEqualTo(expectedState.getRevision());
+        assertThat(actualPayload.getCategorySeparator()).isEqualTo(expectedState.getCategorySeparator());
+        assertThat(actualPayload.getCategories()).hasSize(expectedState.getCategories().size());
     }
 }

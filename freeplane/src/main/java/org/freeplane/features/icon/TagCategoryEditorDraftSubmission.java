@@ -6,40 +6,37 @@ import java.util.List;
 
 public class TagCategoryEditorDraftSubmission {
     private final String expectedRevision;
-    private final TagCategories draftCategories;
-    private final List<String> replacementPairs;
+    private final TagCategoryDraftState draftState;
+    private final List<TagReferenceRewrite> referenceRewrites;
 
     public TagCategoryEditorDraftSubmission(String expectedRevision,
-                                            TagCategories draftCategories,
-                                            List<String> replacementPairs) {
+                                            TagCategoryDraftState draftState,
+                                            List<TagReferenceRewrite> referenceRewrites) {
         if (isBlank(expectedRevision)) {
             throw new IllegalArgumentException("expectedRevision must not be blank");
         }
-        if (draftCategories == null) {
-            throw new IllegalArgumentException("draftCategories must not be null");
+        if (draftState == null) {
+            throw new IllegalArgumentException("draftState must not be null");
         }
-        if (replacementPairs == null) {
-            throw new IllegalArgumentException("replacementPairs must not be null");
-        }
-        if ((replacementPairs.size() % 2) != 0) {
-            throw new IllegalArgumentException("replacementPairs must contain old/new pairs");
+        if (referenceRewrites == null) {
+            throw new IllegalArgumentException("referenceRewrites must not be null");
         }
         this.expectedRevision = expectedRevision;
-        this.draftCategories = draftCategories;
-        this.replacementPairs = copyReplacementPairs(replacementPairs);
+        this.draftState = draftState;
+        this.referenceRewrites = copyReferenceRewrites(referenceRewrites);
     }
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
 
-    private List<String> copyReplacementPairs(List<String> source) {
-        ArrayList<String> copy = new ArrayList<>(source.size());
-        for (String replacement : source) {
-            if (replacement == null) {
-                throw new IllegalArgumentException("replacementPairs must not contain null");
+    private List<TagReferenceRewrite> copyReferenceRewrites(List<TagReferenceRewrite> source) {
+        ArrayList<TagReferenceRewrite> copy = new ArrayList<>(source.size());
+        for (TagReferenceRewrite referenceRewrite : source) {
+            if (referenceRewrite == null) {
+                throw new IllegalArgumentException("referenceRewrites must not contain null");
             }
-            copy.add(replacement);
+            copy.add(referenceRewrite);
         }
         return Collections.unmodifiableList(copy);
     }
@@ -55,11 +52,11 @@ public class TagCategoryEditorDraftSubmission {
         return expectedRevision;
     }
 
-    public TagCategories getDraftCategories() {
-        return draftCategories;
+    public TagCategoryDraftState getDraftState() {
+        return draftState;
     }
 
-    public List<String> getReplacementPairs() {
-        return replacementPairs;
+    public List<TagReferenceRewrite> getReferenceRewrites() {
+        return referenceRewrites;
     }
 }

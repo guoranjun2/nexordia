@@ -5,13 +5,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class TagDescriptor {
+public class TagItem {
     private final List<String> path;
     private final String name;
     private final String qualifiedName;
     private final String color;
 
-    public TagDescriptor(List<String> path, String name, String qualifiedName, String color) {
+    public TagItem(List<String> path, String name, String qualifiedName, String color) {
         this.path = copyPath(path);
         if (isBlank(name)) {
             throw new IllegalArgumentException("name must not be blank");
@@ -65,10 +65,10 @@ public class TagDescriptor {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof TagDescriptor)) {
+        if (!(obj instanceof TagItem)) {
             return false;
         }
-        TagDescriptor other = (TagDescriptor) obj;
+        TagItem other = (TagItem) obj;
         return Objects.equals(path, other.path)
             && Objects.equals(name, other.name)
             && Objects.equals(qualifiedName, other.qualifiedName)

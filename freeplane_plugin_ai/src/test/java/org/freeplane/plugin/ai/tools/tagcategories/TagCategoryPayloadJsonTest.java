@@ -5,19 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.freeplane.features.icon.TagCategoryEdit;
-import org.freeplane.features.icon.TagCategoryEditBatch;
+import org.freeplane.features.icon.TagCategoryInstruction;
+import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import org.freeplane.features.icon.TagCategoryNode;
-import org.freeplane.features.icon.TagCategorySnapshot;
-import org.freeplane.features.icon.TagDescriptor;
+import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagCategoryInstructionType;
+import org.freeplane.features.icon.TagItem;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TagCategoryPayloadJsonTest {
     @Test
-    public void snapshotPayloadRoundtripIsLossless() throws Exception {
-        TagCategorySnapshot snapshot = new TagCategorySnapshot(
+    public void categoryStatePayloadRoundtripIsLossless() throws Exception {
+        TagCategoryState categoryState = new TagCategoryState(
             "sha256:abc",
             "::",
             Collections.singletonList(new TagCategoryNode(
@@ -31,36 +32,38 @@ public class TagCategoryPayloadJsonTest {
                     "Project::Status",
                     "#05060708",
                     Collections.emptyList())))),
-            Collections.singletonList(new TagDescriptor(
+            Collections.singletonList(new TagItem(
                 Collections.singletonList("urgent"),
                 "urgent",
                 "urgent",
                 "#ff0000ff")));
 
-        TagCategorySnapshotPayload payload = TagCategorySnapshotPayload.fromSnapshot("map-1", snapshot);
+        TagCategoryStatePayload payload = TagCategoryStatePayload.fromState("map-1", categoryState);
         ObjectMapper uut = new ObjectMapper();
 
         String json = uut.writeValueAsString(payload);
-        TagCategorySnapshotPayload restoredPayload = uut.readValue(json, TagCategorySnapshotPayload.class);
+        TagCategoryStatePayload restoredPayload = uut.readValue(json, TagCategoryStatePayload.class);
 
         assertThat(restoredPayload).isEqualTo(payload);
-        assertThat(restoredPayload.toSnapshot()).isEqualTo(snapshot);
+        assertThat(restoredPayload.toState()).isEqualTo(categoryState);
     }
 
     @Test
-    public void editBatchPayloadRoundtripIsLossless() throws Exception {
-        TagCategoryEditBatch editBatch = new TagCategoryEditBatch(
+    public void instructionRequestPayloadRoundtripIsLossless() throws Exception {
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             "sha256:abc",
             Arrays.asList(
-                TagCategoryEdit.rename(Arrays.asList("Project", "Status"), "State"),
-                TagCategoryEdit.setSeparator("/")));
-        TagCategoryEditBatchPayload payload = TagCategoryEditBatchPayload.fromEditBatch("map-1", editBatch);
+                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.setCategorySeparator("/")));
+        TagCategoryInstructionRequestPayload payload = TagCategoryInstructionRequestPayload.fromInstructionRequest(
+            "map-1",
+            instructionRequest);
         ObjectMapper uut = new ObjectMapper();
 
         String json = uut.writeValueAsString(payload);
-        TagCategoryEditBatchPayload restoredPayload = uut.readValue(json, TagCategoryEditBatchPayload.class);
+        TagCategoryInstructionRequestPayload restoredPayload = uut.readValue(json, TagCategoryInstructionRequestPayload.class);
 
         assertThat(restoredPayload).isEqualTo(payload);
-        assertThat(restoredPayload.toEditBatch()).isEqualTo(editBatch);
+        assertThat(restoredPayload.toInstructionRequest()).isEqualTo(instructionRequest);
     }
 }

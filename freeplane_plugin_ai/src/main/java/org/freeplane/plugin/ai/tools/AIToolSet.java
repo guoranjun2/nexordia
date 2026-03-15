@@ -80,10 +80,10 @@ import org.freeplane.plugin.ai.tools.selection.SelectedMapAndNodeIdentifiersTool
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersRequest;
 import org.freeplane.plugin.ai.tools.selection.SelectionIdentifiersResponse;
 import org.freeplane.plugin.ai.tools.tagcategories.EditTagCategoriesTool;
-import org.freeplane.plugin.ai.tools.tagcategories.FetchTagCategoriesRequest;
-import org.freeplane.plugin.ai.tools.tagcategories.FetchTagCategoriesTool;
-import org.freeplane.plugin.ai.tools.tagcategories.TagCategoryEditBatchPayload;
-import org.freeplane.plugin.ai.tools.tagcategories.TagCategorySnapshotPayload;
+import org.freeplane.plugin.ai.tools.tagcategories.GetTagCategoriesRequest;
+import org.freeplane.plugin.ai.tools.tagcategories.GetTagCategoriesTool;
+import org.freeplane.plugin.ai.tools.tagcategories.TagCategoryInstructionRequestPayload;
+import org.freeplane.plugin.ai.tools.tagcategories.TagCategoryStatePayload;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryFormatter;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
@@ -108,7 +108,7 @@ public class AIToolSet {
     private final ListTool listTool;
     private final ConnectorEditTool connectorEditTool;
     private final NodeContentEditor nodeContentEditor;
-    private final FetchTagCategoriesTool fetchTagCategoriesTool;
+    private final GetTagCategoriesTool getTagCategoriesTool;
     private final EditTagCategoriesTool editTagCategoriesTool;
     private final AvailableMaps availableMaps;
     private final AvailableMaps.MapAccessListener mapAccessListener;
@@ -176,7 +176,7 @@ public class AIToolSet {
         ListTool listTool = new ListTool(
             nodeContentFactories.iconDescriptionResolver, availableMaps, mapAccessListener);
         ConnectorEditTool connectorEditTool = new ConnectorEditTool(availableMaps, mapAccessListener, linkController);
-        FetchTagCategoriesTool fetchTagCategoriesTool = new FetchTagCategoriesTool(
+        GetTagCategoriesTool getTagCategoriesTool = new GetTagCategoriesTool(
             availableMaps, mapAccessListener, tagCategoryAccess);
         EditTagCategoriesTool editTagCategoriesTool = new EditTagCategoriesTool(
             availableMaps, mapAccessListener, tagCategoryAccess);
@@ -195,7 +195,7 @@ public class AIToolSet {
         this.listTool = Objects.requireNonNull(listTool, "listTool");
         this.connectorEditTool = Objects.requireNonNull(connectorEditTool, "connectorEditTool");
         this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
-        this.fetchTagCategoriesTool = Objects.requireNonNull(fetchTagCategoriesTool, "fetchTagCategoriesTool");
+        this.getTagCategoriesTool = Objects.requireNonNull(getTagCategoriesTool, "getTagCategoriesTool");
         this.editTagCategoriesTool = Objects.requireNonNull(editTagCategoriesTool, "editTagCategoriesTool");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolCaller = toolCaller == null
@@ -272,22 +272,22 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Fetch map-level tag category snapshot including revision, separator, and category tree.")
-    public TagCategorySnapshotPayload fetchTagCategories(FetchTagCategoriesRequest request) {
+    @Tool("Read current map-level tag categories including revision, categorySeparator, category tree, and uncategorized tags.")
+    public TagCategoryStatePayload getTagCategories(GetTagCategoriesRequest request) {
         try {
-            TagCategorySnapshotPayload response = fetchTagCategoriesTool.fetchTagCategories(request);
-            publishToolCallSummary(fetchTagCategoriesTool.buildToolCallSummary(request, response));
+            TagCategoryStatePayload response = getTagCategoriesTool.getTagCategories(request);
+            publishToolCallSummary(getTagCategoriesTool.buildToolCallSummary(request, response));
             return response;
         } catch (RuntimeException error) {
-            publishToolCallSummary(fetchTagCategoriesTool.buildToolCallErrorSummary(request, error));
+            publishToolCallSummary(getTagCategoriesTool.buildToolCallErrorSummary(request, error));
             throw error;
         }
     }
 
-    @Tool("Apply map-level tag category edit batch with optimistic revision check and return updated snapshot.")
-    public TagCategorySnapshotPayload editTagCategories(TagCategoryEditBatchPayload request) {
+    @Tool("Apply map-level tag category instructions with optimistic revision check and return updated category state.")
+    public TagCategoryStatePayload editTagCategories(TagCategoryInstructionRequestPayload request) {
         try {
-            TagCategorySnapshotPayload response = editTagCategoriesTool.editTagCategories(request);
+            TagCategoryStatePayload response = editTagCategoriesTool.editTagCategories(request);
             publishToolCallSummary(editTagCategoriesTool.buildToolCallSummary(request, response));
             return response;
         } catch (RuntimeException error) {
