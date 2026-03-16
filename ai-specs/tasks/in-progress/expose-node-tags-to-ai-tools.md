@@ -12,7 +12,18 @@
   current category state, updates category names and hierarchy, and then
   updates node tags to the new category structure. A script can perform the
   same map-level category operations without opening tag editor dialogs.
-- **Developer Briefing:** Keep
+- **Constraints:**
+  - Keep one shared read model and one shared commit/conflict boundary for
+    UI, AI, and scripting.
+  - Do not force UI and AI/script to share the same external write model if
+    that would erase existing UI semantics.
+  - Preserve indirect reference-update behavior and node-traversal-free
+    steady-state category updates.
+  - Public AI/script contracts must be explicit and typed; generic
+    map-shaped payloads are not acceptable as the primary public surface.
+  - Design must describe only the target system; current/as-is structures
+    belong in Research.
+- **Briefing:** Keep
   category and tag behavior deterministic, preserve undo semantics, and avoid
   bypassing existing reference-update logic in `TagCategories`.
   Category edit operations must remain node-traversal-free in steady state
@@ -430,7 +441,14 @@ discarded).
 - **Scenario:** A developer changes category-update internals and runs tests.
   If a rename/move/merge behavior differs from current semantics, tests fail
   before integration work continues.
-- **Developer Briefing:** Add
+- **Constraints:**
+  - This subtask must not change behavior; it only captures the current
+    oracle.
+  - Characterization must cover externally relevant semantics, including odd
+    UI-driven and placeholder-based rewrite cases.
+  - Performance expectations belong in the baseline as observable
+    constraints, not only as implementation assumptions.
+- **Briefing:** Add
   tests first, avoid behavior changes, and keep baseline assertions explicit.
 - **Research:**
   - Existing tests already cover several rename and merge paths but do not
@@ -498,7 +516,17 @@ merge outcomes.
   prepares an ordered instruction list, and submits it with a base revision.
   The editor submits its local draft with the revision it was opened on.
   Contract validation decides whether to apply or reject atomically.
-- **Developer Briefing:** Keep the
+- **Constraints:**
+  - Keep the contract independent from Swing classes, transferable payloads,
+    and editor-local data structures.
+  - One shared read model and one shared service boundary are required, but
+    UI draft submit and AI/script instruction submit remain distinct write
+    inputs.
+  - Payloads and enums must be fully specified and self-describing; examples
+    alone are insufficient.
+  - Public contract naming must use category-state language rather than
+    storage-oriented or transport-oriented terminology.
+- **Briefing:** Keep the
   contract independent from Swing classes and transferable formats.
 - **Research:**
   - Existing behavior can be mapped to explicit operations:
@@ -710,7 +738,16 @@ rather than exposing `Map<String, Object>` as the primary public surface.
   request, or the editor submits its current draft. The service applies the
   selected write model atomically, updates references indirectly, and commits
   once through undo-aware map controller flow.
-- **Developer Briefing:** Keep reference rewrites indirect and map-level
+- **Constraints:**
+  - Preserve one atomic map-level commit boundary with optimistic revision
+    checks before mutation.
+  - Keep reference rewrites indirect and map-level; do not introduce
+    node-wise rewrite passes in steady state.
+  - Preserve undo/redo semantics and existing move-to-uncategorized
+    flattening behavior unless explicitly redesigned later.
+  - Support both approved write models without forcing a fake unification
+    layer into the public API.
+- **Briefing:** Keep reference rewrites indirect and map-level
   rather than node-wise.
 - **Research:**
   - The target service still needs one map-level commit point with undo-aware
@@ -843,7 +880,12 @@ Service exposes both write models:
   management needs parity with UI capabilities.
 - **Scenario:** A script reads current tag category state, renames a category
   subtree, and applies edits without opening dialogs.
-- **Developer Briefing:** Keep
+- **Constraints:**
+  - Script API must be typed and domain-facing, not generic-map-based.
+  - Scripting exposes category-state read and explicit instruction apply
+    only; editor draft semantics stay internal.
+  - Existing node-tag scripting behavior must remain unchanged.
+- **Briefing:** Keep
   script API thin and delegate behavior to the shared service.
 - **Research:**
   - `TagsProxy` currently exposes only node-level tags.
@@ -958,7 +1000,15 @@ surface.
 - **Scenario:** AI reads the current map tag category state, proposes
   category edits, and applies them atomically with revision conflict
   handling.
-- **Developer Briefing:** Keep AI
+- **Constraints:**
+  - AI tools must expose explicit request/response payloads with full
+    schema, including enums and revision token.
+  - Tool descriptions must describe category editing semantics, not
+    internal storage details.
+  - AI writes go through explicit instruction requests, never through UI
+    draft payloads.
+  - Existing node-tag AI tools must remain behaviorally unchanged.
+- **Briefing:** Keep AI
   DTOs explicit and avoid leaking UI-centric transferable formats.
 - **Research:**
   - Current AI tools include node tag read/edit but no map category tool.
@@ -1081,7 +1131,16 @@ is reading and editing current map tag categories.
 - **Scenario:** User edits categories in the current dialog; submission
   stays draft-based and is applied through shared service with identical
   observable outcomes.
-- **Developer Briefing:** Preserve
+- **Constraints:**
+  - Preserve the existing editor interaction model and trial-and-error
+    semantics while changing the submit boundary.
+  - Editor remains a draft-based caller; do not force it to emit the
+    AI/script instruction model.
+  - Stale external updates discard local draft state and hard-reload the
+    editor to the latest map category state.
+  - Legacy replacement-pair placeholder behavior must stay compatible with
+    the shared submit path.
+- **Briefing:** Preserve
   existing keyboard, drag/drop, and transferable interaction UX.
 - **Research:**
   - Current editor contains non-local mutation bookkeeping (`TagRenamer`,

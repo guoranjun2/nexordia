@@ -7,7 +7,7 @@
 - **Motivation:** Secret-designated keys can be moved out of `props`, and then
   APIs that read through `getProperties()` may not see them. This causes wrong
   behavior for keys like MCP request `id` and other secret-backed values.
-- **Developer Briefing:** Keep storage separation intact (`auto.properties`
+- **Briefing:** Keep storage separation intact (`auto.properties`
   versus `secrets.properties`). Do not expose secured values through broad
   iteration. Keep directory/resource responsibilities in
   `ApplicationResourceController` unchanged.

@@ -5,7 +5,7 @@
 - **Motivation:** Users can see link hover cursor in chat history, but
   links are not opened when clicked, which makes error/help URLs
   unusable.
-- **Developer Briefing:** Implement minimal hyperlink activation wiring
+- **Briefing:** Implement minimal hyperlink activation wiring
   for the existing `JEditorPane` history component. Keep rendering and
   persistence behavior unchanged.
 - **Research:**

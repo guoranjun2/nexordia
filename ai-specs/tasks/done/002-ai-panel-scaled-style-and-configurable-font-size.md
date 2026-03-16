@@ -7,7 +7,7 @@
 - **Motivation:** AI panel message text should follow Freeplane display
   scaling behavior and allow users to adjust readability through
   preferences instead of hardcoded values.
-- **Developer Briefing:** Replace plain HTML stylesheet usage in AI chat
+- **Briefing:** Replace plain HTML stylesheet usage in AI chat
   message rendering with scaled stylesheet support and wire the main
   message font size to a plugin preference with defaults and translation
   keys. Apply updated font size immediately while the AI panel is open.

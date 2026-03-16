@@ -2,7 +2,7 @@
 - **Task Identifier:** 2026-01-27-search-overview
 - **Scope:** Add a `generateSearchOverview` tool that returns a compact map overview and index for targeted search, with optional model selection and size limits.
 - **Motivation:** Large maps need a low cost overview and index to guide targeted reads and searches without flooding the primary chat model.
-- **Developer Briefing:** The search overview request/response DTOs already exist, but no tool implementation or tool registration is present in the `AIToolSet`. The design adds a `SearchOverviewTool` that builds a compact map outline, invokes a configurable model (defaulting to the current chat model selection), and validates/trims the response to the requested section/keyword limits before returning it. Tests cover map lookup, model selection, limit enforcement, and response validation.
+- **Briefing:** The search overview request/response DTOs already exist, but no tool implementation or tool registration is present in the `AIToolSet`. The design adds a `SearchOverviewTool` that builds a compact map outline, invokes a configurable model (defaulting to the current chat model selection), and validates/trims the response to the requested section/keyword limits before returning it. Tests cover map lookup, model selection, limit enforcement, and response validation.
 - **Research:**
   - `SearchOverviewRequest`, `SearchOverviewResponse`, `SearchOverviewSection`, and `SearchOverviewKeyword` already exist as JSON DTOs under `org.freeplane.plugin.ai.tools.search`, but there is no tool class that produces them.
   - `AIToolSet` exposes tools via `@Tool`-annotated methods; no overview tool is registered today.

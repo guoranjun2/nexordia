@@ -9,7 +9,7 @@
   Sensitive AI keys must not be copied there. Current protection
   (`securePropertyForReadingAndModification`) controls access checks but
   still persists values into `auto.properties`.
-- **Developer Briefing:** Do not couple this feature to OptionPanel
+- **Briefing:** Do not couple this feature to OptionPanel
   field types (`<secret>`). The persistence split must be implemented in
   `ApplicationResourceController` and API-level security methods.
 - **Research:**

@@ -12,7 +12,7 @@
   overridden. A scaling model integrated into the stylesheet mechanism
   is more natural for users and keeps proportional typography from one
   base source.
-- **Developer Briefing:** Remove usage of `ai_chat_font_size` in AI chat
+- **Briefing:** Remove usage of `ai_chat_font_size` in AI chat
   styling and introduce `ai_chat_font_scaling` (`25..400`, default
   `100`). Parameterize `ScaledStyleSheet` with explicit scale factor and
   use it in AI chat so markdown typography is scaled by stylesheet

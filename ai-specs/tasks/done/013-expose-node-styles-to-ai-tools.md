@@ -13,7 +13,7 @@
   updates the node's main style to a valid style from map metadata. When
   preparing edits or new nodes, AI can also request available values for
   `AVAILABLE_ICONS` or `MAP_STYLES` and choose valid strings.
-- **Developer Briefing:** Keep existing behavior backward-compatible for
+- **Briefing:** Keep existing behavior backward-compatible for
   current consumers of icon availability and node payload fields.
   Preserve deterministic style ordering and explicit validation for
   style names when updating node main style. Do not introduce direct

@@ -24,7 +24,7 @@
 
   If the user cancels an in-flight request, the request flow restores the
   captured chat snapshot and user text without retry attempts.
-- **Developer Briefing:** Keep request UX behavior unchanged on terminal
+- **Briefing:** Keep request UX behavior unchanged on terminal
   failure/cancel. Simplify `ChatRequestFlow` by removing app-level retry
   policy and exposing LC4J retry count in model builder configuration.
 - **Research:**

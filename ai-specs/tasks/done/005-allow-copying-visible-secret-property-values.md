@@ -5,7 +5,7 @@
   behavior.
 - **Motivation:** Users need to copy secret values for reuse during
   configuration, but only after intentionally revealing the value.
-- **Developer Briefing:** Keep default secure behavior unchanged. Do not
+- **Briefing:** Keep default secure behavior unchanged. Do not
   permit copy while value is hidden. Apply minimal UI-component changes
   and add focused tests.
 - **Research:**

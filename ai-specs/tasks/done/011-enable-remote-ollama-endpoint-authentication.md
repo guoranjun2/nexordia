@@ -14,7 +14,7 @@
   Freeplane sends that token as Bearer authorization for chat and model
   discovery requests. If endpoint is not configured, Ollama is not
   considered available.
-- **Developer Briefing:**
+- **Briefing:**
   Keep changes focused to `freeplane_plugin_ai` provider configuration,
   preferences/defaults resources, model factory, model catalog, and
   related tests. Avoid unrelated provider refactors.

@@ -7,7 +7,7 @@
 - **Motivation:** The current selected combobox label includes provider and
   model text, which makes the toolbar control visually too wide and harder
   to scan.
-- **Developer Briefing:** Keep runtime behavior stable. Selection storage
+- **Briefing:** Keep runtime behavior stable. Selection storage
   must continue to use provider plus model to avoid ambiguity. UI-only
   formatting should change in a minimal and localized way. No code until
   design suggestions are approved.
