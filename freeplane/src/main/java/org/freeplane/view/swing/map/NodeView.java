@@ -182,6 +182,13 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             if(map.isOutlineLayoutSet())
                 this.childNodesAlignment =  ChildNodesAlignment.AFTER_PARENT;
             else {
+                if (isSummary()) {
+                    LayoutController layoutController = map.getModeController().getExtension(LayoutController.class);
+                    if (!layoutController.isChildNodesLayoutSetExplicitlyOrByStyle(viewedNode)) {
+                        this.childNodesAlignment = ChildNodesAlignment.BY_CENTER;
+                        return;
+                    }
+                }
                 ChildNodesAlignment childNodesAlignment = childNodesLayout.childNodesAlignment();
                 switch (childNodesAlignment) {
                 case STACKED_AUTO:
