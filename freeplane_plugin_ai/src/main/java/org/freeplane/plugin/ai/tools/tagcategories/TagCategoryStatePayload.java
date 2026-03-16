@@ -11,13 +11,19 @@ import org.freeplane.features.icon.TagItem;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TagCategoryStatePayload {
+    @Description("Map ID.")
     private final String mapIdentifier;
+    @Description("Revision of the returned category structure.")
     private final String revision;
+    @Description("Category separator.")
     private final String categorySeparator;
+    @Description("Tag category structure.")
     private final List<TagCategoryNodePayload> categories;
+    @Description("Tags that are not assigned to any category.")
     private final List<TagItemPayload> uncategorizedTags;
 
     @JsonCreator

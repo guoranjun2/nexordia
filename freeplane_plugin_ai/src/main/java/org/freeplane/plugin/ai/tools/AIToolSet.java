@@ -272,7 +272,7 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Read current map-level tag categories including revision, categorySeparator, category tree, and uncategorized tags.")
+    @Tool("Read the map's tag categories.")
     public TagCategoryStatePayload getTagCategories(GetTagCategoriesRequest request) {
         try {
             TagCategoryStatePayload response = getTagCategoriesTool.getTagCategories(request);
@@ -284,7 +284,7 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Apply map-level tag category instructions with optimistic revision check and return updated category state.")
+    @Tool("Edit the map's tag categories and return the updated category structure.")
     public TagCategoryStatePayload editTagCategories(TagCategoryInstructionRequestPayload request) {
         try {
             TagCategoryStatePayload response = editTagCategoriesTool.editTagCategories(request);

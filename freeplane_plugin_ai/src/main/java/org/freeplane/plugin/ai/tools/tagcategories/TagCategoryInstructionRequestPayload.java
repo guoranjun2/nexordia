@@ -10,11 +10,15 @@ import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.langchain4j.model.output.structured.Description;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TagCategoryInstructionRequestPayload {
+    @Description("Target map ID.")
     private final String mapIdentifier;
+    @Description("Revision from the last getTagCategories call.")
     private final String baseRevision;
+    @Description("Category edit operations to apply.")
     private final List<TagCategoryInstructionPayload> instructions;
 
     @JsonCreator
