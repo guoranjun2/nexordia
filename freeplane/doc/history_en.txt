@@ -1,6 +1,8 @@
 ==============================
 1.13.3
 ==============================
+Tag category AI tools
+Tag category scripting API
 Bug fixes
 
 ==============================
