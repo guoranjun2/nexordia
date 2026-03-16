@@ -5,12 +5,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Immutable map-level tag category structure at one revision.
+ * @since 1.13.3
+ */
 public class MapTagCategoryState {
     private final String revision;
     private final String categorySeparator;
     private final List<MapTagCategoryNode> categories;
     private final List<MapTagItem> uncategorizedTags;
 
+    /**
+     * @param revision revision token for this structure
+     * @param categorySeparator separator used in qualified category and tag names
+     * @param categories top-level category nodes
+     * @param uncategorizedTags tags that are not assigned to any category
+     */
     public MapTagCategoryState(String revision,
                                String categorySeparator,
                                List<MapTagCategoryNode> categories,
@@ -33,18 +43,22 @@ public class MapTagCategoryState {
         this.uncategorizedTags = Collections.unmodifiableList(new ArrayList<>(uncategorizedTags));
     }
 
+    /** Returns the revision token to use as {@code baseRevision} in the next edit request. */
     public String getRevision() {
         return revision;
     }
 
+    /** Returns the separator used in qualified category and tag names. */
     public String getCategorySeparator() {
         return categorySeparator;
     }
 
+    /** Returns the top-level category nodes. */
     public List<MapTagCategoryNode> getCategories() {
         return categories;
     }
 
+    /** Returns the tags that are not assigned to any category. */
     public List<MapTagItem> getUncategorizedTags() {
         return uncategorizedTags;
     }

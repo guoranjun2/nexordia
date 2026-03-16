@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Single explicit edit operation for the map's tag categories.
+ * @since 1.13.3
+ */
 public class MapTagCategoryInstruction {
     private final MapTagCategoryInstructionType type;
     private final List<String> path;
@@ -14,6 +18,15 @@ public class MapTagCategoryInstruction {
     private final String color;
     private final String newSeparator;
 
+    /**
+     * @param type operation kind
+     * @param path target path; for add operations, the path of the item to create
+     * @param newName replacement name for rename operations
+     * @param newParentPath target parent path for move operations; an empty list means the top level
+     * @param index optional insertion index for ordered add or move operations
+     * @param color replacement color for color updates
+     * @param newSeparator replacement category separator
+     */
     public MapTagCategoryInstruction(MapTagCategoryInstructionType type,
                                      List<String> path,
                                      String newName,
@@ -89,30 +102,37 @@ public class MapTagCategoryInstruction {
         }
     }
 
+    /** Returns the operation kind. */
     public MapTagCategoryInstructionType getType() {
         return type;
     }
 
+    /** Returns the target path. */
     public List<String> getPath() {
         return path;
     }
 
+    /** Returns the replacement name for rename operations. */
     public String getNewName() {
         return newName;
     }
 
+    /** Returns the target parent path for move operations. */
     public List<String> getNewParentPath() {
         return newParentPath;
     }
 
+    /** Returns the optional insertion index for ordered add or move operations. */
     public Integer getIndex() {
         return index;
     }
 
+    /** Returns the replacement color for color updates. */
     public String getColor() {
         return color;
     }
 
+    /** Returns the replacement category separator. */
     public String getNewSeparator() {
         return newSeparator;
     }

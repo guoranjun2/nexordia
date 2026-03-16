@@ -65,12 +65,14 @@ public interface MindMapRO {
 	  * @since 1.11.11 */
 	       File getAssociatedTemplateFile();
 
-       /** Returns all bookmarks defined in this mind map.
+	   /** Returns all bookmarks defined in this mind map.
         * Bookmarks provide quick access to important nodes in the map.
         * The returned list includes the automatically created root bookmark.
         * @return a list of all bookmarks in this map
         * @since 1.12.12 */
        List<NodeBookmark> getBookmarks();
 
+	   /** Returns read-only access to the map-level tag category structure.
+	    * @since 1.13.3 */
 	   MapTagCategoriesRO getTagCategories();
 }

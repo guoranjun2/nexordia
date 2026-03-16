@@ -285,9 +285,11 @@ public interface MindMap extends MindMapRO {
         * Each bookmark in the list should reference a node that exists in this map.
         * @param bookmarks the list of bookmarks to set for this map
         * @throws IllegalArgumentException if any bookmark references a node not in this map
-        * @since 1.12.12 */
+       * @since 1.12.12 */
        void setBookmarks(List<NodeBookmark> bookmarks);
 
+	/** Returns read-write access to the map-level tag category structure.
+	 * @since 1.13.3 */
 	@Override
 	MapTagCategories getTagCategories();
 }
