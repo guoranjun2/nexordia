@@ -14,7 +14,7 @@
   `Authorization: Bearer <token>` or `X-Freeplane-MCP-Token: <token>`.
   Freeplane validates the configured token and authorizes the request
   when one supported header matches.
-- **Developer Briefing:**
+- **Briefing:**
   Keep changes focused to MCP server/authenticator classes and tests in
   `freeplane_plugin_ai`. Do not couple this work to provider model
   configuration changes.

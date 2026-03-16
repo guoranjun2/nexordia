@@ -8,7 +8,7 @@
   state (`Controller`, mode/filter controllers), which makes isolated
   tests brittle and drives test-only production patches. We need a clean
   design first, then tests.
-- **Developer Briefing:** Keep behavior unchanged for end users.
+- **Briefing:** Keep behavior unchanged for end users.
   Prioritize dependency seams and explicit collaborators over static
   singleton access in save/load paths.
 - **Research:**

@@ -24,7 +24,7 @@
 
   If the user cancels an in-flight request, chat snapshot restoration is
   performed without adding failure messages.
-- **Developer Briefing:** Keep existing chat-state recovery behavior.
+- **Briefing:** Keep existing chat-state recovery behavior.
   Add transient UI feedback only: one transient item for restored user
   text and one transient item for failure details. Keep these messages
   UI-only (not persisted). Use chat/snapshot/failure terminology in

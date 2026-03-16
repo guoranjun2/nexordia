@@ -17,7 +17,7 @@
   should still show a local candidate model list, allow the user to
   pick one, and only surface an incompatibility error if the actual
   chat request rejects that model identifier.
-- **Developer Briefing:** Keep successful remote discovery authoritative
+- **Constraints:** Keep successful remote discovery authoritative
   when it is available. Treat fallback as a whole-list decision: use
   the remote list when it is non-empty, otherwise use the fallback
   list. Use existing configured model-list entries as the fallback

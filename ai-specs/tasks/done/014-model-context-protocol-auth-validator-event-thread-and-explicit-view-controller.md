@@ -7,7 +7,7 @@
 - **Motivation:** Concurrent Model Context Protocol requests can trigger
   duplicate token generation and repeated user messages when authentication
   logic is split across threads or relies on dynamic global lookups.
-- **Developer Briefing:** Keep the change minimal and local to Model Context
+- **Briefing:** Keep the change minimal and local to Model Context
   Protocol authentication flow. Preserve existing unauthorized response payload,
   keep server behavior unchanged for valid tokens, avoid singleton-based
   controller lookup in the startup path, and follow Tell, Don't Ask: the

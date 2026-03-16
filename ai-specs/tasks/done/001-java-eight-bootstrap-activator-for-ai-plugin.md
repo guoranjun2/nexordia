@@ -9,7 +9,7 @@
 - **Motivation:** The plugin should fail gracefully on older runtimes
   instead of failing to resolve or crashing during class loading, while
   preserving Java 17 usage for the main implementation and dependencies.
-- **Developer Briefing:** Keep the current main activator behavior for
+- **Briefing:** Keep the current main activator behavior for
   Java 17+ and introduce a separate bootstrap activator compiled for Java
   8. The bootstrap activator becomes the manifest `Bundle-Activator`,
   checks runtime Java version, and reflectively starts the Java 17 main
