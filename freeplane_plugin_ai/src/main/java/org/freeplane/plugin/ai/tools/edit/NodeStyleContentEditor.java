@@ -11,6 +11,10 @@ public class NodeStyleContentEditor {
         if (nodeModel == null || mainStyle == null) {
             return;
         }
+        if (mainStyle.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "Invalid mainStyle: blank string. Omit mainStyle to use the default style.");
+        }
         setMainStyle(nodeModel, mainStyle);
     }
 

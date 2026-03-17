@@ -434,6 +434,8 @@ public class AIToolSet {
 
     @Tool("Create nodes and subtrees relative to an anchor node.\n"
         + "Optional fields override defaults. Omit them to keep defaults.\n"
+        + "Each optional field is an intentional override. Include it only when the specific value is justified; "
+        + "otherwise omit it. Never send empty strings, empty arrays, or null.\n"
         + "For content.text/content.details/content.note, only values starting with <html> are treated as HTML; all "
         + "other values are treated as plain text.\n"
         + "textContentType/detailsContentType/noteContentType control conversion/validation only; HTML input still "
