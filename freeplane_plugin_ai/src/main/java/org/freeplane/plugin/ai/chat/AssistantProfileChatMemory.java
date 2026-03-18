@@ -28,9 +28,12 @@ public class AssistantProfileChatMemory implements ChatMemory {
     private final Object id;
     private final Function<Object, Integer> maxTokensProvider;
     private final ChatTokenEstimator tokenEstimator;
+    private final int protectedRecentTurnCount;
+    private final double historicalToolTokenShare;
     private ProfileInstructionFactory profileInstructionFactory;
     private GeneralSystemMessage generalSystemMessage;
     private final List<ChatMessage> conversationMessages = new ArrayList<>();
+    private final List<HistoricalToolCycle> hiddenHistoricalToolCycles = new ArrayList<>();
     private int activeStartIndex;
     private final List<Integer> turnEndIndexes = new ArrayList<>();
     private int currentTurnCount;
@@ -39,6 +42,9 @@ public class AssistantProfileChatMemory implements ChatMemory {
         this.id = ensureNotNull(builder.id, "id");
         this.maxTokensProvider = ensureNotNull(builder.maxTokensProvider, "maxTokensProvider");
         this.tokenEstimator = new ChatTokenEstimator(builder.tokenEstimatorModelNameProvider);
+        this.protectedRecentTurnCount = ensureGreaterThanZero(builder.protectedRecentTurnCount,
+            "protectedRecentTurnCount");
+        this.historicalToolTokenShare = validateHistoricalToolTokenShare(builder.historicalToolTokenShare);
         this.profileInstructionFactory = resolveProfileInstructionFactory(builder.profileInstructionFactory);
         ensureGreaterThanZero(this.maxTokensProvider.apply(this.id), "maxTokens");
     }
@@ -93,6 +99,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
     public void clear() {
         generalSystemMessage = null;
         conversationMessages.clear();
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = 0;
         turnEndIndexes.clear();
         currentTurnCount = 0;
@@ -111,6 +118,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         while (conversationMessages.size() > targetSize) {
             removeConversationMessage(conversationMessages.size() - 1);
         }
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = Math.min(activeStartIndex, targetSize);
         rebuildTurnBoundaries();
     }
@@ -172,6 +180,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
                 break;
             }
         }
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = selectedStart;
     }
 
@@ -186,14 +195,15 @@ public class AssistantProfileChatMemory implements ChatMemory {
     public List<ChatTranscriptEntry> transcriptEntriesForPersistence() {
         List<ChatTranscriptEntry> entries = new ArrayList<>();
         int endIndex = activeConversationEndIndex();
-        int startIndex = Math.min(activeStartIndex, endIndex);
-        if (startIndex > 0) {
-            startIndex = alignVisibleStartIndex(startIndex, endIndex);
-        }
+        VisibleContextSelection selection = currentVisibleContextSelection(endIndex);
+        int startIndex = selection.firstVisibleHistoryIndex();
         for (int index = 0; index < endIndex; index++) {
             if (index == startIndex && startIndex > 0 && endIndex > startIndex) {
                 entries.add(new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM,
                     RemovedForSpaceSystemMessage.DEFAULT_TEXT));
+            }
+            if (!selection.includes(index)) {
+                continue;
             }
             ChatMessage message = conversationMessages.get(index);
             ChatTranscriptEntry entry = toTranscriptEntry(message);
@@ -213,7 +223,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
     }
 
     public List<ChatMemoryRenderEntry> panelConversationRenderEntries() {
-        return buildRenderEntries(true);
+        return buildRenderEntries(false);
     }
 
     private List<ChatMemoryRenderEntry> buildRenderEntries(boolean includeMessagesBeforeActiveWindow) {
@@ -225,12 +235,12 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (generalSystemMessage != null) {
             entries.add(ChatMemoryRenderEntry.forMessage(generalSystemMessage));
         }
-        int startIndex = Math.min(activeStartIndex, endIndex);
-        if (startIndex > 0) {
-            startIndex = alignVisibleStartIndex(startIndex, endIndex);
-        }
-        int firstRenderedIndex = includeMessagesBeforeActiveWindow ? 0 : startIndex;
-        for (int index = firstRenderedIndex; index < endIndex; index++) {
+        VisibleContextSelection selection = currentVisibleContextSelection(endIndex);
+        int startIndex = selection.firstVisibleHistoryIndex();
+        for (int index = startIndex; index < endIndex; index++) {
+            if (!selection.includes(index)) {
+                continue;
+            }
             if (index == startIndex && startIndex > 0 && endIndex > startIndex) {
                 entries.add(ChatMemoryRenderEntry.forMessage(new RemovedForSpaceSystemMessage()));
             }
@@ -246,6 +256,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
     }
 
     public void markContextWindowStart() {
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = Math.max(activeStartIndex, conversationMessages.size());
     }
 
@@ -259,8 +270,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
 
     ChatUsageTotals estimateTokenUsageForActiveWindow() {
         int endIndex = activeConversationEndIndex();
-        int startIndex = Math.min(activeStartIndex, endIndex);
-        return estimateTokenUsageForRange(startIndex, endIndex);
+        return estimateTokenUsageForSelection(currentVisibleContextSelection(endIndex));
     }
 
     ChatUsageTotals estimateTokenUsageForFullConversation() {
@@ -284,17 +294,22 @@ public class AssistantProfileChatMemory implements ChatMemory {
         }
         int resetTargetTokens = maxTokens / 4;
         int minimumTurnBlocksToKeep = minimumTurnBlocksToKeep(maxTokens);
-        boolean evicted = false;
-        while (estimateTotalTokensForActiveWindow() > resetTargetTokens) {
+        int endIndex = activeConversationEndIndex();
+        VisibleContextSelection selection = selectVisibleContext(endIndex, resetTargetTokens);
+        boolean changed = replaceHiddenHistoricalToolCycles(selection.hiddenHistoricalToolCycles());
+        while (selection.visibleTokenCount() > resetTargetTokens) {
             if (!canAdvanceWindowByTurnWithMinimumRetention(minimumTurnBlocksToKeep)) {
                 break;
             }
             if (!advanceWindowByOneTurn()) {
                 break;
             }
-            evicted = true;
+            changed = true;
+            endIndex = activeConversationEndIndex();
+            selection = selectVisibleContext(endIndex, resetTargetTokens);
+            replaceHiddenHistoricalToolCycles(selection.hiddenHistoricalToolCycles());
         }
-        return evicted;
+        return changed;
     }
 
     private List<ChatMessage> buildMessages(int conversationEndIndex) {
@@ -303,7 +318,8 @@ public class AssistantProfileChatMemory implements ChatMemory {
             messages.add(generalSystemMessage);
         }
         int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
-        int startIndex = Math.min(activeStartIndex, endIndex);
+        VisibleContextSelection selection = currentVisibleContextSelection(endIndex);
+        int startIndex = selection.firstVisibleHistoryIndex();
         int latestProfileSwitchIndex = findLatestProfileSwitchIndex(endIndex);
         UserMessage latestProfileInstruction = buildProfileInstructionForIndex(latestProfileSwitchIndex);
         if (latestProfileInstruction != null && latestProfileSwitchIndex >= 0
@@ -311,6 +327,9 @@ public class AssistantProfileChatMemory implements ChatMemory {
             messages.add(latestProfileInstruction);
         }
         for (int index = startIndex; index < endIndex; index++) {
+            if (!selection.includes(index)) {
+                continue;
+            }
             ChatMessage message = conversationMessages.get(index);
             if (message instanceof AssistantProfileSwitchMessage) {
                 if (index == latestProfileSwitchIndex && latestProfileInstruction != null) {
@@ -338,7 +357,11 @@ public class AssistantProfileChatMemory implements ChatMemory {
             messages.add(generalSystemMessage);
         }
         int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
-        for (int index = 0; index < endIndex; index++) {
+        VisibleContextSelection selection = currentVisibleContextSelection(endIndex);
+        for (int index = selection.firstVisibleHistoryIndex(); index < endIndex; index++) {
+            if (!selection.includes(index)) {
+                continue;
+            }
             messages.add(conversationMessages.get(index));
         }
         return messages;
@@ -404,6 +427,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (!canRedo()) {
             return;
         }
+        hiddenHistoricalToolCycles.clear();
         int keepSize = currentTurnCount == 0 ? 0 : turnEndIndexes.get(currentTurnCount - 1);
         while (conversationMessages.size() > keepSize) {
             removeConversationMessage(conversationMessages.size() - 1);
@@ -495,6 +519,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
         if (nextTurnEnd <= startIndex) {
             return false;
         }
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = nextTurnEnd;
         rebuildTurnBoundaries();
         return true;
@@ -517,6 +542,7 @@ public class AssistantProfileChatMemory implements ChatMemory {
             }
             break;
         }
+        hiddenHistoricalToolCycles.clear();
         activeStartIndex = selectedStart;
     }
 
@@ -559,16 +585,39 @@ public class AssistantProfileChatMemory implements ChatMemory {
     }
 
     private int alignVisibleStartIndex(int startIndex, int endIndex) {
+        return alignVisibleStartIndex(startIndex, endIndex, null);
+    }
+
+    private int alignVisibleStartIndex(int startIndex, int endIndex, boolean[] inclusionMask) {
         int alignedStart = Math.max(0, Math.min(startIndex, endIndex));
         while (alignedStart < endIndex) {
+            if (inclusionMask != null && !inclusionMask[alignedStart]) {
+                alignedStart++;
+                continue;
+            }
             ChatMessage message = conversationMessages.get(alignedStart);
             if (message instanceof ToolCallSummaryMessage) {
+                if (!hasVisibleMessageAfter(alignedStart + 1, endIndex, inclusionMask)) {
+                    break;
+                }
                 alignedStart++;
                 continue;
             }
             break;
         }
         return alignedStart;
+    }
+
+    private boolean hasVisibleMessageAfter(int startIndex, int endIndex, boolean[] inclusionMask) {
+        int safeStart = Math.max(0, startIndex);
+        int safeEnd = Math.min(endIndex, conversationMessages.size());
+        for (int index = safeStart; index < safeEnd; index++) {
+            if (inclusionMask != null && !inclusionMask[index]) {
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
 
     private int findLatestProfileSwitchIndex(int endIndex) {
@@ -610,6 +659,8 @@ public class AssistantProfileChatMemory implements ChatMemory {
         private Function<Object, Integer> maxTokensProvider;
         private Supplier<String> tokenEstimatorModelNameProvider = () -> null;
         private ProfileInstructionFactory profileInstructionFactory;
+        private int protectedRecentTurnCount = 1;
+        private double historicalToolTokenShare = 0.5d;
 
         public Builder id(Object id) {
             this.id = id;
@@ -633,6 +684,16 @@ public class AssistantProfileChatMemory implements ChatMemory {
 
         public Builder profileInstructionFactory(ProfileInstructionFactory profileInstructionFactory) {
             this.profileInstructionFactory = profileInstructionFactory;
+            return this;
+        }
+
+        public Builder protectedRecentTurnCount(int protectedRecentTurnCount) {
+            this.protectedRecentTurnCount = protectedRecentTurnCount;
+            return this;
+        }
+
+        public Builder historicalToolTokenShare(double historicalToolTokenShare) {
+            this.historicalToolTokenShare = historicalToolTokenShare;
             return this;
         }
 
@@ -666,6 +727,31 @@ public class AssistantProfileChatMemory implements ChatMemory {
         int safeStart = Math.max(0, startIndex);
         int safeEnd = Math.min(endIndex, conversationMessages.size());
         for (int index = safeStart; index < safeEnd; index++) {
+            ChatMessage message = conversationMessages.get(index);
+            if (!isRemovableMessage(message)) {
+                continue;
+            }
+            int tokenCount = tokenEstimator.estimateTokenCountInMessage(message);
+            if (message instanceof AiMessage) {
+                outputTokens += tokenCount;
+            } else {
+                inputTokens += tokenCount;
+            }
+        }
+        return ChatUsageTotals.estimated(inputTokens, outputTokens);
+    }
+
+    private ChatUsageTotals estimateTokenUsageForSelection(VisibleContextSelection selection) {
+        if (selection == null) {
+            return ChatUsageTotals.estimated(0L, 0L);
+        }
+        long inputTokens = 0L;
+        long outputTokens = 0L;
+        int endIndex = Math.min(selection.inclusionMask().length, conversationMessages.size());
+        for (int index = selection.firstVisibleHistoryIndex(); index < endIndex; index++) {
+            if (!selection.includes(index)) {
+                continue;
+            }
             ChatMessage message = conversationMessages.get(index);
             if (!isRemovableMessage(message)) {
                 continue;
@@ -742,6 +828,160 @@ public class AssistantProfileChatMemory implements ChatMemory {
             || message instanceof ToolExecutionResultMessage;
     }
 
+    private VisibleContextSelection currentVisibleContextSelection(int conversationEndIndex) {
+        return visibleContextSelectionForHiddenCycles(conversationEndIndex, hiddenHistoricalToolCycles);
+    }
+
+    private VisibleContextSelection selectVisibleContext(int conversationEndIndex, int targetTokens) {
+        int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
+        int visibleStartIndex = Math.min(activeStartIndex, endIndex);
+        List<HistoricalToolCycle> hiddenCycles = new ArrayList<>();
+        if (endIndex <= visibleStartIndex) {
+            return new VisibleContextSelection(visibleStartIndex, visibleStartIndex, new boolean[endIndex],
+                hiddenCycles, 0L);
+        }
+        int historicalEndIndex = firstProtectedTurnStartIndex(endIndex);
+        long protectedTokens = estimateTotalTokensForRange(historicalEndIndex, endIndex);
+        long historicalTokens = Math.max(0L, (long) targetTokens - protectedTokens);
+        long historicalToolTokenCap = (long) Math.floor(historicalTokens * historicalToolTokenShare);
+        List<HistoricalToolCycle> historicalCycles = collectHistoricalToolCycles(historicalEndIndex);
+        hiddenCycles.addAll(trimHistoricalToolCycles(historicalCycles, historicalToolTokenCap));
+        return visibleContextSelectionForHiddenCycles(endIndex, hiddenCycles);
+    }
+
+    private VisibleContextSelection visibleContextSelectionForHiddenCycles(int conversationEndIndex,
+                                                                           List<HistoricalToolCycle> hiddenCycles) {
+        int endIndex = Math.max(0, Math.min(conversationEndIndex, conversationMessages.size()));
+        int visibleStartIndex = Math.min(activeStartIndex, endIndex);
+        boolean[] inclusionMask = new boolean[endIndex];
+        for (int index = visibleStartIndex; index < endIndex; index++) {
+            inclusionMask[index] = true;
+        }
+        for (HistoricalToolCycle cycle : hiddenCycles) {
+            int hiddenStart = Math.max(cycle.startIndex(), visibleStartIndex);
+            int hiddenEnd = Math.min(cycle.endIndex(), endIndex);
+            for (int index = hiddenStart; index < hiddenEnd; index++) {
+                inclusionMask[index] = false;
+            }
+        }
+        int firstVisibleHistoryIndex = alignVisibleStartIndex(visibleStartIndex, endIndex, inclusionMask);
+        long visibleTokenCount = estimateVisibleTokens(inclusionMask, firstVisibleHistoryIndex, endIndex);
+        return new VisibleContextSelection(visibleStartIndex, firstVisibleHistoryIndex, inclusionMask,
+            new ArrayList<>(hiddenCycles), visibleTokenCount);
+    }
+
+    private long estimateVisibleTokens(boolean[] inclusionMask, int startIndex, int endIndex) {
+        long total = 0L;
+        int safeStart = Math.max(0, Math.min(startIndex, endIndex));
+        int safeEnd = Math.min(endIndex, conversationMessages.size());
+        for (int index = safeStart; index < safeEnd; index++) {
+            if (inclusionMask != null && !inclusionMask[index]) {
+                continue;
+            }
+            ChatMessage message = conversationMessages.get(index);
+            if (!isRemovableMessage(message)) {
+                continue;
+            }
+            total += tokenEstimator.estimateTokenCountInMessage(message);
+        }
+        return total;
+    }
+
+    private int firstProtectedTurnStartIndex(int conversationEndIndex) {
+        List<ActiveTurnRange> ranges = activeTurnRanges();
+        if (ranges.isEmpty()) {
+            return Math.min(activeStartIndex, conversationEndIndex);
+        }
+        int protectedCount = Math.min(protectedRecentTurnCount, ranges.size());
+        int protectedIndex = ranges.size() - protectedCount;
+        return ranges.get(protectedIndex).startIndex;
+    }
+
+    private List<HistoricalToolCycle> collectHistoricalToolCycles(int historicalEndIndex) {
+        List<HistoricalToolCycle> cycles = new ArrayList<>();
+        int startIndex = Math.min(activeStartIndex, historicalEndIndex);
+        for (int index = startIndex; index < historicalEndIndex; index++) {
+            ChatMessage message = conversationMessages.get(index);
+            if (!isToolRequestMessage(message)) {
+                continue;
+            }
+            int cycleEndIndex = index + 1;
+            long tokenCount = tokenEstimator.estimateTokenCountInMessage(message);
+            while (cycleEndIndex < historicalEndIndex) {
+                ChatMessage nextMessage = conversationMessages.get(cycleEndIndex);
+                if (nextMessage instanceof ToolExecutionResultMessage) {
+                    tokenCount += tokenEstimator.estimateTokenCountInMessage(nextMessage);
+                    cycleEndIndex++;
+                    continue;
+                }
+                if (nextMessage instanceof ToolCallSummaryMessage) {
+                    cycleEndIndex++;
+                    continue;
+                }
+                break;
+            }
+            cycles.add(new HistoricalToolCycle(index, cycleEndIndex, tokenCount));
+            index = cycleEndIndex - 1;
+        }
+        return cycles;
+    }
+
+    private List<HistoricalToolCycle> trimHistoricalToolCycles(List<HistoricalToolCycle> historicalCycles,
+                                                               long historicalToolTokenCap) {
+        List<HistoricalToolCycle> hiddenCycles = new ArrayList<>();
+        long visibleHistoricalToolTokens = 0L;
+        for (HistoricalToolCycle cycle : historicalCycles) {
+            visibleHistoricalToolTokens += cycle.tokenCount();
+        }
+        for (HistoricalToolCycle cycle : historicalCycles) {
+            if (visibleHistoricalToolTokens <= historicalToolTokenCap) {
+                break;
+            }
+            hiddenCycles.add(cycle);
+            visibleHistoricalToolTokens -= cycle.tokenCount();
+        }
+        return hiddenCycles;
+    }
+
+    private boolean replaceHiddenHistoricalToolCycles(List<HistoricalToolCycle> hiddenCycles) {
+        if (sameHistoricalToolCycles(hiddenHistoricalToolCycles, hiddenCycles)) {
+            return false;
+        }
+        hiddenHistoricalToolCycles.clear();
+        hiddenHistoricalToolCycles.addAll(hiddenCycles);
+        return true;
+    }
+
+    private boolean sameHistoricalToolCycles(List<HistoricalToolCycle> first, List<HistoricalToolCycle> second) {
+        if (first.size() != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < first.size(); index++) {
+            HistoricalToolCycle firstCycle = first.get(index);
+            HistoricalToolCycle secondCycle = second.get(index);
+            if (firstCycle.startIndex() != secondCycle.startIndex()
+                || firstCycle.endIndex() != secondCycle.endIndex()
+                || firstCycle.tokenCount() != secondCycle.tokenCount()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isToolRequestMessage(ChatMessage message) {
+        if (!(message instanceof AiMessage) || message instanceof InstructionAckMessage) {
+            return false;
+        }
+        return ((AiMessage) message).hasToolExecutionRequests();
+    }
+
+    private double validateHistoricalToolTokenShare(double share) {
+        if (share < 0.0d || share > 1.0d) {
+            throw new IllegalArgumentException("historicalToolTokenShare must be between 0.0 and 1.0");
+        }
+        return share;
+    }
+
     private static class ActiveTurnRange {
         private final int startIndex;
         private final int endIndex;
@@ -749,6 +989,72 @@ public class AssistantProfileChatMemory implements ChatMemory {
         private ActiveTurnRange(int startIndex, int endIndex) {
             this.startIndex = startIndex;
             this.endIndex = endIndex;
+        }
+    }
+
+    private static class HistoricalToolCycle {
+        private final int startIndex;
+        private final int endIndex;
+        private final long tokenCount;
+
+        private HistoricalToolCycle(int startIndex, int endIndex, long tokenCount) {
+            this.startIndex = startIndex;
+            this.endIndex = endIndex;
+            this.tokenCount = tokenCount;
+        }
+
+        private int startIndex() {
+            return startIndex;
+        }
+
+        private int endIndex() {
+            return endIndex;
+        }
+
+        private long tokenCount() {
+            return tokenCount;
+        }
+    }
+
+    private static class VisibleContextSelection {
+        private final int visibleStartIndex;
+        private final int firstVisibleHistoryIndex;
+        private final boolean[] inclusionMask;
+        private final List<HistoricalToolCycle> hiddenHistoricalToolCycles;
+        private final long visibleTokenCount;
+
+        private VisibleContextSelection(int visibleStartIndex,
+                                        int firstVisibleHistoryIndex,
+                                        boolean[] inclusionMask,
+                                        List<HistoricalToolCycle> hiddenHistoricalToolCycles,
+                                        long visibleTokenCount) {
+            this.visibleStartIndex = visibleStartIndex;
+            this.firstVisibleHistoryIndex = firstVisibleHistoryIndex;
+            this.inclusionMask = inclusionMask;
+            this.hiddenHistoricalToolCycles = hiddenHistoricalToolCycles;
+            this.visibleTokenCount = visibleTokenCount;
+        }
+
+        private int firstVisibleHistoryIndex() {
+            return firstVisibleHistoryIndex;
+        }
+
+        private boolean[] inclusionMask() {
+            return inclusionMask;
+        }
+
+        private boolean includes(int index) {
+            return index >= visibleStartIndex
+                && index < inclusionMask.length
+                && inclusionMask[index];
+        }
+
+        private List<HistoricalToolCycle> hiddenHistoricalToolCycles() {
+            return hiddenHistoricalToolCycles;
+        }
+
+        private long visibleTokenCount() {
+            return visibleTokenCount;
         }
     }
 

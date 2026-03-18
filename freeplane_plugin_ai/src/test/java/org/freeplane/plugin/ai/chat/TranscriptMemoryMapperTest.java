@@ -83,7 +83,7 @@ public class TranscriptMemoryMapperTest {
     }
 
     @Test
-    public void toTranscriptEntries_keepsMessagesBeforeContextWindowBoundary() {
+    public void toTranscriptEntries_omitMessagesBeforeContextWindowBoundary() {
         TranscriptMemoryMapper uut = new TranscriptMemoryMapper();
         AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
         memory.add(UserMessage.from("first user"));
@@ -96,11 +96,10 @@ public class TranscriptMemoryMapperTest {
 
         assertThat(entries)
             .extracting(entry -> entry.getRole().name() + ":" + entry.getText())
-            .contains("USER:first user")
-            .contains("ASSISTANT:first assistant")
             .contains("REMOVED_FOR_SPACE_SYSTEM:" + RemovedForSpaceSystemMessage.DEFAULT_TEXT)
             .contains("USER:second user")
-            .contains("ASSISTANT:second assistant");
+            .contains("ASSISTANT:second assistant")
+            .doesNotContain("USER:first user", "ASSISTANT:first assistant");
     }
 
     @Test
