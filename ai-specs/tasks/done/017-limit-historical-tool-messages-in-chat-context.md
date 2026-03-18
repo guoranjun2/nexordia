@@ -222,7 +222,7 @@ AssistantProfileChatMemory --> ChatMemoryRenderEntry : panel matches model-visib
       consistent with the live-chat compaction rules.
 
 ## Subtask: Refactor AssistantProfileChatMemory
-- **Status:** backlog
+- **Status:** done
 - **Scope:** Reduce the size and responsibility count of
   `AssistantProfileChatMemory` by extracting focused collaborators
   without changing chat behavior, persistence behavior, or public API
