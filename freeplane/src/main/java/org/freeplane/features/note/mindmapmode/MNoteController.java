@@ -44,6 +44,7 @@ import org.freeplane.features.styles.LogicalStyleKeys;
 import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.styles.SetBooleanMapPropertyAction;
 import org.freeplane.features.text.TextController;
+import org.freeplane.main.application.ApplicationLifecycleListener;
 
 import com.jgoodies.common.base.Objects;
 
@@ -146,6 +147,8 @@ public class MNoteController extends NoteController {
 	private final NoteManager noteManager;
     private final Set<String> noteContentTypes;
 	private MModeController modeController;
+    private boolean startupNoteRestorePending;
+    private boolean startupFinished;
 
 	MModeController getModeController() {
         return modeController;
@@ -159,6 +162,23 @@ public class MNoteController extends NoteController {
 		this.modeController = modeController;
 		modeController.registerExtensionCopier(new ExtensionCopier());
 		noteManager = new NoteManager(this);
+        if (MModeController.MODENAME.equals(modeController.getModeName())) {
+            modeController.getController().addApplicationLifecycleListener(new ApplicationLifecycleListener() {
+                @Override
+                public void onStartupFinished() {
+                    startupFinished = true;
+                    if (startupNoteRestorePending) {
+                        startupNoteRestorePending = false;
+                        noteManager.restoreStartupNote();
+                    }
+                }
+
+                @Override
+                public void onApplicationStopped() {
+                    noteManager.saveShutdownNoteTarget();
+                }
+            });
+        }
 		modeController.getMapController().addMapLifeCycleListener(noteManager);
         noteContentTypes = new LinkedHashSet<>();
         noteContentTypes.add(TextController.CONTENT_TYPE_AUTO);
@@ -320,6 +340,7 @@ public class MNoteController extends NoteController {
 		final ModeController modeController = Controller.getCurrentModeController();
 		if (shouldUseSplitPane()) {
 			showNotesPanel();
+            startupNoteRestorePending = !startupFinished;
 		}
 		modeController.getMapController().addNodeSelectionListener(noteManager);
 		Controller.getCurrentController().getMapViewManager().addMapSelectionListener(noteManager);

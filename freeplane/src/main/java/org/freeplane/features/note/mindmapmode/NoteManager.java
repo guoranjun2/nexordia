@@ -22,6 +22,7 @@ package org.freeplane.features.note.mindmapmode;
 import java.awt.Color;
 import java.awt.ComponentOrientation;
 import java.awt.Font;
+import java.lang.ref.WeakReference;
 
 import javax.swing.Icon;
 import javax.swing.SwingUtilities;
@@ -51,11 +52,15 @@ import org.freeplane.features.note.NoteModel;
 import org.freeplane.features.note.NoteStyleAccessor;
 import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.text.TextController;
+import org.freeplane.main.application.ApplicationResourceController;
 
 class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMapLifeCycleListener {
     private static final String NOTE_FOLLOWS_SELECTION_PROPERTY = "noteFollowsSelection";
+    private static final String LAST_NOTE_URL_PROPERTY = "lastNoteUrl";
+    private static final String LAST_NOTE_NODE_PROPERTY = "lastNoteNode";
 	private boolean ignoreEditorUpdate;
 	private NodeModel node;
+    private WeakReference<NodeModel> lastShownNoteNode = new WeakReference<>(null);
 	/**
 	 *
 	 */
@@ -128,6 +133,7 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 	public void onSelect(final NodeModel node) {
 	    if(noteFollowsSelection) {
 	        this.node = node;
+            rememberShownNoteNode(node);
 	        updateEditor();
 	    }
 	}
@@ -238,6 +244,20 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 		return node;
 	}
 
+    void restoreStartupNote() {
+        if (noteFollowsSelection || noteController.getNotePanel() == null) {
+            return;
+        }
+        NodeModel startupNoteTarget = loadStartupNoteTarget();
+        node = startupNoteTarget;
+        rememberShownNoteNode(startupNoteTarget);
+        updateEditor();
+    }
+
+    void saveShutdownNoteTarget() {
+        saveFrozenNoteTarget(resolveShutdownNoteTarget(noteFollowsSelection, lastShownNoteNode));
+    }
+
     void saveNote(String text) {
         boolean isHtml = HtmlUtils.isHtml(text);
         boolean editorContentEmpty = isHtml && HtmlUtils.isEmpty(text)
@@ -278,7 +298,82 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
                 node = selectedNode;
                 updateEditor();
             }
+            rememberShownNoteNode(selectedNode);
         }
+        else {
+            if (node == null) {
+                node = selectedNode();
+            }
+            rememberShownNoteNode(node);
+        }
+    }
+
+    private ApplicationResourceController applicationResourceController() {
+        return (ApplicationResourceController) ResourceController.getResourceController();
+    }
+
+    private void clearSavedFrozenNoteTarget() {
+        ApplicationResourceController resourceController = applicationResourceController();
+        resourceController.setProperty(LAST_NOTE_URL_PROPERTY, "");
+        resourceController.setProperty(LAST_NOTE_NODE_PROPERTY, "");
+    }
+
+    static NodeModel resolveSavedFrozenNoteTarget(String savedMapUrl, String savedNodeId, Iterable<MapModel> openMaps) {
+        if (savedMapUrl == null || savedMapUrl.isEmpty() || savedNodeId == null || savedNodeId.isEmpty()) {
+            return null;
+        }
+        for (MapModel map : openMaps) {
+            String mapUrl = mapUrl(map);
+            if (savedMapUrl.equals(mapUrl)) {
+                return map.getNodeForID(savedNodeId);
+            }
+        }
+        return null;
+    }
+
+    static NodeModel resolveStartupNoteTarget(String savedMapUrl, String savedNodeId, Iterable<MapModel> openMaps,
+            NodeModel selectedNode) {
+        NodeModel savedTarget = resolveSavedFrozenNoteTarget(savedMapUrl, savedNodeId, openMaps);
+        return savedTarget != null ? savedTarget : selectedNode;
+    }
+
+    static NodeModel resolveShutdownNoteTarget(boolean noteFollowsSelection, WeakReference<NodeModel> lastShownNoteNode) {
+        return noteFollowsSelection || lastShownNoteNode == null ? null : lastShownNoteNode.get();
+    }
+
+    private NodeModel loadStartupNoteTarget() {
+        ApplicationResourceController resourceController = applicationResourceController();
+        return resolveStartupNoteTarget(resourceController.getProperty(LAST_NOTE_URL_PROPERTY, null),
+            resourceController.getProperty(LAST_NOTE_NODE_PROPERTY, null),
+            Controller.getCurrentController().getMapViewManager().getMaps().values(), selectedNode());
+    }
+
+    private void saveFrozenNoteTarget(NodeModel noteTarget) {
+        if (noteTarget == null) {
+            clearSavedFrozenNoteTarget();
+            return;
+        }
+        String mapUrl = mapUrl(noteTarget.getMap());
+        if (mapUrl == null) {
+            clearSavedFrozenNoteTarget();
+            return;
+        }
+        ApplicationResourceController resourceController = applicationResourceController();
+        resourceController.setProperty(LAST_NOTE_URL_PROPERTY, mapUrl);
+        resourceController.setProperty(LAST_NOTE_NODE_PROPERTY, noteTarget.getID());
+    }
+
+    private static String mapUrl(MapModel map) {
+        return map != null && map.getURL() != null ? map.getURL().toString() : null;
+    }
+
+    private void rememberShownNoteNode(NodeModel noteTarget) {
+        lastShownNoteNode = new WeakReference<>(noteTarget);
+    }
+
+    private NodeModel selectedNode() {
+        IMapSelection selection = Controller.getCurrentController().getSelection();
+        return selection != null ? selection.getSelected() : null;
     }
 
 
