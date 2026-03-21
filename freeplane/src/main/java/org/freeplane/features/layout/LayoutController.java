@@ -20,6 +20,7 @@
 package org.freeplane.features.layout;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 
 import org.freeplane.api.ChildNodesAlignment;
@@ -42,6 +43,7 @@ import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.styles.IStyle;
 import org.freeplane.features.styles.LogicalStyleController;
 import org.freeplane.features.styles.LogicalStyleController.StyleOption;
+import org.freeplane.features.styles.LogicalStyleModel;
 import org.freeplane.features.styles.MapStyleModel;
 
 /**
@@ -134,6 +136,38 @@ public class LayoutController implements IExtension {
     public ChildNodesLayout getChildNodesLayout(NodeModel node) {
         ChildNodesLayout layout = childrenLayoutHandlers.getProperty(node, StyleOption.FOR_UNSELECTED_NODE);
         return layout;
+    }
+
+    public boolean isChildNodesLayoutSetExplicitlyOrByStyle(NodeModel node) {
+        return isChildNodesLayoutSetExplicitly(node) || isChildNodesLayoutSetByStyle(node);
+    }
+
+    public boolean isChildNodesLayoutSetExplicitly(NodeModel node) {
+        LayoutModel layoutModel = node.getExtension(LayoutModel.class);
+        if (layoutModel != null) {
+            return layoutModel.getChildNodesLayout() != ChildNodesLayout.NOT_SET;
+        }
+        return false;
+    }
+
+    public boolean isChildNodesLayoutSetByStyle(NodeModel node) {
+        MapStyleModel mapStyle = MapStyleModel.getExtension(node.getMap());
+        IStyle styleExplicitlyAssigned = LogicalStyleModel.getStyle(node);
+        if (styleExplicitlyAssigned != null) {
+            if (isChildNodesLayoutSetByIStyle(styleExplicitlyAssigned, mapStyle)) return true;
+        }
+        final List<IStyle> styles = LogicalStyleController.getController(modeController).getStyles(node, StyleOption.STYLES_ONLY);
+        final List<IStyle> stylesWithoutFallbackDefault = styles.subList(0, styles.size() - 1);
+        for (IStyle style : stylesWithoutFallbackDefault) {
+            if (isChildNodesLayoutSetByIStyle(style, mapStyle)) return true;
+        }
+        return false;
+    }
+
+    private boolean isChildNodesLayoutSetByIStyle(IStyle style, MapStyleModel mapStyle) {
+        final NodeModel styleNode = mapStyle.getStyleNode(style);
+        final LayoutModel styleLayout = styleNode.getExtension(LayoutModel.class);
+        return styleLayout != null && styleLayout.getChildNodesLayout() != ChildNodesLayout.NOT_SET;
     }
 
     public void withNodeChangeEventOnLayoutChange(NodeModel node, Runnable runnable) {

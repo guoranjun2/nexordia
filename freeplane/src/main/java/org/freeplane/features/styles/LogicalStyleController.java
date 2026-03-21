@@ -71,7 +71,7 @@ public class LogicalStyleController implements IExtension {
 
     private static final int STYLE_TOOLTIP = 0;
 	private WeakReference<NodeModel> cachedNode;
-    private Collection<IStyle>  cachedStyles;
+    private List<IStyle>  cachedStyles;
     private List<IStyle>  cachedStylesForSelectedNode;
 	final private CombinedPropertyChain<Collection<IStyle>, NodeModel> styleHandlers;
 
@@ -312,11 +312,22 @@ public class LogicalStyleController implements IExtension {
 		}
 		return MapStyleModel.DEFAULT_STYLE;
 	}
-	public Collection<IStyle>  getStyles(final NodeModel node, StyleOption option) {
+
+    /**
+	 * Gets the styles for the given node in the order they are applied, i.e.,
+	 * explicitly assigned (if any), node conditional (if any), map conditional (if any), automatic-level (if any), default.
+	 * @param node the node to get styles for
+	 * @param option the context in which the styles will be used — controls how the return list is reduced:
+	 *                  FOR_UNSELECTED_NODE — the first element is a StyleNode representing the node itself;
+	 *                  FOR_SELECTED_NODE — a StyleNode is the second element;
+	 *                  STYLES_ONLY — no StyleNode
+	 * @return an unmodifiable list of styles in the order they are applied
+	 */
+	public List<IStyle>  getStyles(final NodeModel node, StyleOption option) {
 		if(cachedNode == null || !node.equals(cachedNode.get())) {
 		    cachedStyles = null;
 		    cachedNode = null;
-		    cachedStyles = Collections.unmodifiableCollection(styleHandlers.getProperty(node, option, new LinkedHashSet<IStyle>()));
+		    cachedStyles = Collections.unmodifiableList(new ArrayList<>(styleHandlers.getProperty(node, option, new LinkedHashSet<>())));
 		    cachedNode = new WeakReference<NodeModel>(node);
 		    List<IStyle> withSelectedNode = new ArrayList<>(cachedStyles.size() + 1);
 		    withSelectedNode.add(MapStyleModel.SELECTION_STYLE);

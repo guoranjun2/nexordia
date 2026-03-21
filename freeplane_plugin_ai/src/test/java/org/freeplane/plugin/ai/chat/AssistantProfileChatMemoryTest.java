@@ -163,7 +163,7 @@ public class AssistantProfileChatMemoryTest {
     }
 
     @Test
-    public void panelConversationRenderEntriesKeepMessagesBeforeContextBoundary() {
+    public void panelConversationRenderEntriesHideMessagesBeforeContextBoundary() {
         AssistantProfileChatMemory uut = createMemory(500);
         uut.add(UserMessage.from("u1"));
         uut.add(AiMessage.from("a1"));
@@ -176,7 +176,8 @@ public class AssistantProfileChatMemoryTest {
             .extracting(entry -> entry.chatMessage() instanceof UserMessage
                 ? ((UserMessage) entry.chatMessage()).singleText()
                 : null)
-            .contains("u1", "u2");
+            .contains("u2")
+            .doesNotContain("u1");
     }
 
     @Test
@@ -191,11 +192,10 @@ public class AssistantProfileChatMemoryTest {
 
         List<ChatMemoryRenderEntry> entries = uut.panelConversationRenderEntries();
         int markerIndex = indexOfMessage(entries, RemovedForSpaceSystemMessage.class);
-        int firstUserIndex = indexOfUserText(entries, "u1");
         int activeUserIndex = indexOfUserText(entries, "u2");
 
-        assertThat(markerIndex).isGreaterThan(firstUserIndex);
         assertThat(markerIndex).isLessThan(activeUserIndex);
+        assertThat(indexOfUserText(entries, "u1")).isLessThan(0);
     }
 
     @Test
@@ -295,6 +295,165 @@ public class AssistantProfileChatMemoryTest {
             .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
             .contains("u2")
             .doesNotContain("u1");
+    }
+
+    @Test
+    public void recordTokenUsageHidesHistoricalToolCycleBeforeDroppingHistoricalDialog() {
+        ToolExecutionRequest historicalRequest = toolRequest("tool-1");
+        String largeToolResult = repeatedWords("history", 600);
+        int visibleDialogTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from("u3"),
+            AiMessage.from("a3"));
+        int maxTokens = visibleDialogTokens * 4;
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from(List.of(historicalRequest)));
+        uut.add(ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult));
+        uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from("u3"));
+        uut.add(AiMessage.from("a3"));
+
+        assertThat(estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from(List.of(historicalRequest)),
+            ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from("u3"),
+            AiMessage.from("a3"))).isGreaterThan(maxTokens);
+
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        List<ChatMessage> messages = uut.messages();
+        assertThat(messages)
+            .extracting(message -> message instanceof UserMessage ? ((UserMessage) message).singleText() : null)
+            .contains("u1", "u2", "u3");
+        assertThat(messages).noneMatch(message -> message instanceof ToolExecutionResultMessage);
+        assertThat(messages).noneMatch(this::isToolRequestAiMessage);
+        assertThat(uut.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .extracting(ChatMemoryRenderEntry::toolSummaryText)
+            .doesNotContain("summary-1");
+        assertThat(uut.activeConversationRenderEntries())
+            .noneMatch(entry -> entry.chatMessage() instanceof RemovedForSpaceSystemMessage);
+    }
+
+    @Test
+    public void recordTokenUsageKeepsNewestProtectedToolTurnComplete() {
+        ToolExecutionRequest historicalRequest = toolRequest("tool-1");
+        ToolExecutionRequest latestRequest = toolRequest("tool-2");
+        String largeToolResult = repeatedWords("history", 600);
+        ToolExecutionResultMessage latestResult = ToolExecutionResultMessage.from("tool-2", "searchNodes", "fresh");
+        int visibleAfterTrimTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from(List.of(latestRequest)),
+            latestResult,
+            AiMessage.from("a2"));
+        int maxTokens = visibleAfterTrimTokens * 4;
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from(List.of(historicalRequest)));
+        uut.add(ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult));
+        uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from(List.of(latestRequest)));
+        uut.add(latestResult);
+        uut.addToolCallSummary("summary-2", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a2"));
+
+        assertThat(estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from(List.of(historicalRequest)),
+            ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from(List.of(latestRequest)),
+            latestResult,
+            AiMessage.from("a2"))).isGreaterThan(maxTokens);
+
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        assertThat(uut.messages()).anyMatch(this::isToolRequestAiMessage);
+        assertThat(uut.messages())
+            .anyMatch(message -> message instanceof ToolExecutionResultMessage
+                && "tool-2".equals(((ToolExecutionResultMessage) message).id())
+                && "fresh".equals(((ToolExecutionResultMessage) message).text()));
+        assertThat(uut.messages())
+            .noneMatch(message -> message instanceof ToolExecutionResultMessage
+                && "tool-1".equals(((ToolExecutionResultMessage) message).id()));
+        assertThat(uut.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .extracting(ChatMemoryRenderEntry::toolSummaryText)
+            .contains("summary-2")
+            .doesNotContain("summary-1");
+    }
+
+    @Test
+    public void undoRestoresHistoricalToolCycleHiddenByPostResponseCompaction() {
+        ToolExecutionRequest historicalRequest = toolRequest("tool-1");
+        String largeToolResult = repeatedWords("history", 600);
+        String latestUser = repeatedWords("u3", 40);
+        String latestAssistant = repeatedWords("a3", 40);
+        int maxTokens = estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from(List.of(historicalRequest)),
+            ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2")) + 20;
+        AssistantProfileChatMemory uut = createMemory(maxTokens);
+
+        uut.add(UserMessage.from("u1"));
+        uut.add(AiMessage.from(List.of(historicalRequest)));
+        uut.add(ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult));
+        uut.addToolCallSummary("summary-1", ToolCaller.CHAT);
+        uut.add(AiMessage.from("a1"));
+        uut.add(UserMessage.from("u2"));
+        uut.add(AiMessage.from("a2"));
+        uut.add(UserMessage.from(latestUser));
+        uut.add(AiMessage.from(latestAssistant));
+
+        assertThat(estimateTokens(
+            UserMessage.from("u1"),
+            AiMessage.from(List.of(historicalRequest)),
+            ToolExecutionResultMessage.from("tool-1", "searchNodes", largeToolResult),
+            AiMessage.from("a1"),
+            UserMessage.from("u2"),
+            AiMessage.from("a2"),
+            UserMessage.from(latestUser),
+            AiMessage.from(latestAssistant))).isGreaterThan(maxTokens);
+
+        uut.onResponseTokenUsage(new TokenUsage(1, 1));
+
+        assertThat(uut.messages())
+            .noneMatch(message -> message instanceof ToolExecutionResultMessage
+                && "tool-1".equals(((ToolExecutionResultMessage) message).id()));
+
+        String restoredUserInput = uut.undo();
+
+        assertThat(restoredUserInput).isEqualTo(latestUser);
+        assertThat(uut.messages()).anyMatch(this::isToolRequestAiMessage);
+        assertThat(uut.messages())
+            .anyMatch(message -> message instanceof ToolExecutionResultMessage
+                && "tool-1".equals(((ToolExecutionResultMessage) message).id())
+                && largeToolResult.equals(((ToolExecutionResultMessage) message).text()));
+        assertThat(uut.activeConversationRenderEntries())
+            .filteredOn(ChatMemoryRenderEntry::isToolSummary)
+            .extracting(ChatMemoryRenderEntry::toolSummaryText)
+            .contains("summary-1");
     }
 
     @Test
@@ -790,10 +949,10 @@ public class AssistantProfileChatMemoryTest {
         assertThat(uut.transcriptEntriesForPersistence())
             .extracting(entry -> entry.getRole().name() + ":" + entry.getText())
             .anyMatch(value -> value.contains("REMOVED_FOR_SPACE_SYSTEM:" + RemovedForSpaceSystemMessage.DEFAULT_TEXT))
-            .anyMatch(value -> value.contains("first question"))
-            .anyMatch(value -> value.contains("first answer"))
             .anyMatch(value -> value.contains("second question"))
-            .anyMatch(value -> value.contains("second answer"));
+            .anyMatch(value -> value.contains("second answer"))
+            .noneMatch(value -> value.contains("first question"))
+            .noneMatch(value -> value.contains("first answer"));
     }
 
     private AssistantProfileChatMemory createMemory(int maxTokens) {
@@ -810,6 +969,29 @@ public class AssistantProfileChatMemoryTest {
             total += estimator.estimateTokenCountInMessage(message);
         }
         return total;
+    }
+
+    private ToolExecutionRequest toolRequest(String id) {
+        return ToolExecutionRequest.builder()
+            .id(id)
+            .name("searchNodes")
+            .arguments("{\"request\":{\"query\":\"root\"}}")
+            .build();
+    }
+
+    private boolean isToolRequestAiMessage(ChatMessage message) {
+        return message instanceof AiMessage && ((AiMessage) message).hasToolExecutionRequests();
+    }
+
+    private String repeatedWords(String word, int count) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < count; index++) {
+            if (index > 0) {
+                builder.append(' ');
+            }
+            builder.append(word);
+        }
+        return builder.toString();
     }
 
     private int indexOfMessage(List<ChatMemoryRenderEntry> entries, Class<? extends ChatMessage> messageClass) {

@@ -6,23 +6,19 @@ public class ChatMemorySettings {
     private static final String CHAT_MEMORY_MAXIMUM_TOKEN_COUNT_PROPERTY = "ai_chat_memory_maximum_token_count";
     private static final int DEFAULT_MAXIMUM_TOKEN_COUNT = 65536;
 
-    private final int maximumTokenCount;
+    private final ResourceController resourceController;
 
     public ChatMemorySettings() {
         this(ResourceController.getResourceController());
     }
 
     ChatMemorySettings(ResourceController resourceController) {
-        this.maximumTokenCount = parseMaximumTokenCount(
-            resourceController.getProperty(CHAT_MEMORY_MAXIMUM_TOKEN_COUNT_PROPERTY));
-    }
-
-    ChatMemorySettings(int maximumTokenCount) {
-        this.maximumTokenCount = maximumTokenCount;
+        this.resourceController = resourceController;
     }
 
     public int getMaximumTokenCount() {
-        return maximumTokenCount;
+        return parseMaximumTokenCount(
+            resourceController.getProperty(CHAT_MEMORY_MAXIMUM_TOKEN_COUNT_PROPERTY));
     }
 
     static int parseMaximumTokenCount(String value) {
