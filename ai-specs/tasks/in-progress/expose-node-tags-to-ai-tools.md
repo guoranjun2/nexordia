@@ -176,44 +176,44 @@ package "shared category access" {
     }
   }
   package "callers" {
-    class ScriptTagCategoriesProxy {
-      + read() : ScriptTagCategoryState
-      + edit(request) : ScriptTagCategoryState
+    class MapTagCategoriesProxy {
+      + read() : MapTagCategoryState
+      + edit(request) : MapTagCategoryState
     }
-    class ScriptTagCategoryState {
+    class MapTagCategoryState {
       + revision : String
       + categorySeparator : String
-      + categories : List<ScriptTagCategoryNode>
-      + uncategorizedTags : List<ScriptTagItem>
+      + categories : List<MapTagCategoryNode>
+      + uncategorizedTags : List<MapTagItem>
     }
-    class ScriptTagCategoryNode {
+    class MapTagCategoryNode {
       + name : String
       + path : List<String>
       + qualifiedName : String
       + color : String
-      + children : List<ScriptTagCategoryNode>
+      + children : List<MapTagCategoryNode>
     }
-    class ScriptTagItem {
+    class MapTagItem {
       + name : String
       + path : List<String>
       + qualifiedName : String
       + color : String
     }
-    class ScriptTagCategoryInstructionRequest {
+    class MapTagCategoryInstructionRequest {
       + baseRevision : String
-      + instructions : List<ScriptTagCategoryInstruction>
+      + instructions : List<MapTagCategoryInstruction>
     }
-    class ScriptTagCategoryInstruction {
-      + type : ScriptTagCategoryInstructionType
+    class MapTagCategoryInstruction {
+      + type : MapTagCategoryInstructionType
       + path : List<String>
       + newName : String
       + newParentPath : List<String>
-      + targetLocation : ScriptTagTargetLocation
+      + targetLocation : MapTagTargetLocation
       + index : Integer
       + color : String
       + newSeparator : String
     }
-    enum ScriptTagCategoryInstructionType {
+    enum MapTagCategoryInstructionType {
       ADD_TAG
       RENAME_TAG
       MOVE_TAG
@@ -221,7 +221,7 @@ package "shared category access" {
       SET_COLOR
       SET_CATEGORY_SEPARATOR
     }
-    enum ScriptTagTargetLocation {
+    enum MapTagTargetLocation {
       CATEGORIZED
       UNCATEGORIZED
     }
@@ -296,14 +296,14 @@ TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
 TagCategoryEditorDraftSubmission --> TagReferenceRewrite : referenceRewrites
 TagCategoryDraftState --> TagCategoryNode : categories
 TagCategoryDraftState --> TagItem : uncategorizedTags
-ScriptTagCategoriesProxy --> TagCategoryAccess : delegate instruction request
-ScriptTagCategoriesProxy --> ScriptTagCategoryState : return state
-ScriptTagCategoriesProxy --> ScriptTagCategoryInstructionRequest : accept request
-ScriptTagCategoryState --> ScriptTagCategoryNode : categories
-ScriptTagCategoryState --> ScriptTagItem : uncategorizedTags
-ScriptTagCategoryNode --> ScriptTagCategoryNode : children
-ScriptTagCategoryInstructionRequest --> ScriptTagCategoryInstruction : instructions
-ScriptTagCategoryInstruction --> ScriptTagCategoryInstructionType : type
+MapTagCategoriesProxy --> TagCategoryAccess : delegate instruction request
+MapTagCategoriesProxy --> MapTagCategoryState : return state
+MapTagCategoriesProxy --> MapTagCategoryInstructionRequest : accept request
+MapTagCategoryState --> MapTagCategoryNode : categories
+MapTagCategoryState --> MapTagItem : uncategorizedTags
+MapTagCategoryNode --> MapTagCategoryNode : children
+MapTagCategoryInstructionRequest --> MapTagCategoryInstruction : instructions
+MapTagCategoryInstruction --> MapTagCategoryInstructionType : type
 GetTagCategoriesTool --> TagCategoryAccess : read category state
 EditTagCategoriesTool --> TagCategoryAccess : apply instruction request
 GetTagCategoriesTool --> TagCategoryStatePayload : return payload
@@ -922,39 +922,39 @@ Service exposes both write models:
 @startuml
 set separator none
 package "script adapter" {
-  class ScriptTagCategoriesProxy {
-    + read() : ScriptTagCategoryState
-    + edit(request) : ScriptTagCategoryState
+  class MapTagCategoriesProxy {
+    + read() : MapTagCategoryState
+    + edit(request) : MapTagCategoryState
   }
-  class ScriptTagCategoryState {
+  class MapTagCategoryState {
     + revision : String
     + categorySeparator : String
-    + categories : List<ScriptTagCategoryNode>
-    + uncategorizedTags : List<ScriptTagItem>
+    + categories : List<MapTagCategoryNode>
+    + uncategorizedTags : List<MapTagItem>
   }
-  class ScriptTagCategoryNode {
+  class MapTagCategoryNode {
     + name : String
     + path : List<String>
     + qualifiedName : String
     + color : String
-    + children : List<ScriptTagCategoryNode>
+    + children : List<MapTagCategoryNode>
   }
-  class ScriptTagItem {
+  class MapTagItem {
     + name : String
     + path : List<String>
     + qualifiedName : String
     + color : String
   }
-  class ScriptTagCategoryInstructionRequest {
+  class MapTagCategoryInstructionRequest {
     + baseRevision : String
-    + instructions : List<ScriptTagCategoryInstruction>
+    + instructions : List<MapTagCategoryInstruction>
   }
-  class ScriptTagCategoryInstruction {
-    + type : ScriptTagCategoryInstructionType
+  class MapTagCategoryInstruction {
+    + type : MapTagCategoryInstructionType
     + path : List<String>
     + newName : String
     + newParentPath : List<String>
-    + targetLocation : ScriptTagTargetLocation
+    + targetLocation : MapTagTargetLocation
     + index : Integer
     + color : String
     + newSeparator : String
@@ -963,7 +963,7 @@ package "script adapter" {
     + readCurrentCategoryState(map) : TagCategoryState
     + applyInstructionRequest(map, request) : TagCategoryState
   }
-  enum ScriptTagCategoryInstructionType {
+  enum MapTagCategoryInstructionType {
     ADD_TAG
     RENAME_TAG
     MOVE_TAG
@@ -971,22 +971,22 @@ package "script adapter" {
     SET_COLOR
     SET_CATEGORY_SEPARATOR
   }
-  enum ScriptTagTargetLocation {
+  enum MapTagTargetLocation {
     CATEGORIZED
     UNCATEGORIZED
   }
 }
 class ScriptCaller
 
-ScriptCaller --> ScriptTagCategoriesProxy : read/edit
-ScriptTagCategoriesProxy --> ScriptTagCategoryState : return typed state
-ScriptTagCategoriesProxy --> ScriptTagCategoryInstructionRequest : accept typed request
-ScriptTagCategoriesProxy --> TagCategoryAccess : delegate
-ScriptTagCategoryState --> ScriptTagCategoryNode : categories
-ScriptTagCategoryState --> ScriptTagItem : uncategorizedTags
-ScriptTagCategoryNode --> ScriptTagCategoryNode : children
-ScriptTagCategoryInstructionRequest --> ScriptTagCategoryInstruction : instructions
-ScriptTagCategoryInstruction --> ScriptTagCategoryInstructionType : type
+ScriptCaller --> MapTagCategoriesProxy : read/edit
+MapTagCategoriesProxy --> MapTagCategoryState : return typed state
+MapTagCategoriesProxy --> MapTagCategoryInstructionRequest : accept typed request
+MapTagCategoriesProxy --> TagCategoryAccess : delegate
+MapTagCategoryState --> MapTagCategoryNode : categories
+MapTagCategoryState --> MapTagItem : uncategorizedTags
+MapTagCategoryNode --> MapTagCategoryNode : children
+MapTagCategoryInstructionRequest --> MapTagCategoryInstruction : instructions
+MapTagCategoryInstruction --> MapTagCategoryInstructionType : type
 @enduml
 ```
 
@@ -1143,18 +1143,6 @@ three rules explicit:
     - AI results match baseline parity scenarios.
   - Manual tests:
     - Ask AI to rename and move categories, then verify map state and undo.
-
-## Subtask: Clean Up Script Naming in Task Contract
-- **Status:** backlog
-- **Scope:** Remove the temporary `Script*` pseudo-type names from the task
-  diagrams and descriptions where the script layer actually reuses the public
-  `MapTag*` API types.
-- **Motivation:** The current task text suggests a separate script-only type
-  hierarchy that the implementation does not need.
-- **Constraints:**
-  - Keep the distinction between shared/core internals and the script adapter
-    clear without introducing duplicate script-specific DTO names.
-  - Align task naming with the actual public scripting surface.
 
 ## Subtask: Eliminate User-Facing `removed tag` Tombstones
 - **Status:** in-progress
