@@ -130,7 +130,7 @@ public class EditableContentReaderTest {
     }
 
     @Test
-    public void readEditableContent_omitsRemovedTagsAndKeepsRemainingIndexes() {
+    public void readEditableContent_omitsRemovedTagsAndRecalculatesVisibleIndexes() {
         MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, iconRegistry(), null);
         NodeModel nodeModel = new NodeModel("node", mapModel);
         TagCategories tagCategories = mapModel.getIconRegistry().getTagCategories();
@@ -148,7 +148,7 @@ public class EditableContentReaderTest {
 
         assertThat(editableContent.getEditableTags())
             .extracting(EditableTag::getValue, EditableTag::getIndex)
-            .containsExactly(tuple("flag", 1));
+            .containsExactly(tuple("flag", 0));
     }
 
     private static IconRegistry iconRegistry() {

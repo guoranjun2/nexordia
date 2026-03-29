@@ -5,6 +5,7 @@
  */
 package org.freeplane.features.icon;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,14 @@ public class Tags implements IExtension {
         return (tags == null) ? Collections.emptyList() : tags.tags;
     }
 
+    public static List<TagReference> getExistingTagReferences(NodeModel node) {
+        Tags tags = node.getExtension(Tags.class);
+        if (tags == null) {
+            return Collections.emptyList();
+        }
+        return tags.getExistingTagReferences();
+    }
+
     public static void setTagReferences(NodeModel node, List<TagReference> newTags) {
         Tags extension = node.getExtension(Tags.class);
         if(extension == null) {
@@ -39,6 +48,16 @@ public class Tags implements IExtension {
 
     public List<TagReference> getTagReferencess(){
         return Collections.unmodifiableList(tags);
+    }
+
+    public List<TagReference> getExistingTagReferences() {
+        ArrayList<TagReference> existingTagReferences = new ArrayList<>(tags.size());
+        for (TagReference reference : tags) {
+            if (reference == null || reference.exists()) {
+                existingTagReferences.add(reference);
+            }
+        }
+        return Collections.unmodifiableList(existingTagReferences);
     }
 
     public List<Tag> getTags() {

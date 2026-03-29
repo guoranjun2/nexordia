@@ -1145,7 +1145,7 @@ three rules explicit:
     - Ask AI to rename and move categories, then verify map state and undo.
 
 ## Subtask: Clean Up Script Naming in Task Contract
-- **Status:** todo
+- **Status:** backlog
 - **Scope:** Remove the temporary `Script*` pseudo-type names from the task
   diagrams and descriptions where the script layer actually reuses the public
   `MapTag*` API types.
@@ -1155,6 +1155,99 @@ three rules explicit:
   - Keep the distinction between shared/core internals and the script adapter
     clear without introducing duplicate script-specific DTO names.
   - Align task naming with the actual public scripting surface.
+
+## Subtask: Eliminate User-Facing `removed tag` Tombstones
+- **Status:** in-progress
+- **Scope:** Remove the leak of internal removed-tag tombstones into
+  user-facing UI, AI, and scripting flows when categorized tags are deleted
+  or rewritten.
+- **Motivation:** Category deletion currently leaves stale `TagReference`
+  slots behind on nodes and represents them with the internal sentinel
+  `" removed tag "`. Some read paths filter these tombstones, but other
+  paths expose them directly. This is inconsistent, confusing for users, and
+  can break follow-up edits by leaving hidden internal state in node tag
+  lists.
+- **Constraints:**
+  - Preserve current category rewrite and reference retargeting semantics.
+  - Preserve undo correctness for category edits and node tag edits.
+  - Do not reintroduce node-wide scans on steady-state category edits.
+  - Keep node-tag ordering stable where possible, but do not prefer index
+    stability over leaking internal tombstones into user-visible state.
+  - Avoid parallel old/new behaviors; choose one consistent tombstone
+    handling strategy.
+- **Research:**
+  - `FreeplaneTagCategoryAccess.applyDelete(...)` deletes a categorized node
+    and rewrites references through `TagCategories.replaceReferencedTags(...)`
+    using an empty replacement target.
+  - `TagCategories.replaceReferencedTags(...)` moves deleted references into
+    the empty-string bucket rather than removing the underlying
+    `TagReference` objects immediately.
+  - `TagCategories.updateTagReferences()` then converts references in the
+    empty-string bucket to `Tag.REMOVED_TAG`, whose visible content is
+    `" removed tag "`.
+  - Normal node-tag reads already treat this sentinel as internal-only:
+    `Tags.getTags()` filters out `Tag.REMOVED_TAG`, and
+    `IconController.getTags(...)` delegates to that filtered view.
+  - Persistence also uses the filtered view: `TagBuilder.writeAttributes(...)`
+    writes `tagsExtension.getTags()`, so removed tombstones are not intended
+    to persist as serialized node tags.
+  - UI tag editing also starts from the filtered view in `TagEditor`, which
+    indicates the sentinel is not part of the intended user-facing tag model.
+  - AI editable-tag reads were previously inconsistent because
+    `EditableContentReader.buildEditableTags(...)` iterated raw
+    `Tags.getTagReferences(nodeModel)` and therefore exposed tombstones until
+    filtered.
+  - AI tag editing still operates on raw `TagReference` slots by index in
+    `TagsContentEditor.editExistingTagsContent(...)`. This suggests the raw
+    slot model was kept mainly for index-based mutation and internal
+    bookkeeping, not because the tombstone is intended to be user-visible.
+  - Live MCP testing confirmed the underlying inconsistency:
+    deleting a parent tag removed the visible editable tags, but re-adding a
+    tag later appended the new tag after a stale removed-tag slot, making the
+    `" removed tag "` tombstone reappear in the UI until explicitly deleted.
+- **Design:**
+  - Treat `Tag.REMOVED_TAG` as a private internal transition state only.
+    User-facing surfaces must never expose it.
+  - Keep the internal tombstone/reference model unchanged. Do not mutate node
+    tag storage during reads and do not eagerly remove tombstones from
+    persistent `Tags` extensions.
+  - Introduce a filtered "existing tag references" view for user-facing and
+    user-driven editing paths. That view excludes `!reference.exists()` while
+    leaving the raw `TagReference` list intact for internal rewrite logic.
+  - Use the filtered view in:
+    - AI editable-tag reads
+    - AI tag edits that operate on visible tags
+    - UI/controller add/remove tag operations that are initiated from the
+      visible user tag list
+  - Resulting invariants:
+    - tombstones may still exist internally in raw `TagReference` storage
+    - AI/script/UI read results never include `" removed tag "`
+    - user-driven add/remove/edit flows do not carry tombstones forward into
+      newly written node tag lists
+  - AI editable tag indexes should be recalculated over the visible filtered
+    tag list. Tag edit operations using indexes should interpret them against
+    that same visible list rather than hidden raw tombstone slots.
+  - Raw `TagReference` access remains an internal contract. Any code that
+    intentionally needs tombstones must continue to use the raw list
+    explicitly.
+- **Test specification:**
+  - Automated tests:
+    - filtered existing-tag view excludes removed-tag tombstones while leaving
+      raw references unchanged
+    - re-adding a replacement tag after category deletion yields only the new
+      visible tag in AI/UI-facing outputs, with no tombstone entry before it
+    - AI editable-tag reads never include `" removed tag "`
+    - AI editable-tag indexes are recalculated over visible tags
+    - AI tag add/replace/delete operations use visible-tag indexes and do not
+      preserve hidden tombstones in rewritten node tag lists
+    - script/API node-tag reads never include tombstones
+  - Manual tests:
+    - delete a parent categorized tag that is used by nodes, then open the UI
+      tag editor and verify no `removed tag` entries appear
+    - restore or add a replacement tag afterward and verify the UI shows only
+      the live tags
+    - undo/redo the category delete and verify node tags remain consistent
+      and tombstone-free in user-facing views
 
 ## Subtask: Migrate Tag Category Editor to Shared Service
 - **Status:** review

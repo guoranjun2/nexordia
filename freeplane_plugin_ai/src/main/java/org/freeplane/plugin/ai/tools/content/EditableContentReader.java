@@ -137,14 +137,14 @@ public class EditableContentReader {
     }
 
     private List<EditableTag> buildEditableTags(NodeModel nodeModel) {
-        List<TagReference> tagReferences = Tags.getTagReferences(nodeModel);
+        List<TagReference> tagReferences = Tags.getExistingTagReferences(nodeModel);
         if (tagReferences == null || tagReferences.isEmpty()) {
             return null;
         }
         List<EditableTag> tags = new ArrayList<>(tagReferences.size());
         for (int index = 0; index < tagReferences.size(); index++) {
             TagReference reference = tagReferences.get(index);
-            if (reference == null || !reference.exists()) {
+            if (reference == null) {
                 continue;
             }
             tags.add(new EditableTag(reference.getContent(), index));

@@ -767,7 +767,7 @@ public class MIconController extends IconController {
     public void removeTags(NodeModel node, Set<Tag> removedTags) {
         final List<Tag> existingTags = getTags(node);
         final List<TagReference> newTags = new ArrayList<>(existingTags.size());
-        getTagReferences(node).stream()
+        Tags.getExistingTagReferences(node).stream()
         .filter(ref -> ! removedTags.contains(ref.getTag()))
         .forEach(newTags::add);
         setTagReferences(node, newTags);
@@ -777,7 +777,7 @@ public class MIconController extends IconController {
         final List<Tag> existingTags = getTags(node);
         final Set<Tag> existingTagSet = new HashSet<Tag>(existingTags);
         final List<TagReference> newTags = new ArrayList<>(existingTags.size() + addedTags.size());
-        newTags.addAll(getTagReferences(node));
+        newTags.addAll(Tags.getExistingTagReferences(node));
         final TagCategories tagCategories = getTagCategories(node);
         addedTags.stream()
         .filter(tag -> ! existingTagSet.contains(tag))

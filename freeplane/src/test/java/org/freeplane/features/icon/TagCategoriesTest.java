@@ -213,6 +213,43 @@ public class TagCategoriesTest {
             .containsExactly("alpha", "project/status");
     }
 
+    @Test
+    public void returnsOnlyExistingTagReferencesWithoutMutatingRawStorage() {
+        MapModel mapModel = new MapModel(
+            (source, targetMap, withChildren) -> null,
+            new IconRegistry(new TagCategories(
+                new DefaultMutableTreeNode("tags"),
+                new DefaultMutableTreeNode("uncategorized_tags"),
+                "/")),
+            null);
+        NodeModel node = new NodeModel("node", mapModel);
+        TagCategories tagCategories = mapModel.getIconRegistry().getTagCategories();
+        Tags.setTagReferences(node, Arrays.asList(
+            new TagReference(Tag.REMOVED_TAG),
+            tagCategories.createTagReference("project/status")));
+
+        assertThat(Tags.getExistingTagReferences(node))
+            .extracting(TagReference::getContent)
+            .containsExactly("project/status");
+        assertThat(Tags.getTagReferences(node))
+            .extracting(TagReference::getContent)
+            .containsExactly(" removed tag ", "project/status");
+    }
+
+    @Test
+    public void omitsRemovedTagsFromUncategorizedTagList() {
+        TagCategories uut = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "/");
+        uut.getUncategorizedTagsNode().add(new DefaultMutableTreeNode(Tag.REMOVED_TAG));
+        uut.getUncategorizedTagsNode().add(new DefaultMutableTreeNode(new Tag("project")));
+
+        assertThat(uut.getUncategorizedTags())
+            .extracting(Tag::getContent)
+            .containsExactly("project");
+    }
+
     private static List<String> tagSpecsWithColors(List<Tag> tags) {
         return tags.stream()
             .map(tag -> tag.getContent() + ColorUtils.colorToRGBAString(tag.getColor()))

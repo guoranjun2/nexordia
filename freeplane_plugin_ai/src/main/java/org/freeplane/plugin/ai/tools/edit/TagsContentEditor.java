@@ -52,8 +52,9 @@ public class TagsContentEditor {
             throw new IllegalArgumentException("Missing node model.");
         }
         EditOperation resolvedOperation = operation == null ? EditOperation.REPLACE : operation;
-        List<String> tags = new ArrayList<>(Tags.getTagReferences(nodeModel).size());
-        for (TagReference reference : Tags.getTagReferences(nodeModel)) {
+        List<TagReference> existingTagReferences = Tags.getExistingTagReferences(nodeModel);
+        List<String> tags = new ArrayList<>(existingTagReferences.size());
+        for (TagReference reference : existingTagReferences) {
             tags.add(reference == null ? null : reference.getContent());
         }
         switch (resolvedOperation) {

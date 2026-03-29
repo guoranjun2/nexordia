@@ -818,7 +818,10 @@ public class TagCategories {
         List<Tag> tags = new ArrayList<>(tagCount);
         for(int i = 0; i < tagCount; i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) uncategorizedTagsNode.getChildAt(i);
-            tags.add(categorizedTag(child));
+            Tag tag = categorizedTag(child);
+            if (tag != Tag.REMOVED_TAG) {
+                tags.add(tag);
+            }
         }
         return tags;
     }
