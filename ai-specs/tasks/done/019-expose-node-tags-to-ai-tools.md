@@ -537,98 +537,23 @@ merge outcomes.
   - Script API should expose the same contract through typed proxy/value
     objects rather than a generic map surface.
 - **Design:**
-
-```plantuml
-@startuml
-set separator none
-package "contract" {
-  interface TagCategoryAccess {
-    + readCurrentCategoryState(map) : TagCategoryState
-    + applyInstructionRequest(map, request) : TagCategoryState
-    + applyEditorDraftSubmission(map, submission) : TagCategoryState
-  }
-  class TagCategoryState {
-    + revision : String
-    + categorySeparator : String
-    + categories : List<TagCategoryNode>
-    + uncategorizedTags : List<TagItem>
-  }
-  class TagCategoryNode {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-    + children : List<TagCategoryNode>
-  }
-  class TagItem {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-  }
-  class TagCategoryInstructionRequest {
-    + baseRevision : String
-    + instructions : List<TagCategoryInstruction>
-  }
-  class TagCategoryInstruction {
-    + type : TagCategoryInstructionType
-    + path : List<String>
-    + newName : String
-    + newParentPath : List<String>
-    + targetLocation : TagTargetLocation
-    + index : Integer
-    + color : String
-    + newSeparator : String
-  }
-  enum TagCategoryInstructionType {
-    ADD_TAG
-    RENAME_TAG
-    MOVE_TAG
-    DELETE_TAG
-    SET_COLOR
-    SET_CATEGORY_SEPARATOR
-  }
-  enum TagTargetLocation {
-    CATEGORIZED
-    UNCATEGORIZED
-  }
-  class TagCategoryEditorDraftSubmission {
-    + expectedRevision : String
-    + draftState : TagCategoryDraftState
-    + referenceRewrites : List<TagReferenceRewrite>
-  }
-  class TagCategoryDraftState {
-    + categorySeparator : String
-    + categories : List<TagCategoryNode>
-    + uncategorizedTags : List<TagItem>
-  }
-  class TagReferenceRewrite {
-    + sourceQualifiedName : String
-    + targetQualifiedName : String
-  }
-  class EditConflict {
-    + message : String
-    + currentRevision : String
-  }
-}
-
-TagCategoryAccess --> TagCategoryState : readCurrentCategoryState(...)
-TagCategoryAccess --> TagCategoryInstructionRequest : applyInstructionRequest(...)
-TagCategoryAccess --> TagCategoryEditorDraftSubmission : applyEditorDraftSubmission(...)
-TagCategoryState --> TagCategoryNode : categories
-TagCategoryState --> TagItem : uncategorizedTags
-TagCategoryNode --> TagCategoryNode : children
-TagCategoryInstructionRequest --> TagCategoryInstruction : ordered instructions
-TagCategoryInstruction --> TagCategoryInstructionType : type
-TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
-TagCategoryEditorDraftSubmission --> TagReferenceRewrite : referenceRewrites
-TagCategoryAccess --> EditConflict : stale/conflicting revision
-@enduml
-```
-
-Contract artifacts define one shared read model and one shared service
-boundary, but two write inputs:
-instruction requests for AI/script and draft submission for UI.
+This subtask defines the canonical shared contract described in the main
+task `Design`. Local contract decisions are:
+- one shared category-state read model with `revision`,
+  `categorySeparator`, categorized tree nodes, and `uncategorizedTags`
+- two write inputs at the shared service boundary:
+  `TagCategoryInstructionRequest` for AI/script and
+  `TagCategoryEditorDraftSubmission` for the UI editor
+- ordered instruction semantics with explicit
+  `ADD_TAG` / `RENAME_TAG` / `MOVE_TAG` / `DELETE_TAG` /
+  `SET_COLOR` / `SET_CATEGORY_SEPARATOR`
+- explicit categorized versus uncategorized placement via
+  `targetLocation`
+- one categorized node shape only; leaf/non-leaf remains structural, not
+  semantic
+- deterministic revision generation and conflict signaling around the
+  shared state, including category revision changes caused indirectly by
+  node-tag assignment
 
 AI/script external contract should expose one ordered instruction list over a
 typed category-state model, not a generic `Map<String, Object>`.
@@ -636,10 +561,7 @@ Transport may still serialize to JSON, but the JSON must come from explicit
 payload classes and domain names.
 UI draft submission remains internal to the editor path and is not part of
 the public scripting/AI contract.
-The categorized tree does not distinguish semantic "category" and "tag"
-node kinds. A categorized node may have zero or more children, and that
-structure may change over time. `uncategorizedTags` is the separate
-map-level bucket outside the categorized tree.
+
 `ADD_TAG` and `MOVE_TAG` use `targetLocation` to choose categorized-tree or
 uncategorized placement explicitly.
 For `ADD_TAG` with `targetLocation = CATEGORIZED`, `path` is the full target
@@ -780,99 +702,22 @@ categorized or uncategorized tag references.
   - Moving a non-leaf category subtree into uncategorized keeps the current
     flattening outcome as an intentional domain rule.
 - **Design:**
+This subtask implements the canonical contract from the main task
+`Design` behind one undo-aware map commit boundary.
 
-```plantuml
-@startuml
-set separator none
-package "core service" {
-  class FreeplaneTagCategoryAccess {
-    - stateRepository : TagCategoryStateRepository
-    - rewritePlanner : TagReferenceRewritePlanner
-    - commitGateway : TagCategoryCommitGateway
-    + readCurrentCategoryState(map) : TagCategoryState
-    + applyInstructionRequest(map, request) : TagCategoryState
-    + applyEditorDraftSubmission(map, submission) : TagCategoryState
-  }
-  class TagCategoryState {
-    + revision : String
-    + categorySeparator : String
-    + categories : List<TagCategoryNode>
-    + uncategorizedTags : List<TagItem>
-  }
-  class TagCategoryInstructionRequest {
-    + baseRevision : String
-    + instructions : List<TagCategoryInstruction>
-  }
-  class TagCategoryInstruction {
-    + type : TagCategoryInstructionType
-    + path : List<String>
-    + newName : String
-    + newParentPath : List<String>
-    + index : Integer
-    + color : String
-    + newSeparator : String
-  }
-  class TagCategoryEditorDraftSubmission {
-    + expectedRevision : String
-    + draftState : TagCategoryDraftState
-    + referenceRewrites : List<TagReferenceRewrite>
-  }
-  class TagCategoryDraftState {
-    - categorySeparator : String
-    - categories : List<TagCategoryNode>
-    - uncategorizedTags : List<TagItem>
-  }
-  class TagReferenceRewrite {
-    + sourceQualifiedName : String
-    + targetQualifiedName : String
-  }
-  enum TagCategoryInstructionType {
-    ADD_TAG
-    RENAME_TAG
-    MOVE_TAG
-    DELETE_TAG
-    SET_COLOR
-    SET_CATEGORY_SEPARATOR
-  }
-  enum TagTargetLocation {
-    CATEGORIZED
-    UNCATEGORIZED
-  }
-  interface TagCategoryStateRepository {
-    + load(map) : TagCategoryState
-  }
-  interface TagReferenceRewritePlanner {
-    + plan(state, request) : List<TagReferenceRewrite>
-    + planFromDraft(draftState) : List<TagReferenceRewrite>
-  }
-  interface TagCategoryCommitGateway {
-    + commit(map, state, rewrites) : TagCategoryState
-  }
-}
-class Caller
-
-Caller --> FreeplaneTagCategoryAccess : apply request/submission
-FreeplaneTagCategoryAccess --> TagCategoryStateRepository : load current state
-FreeplaneTagCategoryAccess --> TagReferenceRewritePlanner : plan rewrites
-FreeplaneTagCategoryAccess --> TagCategoryCommitGateway : commit once
-FreeplaneTagCategoryAccess --> TagCategoryState : return result
-FreeplaneTagCategoryAccess --> TagCategoryInstructionRequest : validate instruction request
-FreeplaneTagCategoryAccess --> TagCategoryEditorDraftSubmission : validate editor draft
-TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
-TagCategoryEditorDraftSubmission --> TagReferenceRewrite : referenceRewrites
-TagCategoryInstructionRequest --> TagCategoryInstruction : ordered instructions
-TagCategoryInstruction --> TagCategoryInstructionType : type
-@enduml
-```
-
-Service applies edits to a working category state and performs one final
-commit to maintain undo and map-change notification behavior.
-`MOVE` into uncategorized remains an explicit domain rule: moving a non-leaf
-subtree flattens moved paths to uncategorized tags while keeping reference
-rewrites deterministic.
-Service exposes both write models:
-`applyInstructionRequest(...)` for AI/script and
-`applyEditorDraftSubmission(...)` for UI draft commit.
+Local implementation responsibilities are:
+- `FreeplaneTagCategoryAccess` owns validation, optimistic revision
+  checks, application of ordered instruction batches, and editor draft
+  submission handling
+- category edits are applied against a working category state and then
+  committed once, preserving undo and change-notification behavior
+- reference rewrites stay indirect and map-level through existing
+  `TagCategories` mechanisms rather than node-wise rewrite passes
+- `MOVE` into uncategorized keeps the current domain rule:
+  non-leaf subtree moves flatten moved paths into uncategorized tags
+- both approved write inputs are supported at the same core boundary:
+  `applyInstructionRequest(...)` for AI/script and
+  `applyEditorDraftSubmission(...)` for UI draft commit
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -917,86 +762,20 @@ Service exposes both write models:
   - Generic map-shaped payloads are too implicit for the scripting public API;
     script callers need named methods and typed proxy/value objects.
 - **Design:**
-
-```plantuml
-@startuml
-set separator none
-package "script adapter" {
-  class MapTagCategoriesProxy {
-    + read() : MapTagCategoryState
-    + edit(request) : MapTagCategoryState
-  }
-  class MapTagCategoryState {
-    + revision : String
-    + categorySeparator : String
-    + categories : List<MapTagCategoryNode>
-    + uncategorizedTags : List<MapTagItem>
-  }
-  class MapTagCategoryNode {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-    + children : List<MapTagCategoryNode>
-  }
-  class MapTagItem {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-  }
-  class MapTagCategoryInstructionRequest {
-    + baseRevision : String
-    + instructions : List<MapTagCategoryInstruction>
-  }
-  class MapTagCategoryInstruction {
-    + type : MapTagCategoryInstructionType
-    + path : List<String>
-    + newName : String
-    + newParentPath : List<String>
-    + targetLocation : MapTagTargetLocation
-    + index : Integer
-    + color : String
-    + newSeparator : String
-  }
-  interface TagCategoryAccess {
-    + readCurrentCategoryState(map) : TagCategoryState
-    + applyInstructionRequest(map, request) : TagCategoryState
-  }
-  enum MapTagCategoryInstructionType {
-    ADD_TAG
-    RENAME_TAG
-    MOVE_TAG
-    DELETE_TAG
-    SET_COLOR
-    SET_CATEGORY_SEPARATOR
-  }
-  enum MapTagTargetLocation {
-    CATEGORIZED
-    UNCATEGORIZED
-  }
-}
-class ScriptCaller
-
-ScriptCaller --> MapTagCategoriesProxy : read/edit
-MapTagCategoriesProxy --> MapTagCategoryState : return typed state
-MapTagCategoriesProxy --> MapTagCategoryInstructionRequest : accept typed request
-MapTagCategoriesProxy --> TagCategoryAccess : delegate
-MapTagCategoryState --> MapTagCategoryNode : categories
-MapTagCategoryState --> MapTagItem : uncategorizedTags
-MapTagCategoryNode --> MapTagCategoryNode : children
-MapTagCategoryInstructionRequest --> MapTagCategoryInstruction : instructions
-MapTagCategoryInstruction --> MapTagCategoryInstructionType : type
-@enduml
-```
-
-Script adapter introduces no mutation logic of its own; it forwards validated
-requests to the core service. Public scripting API should use named methods
-and typed proxy/value objects such as `map.tagCategories.read()` and
-`map.tagCategories.edit(request)`, not `Map<String, Object>` as the primary
-surface. The script-facing tree should mirror the shared contract:
-categorized nodes have one node shape, leaf/non-leaf is structural only, and
-`uncategorizedTags` is the separate bucket outside the tree.
+This subtask reuses the canonical shared category contract from the main
+task `Design` and exposes it through the existing public `MapTag*` API
+types. Local adapter decisions are:
+- `MapTagCategoriesProxy` remains thin and delegates read/edit
+  operations directly to the shared service
+- scripting uses the public `MapTagCategoryState`,
+  `MapTagCategoryInstructionRequest`, `MapTagCategoryInstruction`, and
+  `MapTagTargetLocation` types rather than a script-specific DTO
+  hierarchy
+- public scripting surface stays domain-oriented and typed:
+  `map.tagCategories.read()` and `map.tagCategories.edit(request)`
+- the script adapter introduces no mutation logic of its own; parity is
+  achieved by translating between `MapTag*` types and the shared core
+  contract
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -1038,89 +817,19 @@ categorized nodes have one node shape, leaf/non-leaf is structural only, and
     revision handling is a protocol detail, not the user-facing purpose of
     the tool.
 - **Design:**
+This subtask reuses the canonical shared category contract from the main
+task `Design` and maps it to explicit AI payload classes and tool
+descriptions. Local adapter decisions are:
+- `get_tag_categories` returns the current category-state payload
+- `edit_tag_categories` accepts an ordered instruction batch and returns
+  the updated category-state payload
+- AI payload classes mirror the shared contract but remain transport
+  specific and schema explicit
+- all mutation semantics remain centralized in the shared service
 
-```plantuml
-@startuml
-set separator none
-package "ai adapter" {
-  class GetTagCategoriesTool {
-    + execute() : TagCategoryStatePayload
-  }
-  class EditTagCategoriesTool {
-    + execute(request) : TagCategoryStatePayload
-  }
-  class TagCategoryStatePayload {
-    + revision : String
-    + categorySeparator : String
-    + categories : List<TagCategoryNodePayload>
-    + uncategorizedTags : List<TagItemPayload>
-  }
-  class TagCategoryNodePayload {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-    + children : List<TagCategoryNodePayload>
-  }
-  class TagItemPayload {
-    + name : String
-    + path : List<String>
-    + qualifiedName : String
-    + color : String
-  }
-  class TagCategoryInstructionRequestPayload {
-    + baseRevision : String
-    + instructions : List<TagCategoryInstructionPayload>
-  }
-  class TagCategoryInstructionPayload {
-    + type : TagCategoryInstructionTypePayload
-    + path : List<String>
-    + newName : String
-    + newParentPath : List<String>
-    + targetLocation : TagTargetLocationPayload
-    + index : Integer
-    + color : String
-    + newSeparator : String
-  }
-  interface TagCategoryAccess {
-    + readCurrentCategoryState(map) : TagCategoryState
-    + applyInstructionRequest(map, request) : TagCategoryState
-  }
-  enum TagCategoryInstructionTypePayload {
-    ADD_TAG
-    RENAME_TAG
-    MOVE_TAG
-    DELETE_TAG
-    SET_COLOR
-    SET_CATEGORY_SEPARATOR
-  }
-  enum TagTargetLocationPayload {
-    CATEGORIZED
-    UNCATEGORIZED
-  }
-}
-class AIToolSet
-
-AIToolSet --> GetTagCategoriesTool : expose tool
-AIToolSet --> EditTagCategoriesTool : expose tool
-GetTagCategoriesTool --> TagCategoryStatePayload : return current category state
-EditTagCategoriesTool --> TagCategoryInstructionRequestPayload : accept instructions
-GetTagCategoriesTool --> TagCategoryAccess : read category state
-EditTagCategoriesTool --> TagCategoryAccess : apply instruction request
-TagCategoryStatePayload --> TagCategoryNodePayload : categories
-TagCategoryStatePayload --> TagItemPayload : uncategorizedTags
-TagCategoryNodePayload --> TagCategoryNodePayload : children
-TagCategoryInstructionRequestPayload --> TagCategoryInstructionPayload : instructions
-TagCategoryInstructionPayload --> TagCategoryInstructionTypePayload : type
-@enduml
-```
-
-AI tool layer stays declarative; all mutation semantics are centralized in
-the shared service. Tool names and descriptions should be phrased as:
-`get_tag_categories` and `edit_tag_categories`. `revision`/`baseRevision`
-remain part of the payload for conflict handling, but the primary API story
-is reading and editing current map tag categories. Tool descriptions must make
-three rules explicit:
+`revision`/`baseRevision` remain part of the payload for conflict
+handling, but the primary API story is reading and editing current map
+tag categories. Tool descriptions must make these rules explicit:
 1. `ADD_TAG` and `MOVE_TAG` use `targetLocation` to choose categorized or uncategorized placement.
 2. For categorized `ADD_TAG`, `path` is the full target path to create; for categorized `MOVE_TAG`, `newParentPath` is the target parent path.
 3. Missing parent categorized tags on categorized add and move paths are created automatically.
@@ -1263,56 +972,21 @@ three rules explicit:
     `lastSelectionParentsNodes`) tightly coupled to tree events.
   - Shared service migration is required for true parity across callers.
 - **Design:**
+This subtask keeps the canonical shared contract from the main task
+`Design` and changes only the UI submit boundary.
 
-```plantuml
-@startuml
-set separator none
-package "ui migration" {
-  class TagCategoryEditor {
-    - openedRevision : String
-    - draftState : TagCategoryDraftState
-    + submit() : void
-    + submitAndClose() : void
-  }
-  class TagCategoryConflictGuard {
-    + verifyRevision(expected, current) : void
-  }
-  interface TagCategoryAccess {
-    + applyEditorDraftSubmission(map, submission) : TagCategoryState
-  }
-  class TagRenamerAdapter {
-    + referenceRewrites() : List<TagReferenceRewrite>
-  }
-  class TagCategoryEditorDraftSubmission {
-    + expectedRevision : String
-    + draftState : TagCategoryDraftState
-    + referenceRewrites : List<TagReferenceRewrite>
-  }
-  class TagCategoryDraftState {
-    + categorySeparator : String
-    + categories : List<TagCategoryNode>
-    + uncategorizedTags : List<TagItem>
-  }
-  class TagReferenceRewrite {
-    + sourceQualifiedName : String
-    + targetQualifiedName : String
-  }
-}
+Local migration decisions are:
+- `TagCategoryEditor` keeps its draft-centric interaction model and
+  continues to own local tree editing behavior
+- final submit builds `TagCategoryEditorDraftSubmission` and delegates to
+  `TagCategoryAccess.applyEditorDraftSubmission(...)`
+- reference rewrites remain collected from the editor path through the
+  existing `TagRenamer`-style logic rather than being recomputed from
+  scratch in the UI
+- stale revision handling is explicit at submit time: reject the stale
+  apply, discard the unsaved local draft, and reload latest category
+  state rather than attempting in-dialog merge
 
-TagCategoryEditor --> TagCategoryConflictGuard : verify base revision
-TagCategoryEditor --> TagRenamerAdapter : collect edit intents
-TagCategoryEditor --> TagCategoryEditorDraftSubmission : build submit payload
-TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
-TagRenamerAdapter --> TagCategoryEditorDraftSubmission : reference rewrites
-TagCategoryEditorDraftSubmission --> TagCategoryAccess : applyEditorDraftSubmission(...)
-@enduml
-```
-
-UI keeps interaction patterns but delegates final mutation semantics to the
-shared service for parity and maintainability.
-On stale revision conflicts, UI policy is to discard the local unsaved draft
-and reload from latest state immediately, rather than attempting in-dialog
-merge of transient tree-event state.
 Migration is incremental:
 1. Add revision conflict guard in `submit()` and reject stale apply without
    writing map categories.
