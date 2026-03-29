@@ -430,7 +430,7 @@ discarded).
       and script outputs for parity.
 
 ## Subtask: Characterization Coverage for Existing Category Behavior
-- **Status:** review
+- **Status:** completed
 - **Scope:** Expand automated tests that characterize current
   `TagCategories` and `TagCategoryEditor` behavior, including transferable
   copy/cut/paste, merge semantics, separator rewrites, and persistence.
@@ -501,7 +501,7 @@ merge outcomes.
       and verify visible behavior matches automated baseline outcomes.
 
 ## Subtask: Define Tag Category Access Contract
-- **Status:** review
+- **Status:** completed
 - **Scope:** Define the shared map-level category state, revision token,
   conflict signaling, deterministic ordering rules, and the two write input
   models:
@@ -752,7 +752,7 @@ categorized or uncategorized tag references.
     - N/A
 
 ## Subtask: Implement Core Tag Category Access Service
-- **Status:** review
+- **Status:** completed
 - **Scope:** Implement the contract-backed service behind one map-level commit
   boundary, preserving undo/redo and node-traversal-free category update
   behavior.
@@ -897,7 +897,7 @@ Service exposes both write models:
     - Run one mixed edit batch and verify map refresh and undo/redo behavior.
 
 ## Subtask: Expose Map-Level Tag Categories to Scripting
-- **Status:** review
+- **Status:** completed
 - **Scope:** Add script API surface for reading and applying map-level
   category edits through the shared access service.
 - **Motivation:** Scripts currently can edit node tags only; map category
@@ -1012,7 +1012,7 @@ categorized nodes have one node shape, leaf/non-leaf is structural only, and
     - Execute sample script on a map and verify category tree and node tags.
 
 ## Subtask: Expose Map-Level Tag Categories to AI Tools
-- **Status:** review
+- **Status:** completed
 - **Scope:** Add AI tool requests/responses for reading current tag category
   state and applying ordered edit instructions, using the same shared access
   service.
@@ -1145,7 +1145,7 @@ three rules explicit:
     - Ask AI to rename and move categories, then verify map state and undo.
 
 ## Subtask: Eliminate User-Facing `removed tag` Tombstones
-- **Status:** in-progress
+- **Status:** completed
 - **Scope:** Remove the leak of internal removed-tag tombstones into
   user-facing UI, AI, and scripting flows when categorized tags are deleted
   or rewritten.
@@ -1238,7 +1238,7 @@ three rules explicit:
       and tombstone-free in user-facing views
 
 ## Subtask: Migrate Tag Category Editor to Shared Service
-- **Status:** review
+- **Status:** completed
 - **Scope:** Rewire `TagCategoryEditor` to call shared category access
   operations while preserving existing UI interactions, transferable support,
   and visible behavior.
