@@ -3,6 +3,7 @@
 ==============================
 Tag category AI tools
 Tag category scripting API
+Copying selected chat messages as markdown
 Bug fixes
 
 ==============================
