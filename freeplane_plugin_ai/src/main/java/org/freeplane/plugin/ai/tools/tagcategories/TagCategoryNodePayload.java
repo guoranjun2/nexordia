@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.freeplane.features.icon.TagCategoryNode;
-import org.freeplane.features.icon.TagCategoryNodeKind;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TagCategoryNodePayload {
-    private final TagCategoryNodeKind kind;
     private final List<String> path;
     private final String name;
     private final String qualifiedName;
@@ -21,13 +19,11 @@ public class TagCategoryNodePayload {
     private final List<TagCategoryNodePayload> children;
 
     @JsonCreator
-    public TagCategoryNodePayload(@JsonProperty("kind") TagCategoryNodeKind kind,
-                                  @JsonProperty("path") List<String> path,
+    public TagCategoryNodePayload(@JsonProperty("path") List<String> path,
                                   @JsonProperty("name") String name,
                                   @JsonProperty("qualifiedName") String qualifiedName,
                                   @JsonProperty("color") String color,
                                   @JsonProperty("children") List<TagCategoryNodePayload> children) {
-        this.kind = kind;
         this.path = path;
         this.name = name;
         this.qualifiedName = qualifiedName;
@@ -41,7 +37,6 @@ public class TagCategoryNodePayload {
             childPayloads.add(fromNode(child));
         }
         return new TagCategoryNodePayload(
-            node.getKind(),
             node.getPath(),
             node.getName(),
             node.getQualifiedName(),
@@ -56,11 +51,7 @@ public class TagCategoryNodePayload {
                 childNodes.add(child.toNode());
             }
         }
-        return new TagCategoryNode(kind, path, name, qualifiedName, color, childNodes);
-    }
-
-    public TagCategoryNodeKind getKind() {
-        return kind;
+        return new TagCategoryNode(path, name, qualifiedName, color, childNodes);
     }
 
     public List<String> getPath() {
@@ -85,7 +76,7 @@ public class TagCategoryNodePayload {
 
     @Override
     public int hashCode() {
-        return Objects.hash(kind, path, name, qualifiedName, color, children);
+        return Objects.hash(path, name, qualifiedName, color, children);
     }
 
     @Override
@@ -94,8 +85,7 @@ public class TagCategoryNodePayload {
             return false;
         }
         TagCategoryNodePayload other = (TagCategoryNodePayload) obj;
-        return kind == other.kind
-            && Objects.equals(path, other.path)
+        return Objects.equals(path, other.path)
             && Objects.equals(name, other.name)
             && Objects.equals(qualifiedName, other.qualifiedName)
             && Objects.equals(color, other.color)

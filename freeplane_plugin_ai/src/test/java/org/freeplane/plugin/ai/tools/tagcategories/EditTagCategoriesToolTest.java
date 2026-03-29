@@ -24,6 +24,7 @@ import org.freeplane.features.icon.TagCategoryNode;
 import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.map.MapModel;
@@ -51,11 +52,12 @@ public class EditTagCategoriesToolTest {
         when(availableMaps.findMapModel(UUID.fromString(mapIdentifier), null)).thenReturn(mapModel);
         when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any())).thenReturn(appliedState);
         EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, tagCategoryAccess);
-        TagCategoryInstructionPayload renameInstruction = new TagCategoryInstructionPayload(
-            TagCategoryInstructionType.RENAME_CATEGORY,
-            Arrays.asList("Project", "Status"),
-            "State",
+        TagCategoryInstructionPayload addInstruction = new TagCategoryInstructionPayload(
+            TagCategoryInstructionType.ADD_TAG,
+            Arrays.asList("Project", "Owner"),
             null,
+            null,
+            TagTargetLocation.CATEGORIZED,
             null,
             null,
             null);
@@ -66,11 +68,12 @@ public class EditTagCategoriesToolTest {
             null,
             null,
             null,
+            null,
             "/");
         TagCategoryInstructionRequestPayload request = new TagCategoryInstructionRequestPayload(
             mapIdentifier,
             "sha256:expected",
-            Arrays.asList(renameInstruction, separatorInstruction));
+            Arrays.asList(addInstruction, separatorInstruction));
 
         TagCategoryStatePayload result = uut.editTagCategories(request);
 
@@ -79,9 +82,9 @@ public class EditTagCategoriesToolTest {
         TagCategoryInstructionRequest submittedRequest = requestCaptor.getValue();
         assertThat(submittedRequest.getBaseRevision()).isEqualTo("sha256:expected");
         assertThat(submittedRequest.getInstructions()).extracting(TagCategoryInstruction::getType)
-            .containsExactly(TagCategoryInstructionType.RENAME_CATEGORY, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
-        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Status");
-        assertThat(submittedRequest.getInstructions().get(0).getNewName()).isEqualTo("State");
+            .containsExactly(TagCategoryInstructionType.ADD_TAG, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
+        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Owner");
+        assertThat(submittedRequest.getInstructions().get(0).getTargetLocation()).isEqualTo(TagTargetLocation.CATEGORIZED);
         assertThat(submittedRequest.getInstructions().get(1).getNewSeparator()).isEqualTo("/");
         assertThat(result.getRevision()).isEqualTo("sha256:applied");
         assertThat(result.getCategorySeparator()).isEqualTo("/");
@@ -99,6 +102,7 @@ public class EditTagCategoriesToolTest {
         EditTagCategoriesTool uut = new EditTagCategoriesTool(availableMaps, null, tagCategoryAccess);
         TagCategoryInstructionPayload separatorInstruction = new TagCategoryInstructionPayload(
             TagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
             null,
             null,
             null,
@@ -141,15 +145,17 @@ public class EditTagCategoriesToolTest {
             .from(tagCategories)
             .getRevision();
         TagCategoryInstructionPayload renameInstruction = new TagCategoryInstructionPayload(
-            TagCategoryInstructionType.RENAME_CATEGORY,
+            TagCategoryInstructionType.RENAME_TAG,
             Arrays.asList("Project", "Status"),
             "State",
+            null,
             null,
             null,
             null,
             null);
         TagCategoryInstructionPayload separatorInstruction = new TagCategoryInstructionPayload(
             TagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
             null,
             null,
             null,
@@ -163,7 +169,7 @@ public class EditTagCategoriesToolTest {
         TagCategoryInstructionRequest directRequest = new TagCategoryInstructionRequest(
             expectedRevision,
             Arrays.asList(
-                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State"),
                 TagCategoryInstruction.setCategorySeparator("/")));
         TagCategoryState expectedState = access.applyInstructionRequest(mapModelForDirectApply, directRequest);
 

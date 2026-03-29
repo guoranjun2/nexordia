@@ -10,6 +10,7 @@ import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import org.freeplane.features.icon.TagCategoryNode;
 import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.icon.TagCategoryInstructionType;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.TagItem;
 import org.junit.Test;
 
@@ -53,7 +54,8 @@ public class TagCategoryPayloadJsonTest {
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             "sha256:abc",
             Arrays.asList(
-                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.addTag(Collections.singletonList("urgent"), TagTargetLocation.UNCATEGORIZED),
+                TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State"),
                 TagCategoryInstruction.setCategorySeparator("/")));
         TagCategoryInstructionRequestPayload payload = TagCategoryInstructionRequestPayload.fromInstructionRequest(
             "map-1",

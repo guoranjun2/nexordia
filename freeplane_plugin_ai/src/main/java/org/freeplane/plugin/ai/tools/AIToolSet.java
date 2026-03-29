@@ -284,7 +284,10 @@ public class AIToolSet {
         }
     }
 
-    @Tool("Edit the map's tag categories and return the updated category structure.")
+    @Tool("Edit the map's tag structure and return the updated categorized and uncategorized tags. For ADD_TAG and "
+        + "MOVE_TAG, use targetLocation to choose CATEGORIZED or UNCATEGORIZED placement. For CATEGORIZED ADD_TAG, "
+        + "path is the full target path; for CATEGORIZED MOVE_TAG, newParentPath is the target parent path. Missing "
+        + "parent categorized tags are created automatically. For UNCATEGORIZED MOVE_TAG, omit newParentPath.")
     public TagCategoryStatePayload editTagCategories(TagCategoryInstructionRequestPayload request) {
         try {
             TagCategoryStatePayload response = editTagCategoriesTool.editTagCategories(request);

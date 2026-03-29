@@ -50,13 +50,23 @@ public class TagCategoryAccessContractTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("pairs");
 
-        assertThatThrownBy(() -> TagCategoryInstruction.renameCategory(Collections.emptyList(), "Renamed"))
+        assertThatThrownBy(() -> TagCategoryInstruction.renameTag(Collections.emptyList(), "Renamed"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("path");
 
-        assertThatThrownBy(() -> TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), ""))
+        assertThatThrownBy(() -> TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), ""))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("newName");
+
+        assertThatThrownBy(() -> TagCategoryInstruction.addTag(Arrays.asList("Project", "Status"),
+            TagTargetLocation.UNCATEGORIZED))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("exactly one segment");
+
+        assertThatThrownBy(() -> TagCategoryInstruction.moveTag(Arrays.asList("Project", "Status"),
+            TagTargetLocation.CATEGORIZED, null, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("newParentPath");
     }
 
     @Test
@@ -122,7 +132,7 @@ public class TagCategoryAccessContractTest {
         TagCategoryState state = TagCategoryStateBuilder.from(uut);
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             "stale-revision",
-            Collections.singletonList(TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State")));
+            Collections.singletonList(TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State")));
 
         assertThatThrownBy(() -> instructionRequest.requireMatchingRevision(state.getRevision()))
             .isInstanceOf(TagCategoryConflictException.class)

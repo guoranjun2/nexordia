@@ -1,6 +1,7 @@
 package org.freeplane.plugin.ai.tools.content;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -16,6 +17,7 @@ import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.MindIcon;
 import org.freeplane.features.icon.NamedIcon;
+import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagReference;
 import org.freeplane.features.icon.Tags;
@@ -125,6 +127,28 @@ public class EditableContentReaderTest {
         EditableIcon editableIcon = editableContent.getEditableIcons().get(0);
         assertThat(editableIcon.getDescription()).isEqualTo("Test");
         assertThat(editableIcon.getIndex()).isEqualTo(0);
+    }
+
+    @Test
+    public void readEditableContent_omitsRemovedTagsAndKeepsRemainingIndexes() {
+        MapModel mapModel = new MapModel((source, targetMap, withChildren) -> null, iconRegistry(), null);
+        NodeModel nodeModel = new NodeModel("node", mapModel);
+        TagCategories tagCategories = mapModel.getIconRegistry().getTagCategories();
+        Tags.setTagReferences(nodeModel, Arrays.asList(
+            new TagReference(Tag.REMOVED_TAG),
+            tagCategories.createTagReference("flag")));
+        EditableContentReader uut = new EditableContentReader(
+            mock(TextController.class),
+            new IconDescriptionResolver(key -> null),
+            new ContentTypeConverter());
+        EditableContentRequest request = new EditableContentRequest(
+            Collections.singletonList(EditableContentField.TAGS));
+
+        EditableContent editableContent = uut.readEditableContent(nodeModel, request);
+
+        assertThat(editableContent.getEditableTags())
+            .extracting(EditableTag::getValue, EditableTag::getIndex)
+            .containsExactly(tuple("flag", 1));
     }
 
     private static IconRegistry iconRegistry() {

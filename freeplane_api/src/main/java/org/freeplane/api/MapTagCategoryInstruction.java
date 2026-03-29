@@ -7,6 +7,16 @@ import java.util.Objects;
 
 /**
  * Single explicit edit operation for the map's tag categories.
+ * For {@link MapTagCategoryInstructionType#ADD_TAG}, {@code path} is the full
+ * target path to create when {@code targetLocation} is
+ * {@link MapTagTargetLocation#CATEGORIZED}. Missing parent categorized tags on
+ * that path are created automatically by the same edit call. For categorized
+ * {@link MapTagCategoryInstructionType#MOVE_TAG}, missing parent categorized
+ * tags on {@code newParentPath} are also created automatically by the same
+ * edit call. When
+ * {@code targetLocation} is {@link MapTagTargetLocation#UNCATEGORIZED},
+ * {@code path} must contain exactly one segment and Java callers should pass
+ * an empty list for {@code newParentPath}.
  * @since 1.13.3
  */
 public class MapTagCategoryInstruction {
@@ -14,23 +24,30 @@ public class MapTagCategoryInstruction {
     private final List<String> path;
     private final String newName;
     private final List<String> newParentPath;
+    private final MapTagTargetLocation targetLocation;
     private final Integer index;
     private final String color;
     private final String newSeparator;
 
     /**
      * @param type operation kind
-     * @param path target path; for add operations, the path of the item to create
+     * @param path target path; for categorized add operations, the full target
+     * path to create, not the parent path
      * @param newName replacement name for rename operations
-     * @param newParentPath target parent path for move operations; an empty list means the top level
-     * @param index optional insertion index for ordered add or move operations
-     * @param color replacement color for color updates
+     * @param newParentPath target parent path for categorized move operations;
+     * an empty list means the top level; missing categorized parents are
+     * created automatically; for uncategorized move operations, pass an empty
+     * list
+     * @param targetLocation target placement for add and move operations
+     * @param index optional insertion index for move operations
+     * @param color replacement color for add and color update operations
      * @param newSeparator replacement category separator
      */
     public MapTagCategoryInstruction(MapTagCategoryInstructionType type,
                                      List<String> path,
                                      String newName,
                                      List<String> newParentPath,
+                                     MapTagTargetLocation targetLocation,
                                      Integer index,
                                      String color,
                                      String newSeparator) {
@@ -38,6 +55,7 @@ public class MapTagCategoryInstruction {
         this.path = copyPathOrNull(path);
         this.newName = newName;
         this.newParentPath = copyPathOrNull(newParentPath);
+        this.targetLocation = targetLocation;
         this.index = index;
         this.color = color;
         this.newSeparator = newSeparator;
@@ -65,19 +83,16 @@ public class MapTagCategoryInstruction {
                     throw new IllegalArgumentException("newSeparator must not be blank");
                 }
                 break;
-            case RENAME_CATEGORY:
             case RENAME_TAG:
                 requirePath();
                 if (newName == null || newName.trim().isEmpty()) {
                     throw new IllegalArgumentException("newName must not be blank");
                 }
                 break;
-            case MOVE_CATEGORY:
             case MOVE_TAG:
                 requirePath();
-                if (newParentPath == null) {
-                    throw new IllegalArgumentException("newParentPath must not be null");
-                }
+                requireTargetLocation();
+                validateMoveTarget();
                 break;
             case SET_COLOR:
                 requirePath();
@@ -85,9 +100,11 @@ public class MapTagCategoryInstruction {
                     throw new IllegalArgumentException("color must not be blank");
                 }
                 break;
-            case ADD_CATEGORY:
             case ADD_TAG:
-            case DELETE_CATEGORY:
+                requirePath();
+                requireTargetLocation();
+                validateAddTarget();
+                break;
             case DELETE_TAG:
                 requirePath();
                 break;
@@ -102,12 +119,39 @@ public class MapTagCategoryInstruction {
         }
     }
 
+    private void requireTargetLocation() {
+        if (targetLocation == null) {
+            throw new IllegalArgumentException("targetLocation must not be null");
+        }
+    }
+
+    private void validateAddTarget() {
+        if (targetLocation == MapTagTargetLocation.UNCATEGORIZED && path.size() != 1) {
+            throw new IllegalArgumentException("uncategorized tag path must contain exactly one segment");
+        }
+    }
+
+    private void validateMoveTarget() {
+        if (targetLocation == MapTagTargetLocation.CATEGORIZED) {
+            if (newParentPath == null) {
+                throw new IllegalArgumentException("newParentPath must not be null for categorized move");
+            }
+            return;
+        }
+        if (newParentPath != null && !newParentPath.isEmpty()) {
+            throw new IllegalArgumentException("newParentPath must be omitted or empty for uncategorized move");
+        }
+    }
+
     /** Returns the operation kind. */
     public MapTagCategoryInstructionType getType() {
         return type;
     }
 
-    /** Returns the target path. */
+    /**
+     * Returns the target path.
+     * For categorized add operations, this is the full target path to create.
+     */
     public List<String> getPath() {
         return path;
     }
@@ -122,7 +166,12 @@ public class MapTagCategoryInstruction {
         return newParentPath;
     }
 
-    /** Returns the optional insertion index for ordered add or move operations. */
+    /** Returns the target placement for add and move operations. */
+    public MapTagTargetLocation getTargetLocation() {
+        return targetLocation;
+    }
+
+    /** Returns the optional insertion index for move operations. */
     public Integer getIndex() {
         return index;
     }
@@ -139,7 +188,7 @@ public class MapTagCategoryInstruction {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, path, newName, newParentPath, index, color, newSeparator);
+        return Objects.hash(type, path, newName, newParentPath, targetLocation, index, color, newSeparator);
     }
 
     @Override
@@ -152,6 +201,7 @@ public class MapTagCategoryInstruction {
             && Objects.equals(path, other.path)
             && Objects.equals(newName, other.newName)
             && Objects.equals(newParentPath, other.newParentPath)
+            && targetLocation == other.targetLocation
             && Objects.equals(index, other.index)
             && Objects.equals(color, other.color)
             && Objects.equals(newSeparator, other.newSeparator);

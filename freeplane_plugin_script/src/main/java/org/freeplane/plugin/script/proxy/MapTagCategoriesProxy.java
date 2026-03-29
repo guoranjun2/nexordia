@@ -8,7 +8,6 @@ import org.freeplane.api.MapTagCategories;
 import org.freeplane.api.MapTagCategoryInstruction;
 import org.freeplane.api.MapTagCategoryInstructionRequest;
 import org.freeplane.api.MapTagCategoryNode;
-import org.freeplane.api.MapTagCategoryNodeKind;
 import org.freeplane.api.MapTagCategoryState;
 import org.freeplane.api.MapTagItem;
 import org.freeplane.features.icon.IconController;
@@ -18,6 +17,7 @@ import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import org.freeplane.features.icon.TagCategoryInstructionType;
 import org.freeplane.features.icon.TagCategoryNode;
 import org.freeplane.features.icon.TagCategoryState;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.TagItem;
 import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
@@ -72,6 +72,9 @@ class MapTagCategoriesProxy extends AbstractProxy<MapModel> implements Proxy.Map
             instruction.getPath(),
             instruction.getNewName(),
             instruction.getNewParentPath(),
+            instruction.getTargetLocation() == null
+                ? null
+                : TagTargetLocation.valueOf(instruction.getTargetLocation().name()),
             instruction.getIndex(),
             instruction.getColor(),
             instruction.getNewSeparator());
@@ -94,9 +97,7 @@ class MapTagCategoriesProxy extends AbstractProxy<MapModel> implements Proxy.Map
     }
 
     private MapTagCategoryNode toApiNode(TagCategoryNode categoryNode) {
-        MapTagCategoryNodeKind nodeKind = MapTagCategoryNodeKind.valueOf(categoryNode.getKind().name());
         return new MapTagCategoryNode(
-            nodeKind,
             categoryNode.getPath(),
             categoryNode.getName(),
             categoryNode.getQualifiedName(),

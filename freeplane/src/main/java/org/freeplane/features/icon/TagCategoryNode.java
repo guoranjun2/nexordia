@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class TagCategoryNode {
-    private final TagCategoryNodeKind kind;
     private final List<String> path;
     private final String name;
     private final String qualifiedName;
@@ -18,16 +17,6 @@ public class TagCategoryNode {
                            String qualifiedName,
                            String color,
                            List<TagCategoryNode> children) {
-        this(TagCategoryNodeKind.CATEGORY, path, name, qualifiedName, color, children);
-    }
-
-    public TagCategoryNode(TagCategoryNodeKind kind,
-                           List<String> path,
-                           String name,
-                           String qualifiedName,
-                           String color,
-                           List<TagCategoryNode> children) {
-        this.kind = Objects.requireNonNull(kind, "kind must not be null");
         this.path = copyPath(path);
         if (isBlank(name)) {
             throw new IllegalArgumentException("name must not be blank");
@@ -62,10 +51,6 @@ public class TagCategoryNode {
         return value == null || value.trim().isEmpty();
     }
 
-    public TagCategoryNodeKind getKind() {
-        return kind;
-    }
-
     public List<String> getPath() {
         return path;
     }
@@ -88,7 +73,7 @@ public class TagCategoryNode {
 
     @Override
     public int hashCode() {
-        return Objects.hash(kind, path, name, qualifiedName, color, children);
+        return Objects.hash(path, name, qualifiedName, color, children);
     }
 
     @Override
@@ -97,8 +82,7 @@ public class TagCategoryNode {
             return false;
         }
         TagCategoryNode other = (TagCategoryNode) obj;
-        return kind == other.kind
-            && Objects.equals(path, other.path)
+        return Objects.equals(path, other.path)
             && Objects.equals(name, other.name)
             && Objects.equals(qualifiedName, other.qualifiedName)
             && Objects.equals(color, other.color)

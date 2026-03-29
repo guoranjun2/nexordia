@@ -18,7 +18,7 @@ public class MapTagCategoryState {
     /**
      * @param revision revision token for this structure
      * @param categorySeparator separator used in qualified category and tag names
-     * @param categories top-level category nodes
+     * @param categories top-level categorized tag nodes
      * @param uncategorizedTags tags that are not assigned to any category
      */
     public MapTagCategoryState(String revision,
@@ -53,7 +53,7 @@ public class MapTagCategoryState {
         return categorySeparator;
     }
 
-    /** Returns the top-level category nodes. */
+    /** Returns the top-level categorized tag nodes. */
     public List<MapTagCategoryNode> getCategories() {
         return categories;
     }

@@ -144,7 +144,7 @@ public class EditableContentReader {
         List<EditableTag> tags = new ArrayList<>(tagReferences.size());
         for (int index = 0; index < tagReferences.size(); index++) {
             TagReference reference = tagReferences.get(index);
-            if (reference == null) {
+            if (reference == null || !reference.exists()) {
                 continue;
             }
             tags.add(new EditableTag(reference.getContent(), index));

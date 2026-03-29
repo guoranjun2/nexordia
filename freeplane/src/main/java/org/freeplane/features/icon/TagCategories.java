@@ -494,16 +494,26 @@ public class TagCategories {
         return registerTagReference(new Tag(string));
     }
 
+    public TagReference createCategorizedTagReference(String string) {
+        return registerTagReference(new Tag(string), false, true);
+    }
+
     public TagReference registerTagReference(Tag tag) {
         return registerTagReference(tag, false);
     }
 
     private TagReference registerTagReference(Tag tag,  boolean setColor) {
+        return registerTagReference(tag, setColor, false);
+    }
+
+    private TagReference registerTagReference(Tag tag, boolean setColor, boolean keepSingleSegmentCategorized) {
         final int addedElementIndex = mapTags.addIfNotExists(tag);
         if(addedElementIndex < 0) {
             Tag oldTag = mapTags.getElementAt( - addedElementIndex - 1);
             if(setColor)
                 oldTag.setColor(tag.getColor());
+            if(keepSingleSegmentCategorized && ! tag.getContent().contains(categorySeparator))
+                ensureCategorizedTopLevelNode(oldTag);
             String content = oldTag.getContent();
             List<TagReference> references = tagReferences.get(content);
             TagReference tagReference = references.get(0);
@@ -549,7 +559,7 @@ public class TagCategories {
                             continue;
                         }
                     }
-                    else {
+                    else if (! keepSingleSegmentCategorized) {
                         insertUncategorizedTagNodeSorted(tag);
                         currentNode = uncategorizedTagsNode;
                     }
@@ -570,6 +580,35 @@ public class TagCategories {
 
         List<TagReference> references = tagReferences.get(fullContent);
         return references.get(0);
+    }
+
+    private DefaultMutableTreeNode ensureCategorizedTopLevelNode(Tag tag) {
+        DefaultMutableTreeNode existingNode = findCategorizedRootChild(tag.getContent());
+        if(existingNode != null)
+            return existingNode;
+        DefaultMutableTreeNode uncategorizedNode = removeUncategorizedTagNode(tag);
+        if(uncategorizedNode != null) {
+            insertNode(getRootNode(), getRootNode().getChildCount() - 1, uncategorizedNode);
+            categoriesChanged = true;
+            return uncategorizedNode;
+        }
+        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(tag.withoutCategories(categorySeparator));
+        insertNode(getRootNode(), getRootNode().getChildCount() - 1, newNode);
+        categoriesChanged = true;
+        return newNode;
+    }
+
+    private DefaultMutableTreeNode findCategorizedRootChild(String segment) {
+        DefaultMutableTreeNode rootNode = getRootNode();
+        for (int i = 0; i < rootNode.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            if(childNode == uncategorizedTagsNode || ! containsTag(childNode))
+                continue;
+            Tag childTag = tagWithoutCategories(childNode);
+            if(childTag.getContent().equals(segment))
+                return childNode;
+        }
+        return null;
     }
 
     public Tag setTagColor(String tagContent, String tagColor) {

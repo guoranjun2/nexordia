@@ -7,11 +7,10 @@ import java.util.Objects;
 
 /**
  * A node in the map's tag category tree.
- * Category nodes may have children. Tag nodes typically represent categorized tags.
+ * Categorized tag nodes may have zero or more children.
  * @since 1.13.3
  */
 public class MapTagCategoryNode {
-    private final MapTagCategoryNodeKind kind;
     private final List<String> path;
     private final String name;
     private final String qualifiedName;
@@ -19,20 +18,17 @@ public class MapTagCategoryNode {
     private final List<MapTagCategoryNode> children;
 
     /**
-     * @param kind node kind
-     * @param path full path from the top-level category to this node
+     * @param path full path from the top-level categorized tag to this node
      * @param name local node name
      * @param qualifiedName qualified name built with the category separator
      * @param color node color, or {@code null} if none is set
-     * @param children child categories or tags
+     * @param children child categorized tags
      */
-    public MapTagCategoryNode(MapTagCategoryNodeKind kind,
-                              List<String> path,
+    public MapTagCategoryNode(List<String> path,
                               String name,
                               String qualifiedName,
                               String color,
                               List<MapTagCategoryNode> children) {
-        this.kind = Objects.requireNonNull(kind, "kind must not be null");
         this.path = copyPath(path);
         this.name = requireText(name, "name");
         this.qualifiedName = requireText(qualifiedName, "qualifiedName");
@@ -61,12 +57,7 @@ public class MapTagCategoryNode {
         return value;
     }
 
-    /** Returns whether this node is a category or a categorized tag. */
-    public MapTagCategoryNodeKind getKind() {
-        return kind;
-    }
-
-    /** Returns the full path from the top-level category to this node. */
+    /** Returns the full path from the top-level categorized tag to this node. */
     public List<String> getPath() {
         return path;
     }
@@ -86,14 +77,14 @@ public class MapTagCategoryNode {
         return color;
     }
 
-    /** Returns child categories or tags. */
+    /** Returns child categorized tags. */
     public List<MapTagCategoryNode> getChildren() {
         return children;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(kind, path, name, qualifiedName, color, children);
+        return Objects.hash(path, name, qualifiedName, color, children);
     }
 
     @Override
@@ -102,8 +93,7 @@ public class MapTagCategoryNode {
             return false;
         }
         MapTagCategoryNode other = (MapTagCategoryNode) obj;
-        return kind == other.kind
-            && Objects.equals(path, other.path)
+        return Objects.equals(path, other.path)
             && Objects.equals(name, other.name)
             && Objects.equals(qualifiedName, other.qualifiedName)
             && Objects.equals(color, other.color)

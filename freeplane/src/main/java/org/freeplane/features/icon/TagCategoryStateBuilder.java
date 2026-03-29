@@ -60,7 +60,6 @@ public class TagCategoryStateBuilder {
         }
         String qualifiedName = tagCategories.categorizedContent(node);
         return new TagCategoryNode(
-            TagCategoryNodeKind.CATEGORY,
             path,
             categoryTag.getContent(),
             qualifiedName,
@@ -110,7 +109,6 @@ public class TagCategoryStateBuilder {
     }
 
     private static void appendCategory(MessageDigest messageDigest, TagCategoryNode category) {
-        update(messageDigest, category.getKind().name());
         appendPath(messageDigest, category.getPath());
         update(messageDigest, category.getName());
         update(messageDigest, category.getQualifiedName());

@@ -50,6 +50,10 @@
     tree nodes store short tags (`tagWithoutCategories`), while map/global
     references use fully qualified tag content built with
     `categorySeparator`.
+  - Categorized tree nodes do not have a stable semantic split between
+    "category" and "tag" kinds. Any leaf can become non-leaf by adding a
+    child, and any non-leaf can become a leaf again. The real structural
+    split is between categorized tree nodes and `uncategorizedTags`.
   - The uncategorized bucket is modeled as a special tree node appended as
     the last root child (`UNCATEGORIZED_NODE` sentinel value is also used in
     rename replacement logic). Many operations depend on this positional
@@ -78,6 +82,12 @@
     `EditableContentReader` (`EditableContentField.TAGS`), and
     `TagsContentEditor` (`EditedElement.TAGS`). There is no AI DTO or tool
     for reading/updating map-level category hierarchy or separator.
+  - Node tag assignment is string-based today. Assigning a tag string through
+    node editing resolves it with `TagCategories.createTagReference(...)`,
+    which may create missing categorized or uncategorized tag entries.
+    Because category-state revision is derived from category tree and
+    uncategorized tags, node tag assignment can invalidate a previously read
+    category revision even when no explicit category edit was submitted.
   - AI list APIs currently expose icons and map styles (`ListTool`) but not
     map tag categories or map-available tag values.
   - Current tests are uneven by scope: core/UI category mutation behavior is
@@ -105,7 +115,6 @@ package "shared category access" {
       + uncategorizedTags : List<TagItem>
     }
     class TagCategoryNode {
-      + kind : TagCategoryNodeKind
       + name : String
       + path : List<String>
       + qualifiedName : String
@@ -118,10 +127,6 @@ package "shared category access" {
       + qualifiedName : String
       + color : String
     }
-    enum TagCategoryNodeKind {
-      CATEGORY
-      TAG
-    }
     class TagCategoryInstructionRequest {
       + baseRevision : String
       + instructions : List<TagCategoryInstruction>
@@ -131,21 +136,22 @@ package "shared category access" {
       + path : List<String>
       + newName : String
       + newParentPath : List<String>
+      + targetLocation : TagTargetLocation
       + index : Integer
       + color : String
       + newSeparator : String
     }
     enum TagCategoryInstructionType {
-      ADD_CATEGORY
       ADD_TAG
-      RENAME_CATEGORY
       RENAME_TAG
-      MOVE_CATEGORY
       MOVE_TAG
-      DELETE_CATEGORY
       DELETE_TAG
       SET_COLOR
       SET_CATEGORY_SEPARATOR
+    }
+    enum TagTargetLocation {
+      CATEGORIZED
+      UNCATEGORIZED
     }
     class TagCategoryEditorDraftSubmission {
       + expectedRevision : String
@@ -181,7 +187,6 @@ package "shared category access" {
       + uncategorizedTags : List<ScriptTagItem>
     }
     class ScriptTagCategoryNode {
-      + kind : ScriptTagCategoryNodeKind
       + name : String
       + path : List<String>
       + qualifiedName : String
@@ -203,25 +208,22 @@ package "shared category access" {
       + path : List<String>
       + newName : String
       + newParentPath : List<String>
+      + targetLocation : ScriptTagTargetLocation
       + index : Integer
       + color : String
       + newSeparator : String
     }
-    enum ScriptTagCategoryNodeKind {
-      CATEGORY
-      TAG
-    }
     enum ScriptTagCategoryInstructionType {
-      ADD_CATEGORY
       ADD_TAG
-      RENAME_CATEGORY
       RENAME_TAG
-      MOVE_CATEGORY
       MOVE_TAG
-      DELETE_CATEGORY
       DELETE_TAG
       SET_COLOR
       SET_CATEGORY_SEPARATOR
+    }
+    enum ScriptTagTargetLocation {
+      CATEGORIZED
+      UNCATEGORIZED
     }
     class GetTagCategoriesTool {
       + execute() : TagCategoryStatePayload
@@ -236,7 +238,6 @@ package "shared category access" {
       + uncategorizedTags : List<TagItemPayload>
     }
     class TagCategoryNodePayload {
-      + kind : TagCategoryNodeKindPayload
       + name : String
       + path : List<String>
       + qualifiedName : String
@@ -258,25 +259,22 @@ package "shared category access" {
       + path : List<String>
       + newName : String
       + newParentPath : List<String>
+      + targetLocation : TagTargetLocationPayload
       + index : Integer
       + color : String
       + newSeparator : String
     }
-    enum TagCategoryNodeKindPayload {
-      CATEGORY
-      TAG
-    }
     enum TagCategoryInstructionTypePayload {
-      ADD_CATEGORY
       ADD_TAG
-      RENAME_CATEGORY
       RENAME_TAG
-      MOVE_CATEGORY
       MOVE_TAG
-      DELETE_CATEGORY
       DELETE_TAG
       SET_COLOR
       SET_CATEGORY_SEPARATOR
+    }
+    enum TagTargetLocationPayload {
+      CATEGORIZED
+      UNCATEGORIZED
     }
     class TagCategoryEditor {
       + submit() : void
@@ -292,7 +290,6 @@ FreeplaneTagCategoryAccess --> TagCategoryEditorDraftSubmission : apply editor d
 TagCategoryState --> TagCategoryNode : categories
 TagCategoryState --> TagItem : uncategorizedTags
 TagCategoryNode --> TagCategoryNode : children
-TagCategoryNode --> TagCategoryNodeKind : kind
 TagCategoryInstructionRequest --> TagCategoryInstruction : instructions
 TagCategoryInstruction --> TagCategoryInstructionType : type
 TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
@@ -305,7 +302,6 @@ ScriptTagCategoriesProxy --> ScriptTagCategoryInstructionRequest : accept reques
 ScriptTagCategoryState --> ScriptTagCategoryNode : categories
 ScriptTagCategoryState --> ScriptTagItem : uncategorizedTags
 ScriptTagCategoryNode --> ScriptTagCategoryNode : children
-ScriptTagCategoryNode --> ScriptTagCategoryNodeKind : kind
 ScriptTagCategoryInstructionRequest --> ScriptTagCategoryInstruction : instructions
 ScriptTagCategoryInstruction --> ScriptTagCategoryInstructionType : type
 GetTagCategoriesTool --> TagCategoryAccess : read category state
@@ -315,7 +311,6 @@ EditTagCategoriesTool --> TagCategoryInstructionRequestPayload : accept request
 TagCategoryStatePayload --> TagCategoryNodePayload : categories
 TagCategoryStatePayload --> TagItemPayload : uncategorizedTags
 TagCategoryNodePayload --> TagCategoryNodePayload : children
-TagCategoryNodePayload --> TagCategoryNodeKindPayload : kind
 TagCategoryInstructionRequestPayload --> TagCategoryInstructionPayload : instructions
 TagCategoryInstructionPayload --> TagCategoryInstructionTypePayload : type
 TagCategoryEditor --> TagCategoryAccess : submit editor draft
@@ -328,6 +323,9 @@ Public API should use category language:
 `tag categories`, `category state`, `instructions`, `baseRevision`.
 AI/script use explicit instruction requests. UI keeps its draft-submit model
 and delegates through the same service boundary at commit time.
+The categorized tree models one node shape only: a categorized tag that may
+have zero or more children. Leaf/non-leaf is structural, not semantic.
+`uncategorizedTags` remains the separate bucket outside that tree.
 When `TagCategoryEditor` is open and an external category update happens,
 conflict handling is strict: stale local drafts are rejected and the editor is
 hard-reloaded to the latest category state (local unsaved edits are
@@ -556,7 +554,6 @@ package "contract" {
     + uncategorizedTags : List<TagItem>
   }
   class TagCategoryNode {
-    + kind : TagCategoryNodeKind
     + name : String
     + path : List<String>
     + qualifiedName : String
@@ -569,10 +566,6 @@ package "contract" {
     + qualifiedName : String
     + color : String
   }
-  enum TagCategoryNodeKind {
-    CATEGORY
-    TAG
-  }
   class TagCategoryInstructionRequest {
     + baseRevision : String
     + instructions : List<TagCategoryInstruction>
@@ -582,21 +575,22 @@ package "contract" {
     + path : List<String>
     + newName : String
     + newParentPath : List<String>
+    + targetLocation : TagTargetLocation
     + index : Integer
     + color : String
     + newSeparator : String
   }
   enum TagCategoryInstructionType {
-    ADD_CATEGORY
     ADD_TAG
-    RENAME_CATEGORY
     RENAME_TAG
-    MOVE_CATEGORY
     MOVE_TAG
-    DELETE_CATEGORY
     DELETE_TAG
     SET_COLOR
     SET_CATEGORY_SEPARATOR
+  }
+  enum TagTargetLocation {
+    CATEGORIZED
+    UNCATEGORIZED
   }
   class TagCategoryEditorDraftSubmission {
     + expectedRevision : String
@@ -624,7 +618,6 @@ TagCategoryAccess --> TagCategoryEditorDraftSubmission : applyEditorDraftSubmiss
 TagCategoryState --> TagCategoryNode : categories
 TagCategoryState --> TagItem : uncategorizedTags
 TagCategoryNode --> TagCategoryNode : children
-TagCategoryNode --> TagCategoryNodeKind : kind
 TagCategoryInstructionRequest --> TagCategoryInstruction : ordered instructions
 TagCategoryInstruction --> TagCategoryInstructionType : type
 TagCategoryEditorDraftSubmission --> TagCategoryDraftState : draftState
@@ -643,6 +636,23 @@ Transport may still serialize to JSON, but the JSON must come from explicit
 payload classes and domain names.
 UI draft submission remains internal to the editor path and is not part of
 the public scripting/AI contract.
+The categorized tree does not distinguish semantic "category" and "tag"
+node kinds. A categorized node may have zero or more children, and that
+structure may change over time. `uncategorizedTags` is the separate
+map-level bucket outside the categorized tree.
+`ADD_TAG` and `MOVE_TAG` use `targetLocation` to choose categorized-tree or
+uncategorized placement explicitly.
+For `ADD_TAG` with `targetLocation = CATEGORIZED`, `path` is the full target
+path to create, not the parent path. Missing parent categorized tags on that
+path are created automatically during the same edit call.
+For `MOVE_TAG` with `targetLocation = CATEGORIZED`, `newParentPath` is the
+target parent path, and missing parent categorized tags on that path are
+created automatically during the same edit call.
+For `ADD_TAG` with `targetLocation = UNCATEGORIZED`, `path` must contain
+exactly one segment.
+`newParentPath` is only for `MOVE_TAG` with `targetLocation = CATEGORIZED`,
+and tool callers should omit it for uncategorized moves. Java API callers
+should pass `[]`. `newName` is only for rename operations.
 
 AI edit request shape should be:
 
@@ -651,13 +661,24 @@ AI edit request shape should be:
   "baseRevision": "sha256:...",
   "instructions": [
     {
-      "type": "RENAME_CATEGORY",
+      "type": "ADD_TAG",
+      "path": ["Project", "Status"]
+      "targetLocation": "CATEGORIZED"
+    },
+    {
+      "type": "ADD_TAG",
+      "path": ["urgent"],
+      "targetLocation": "UNCATEGORIZED"
+    },
+    {
+      "type": "RENAME_TAG",
       "path": ["Project", "Status"],
       "newName": "State"
     },
     {
-      "type": "MOVE_CATEGORY",
+      "type": "MOVE_TAG",
       "path": ["Project", "State"],
+      "targetLocation": "CATEGORIZED",
       "newParentPath": ["Meta"],
       "index": 0
     },
@@ -677,12 +698,10 @@ AI read response should be a category-state structure, for example:
   "categorySeparator": "::",
   "categories": [
     {
-      "kind": "CATEGORY",
       "name": "Project",
       "path": ["Project"],
       "children": [
         {
-          "kind": "CATEGORY",
           "name": "Status",
           "path": ["Project", "Status"],
           "children": []
@@ -702,6 +721,9 @@ AI read response should be a category-state structure, for example:
 Script-facing API should wrap the same domain contract through typed proxies,
 `map.tagCategories.read()` and `map.tagCategories.edit(request)`,
 rather than exposing `Map<String, Object>` as the primary public surface.
+Category revision invalidation must be documented clearly: node tag
+assignment may change category revision indirectly when it creates missing
+categorized or uncategorized tag references.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -716,6 +738,8 @@ rather than exposing `Map<String, Object>` as the primary public surface.
       - [K5] AI JSON category-state/instruction payloads serialize and
         deserialize
         losslessly.
+      - [K6] Node tag assignment that creates missing categorized or
+        uncategorized entries changes the category revision.
     - Validate DTO required fields and operation constraints.
     - Validate deterministic category-state ordering and stable revision token
       generation.
@@ -803,16 +827,16 @@ package "core service" {
     + targetQualifiedName : String
   }
   enum TagCategoryInstructionType {
-    ADD_CATEGORY
     ADD_TAG
-    RENAME_CATEGORY
     RENAME_TAG
-    MOVE_CATEGORY
     MOVE_TAG
-    DELETE_CATEGORY
     DELETE_TAG
     SET_COLOR
     SET_CATEGORY_SEPARATOR
+  }
+  enum TagTargetLocation {
+    CATEGORIZED
+    UNCATEGORIZED
   }
   interface TagCategoryStateRepository {
     + load(map) : TagCategoryState
@@ -909,7 +933,6 @@ package "script adapter" {
     + uncategorizedTags : List<ScriptTagItem>
   }
   class ScriptTagCategoryNode {
-    + kind : ScriptTagCategoryNodeKind
     + name : String
     + path : List<String>
     + qualifiedName : String
@@ -931,6 +954,7 @@ package "script adapter" {
     + path : List<String>
     + newName : String
     + newParentPath : List<String>
+    + targetLocation : ScriptTagTargetLocation
     + index : Integer
     + color : String
     + newSeparator : String
@@ -939,21 +963,17 @@ package "script adapter" {
     + readCurrentCategoryState(map) : TagCategoryState
     + applyInstructionRequest(map, request) : TagCategoryState
   }
-  enum ScriptTagCategoryNodeKind {
-    CATEGORY
-    TAG
-  }
   enum ScriptTagCategoryInstructionType {
-    ADD_CATEGORY
     ADD_TAG
-    RENAME_CATEGORY
     RENAME_TAG
-    MOVE_CATEGORY
     MOVE_TAG
-    DELETE_CATEGORY
     DELETE_TAG
     SET_COLOR
     SET_CATEGORY_SEPARATOR
+  }
+  enum ScriptTagTargetLocation {
+    CATEGORIZED
+    UNCATEGORIZED
   }
 }
 class ScriptCaller
@@ -965,7 +985,6 @@ ScriptTagCategoriesProxy --> TagCategoryAccess : delegate
 ScriptTagCategoryState --> ScriptTagCategoryNode : categories
 ScriptTagCategoryState --> ScriptTagItem : uncategorizedTags
 ScriptTagCategoryNode --> ScriptTagCategoryNode : children
-ScriptTagCategoryNode --> ScriptTagCategoryNodeKind : kind
 ScriptTagCategoryInstructionRequest --> ScriptTagCategoryInstruction : instructions
 ScriptTagCategoryInstruction --> ScriptTagCategoryInstructionType : type
 @enduml
@@ -975,7 +994,9 @@ Script adapter introduces no mutation logic of its own; it forwards validated
 requests to the core service. Public scripting API should use named methods
 and typed proxy/value objects such as `map.tagCategories.read()` and
 `map.tagCategories.edit(request)`, not `Map<String, Object>` as the primary
-surface.
+surface. The script-facing tree should mirror the shared contract:
+categorized nodes have one node shape, leaf/non-leaf is structural only, and
+`uncategorizedTags` is the separate bucket outside the tree.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -1035,7 +1056,6 @@ package "ai adapter" {
     + uncategorizedTags : List<TagItemPayload>
   }
   class TagCategoryNodePayload {
-    + kind : TagCategoryNodeKindPayload
     + name : String
     + path : List<String>
     + qualifiedName : String
@@ -1057,6 +1077,7 @@ package "ai adapter" {
     + path : List<String>
     + newName : String
     + newParentPath : List<String>
+    + targetLocation : TagTargetLocationPayload
     + index : Integer
     + color : String
     + newSeparator : String
@@ -1065,21 +1086,17 @@ package "ai adapter" {
     + readCurrentCategoryState(map) : TagCategoryState
     + applyInstructionRequest(map, request) : TagCategoryState
   }
-  enum TagCategoryNodeKindPayload {
-    CATEGORY
-    TAG
-  }
   enum TagCategoryInstructionTypePayload {
-    ADD_CATEGORY
     ADD_TAG
-    RENAME_CATEGORY
     RENAME_TAG
-    MOVE_CATEGORY
     MOVE_TAG
-    DELETE_CATEGORY
     DELETE_TAG
     SET_COLOR
     SET_CATEGORY_SEPARATOR
+  }
+  enum TagTargetLocationPayload {
+    CATEGORIZED
+    UNCATEGORIZED
   }
 }
 class AIToolSet
@@ -1093,7 +1110,6 @@ EditTagCategoriesTool --> TagCategoryAccess : apply instruction request
 TagCategoryStatePayload --> TagCategoryNodePayload : categories
 TagCategoryStatePayload --> TagItemPayload : uncategorizedTags
 TagCategoryNodePayload --> TagCategoryNodePayload : children
-TagCategoryNodePayload --> TagCategoryNodeKindPayload : kind
 TagCategoryInstructionRequestPayload --> TagCategoryInstructionPayload : instructions
 TagCategoryInstructionPayload --> TagCategoryInstructionTypePayload : type
 @enduml
@@ -1103,7 +1119,12 @@ AI tool layer stays declarative; all mutation semantics are centralized in
 the shared service. Tool names and descriptions should be phrased as:
 `get_tag_categories` and `edit_tag_categories`. `revision`/`baseRevision`
 remain part of the payload for conflict handling, but the primary API story
-is reading and editing current map tag categories.
+is reading and editing current map tag categories. Tool descriptions must make
+three rules explicit:
+1. `ADD_TAG` and `MOVE_TAG` use `targetLocation` to choose categorized or uncategorized placement.
+2. For categorized `ADD_TAG`, `path` is the full target path to create; for categorized `MOVE_TAG`, `newParentPath` is the target parent path.
+3. Missing parent categorized tags on categorized add and move paths are created automatically.
+4. For uncategorized `MOVE_TAG`, tool callers should omit `newParentPath`; Java API callers should pass `[]`.
 - **Test specification:**
   - Automated tests:
     - TDD test list (Red -> Green):
@@ -1113,6 +1134,8 @@ is reading and editing current map tag categories.
       - [A3] AI edit tool returns conflict on stale revision without writes.
       - [A4] AI payload ordering and identity fields remain deterministic.
       - [A5] AI outcomes match script/core parity scenarios.
+      - [A6] AI tool descriptions steer add and move operations to explicit
+        `targetLocation` semantics and away from parent-path misuse.
     - Tool read returns category state with deterministic order and revision
       token.
     - Tool write applies batch edits and returns updated category state.
@@ -1120,6 +1143,18 @@ is reading and editing current map tag categories.
     - AI results match baseline parity scenarios.
   - Manual tests:
     - Ask AI to rename and move categories, then verify map state and undo.
+
+## Subtask: Clean Up Script Naming in Task Contract
+- **Status:** todo
+- **Scope:** Remove the temporary `Script*` pseudo-type names from the task
+  diagrams and descriptions where the script layer actually reuses the public
+  `MapTag*` API types.
+- **Motivation:** The current task text suggests a separate script-only type
+  hierarchy that the implementation does not need.
+- **Constraints:**
+  - Keep the distinction between shared/core internals and the script adapter
+    clear without introducing duplicate script-specific DTO names.
+  - Align task naming with the actual public scripting surface.
 
 ## Subtask: Migrate Tag Category Editor to Shared Service
 - **Status:** review

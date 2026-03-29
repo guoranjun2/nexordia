@@ -27,6 +27,7 @@ import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import org.freeplane.features.icon.TagCategoryNode;
 import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.icon.TagCategoryStateBuilder;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.TagItem;
 import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.map.MapModel;
@@ -50,11 +51,15 @@ public class FreeplaneTagCategoryAccessTest {
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
         String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(expectedRevision, Arrays.asList(
-            TagCategoryInstruction.addCategory(Arrays.asList("Project", "Priority")),
-            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Owner"), "Lead"),
-            TagCategoryInstruction.moveCategory(Arrays.asList("Team", "Member"), Collections.singletonList("Project"), 1),
+            TagCategoryInstruction.addTag(Arrays.asList("Project", "Priority"), TagTargetLocation.CATEGORIZED),
+            TagCategoryInstruction.renameTag(Arrays.asList("Project", "Owner"), "Lead"),
+            TagCategoryInstruction.moveTag(
+                Arrays.asList("Team", "Member"),
+                TagTargetLocation.CATEGORIZED,
+                Collections.singletonList("Project"),
+                1),
             TagCategoryInstruction.setColor(Arrays.asList("Project", "Member"), "#11223344"),
-            TagCategoryInstruction.deleteCategory(Arrays.asList("Project", "Status")),
+            TagCategoryInstruction.deleteTag(Arrays.asList("Project", "Status")),
             TagCategoryInstruction.setCategorySeparator("/")));
 
         TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
@@ -81,7 +86,7 @@ public class FreeplaneTagCategoryAccessTest {
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             "stale-revision",
-            Collections.singletonList(TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State")));
+            Collections.singletonList(TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State")));
 
         assertThatThrownBy(() -> uut.applyInstructionRequest(mapModel, instructionRequest))
             .isInstanceOf(TagCategoryConflictException.class)
@@ -102,8 +107,8 @@ public class FreeplaneTagCategoryAccessTest {
         FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
         String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(expectedRevision, Arrays.asList(
-            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
-            TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Unknown"), "Renamed")));
+            TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State"),
+            TagCategoryInstruction.renameTag(Arrays.asList("Project", "Unknown"), "Renamed")));
 
         assertThatThrownBy(() -> uut.applyInstructionRequest(mapModel, instructionRequest))
             .isInstanceOf(IllegalArgumentException.class)
@@ -184,9 +189,10 @@ public class FreeplaneTagCategoryAccessTest {
         TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
             expectedRevision,
             Collections.singletonList(
-                TagCategoryInstruction.moveCategory(
+                TagCategoryInstruction.moveTag(
                     Arrays.asList("AA", "BB"),
-                    Collections.singletonList(TagCategories.UNCATEGORIZED_NODE),
+                    TagTargetLocation.UNCATEGORIZED,
+                    null,
                     null)));
 
         TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
@@ -200,6 +206,131 @@ public class FreeplaneTagCategoryAccessTest {
             .containsExactly("BB", "CC", "UU", "VV");
         assertThat(committedTagCategories.getTagsAsListModel()).extracting(tag -> tag.getContent())
             .containsExactly("AA", "BB", "CC", "DD", "UU", "VV");
+    }
+
+    @Test
+    public void uncategorizedMoveAcceptsEmptyParentPath() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("AA#11223344\n"
+            + " BB#22334455\n");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Collections.singletonList(
+                TagCategoryInstruction.moveTag(
+                    Arrays.asList("AA", "BB"),
+                    TagTargetLocation.UNCATEGORIZED,
+                    Collections.emptyList(),
+                    null)));
+
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
+
+        assertThat(collectQualifiedNames(responseState)).containsExactly("AA");
+        assertThat(responseState.getUncategorizedTags()).extracting(TagItem::getQualifiedName).containsExactly("BB");
+    }
+
+    @Test
+    public void addTagCreatesTopLevelCategorizedTagWhenTargetLocationIsCategorized() {
+        TagCategories initialTagCategories = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "::");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Collections.singletonList(TagCategoryInstruction.addTag(
+                Collections.singletonList("Context"),
+                TagTargetLocation.CATEGORIZED)));
+
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
+
+        assertThat(collectQualifiedNames(responseState)).containsExactly("Context");
+        assertThat(responseState.getUncategorizedTags()).isEmpty();
+    }
+
+    @Test
+    public void addTagCreatesUncategorizedTagWhenTargetLocationIsUncategorized() {
+        TagCategories initialTagCategories = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "::");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Collections.singletonList(TagCategoryInstruction.addTag(
+                Collections.singletonList("urgent"),
+                TagTargetLocation.UNCATEGORIZED)));
+
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
+
+        assertThat(collectQualifiedNames(responseState)).isEmpty();
+        assertThat(responseState.getUncategorizedTags()).extracting(TagItem::getQualifiedName).containsExactly("urgent");
+    }
+
+    @Test
+    public void moveTagCreatesMissingCategorizedParents() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("Project\n"
+            + " Status\n");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Collections.singletonList(TagCategoryInstruction.moveTag(
+                Arrays.asList("Project", "Status"),
+                TagTargetLocation.CATEGORIZED,
+                Arrays.asList("Meta", "Workflow"),
+                null)));
+
+        TagCategoryState responseState = uut.applyInstructionRequest(mapModel, instructionRequest);
+
+        assertThat(collectQualifiedNames(responseState))
+            .containsExactly("Project", "Meta", "Meta::Workflow", "Meta::Workflow::Status");
+    }
+
+    @Test
+    public void moveTagIntoOwnSubtreeFails() {
+        TagCategories initialTagCategories = TagCategoriesTest.tagCategories("Project\n"
+            + " Status\n");
+        MapModel mapModel = Mockito.mock(MapModel.class);
+        IconRegistry iconRegistry = Mockito.mock(IconRegistry.class);
+        MIconController iconController = Mockito.mock(MIconController.class);
+        Mockito.when(mapModel.getIconRegistry()).thenReturn(iconRegistry);
+        Mockito.when(iconRegistry.getTagCategories()).thenReturn(initialTagCategories);
+        FreeplaneTagCategoryAccess uut = new FreeplaneTagCategoryAccess(iconController);
+        String expectedRevision = TagCategoryStateBuilder.from(initialTagCategories).getRevision();
+        TagCategoryInstructionRequest instructionRequest = new TagCategoryInstructionRequest(
+            expectedRevision,
+            Collections.singletonList(TagCategoryInstruction.moveTag(
+                Collections.singletonList("Project"),
+                TagTargetLocation.CATEGORIZED,
+                Arrays.asList("Project", "Status"),
+                null)));
+
+        assertThatThrownBy(() -> uut.applyInstructionRequest(mapModel, instructionRequest))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("own subtree");
     }
 
     private List<String> collectQualifiedNames(TagCategoryState categoryState) {

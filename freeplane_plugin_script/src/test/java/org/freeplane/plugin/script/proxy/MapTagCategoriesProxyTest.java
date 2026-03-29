@@ -21,6 +21,7 @@ import org.freeplane.api.MapTagCategoryInstructionRequest;
 import org.freeplane.api.MapTagCategoryInstructionType;
 import org.freeplane.api.MapTagCategoryNode;
 import org.freeplane.api.MapTagCategoryState;
+import org.freeplane.api.MapTagTargetLocation;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
@@ -31,6 +32,7 @@ import org.freeplane.features.icon.TagCategoryNode;
 import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.TagItem;
 import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
@@ -91,11 +93,12 @@ public class MapTagCategoriesProxyTest {
             Collections.emptyList());
         when(tagCategoryAccess.applyInstructionRequest(eq(mapModel), any())).thenReturn(appliedState);
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), tagCategoryAccess);
-        MapTagCategoryInstruction renameInstruction = new MapTagCategoryInstruction(
-            MapTagCategoryInstructionType.RENAME_CATEGORY,
-            Arrays.asList("Project", "Status"),
-            "State",
+        MapTagCategoryInstruction addInstruction = new MapTagCategoryInstruction(
+            MapTagCategoryInstructionType.ADD_TAG,
+            Arrays.asList("Project", "Owner"),
             null,
+            null,
+            MapTagTargetLocation.CATEGORIZED,
             null,
             null,
             null);
@@ -106,10 +109,11 @@ public class MapTagCategoriesProxyTest {
             null,
             null,
             null,
+            null,
             "/");
         MapTagCategoryInstructionRequest instructionRequest = new MapTagCategoryInstructionRequest(
             "sha256:expected",
-            Arrays.asList(renameInstruction, separatorInstruction));
+            Arrays.asList(addInstruction, separatorInstruction));
 
         MapTagCategoryState result = uut.edit(instructionRequest);
 
@@ -118,9 +122,9 @@ public class MapTagCategoriesProxyTest {
         TagCategoryInstructionRequest submittedRequest = requestCaptor.getValue();
         assertThat(submittedRequest.getBaseRevision()).isEqualTo("sha256:expected");
         assertThat(submittedRequest.getInstructions()).extracting(TagCategoryInstruction::getType)
-            .containsExactly(TagCategoryInstructionType.RENAME_CATEGORY, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
-        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Status");
-        assertThat(submittedRequest.getInstructions().get(0).getNewName()).isEqualTo("State");
+            .containsExactly(TagCategoryInstructionType.ADD_TAG, TagCategoryInstructionType.SET_CATEGORY_SEPARATOR);
+        assertThat(submittedRequest.getInstructions().get(0).getPath()).containsExactly("Project", "Owner");
+        assertThat(submittedRequest.getInstructions().get(0).getTargetLocation()).isEqualTo(TagTargetLocation.CATEGORIZED);
         assertThat(submittedRequest.getInstructions().get(1).getNewSeparator()).isEqualTo("/");
         assertThat(result.getRevision()).isEqualTo("sha256:applied");
         assertThat(result.getCategorySeparator()).isEqualTo("/");
@@ -135,6 +139,7 @@ public class MapTagCategoriesProxyTest {
         MapTagCategoriesProxy uut = new MapTagCategoriesProxy(mapModel, new ScriptContext(null), tagCategoryAccess);
         MapTagCategoryInstruction separatorInstruction = new MapTagCategoryInstruction(
             MapTagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
             null,
             null,
             null,
@@ -169,19 +174,21 @@ public class MapTagCategoriesProxyTest {
         TagCategoryInstructionRequest directRequest = new TagCategoryInstructionRequest(
             expectedRevision,
             Arrays.asList(
-                TagCategoryInstruction.renameCategory(Arrays.asList("Project", "Status"), "State"),
+                TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "State"),
                 TagCategoryInstruction.setCategorySeparator("/")));
         TagCategoryState expectedState = access.applyInstructionRequest(mapModel, directRequest);
         MapTagCategoryInstruction renameInstruction = new MapTagCategoryInstruction(
-            MapTagCategoryInstructionType.RENAME_CATEGORY,
+            MapTagCategoryInstructionType.RENAME_TAG,
             Arrays.asList("Project", "Status"),
             "State",
+            null,
             null,
             null,
             null,
             null);
         MapTagCategoryInstruction separatorInstruction = new MapTagCategoryInstruction(
             MapTagCategoryInstructionType.SET_CATEGORY_SEPARATOR,
+            null,
             null,
             null,
             null,

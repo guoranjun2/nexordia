@@ -19,6 +19,7 @@ import org.freeplane.features.icon.TagCategoryInstructionRequest;
 import org.freeplane.features.icon.TagCategoryInstructionType;
 import org.freeplane.features.icon.TagCategoryState;
 import org.freeplane.features.icon.TagCategoryStateBuilder;
+import org.freeplane.features.icon.TagTargetLocation;
 import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.map.MapModel;
 
@@ -97,19 +98,19 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
 
     private void applyInstruction(TagCategories tagCategories, TagCategoryInstruction instruction) {
         TagCategoryInstructionType type = instruction.getType();
-        if (type == TagCategoryInstructionType.ADD_CATEGORY || type == TagCategoryInstructionType.ADD_TAG) {
+        if (type == TagCategoryInstructionType.ADD_TAG) {
             applyAdd(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryInstructionType.DELETE_CATEGORY || type == TagCategoryInstructionType.DELETE_TAG) {
+        if (type == TagCategoryInstructionType.DELETE_TAG) {
             applyDelete(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryInstructionType.RENAME_CATEGORY || type == TagCategoryInstructionType.RENAME_TAG) {
+        if (type == TagCategoryInstructionType.RENAME_TAG) {
             applyRename(tagCategories, instruction);
             return;
         }
-        if (type == TagCategoryInstructionType.MOVE_CATEGORY || type == TagCategoryInstructionType.MOVE_TAG) {
+        if (type == TagCategoryInstructionType.MOVE_TAG) {
             applyMove(tagCategories, instruction);
             return;
         }
@@ -126,7 +127,11 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
 
     private void applyAdd(TagCategories tagCategories, TagCategoryInstruction instruction) {
         String qualifiedContent = qualifiedContent(tagCategories, instruction.getPath());
-        tagCategories.createTagReference(qualifiedContent);
+        if (instruction.getTargetLocation() == TagTargetLocation.UNCATEGORIZED) {
+            tagCategories.createTagReference(singlePathSegment(instruction.getPath()));
+        } else {
+            tagCategories.createCategorizedTagReference(qualifiedContent);
+        }
         if (instruction.getColor() != null && !instruction.getColor().trim().isEmpty()) {
             tagCategories.setTagColor(qualifiedContent, instruction.getColor());
         }
@@ -154,7 +159,13 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         String oldQualifiedContent = tagCategories.categorizedContent(movedNode);
         DefaultMutableTreeNode oldParent = (DefaultMutableTreeNode) movedNode.getParent();
         int oldIndex = oldParent.getIndex(movedNode);
-        DefaultMutableTreeNode newParent = resolveMoveParent(tagCategories, instruction.getNewParentPath());
+        if (instruction.getTargetLocation() == TagTargetLocation.UNCATEGORIZED && movedNode.getChildCount() > 0) {
+            moveSubtreeIntoUncategorized(tagCategories, movedNode, oldQualifiedContent);
+            return;
+        }
+        DefaultMutableTreeNode newParent = instruction.getTargetLocation() == TagTargetLocation.UNCATEGORIZED
+            ? tagCategories.getUncategorizedTagsNode()
+            : resolveMoveParent(tagCategories, instruction.getPath(), instruction.getNewParentPath());
         if (newParent == tagCategories.getUncategorizedTagsNode() && movedNode.getChildCount() > 0) {
             moveSubtreeIntoUncategorized(tagCategories, movedNode, oldQualifiedContent);
             return;
@@ -236,16 +247,19 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         return parent.getChildCount();
     }
 
-    private DefaultMutableTreeNode resolveMoveParent(TagCategories tagCategories, List<String> newParentPath) {
+    private DefaultMutableTreeNode resolveMoveParent(TagCategories tagCategories,
+                                                     List<String> movedPath,
+                                                     List<String> newParentPath) {
         if (newParentPath == null) {
             throw new IllegalArgumentException("newParentPath must not be null");
         }
         if (newParentPath.isEmpty()) {
             return tagCategories.getRootNode();
         }
-        if (newParentPath.size() == 1 && TagCategories.UNCATEGORIZED_NODE.equals(newParentPath.get(0))) {
-            return tagCategories.getUncategorizedTagsNode();
+        if (isOwnSubtreePath(movedPath, newParentPath)) {
+            throw new IllegalArgumentException("Cannot move tag into its own subtree");
         }
+        tagCategories.createCategorizedTagReference(qualifiedContent(tagCategories, newParentPath));
         DefaultMutableTreeNode parent = resolveNode(tagCategories, newParentPath);
         if (parent.getParent() == tagCategories.getUncategorizedTagsNode()) {
             throw new IllegalArgumentException("Cannot use uncategorized tag as a parent path");
@@ -253,11 +267,30 @@ public class FreeplaneTagCategoryAccess implements TagCategoryAccess {
         return parent;
     }
 
+    private boolean isOwnSubtreePath(List<String> movedPath, List<String> newParentPath) {
+        if (movedPath == null || newParentPath == null || newParentPath.size() < movedPath.size()) {
+            return false;
+        }
+        for (int i = 0; i < movedPath.size(); i++) {
+            if (!movedPath.get(i).equals(newParentPath.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private String qualifiedContent(TagCategories tagCategories, List<String> path) {
         if (path == null || path.isEmpty()) {
             throw new IllegalArgumentException("path must not be empty");
         }
         return path.stream().collect(Collectors.joining(tagCategories.getTagCategorySeparator()));
+    }
+
+    private String singlePathSegment(List<String> path) {
+        if (path == null || path.size() != 1) {
+            throw new IllegalArgumentException("uncategorized tag path must contain exactly one segment");
+        }
+        return path.get(0);
     }
 
     private DefaultMutableTreeNode resolveNode(TagCategories tagCategories, List<String> path) {

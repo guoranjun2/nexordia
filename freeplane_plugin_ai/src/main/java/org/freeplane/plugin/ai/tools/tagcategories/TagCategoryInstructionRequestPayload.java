@@ -18,7 +18,6 @@ public class TagCategoryInstructionRequestPayload {
     private final String mapIdentifier;
     @Description("Revision from the last getTagCategories call.")
     private final String baseRevision;
-    @Description("Category edit operations to apply.")
     private final List<TagCategoryInstructionPayload> instructions;
 
     @JsonCreator
