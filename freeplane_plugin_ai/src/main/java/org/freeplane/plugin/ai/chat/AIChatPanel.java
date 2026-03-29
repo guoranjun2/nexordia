@@ -150,6 +150,7 @@ public class AIChatPanel extends JPanel {
         redoButton.setMinimumSize(sideButtonSize);
         redoButton.setMaximumSize(sideButtonSize);
         menuPopup = buildMenuPopup();
+        messageHistoryPane.setComponentPopupMenu(menuPopup);
         configuration = new AIProviderConfiguration();
         chatDisplaySettings = new ChatDisplaySettings();
         modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
@@ -439,6 +440,11 @@ public class AIChatPanel extends JPanel {
             AssistantProfilePaneBuilder.MANAGE_PROFILES_TEXT_KEY);
         manageProfilesMenuItem.setIcon(assistantProfileIcon);
         menuPopup.add(manageProfilesMenuItem);
+        Action copyMarkdownAction = new ChatMarkdownCopyAction(messageHistoryPane, messageHistory);
+        JMenuItem copyMarkdownMenuItem = TranslatedElementFactory.createMenuItem(
+            copyMarkdownAction,
+            "ai_chat_copy_markdown");
+        menuPopup.add(copyMarkdownMenuItem);
         addAiEditsMenuItems(menuPopup);
         return menuPopup;
     }
