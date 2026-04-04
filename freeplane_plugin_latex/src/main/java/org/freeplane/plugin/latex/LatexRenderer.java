@@ -52,7 +52,7 @@ public class LatexRenderer extends AbstractContentTransformer implements IEditBa
 	public Object transformContent(NodeModel node,
 			Object nodeProperty, Object content, TextController textController, Mode mode, Component component)
 			throws TransformationException {
-        if(mode == Mode.TEXT)
+        if(mode == Mode.TEXT || component == null)
             return content;
 		final String latext = getText(node, nodeProperty, content, Target.VIEW, textController);
 		if (latext == null)
