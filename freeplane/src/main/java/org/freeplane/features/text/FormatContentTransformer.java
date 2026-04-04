@@ -28,7 +28,9 @@ class FormatContentTransformer extends AbstractContentTransformer {
 	}
 
 	private Object expandFormat(Object obj, final NodeModel node, final String format, boolean nodeNumbering) {
-		final boolean hasFormat = format != null && format.length() != 0 && ! (obj instanceof Icon)
+		if(obj instanceof Icon)
+			return obj;
+		final boolean hasFormat = format != null && format.length() != 0
 				&& !PatternFormat.IDENTITY_PATTERN.equals(format) && !PatternFormat.STANDARD_FORMAT_PATTERN.equals(format);
 		if (!hasFormat && !nodeNumbering){
 			return obj;
@@ -104,7 +106,7 @@ class FormatContentTransformer extends AbstractContentTransformer {
 			if(summaryParentNode == null)
 				return;
 			addMajorNumbers(summaryParentNode, builder);
-		} 
+		}
 		else if( textController.getNodeNumbering(node)){
 			addNumbers(builder, node);
 			if (builder.length() > 0)
