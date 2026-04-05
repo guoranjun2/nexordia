@@ -80,6 +80,7 @@ import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.Hyperlink;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.URIUtils;
 import org.freeplane.core.util.MenuUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.explorer.MapExplorerController;
@@ -787,9 +788,6 @@ public class LinkController extends SelectionController implements IExtension {
 	    "(?:\\\\\\\\([^\\\\]+)\\\\)(.*?)(?:#([^#]*))?");
 	static Pattern patFile = Pattern.compile( // [file:][drive:]path[#fragment]
 	    "(?:file:)?((?:\\p{Alpha}:)?([/\\\\])?(?:[^:#?]*))?(?:#([^#]*))?");
-	static Pattern patURI = Pattern.compile( // [scheme:]scheme-specific-part[#fragment]
-	    "(?:(\\p{Alpha}[\\p{Alnum}+.-]+):)?(.*?)(?:#([^#]*))?");
-
 	/* Function that tries to transform a not necessarily well-formed
 	 * string into a valid URI. We use the fact that the single-argument
 	 * URI constructor doesn't escape invalid characters (especially
@@ -838,15 +836,8 @@ public class LinkController extends SelectionController implements IExtension {
 			// recognize an URI of the form
 			// [scheme:]scheme-specific-part[#fragment]
 			{
-				final Matcher mat = patURI.matcher(inputValue);
-				if (mat.matches()) {
-					final String scheme = mat.group(1);
-					final String ssp = mat.group(2);
-					final String fragment = mat.group(3);
-					return new Hyperlink(inputValue, new URI(scheme, ssp, fragment));
-				}
+				return new Hyperlink(inputValue, URIUtils.createURIFromString(inputValue));
 			}
-			throw new URISyntaxException(inputValue, "This doesn't look like a valid link (URI, file, SMB or URL).");
 		}
 	}
 

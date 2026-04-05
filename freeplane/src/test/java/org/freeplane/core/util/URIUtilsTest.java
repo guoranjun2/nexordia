@@ -51,35 +51,47 @@ public class URIUtilsTest {
     }
 
     @Test
-    public void testCreateURIFromString_HttpUrlWithSpaces() {
+    public void testCreateURIFromString_HttpUrlWithSpaces() throws URISyntaxException {
         String uriString = "http://example.com/path with spaces/page.html";
-        
-        assertThatThrownBy(() -> URIUtils.createURIFromString(uriString))
-            .isInstanceOf(URISyntaxException.class);
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("http");
+        assertThat(uri.getPath()).isEqualTo("/path with spaces/page.html");
+        assertThat(uri.getFragment()).isNull();
+        assertThat(uri.toString()).isEqualTo("http://example.com/path%20with%20spaces/page.html");
     }
 
     @Test
-    public void testCreateURIFromString_HttpUrlWithSpacesAndFragment() {
+    public void testCreateURIFromString_HttpUrlWithSpacesAndFragment() throws URISyntaxException {
         String uriString = "http://example.com/path with spaces/page.html#section1";
-        
-        assertThatThrownBy(() -> URIUtils.createURIFromString(uriString))
-            .isInstanceOf(URISyntaxException.class);
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("http");
+        assertThat(uri.getPath()).isEqualTo("/path with spaces/page.html");
+        assertThat(uri.getFragment()).isEqualTo("section1");
+        assertThat(uri.toString()).isEqualTo("http://example.com/path%20with%20spaces/page.html#section1");
     }
 
     @Test
-    public void testCreateURIFromString_WithQueryParameters() {
+    public void testCreateURIFromString_WithQueryParameters() throws URISyntaxException {
         String uriString = "http://example.com/path with spaces/page.html?param=value&other=test";
-        
-        assertThatThrownBy(() -> URIUtils.createURIFromString(uriString))
-            .isInstanceOf(URISyntaxException.class);
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("http");
+        assertThat(uri.getPath()).isEqualTo("/path with spaces/page.html");
+        assertThat(uri.getQuery()).isEqualTo("param=value&other=test");
+        assertThat(uri.getFragment()).isNull();
     }
 
     @Test
-    public void testCreateURIFromString_WithQueryAndFragment() {
+    public void testCreateURIFromString_WithQueryAndFragment() throws URISyntaxException {
         String uriString = "http://example.com/path with spaces/page.html?param=value#section1";
-        
-        assertThatThrownBy(() -> URIUtils.createURIFromString(uriString))
-            .isInstanceOf(URISyntaxException.class);
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("http");
+        assertThat(uri.getPath()).isEqualTo("/path with spaces/page.html");
+        assertThat(uri.getQuery()).isEqualTo("param=value");
+        assertThat(uri.getFragment()).isEqualTo("section1");
     }
 
     @Test
@@ -121,4 +133,39 @@ public class URIUtilsTest {
         assertThat(uri.getPath()).isEqualTo("/path/to/file with spaces & special chars (test).txt");
         assertThat(uri.getFragment()).isNull();
     }
-} 
+
+    @Test
+    public void testCreateURIFromString_HttpUrlWithFragmentBeginningWithHash() throws URISyntaxException {
+        String uriString =
+            "https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Functional.Detection.html##(DETECTION_AREAS).New";
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("https");
+        assertThat(uri.getPath())
+            .isEqualTo("/MOOSE_DOCS_DEVELOP/Documentation/Functional.Detection.html");
+        assertThat(uri.getFragment()).isEqualTo("#(DETECTION_AREAS).New");
+        assertThat(uri.toString()).isEqualTo(
+            "https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Functional.Detection.html#%23(DETECTION_AREAS).New");
+    }
+
+    @Test
+    public void testCreateURIFromString_RelativePathWithFragmentBeginningWithHash() throws URISyntaxException {
+        String uriString = "file with spaces.txt##ID_123";
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getPath()).isEqualTo("file with spaces.txt");
+        assertThat(uri.getFragment()).isEqualTo("#ID_123");
+        assertThat(uri.toString()).isEqualTo("file%20with%20spaces.txt#%23ID_123");
+    }
+
+    @Test
+    public void testCreateURIFromString_FileUriWithFragmentBeginningWithHash() throws URISyntaxException {
+        String uriString = "file:///path/to/file with spaces.txt##ID_123";
+        URI uri = URIUtils.createURIFromString(uriString);
+
+        assertThat(uri.getScheme()).isEqualTo("file");
+        assertThat(uri.getPath()).isEqualTo("/path/to/file with spaces.txt");
+        assertThat(uri.getFragment()).isEqualTo("#ID_123");
+        assertThat(uri.toString()).isEqualTo("file:///path/to/file%20with%20spaces.txt#%23ID_123");
+    }
+}
