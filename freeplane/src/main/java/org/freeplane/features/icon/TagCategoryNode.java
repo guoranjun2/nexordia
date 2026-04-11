@@ -18,12 +18,8 @@ public class TagCategoryNode {
                            String color,
                            List<TagCategoryNode> children) {
         this.path = copyPath(path);
-        if (isBlank(name)) {
-            throw new IllegalArgumentException("name must not be blank");
-        }
-        if (isBlank(qualifiedName)) {
-            throw new IllegalArgumentException("qualifiedName must not be blank");
-        }
+        TagCategoryNamePolicy.requireNonBlank(name, "name");
+        TagCategoryNamePolicy.requireNonBlank(qualifiedName, "qualifiedName");
         if (children == null) {
             throw new IllegalArgumentException("children must not be null");
         }
@@ -34,21 +30,7 @@ public class TagCategoryNode {
     }
 
     private List<String> copyPath(List<String> sourcePath) {
-        if (sourcePath == null || sourcePath.isEmpty()) {
-            throw new IllegalArgumentException("path must not be empty");
-        }
-        ArrayList<String> copy = new ArrayList<>(sourcePath.size());
-        for (String pathPart : sourcePath) {
-            if (isBlank(pathPart)) {
-                throw new IllegalArgumentException("path contains blank segment");
-            }
-            copy.add(pathPart);
-        }
-        return Collections.unmodifiableList(copy);
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+        return TagCategoryNamePolicy.copyValidatedPath(sourcePath);
     }
 
     public List<String> getPath() {

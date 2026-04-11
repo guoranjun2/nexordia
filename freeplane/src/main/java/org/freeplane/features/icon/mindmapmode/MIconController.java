@@ -86,6 +86,7 @@ import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
 import org.freeplane.features.icon.TagReference;
+import org.freeplane.features.icon.TagCategoryNamePolicy;
 import org.freeplane.features.icon.Tags;
 import org.freeplane.features.icon.factory.IconStoreFactory;
 import org.freeplane.features.icon.mindmapmode.FastAccessableIcons.ActionPanel;
@@ -618,14 +619,15 @@ public class MIconController extends IconController {
 
     public void setTags(NodeModel node, List<Tag> newTags, boolean overwriteColors) {
         TagCategories tagCategories = getTagCategories(node);
-        List<TagReference> registeredTags = newTags.stream()
+        List<Tag> normalizedTags = normalizeTagsForPersistence(newTags);
+        List<TagReference> registeredTags = normalizedTags.stream()
                 .map(tagCategories::registerTagReference).collect(Collectors.toList());
         setTagReferences(node, registeredTags);
         if(overwriteColors) {
-            IntStream.range(0, newTags.size())
-            .filter(tagIndex -> ! newTags.get(tagIndex).getColor().equals(registeredTags.get(tagIndex).getColor()))
+            IntStream.range(0, normalizedTags.size())
+            .filter(tagIndex -> ! normalizedTags.get(tagIndex).getColor().equals(registeredTags.get(tagIndex).getColor()))
             .forEach(tagIndex -> {
-                Tag newTag = newTags.get(tagIndex);
+                Tag newTag = normalizedTags.get(tagIndex);
                 Color newColor = newTag.getColor();
                 setTagColor(node.getMap(), newTag, newColor);
             });
@@ -721,11 +723,12 @@ public class MIconController extends IconController {
                 menu.removeAll();
                 for (int i = 0; i < categoryNode.getChildCount(); i++) {
                     DefaultMutableTreeNode itemNode = (DefaultMutableTreeNode) categoryNode.getChildAt(i);
-                    Tag tag = tagCategories.tagWithoutCategories(itemNode);
-                    if(! tag.isEmpty()) {
-                        TagIcon icon = new TagIcon(tag, menu.getFont());
+                    Tag displayedTag = tagCategories.tagWithoutCategories(itemNode);
+                    if(! displayedTag.isEmpty()) {
+                        Tag actionTag = submenuActionTag(tagCategories, itemNode);
+                        TagIcon icon = new TagIcon(displayedTag, menu.getFont());
                         JMenuItem actionItem = new JMenuItem(icon);
-                        actionItem.addActionListener(x -> action.accept(tag));
+                        actionItem.addActionListener(x -> action.accept(actionTag));
                         menu.add(actionItem);
                         if(!itemNode.isLeaf()) {
                             final JMenu submenu = new JMenu();
@@ -779,7 +782,7 @@ public class MIconController extends IconController {
         final List<TagReference> newTags = new ArrayList<>(existingTags.size() + addedTags.size());
         newTags.addAll(Tags.getExistingTagReferences(node));
         final TagCategories tagCategories = getTagCategories(node);
-        addedTags.stream()
+        normalizeTagsForPersistence(addedTags).stream()
         .filter(tag -> ! existingTagSet.contains(tag))
         .map(tagCategories::registerTagReference)
         .forEach(newTags::add);
@@ -828,6 +831,17 @@ public class MIconController extends IconController {
             return;
         List<Tag> addedTagList = Stream.of(tags).map(TagCategories::readTag).collect(Collectors.toList());
         addTags(target, addedTagList);
+    }
+
+    static List<Tag> normalizeTagsForPersistence(List<Tag> tags) {
+        return tags.stream()
+            .map(TagCategoryNamePolicy::normalizeTag)
+            .filter(tag -> ! tag.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    static Tag submenuActionTag(TagCategories tagCategories, DefaultMutableTreeNode itemNode) {
+        return tagCategories.categorizedTag(itemNode);
     }
 
 }

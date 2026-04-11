@@ -110,6 +110,7 @@ import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagCategoryNamePolicy;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -758,7 +759,12 @@ class TagEditor {
         return scrollPane;
     }
     private Tag createTagIfAbsent(String spec, boolean specContainsColor) {
-        return specContainsColor ? tagCategories.registerTag(spec) : tagCategories.registerTag(new Tag(spec));
+        Tag tag = specContainsColor ? TagCategories.readTag(spec) : new Tag(spec);
+        Tag normalizedTag = TagCategoryNamePolicy.normalizeTag(tag);
+        if (normalizedTag.isEmpty()) {
+            return Tag.EMPTY_TAG;
+        }
+        return tagCategories.registerTag(normalizedTag);
     }
 
     private JTable createTagTable(List<Tag> tags) {

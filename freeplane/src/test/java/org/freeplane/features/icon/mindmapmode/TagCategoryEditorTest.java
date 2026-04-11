@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.freeplane.features.icon.TagAssertions.assertThatReferencedTags;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
@@ -545,6 +546,30 @@ public class TagCategoryEditorTest {
             assertThat(submittedDraft.getDraftState().toTagCategories()).isSameAs(steps.updatedTagCategories);
             assertThat(TagReferenceRewrite.toPairs(submittedDraft.getReferenceRewrites()))
                 .containsExactly("AA::BB", "AA::STATE");
+            verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
+        }
+    }
+
+    @Test
+    public void openingEditorForValidStateDoesNotCommitTagCategories() {
+        try (TagTestSteps steps = new TagTestSteps()) {
+            TagCategories loadedCategories = new TagCategories(
+                new DefaultMutableTreeNode("tags"),
+                new DefaultMutableTreeNode("uncategorized_tags"),
+                "::");
+            loadedCategories.createTagReference("Project::State");
+
+            steps.given().tagCategoryEditor(loadedCategories)
+                .then().assertThatUpdatedTagCategories()
+                .satisfies(tc -> {
+                    TagAssertions.assertThatSerializedWithoutColors(tc).isEqualTo("Project\n"
+                        + " State\n");
+                    assertThat(tc.getUncategorizedTags()).isEmpty();
+                    assertThat(TagCategoryStateBuilder.from(tc).getCategories())
+                        .extracting(category -> category.getQualifiedName())
+                        .containsExactly("Project");
+                });
+
             verify(steps.iconController, Mockito.never()).setTagCategories(any(), any());
         }
     }

@@ -242,11 +242,15 @@ public class TagCategories {
 
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
-            String lineTags = line.trim();
+            if(line.isEmpty())
+                continue;
+
+            int rawIndentation = getIndentationLevel(line);
+            int indentation = lastIndentation < 0 ? rawIndentation : Math.min(rawIndentation, lastIndentation + 1);
+            String lineTags = line.substring(indentation);
             if(lineTags.isEmpty())
             	continue;
 
-            int indentation = getIndentationLevel(line);
             for(int lineTagIndex = 0; lineTagIndex < lineTags.length();) {
                 int lineTagEnd = lineTags.indexOf(tagCategorySeparator, lineTagIndex);
                 String lineTag = lineTagEnd >= 0 ? lineTags.substring(lineTagIndex, lineTagEnd) : lineTags.substring(lineTagIndex);
@@ -355,7 +359,7 @@ public class TagCategories {
 
     private int getIndentationLevel(String line) {
         int indentation = 0;
-        while (line.charAt(indentation) == ' ') {
+        while (indentation < line.length() && line.charAt(indentation) == ' ') {
             indentation++;
         }
         return indentation;

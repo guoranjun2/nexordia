@@ -1,7 +1,5 @@
 package org.freeplane.features.icon;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,31 +66,17 @@ public class TagCategoryInstruction {
     }
 
     private List<String> copyPath(List<String> inputPath) {
-        if (inputPath == null) {
-            return null;
-        }
-        ArrayList<String> copy = new ArrayList<>(inputPath.size());
-        for (String pathItem : inputPath) {
-            if (isBlank(pathItem)) {
-                throw new IllegalArgumentException("path contains blank segment");
-            }
-            copy.add(pathItem);
-        }
-        return Collections.unmodifiableList(copy);
+        return TagCategoryNamePolicy.copyValidatedOptionalPath(inputPath);
     }
 
     private void validate() {
         switch (type) {
             case SET_CATEGORY_SEPARATOR:
-                if (isBlank(newSeparator)) {
-                    throw new IllegalArgumentException("newSeparator must not be blank");
-                }
+                TagCategoryNamePolicy.requireNonBlank(newSeparator, "newSeparator");
                 break;
             case RENAME_TAG:
                 requirePath();
-                if (isBlank(newName)) {
-                    throw new IllegalArgumentException("newName must not be blank");
-                }
+                TagCategoryNamePolicy.requireNonBlank(newName, "newName");
                 break;
             case MOVE_TAG:
                 requirePath();
@@ -101,9 +85,7 @@ public class TagCategoryInstruction {
                 break;
             case SET_COLOR:
                 requirePath();
-                if (isBlank(color)) {
-                    throw new IllegalArgumentException("color must not be blank");
-                }
+                TagCategoryNamePolicy.requireNonBlank(color, "color");
                 break;
             case ADD_TAG:
                 requirePath();
@@ -146,10 +128,6 @@ public class TagCategoryInstruction {
         if (newParentPath != null && !newParentPath.isEmpty()) {
             throw new IllegalArgumentException("newParentPath must be omitted or empty for uncategorized move");
         }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 
     public TagCategoryInstructionType getType() {

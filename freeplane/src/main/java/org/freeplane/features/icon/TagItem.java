@@ -1,7 +1,5 @@
 package org.freeplane.features.icon;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,33 +11,15 @@ public class TagItem {
 
     public TagItem(List<String> path, String name, String qualifiedName, String color) {
         this.path = copyPath(path);
-        if (isBlank(name)) {
-            throw new IllegalArgumentException("name must not be blank");
-        }
-        if (isBlank(qualifiedName)) {
-            throw new IllegalArgumentException("qualifiedName must not be blank");
-        }
+        TagCategoryNamePolicy.requireNonBlank(name, "name");
+        TagCategoryNamePolicy.requireNonBlank(qualifiedName, "qualifiedName");
         this.name = name;
         this.qualifiedName = qualifiedName;
         this.color = color;
     }
 
     private List<String> copyPath(List<String> sourcePath) {
-        if (sourcePath == null || sourcePath.isEmpty()) {
-            throw new IllegalArgumentException("path must not be empty");
-        }
-        ArrayList<String> copy = new ArrayList<>(sourcePath.size());
-        for (String pathPart : sourcePath) {
-            if (isBlank(pathPart)) {
-                throw new IllegalArgumentException("path contains blank segment");
-            }
-            copy.add(pathPart);
-        }
-        return Collections.unmodifiableList(copy);
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+        return TagCategoryNamePolicy.copyValidatedPath(sourcePath);
     }
 
     public List<String> getPath() {

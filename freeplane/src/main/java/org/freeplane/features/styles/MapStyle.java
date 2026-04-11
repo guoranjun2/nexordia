@@ -66,6 +66,7 @@ import org.freeplane.features.filter.condition.ASelectableCondition;
 import org.freeplane.features.filter.condition.ConditionFactory;
 import org.freeplane.features.icon.IconRegistry;
 import org.freeplane.features.icon.TagCategories;
+import org.freeplane.features.icon.TagCategoryRepairService;
 import org.freeplane.features.map.IMapLifeCycleListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapController;
@@ -117,6 +118,7 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 
 	private static final ThreadLocal<Boolean> followedStyleUpdateActive = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	private static final WeakHashMap<MapModel, String> updatedFollowedMaps = new WeakHashMap<MapModel, String>();
+    private static final WeakHashMap<MapModel, String> tagRepairReports = new WeakHashMap<MapModel, String>();
 
 	static {
 		if(! GraphicsEnvironment.isHeadless()) {
@@ -129,27 +131,48 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 					MapView mapView = (MapView)newView;
 					MapModel newMap = mapView.getMap();
 					String followedMapPath = updatedFollowedMaps.remove(newMap);
-					if(followedMapPath == null)
-						return;
-                    String message = TextUtils.format("stylesUpdated", newMap.getTitle(), followedMapPath);
-                    NodeView root = mapView.getRoot();
-					if(root.isShowing())
-                    	UITools.showMessage(message, JOptionPane.INFORMATION_MESSAGE);
-                    else
-                    	root.addHierarchyListener(new HierarchyListener() {
-							@Override
-							public void hierarchyChanged(HierarchyEvent e) {
-								if(root.isShowing()) {
-									root.removeHierarchyListener(this);
-									SwingUtilities.invokeLater(() ->
-										UITools.showMessage(message, JOptionPane.INFORMATION_MESSAGE));
-								}
-							}
-						});
+					if(followedMapPath != null) {
+                        showMessageWhenMapIsVisible(mapView,
+                            TextUtils.format("stylesUpdated", newMap.getTitle(), followedMapPath));
+                    }
+                    String tagRepairReport = tagRepairReports.remove(newMap);
+                    if(tagRepairReport != null) {
+                        showMessageWhenMapIsVisible(mapView, tagRepairReport);
+                    }
 				}
 			});
 		}
 	}
+
+    private static void showMessageWhenMapIsVisible(MapModel map, String message) {
+        if(message == null || message.isEmpty() || GraphicsEnvironment.isHeadless())
+            return;
+        IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
+        for(Component view : mapViewManager.getViews(map)) {
+            if(view instanceof MapView) {
+                showMessageWhenMapIsVisible((MapView) view, message);
+                return;
+            }
+        }
+        tagRepairReports.put(map, message);
+    }
+
+    private static void showMessageWhenMapIsVisible(MapView mapView, String message) {
+        NodeView root = mapView.getRoot();
+        if(root.isShowing())
+            UITools.showMessage(message, JOptionPane.INFORMATION_MESSAGE);
+        else
+            root.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if(root.isShowing()) {
+                        root.removeHierarchyListener(this);
+                        SwingUtilities.invokeLater(() ->
+                            UITools.showMessage(message, JOptionPane.INFORMATION_MESSAGE));
+                    }
+                }
+            });
+    }
 	public static void install(boolean persistent){
 		new MapStyle(persistent);
 	}
@@ -511,6 +534,10 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 	    else {
 	        createDefaultStyleMap(map);
 	    }
+        TagCategoryRepairService.RepairResult repairResult = new TagCategoryRepairService().repairLoadedMap(map);
+        if(repairResult.hasChanges()) {
+            showMessageWhenMapIsVisible(map, repairResult.toMessage());
+        }
 	}
 
 	private void createDefaultStyleMap(final MapModel map) {

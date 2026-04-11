@@ -58,6 +58,14 @@ public class TagCategoryAccessContractTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("newName");
 
+        assertThatThrownBy(() -> TagCategoryInstruction.renameTag(Arrays.asList("Project", "Status"), "   "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("newName");
+
+        assertThatThrownBy(() -> TagCategoryInstruction.renameTag(Arrays.asList("Project", " "), "Renamed"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("path contains blank segment");
+
         assertThatThrownBy(() -> TagCategoryInstruction.addTag(Arrays.asList("Project", "Status"),
             TagTargetLocation.UNCATEGORIZED))
             .isInstanceOf(IllegalArgumentException.class)

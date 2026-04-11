@@ -162,6 +162,24 @@ public class TagCategoriesTest {
     }
 
     @Test
+    public void preservesWhitespaceOnlyCategorizedContentBeforeRepair() {
+        TagCategories uut = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "::");
+
+        uut.load("ttag#a9d100ff\n"
+            + "   #65bdffff\n"
+            + "  kk#ceaf00ff\n");
+
+        DefaultMutableTreeNode topLevelNode = (DefaultMutableTreeNode) uut.getRootNode().getChildAt(0);
+        DefaultMutableTreeNode blankNode = (DefaultMutableTreeNode) topLevelNode.getChildAt(0);
+        assertThat(uut.tagWithoutCategories(blankNode).getContent()).isEqualTo("  ");
+        assertThat(uut.tagWithoutCategories(blankNode).getColor())
+            .isEqualTo(ColorUtils.stringToColor("#65bdffff"));
+    }
+
+    @Test
     public void updatesReferencedTagsWithoutNodeTraversal() {
         TagCategories uut = tagCategories("AA#11223344\n"
             + " BB#22334455\n");

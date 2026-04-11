@@ -97,6 +97,7 @@ import org.freeplane.features.icon.TagCategoryAccess;
 import org.freeplane.features.icon.TagCategoryConflictException;
 import org.freeplane.features.icon.TagCategoryDraftState;
 import org.freeplane.features.icon.TagCategoryEditorDraftSubmission;
+import org.freeplane.features.icon.TagCategoryNamePolicy;
 import org.freeplane.features.icon.TagCategoryStateBuilder;
 import org.freeplane.features.icon.TagReferenceRewrite;
 import org.freeplane.features.icon.TreeTagChangeListener;
@@ -162,7 +163,7 @@ class TagCategoryEditor implements IExtension {
         @Override
         public Object getCellEditorValue() {
             Tag tag = tagCategories.tagWithoutCategories(currentNode);
-            String text = textField.getText();
+            String text = TagCategoryNamePolicy.normalizeSegment(textField.getText());
             if(text.isEmpty())
                 return tag;
             if(tag.isEmpty())
@@ -173,7 +174,7 @@ class TagCategoryEditor implements IExtension {
 
         @Override
         public boolean stopCellEditing() {
-            String text = textField.getText();
+            String text = TagCategoryNamePolicy.normalizeSegment(textField.getText());
             if(text.isEmpty())
                 return false;
             TreePath editingPath = tree.getEditingPath();
