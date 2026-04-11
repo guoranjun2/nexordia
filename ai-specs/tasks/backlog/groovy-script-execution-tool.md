@@ -4,7 +4,9 @@
   AI and MCP that can be enabled separately, runs under a dedicated
   AI-script permission profile, optionally requires user review in tool
   chat before execution, and returns only plain tool data or captured
-  text.
+  text. Add on-demand scripting API documentation tools so LLMs can
+  inspect the distributed Freeplane API documentation before writing
+  unfamiliar scripts without injecting the full API reference by default.
 - **Motivation:** Some workflows need traversal, aggregation,
   reporting, or direct API access that typed tools do not cover. LLMs
   can already draft Freeplane Groovy scripts, but there is no tool path
@@ -211,3 +213,315 @@ ScriptExecutionStatus
     - With script review enabled, confirm the script appears in tool
       chat before execution, allow runs it, skip prevents execution, and
       the temporary editor disappears after either choice.
+
+## Subtask: Expose scripting API documentation tools
+- **Status:** backlog
+- **Scope:** Add read-only, on-demand tools for internal AI and MCP to
+  search and read the distributed Freeplane scripting API documentation.
+  These tools support the Groovy script execution tool without adding the
+  full API reference to default chat or MCP context.
+- **Motivation:** The Groovy execution tool is only useful when the LLM
+  can discover the Freeplane scripting API. A user previously gave an LLM
+  a broad API reference and a large utility script so it could write
+  Freeplane Groovy, but injecting that volume of content by default would
+  be noisy and would duplicate generated documentation.
+- **Scenario:** An LLM wants to write or review a Groovy script for the
+  user. Before using unfamiliar Freeplane APIs, it calls
+  `getFreeplaneScriptingApiOverview`, then
+  `searchFreeplaneScriptingApi` with the needed concept, then
+  `getFreeplaneScriptingApiEntry` for exact type or member details. If it
+  needs a snippet, it calls `getFreeplaneScriptingApiExamples` for
+  examples extracted from the distributed Javadocs. The script execution
+  tool description tells the LLM that these documentation tools exist,
+  but no large API reference is injected unless requested by tool calls.
+- **Constraints:**
+  - The runtime documentation source must be the distributed
+    `doc/api` tree under `ResourceController.getInstallationBaseDir()`;
+    in development this is `BIN/doc/api`.
+  - `DIST` copies are packaging output and must not be used as the
+    canonical documentation source.
+  - Source files under `freeplane_api` and `freeplane_plugin_script` are
+    useful for development research but must not be required at runtime.
+  - Do not maintain a second manual API reference. The tools must parse
+    generated Javadoc indexes and generated Javadoc HTML.
+  - Do not inject broad API documentation into the script execution tool
+    description or default chat system message.
+  - Expose the same documentation tools through LangChain4j and MCP.
+  - Documentation tools must be read-only and must not execute scripts or
+    inspect maps.
+  - Search results should prefer the supported scripting API surface:
+    `org.freeplane.plugin.script.proxy`, `org.freeplane.api`,
+    `org.freeplane.plugin.script`, `org.freeplane.core.util`, and
+    `org.freeplane.core.ui.components`.
+  - Search results should prefer proxy scripting entries over inherited
+    base API entries when both are relevant, because Groovy scripts use
+    the proxy surface.
+  - Internal Freeplane implementation APIs must not be promoted unless
+    the query explicitly asks for internals and those internals are
+    present in the distributed API documentation.
+  - If the distributed `doc/api` tree is missing or unreadable, the tools
+    must fail with a clear documentation-unavailable result instead of
+    silently falling back to source code.
+  - The user-provided `reference.md` and `utilityPanels.groovy` files are
+    research examples only. They must not become bundled default context;
+    `utilityPanels.groovy` demonstrates advanced Swing/internal usage and
+    should not bias normal scripting guidance toward fragile internals.
+- **Briefing:** Freeplane is used by LLMs through the internal
+  LangChain4j tool set and as an MCP server exposing the same tool set.
+  `ModelContextProtocolToolRegistry` builds MCP tool metadata from
+  LangChain4j tool specifications, so adding methods to `AIToolSet` makes
+  them available to both surfaces when wired normally. Existing scripting
+  documentation is already distributed under `doc/api`. The scripting
+  help action resolves it with
+  `ResourceController.getResourceController().getInstallationBaseDir()`
+  plus `/doc/api/index.html`.
+- **Research:**
+  - `BIN/doc/api` contains generated Javadoc output and is distributed.
+  - `BIN/doc/api/type-search-index.js`,
+    `BIN/doc/api/member-search-index.js`,
+    `BIN/doc/api/package-search-index.js`, and
+    `BIN/doc/api/tag-search-index.js` are generated search indexes with
+    JSON-like arrays assigned to JavaScript variables and followed by
+    `updateSearchResults();`.
+  - `BIN/doc/api/index.html` is the generated package index, while
+    `BIN/doc/api/overview-summary.html` redirects to `index.html`.
+  - `BIN/doc/api/org/freeplane/plugin/script/proxy/Proxy.html` documents
+    the proxy API and its read-only/read-write interface split.
+  - `BIN/doc/api/org/freeplane/plugin/script/FreeplaneScriptBaseClass.html`
+    documents global script helpers such as `ui`, `logger`, `htmlUtils`,
+    `textUtils`, `menuUtils`, and `config`.
+  - Type and member pages under `BIN/doc/api/org/freeplane/api` document
+    the inherited API used by the proxy scripting surface.
+  - Search index entries contain enough data to build documentation page
+    paths: package (`p`), class/type (`c`), label (`l`), and member
+    anchor (`u`) when an anchor is needed.
+  - Full descriptions, parameters, return values, examples, deprecation
+    notes, and since notes live in the generated HTML pages, not in the
+    search index files.
+  - Existing tool names are camelCase method names exposed from
+    `AIToolSet`; MCP uses the same names from the LangChain4j tool
+    specifications.
+- **Design:**
+  - Add a documentation package under the AI tool module:
+    `org.freeplane.plugin.ai.tools.scriptapi`.
+  - Add one shared `FreeplaneScriptingApiDocumentation` implementation
+    used by internal AI and MCP through `AIToolSet`.
+  - Resolve the documentation root from
+    `ResourceController.getResourceController().getInstallationBaseDir()`
+    plus `doc/api`.
+  - Add these `AIToolSet` methods and tool names:
+    - `getFreeplaneScriptingApiOverview`
+    - `searchFreeplaneScriptingApi`
+    - `getFreeplaneScriptingApiEntry`
+    - `getFreeplaneScriptingApiExamples`
+  - `getFreeplaneScriptingApiOverview` reads the generated docs and
+    returns concise orientation from:
+    - `index.html` for available packages,
+    - `org/freeplane/plugin/script/proxy/Proxy.html` for the proxy API
+      and read-only/read-write split,
+    - `org/freeplane/plugin/script/FreeplaneScriptBaseClass.html` for
+      script globals and utility shortcuts.
+  - The script execution tool description should contain only a short
+    pointer: scripts receive `node` and `c`; before using unfamiliar
+    Freeplane APIs, call the Freeplane scripting API documentation tools;
+    return only JSON-safe values or text.
+  - `searchFreeplaneScriptingApi` parses the generated Javadoc index
+    files on first use, caches an immutable in-memory index keyed by the
+    documentation root path and index file last-modified timestamps, and
+    invalidates the cache when those timestamps change.
+  - `limit` parameters default to 10 and are clamped to 25. Overview,
+    entry, and example responses must use bounded text excerpts and set
+    `truncated=true` when content is omitted to keep tool results small.
+  - The Javadoc index parser strips the generated JavaScript assignment
+    prefix and trailing `updateSearchResults();`, then parses the
+    remaining array with Jackson.
+  - Search ranking:
+    - exact type/member matches before partial matches,
+    - query matches in labels before package-only matches,
+    - `org.freeplane.plugin.script.proxy` before `org.freeplane.api`,
+    - `org.freeplane.api` before script utility packages,
+    - deprecated entries after non-deprecated matches with equal score,
+    - stable ordering by package, type, member, and anchor as a final
+      tie-breaker.
+  - `getFreeplaneScriptingApiEntry` accepts only an
+    `entryIdentifier` returned by search or examples. It resolves the
+    generated HTML path and optional member anchor, extracts the class or
+    member section, converts the bounded HTML to plain text with existing
+    Freeplane HTML utilities, and returns structured fields.
+  - Invalid or unknown `entryIdentifier` values return a clear
+    `errorMessage`; the tool must never treat `entryIdentifier` as a
+    caller-provided file path.
+  - `getFreeplaneScriptingApiExamples` searches generated Javadoc pages
+    for matching `<pre>` blocks and examples in bounded class/member
+    sections. It returns only examples that can be tied to a generated
+    documentation entry identifier.
+  - Use these stable entry identifier formats:
+    - `package:<packageName>`
+    - `type:<packageName>:<typeName>`
+    - `member:<packageName>:<typeName>:<anchor>`
+    - `tag:<label>:<anchor>`
+  - Do not expose file-system paths in `entryIdentifier`. Responses may
+    include `documentationPath` relative to the documentation root for
+    traceability.
+
+```plantuml
+@startuml
+actor "LLM" as LLM
+participant "AIToolSet / MCP registry" as ToolSurface
+participant "FreeplaneScriptingApiDocumentation" as Docs
+participant "Javadoc index cache" as IndexCache
+database "Installation doc/api" as DocApi
+
+LLM -> ToolSurface: searchFreeplaneScriptingApi(query)
+ToolSurface -> Docs: search(request)
+Docs -> IndexCache: load or reuse parsed indexes
+IndexCache -> DocApi: read *-search-index.js when stale
+Docs --> ToolSurface: ranked entry identifiers
+LLM -> ToolSurface: getFreeplaneScriptingApiEntry(entryIdentifier)
+ToolSurface -> Docs: getEntry(request)
+Docs -> DocApi: read generated HTML page and anchor
+Docs --> ToolSurface: structured documentation entry
+@enduml
+```
+
+Target request and response structure:
+
+```text
+FreeplaneScriptingApiOverviewRequest
+  topic : String?
+
+FreeplaneScriptingApiOverviewResponse
+  documentationAvailable : boolean
+  overview : String?
+  entryPoints : List<ScriptingApiSearchResult>
+  truncated : boolean
+  errorMessage : String?
+
+FreeplaneScriptingApiSearchRequest
+  query : String
+  kind : ScriptingApiSearchKind?
+  limit : Integer?
+
+ScriptingApiSearchKind
+  ANY
+  PACKAGE
+  TYPE
+  MEMBER
+  TAG
+  EXAMPLE
+
+FreeplaneScriptingApiSearchResponse
+  documentationAvailable : boolean
+  results : List<ScriptingApiSearchResult>
+  truncated : boolean
+  errorMessage : String?
+
+ScriptingApiSearchResult
+  entryIdentifier : String
+  kind : ScriptingApiEntryKind
+  packageName : String?
+  typeName : String?
+  memberName : String?
+  displayName : String
+  documentationPath : String?
+  anchor : String?
+  summary : String?
+  deprecated : boolean
+
+ScriptingApiEntryKind
+  PACKAGE
+  TYPE
+  MEMBER
+  TAG
+  EXAMPLE
+
+FreeplaneScriptingApiEntryRequest
+  entryIdentifier : String
+
+FreeplaneScriptingApiEntryResponse
+  documentationAvailable : boolean
+  entryIdentifier : String
+  kind : ScriptingApiEntryKind
+  title : String?
+  signature : String?
+  description : String?
+  parameters : List<ScriptingApiParameter>
+  returnDescription : String?
+  examples : List<String>
+  relatedEntryIdentifiers : List<String>
+  documentationPath : String?
+  deprecated : boolean
+  since : String?
+  truncated : boolean
+  errorMessage : String?
+
+ScriptingApiParameter
+  name : String
+  description : String?
+
+FreeplaneScriptingApiExamplesRequest
+  topic : String
+  limit : Integer?
+
+FreeplaneScriptingApiExamplesResponse
+  documentationAvailable : boolean
+  examples : List<ScriptingApiExample>
+  truncated : boolean
+  errorMessage : String?
+
+ScriptingApiExample
+  entryIdentifier : String
+  title : String
+  code : String
+  documentationPath : String
+```
+
+  - Completeness check:
+    - Runtime documentation source is defined and limited to
+      distributed `doc/api`.
+    - Source and `DIST` fallback paths are explicitly excluded.
+    - Tool surfaces are covered through shared `AIToolSet` exposure to
+      LangChain4j and MCP.
+    - Default context size is controlled by on-demand tools instead of
+      API injection.
+    - Search, entry retrieval, examples, unavailable-docs failure mode,
+      caching, ranking, bounded results, invalid identifiers, and stable
+      identifiers are specified.
+    - Request and response structures are complete enough for schema
+      generation and MCP publication.
+- **Test specification:**
+  - Automated tests:
+    - Verify the documentation root resolver uses
+      `ResourceController.getInstallationBaseDir()` plus `doc/api`.
+    - Verify missing `doc/api` returns
+      `documentationAvailable=false` with a clear `errorMessage`.
+    - Verify source directories and `DIST` paths are not used by the
+      production documentation resolver.
+    - Verify the Javadoc index parser reads type, member, package, and
+      tag entries from generated index JavaScript.
+    - Verify search ranking prefers proxy scripting entries over base API
+      entries for overlapping names.
+    - Verify search ranking demotes deprecated entries when an otherwise
+      equivalent non-deprecated entry exists.
+    - Verify `getFreeplaneScriptingApiEntry` resolves a type entry to
+      the expected generated HTML page.
+    - Verify `getFreeplaneScriptingApiEntry` resolves a member entry to
+      the expected generated HTML anchor.
+    - Verify invalid `entryIdentifier` input returns a clear error and
+      does not resolve as a file path.
+    - Verify HTML extraction returns bounded text for a type section and
+      does not return an entire Javadoc page.
+    - Verify search, entry, overview, and example responses honor size
+      limits and set `truncated=true` when applicable.
+    - Verify examples are extracted from generated Javadoc `<pre>`
+      blocks and include the source entry identifier.
+    - Verify all four documentation tools are advertised by LangChain4j
+      tool specifications and therefore appear in MCP tool listing.
+    - Verify the script execution tool description points to the
+      documentation tools without embedding broad API reference content.
+  - Manual tests:
+    - Start Freeplane from `BIN` and verify a chat model can search for
+      node traversal APIs, read the relevant entry, and draft a script
+      returning JSON-safe plain data.
+    - Connect through MCP and verify the same documentation tools are
+      discoverable and usable before calling the script execution tool.
