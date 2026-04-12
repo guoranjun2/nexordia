@@ -3,24 +3,26 @@
 - **Scope:** Add an optional Groovy script execution tool for internal
   AI and MCP that can be enabled separately, runs under a dedicated
   AI-script permission profile, optionally requires user review in tool
-  chat before execution, and returns only plain tool data or captured
-  text. Add on-demand scripting API documentation tools so LLMs can
-  inspect the distributed Freeplane API documentation before writing
-  unfamiliar scripts without injecting the full API reference by default.
+  chat before execution, accepts either inline script content or a
+  script file path, and returns only plain tool data or captured text.
+  Add on-demand scripting API documentation tools so LLMs can inspect
+  the distributed Freeplane API documentation before writing unfamiliar
+  scripts without injecting the full API reference by default.
 - **Motivation:** Some workflows need traversal, aggregation,
   reporting, or direct API access that typed tools do not cover. LLMs
   can already draft Freeplane Groovy scripts, but there is no tool path
   that executes them from AI or MCP.
 - **Scenario:** A user enables Groovy tool scripts for internal AI,
-  MCP, or both. AI submits a Groovy script with optional map and node
-  context. If `ai_script_execution_requires_review` is enabled, tool
-  chat shows the submitted script in a temporary Groovy/plain-text
-  editor pane with allow and skip controls before execution. If the
-  user allows the script, Freeplane executes it with the configured
-  AI-script permissions, captures stdout, and returns a plain-data
-  result. If the user skips execution, that outcome is returned to AI.
-  If the script returns unsupported Java objects, the tool fails with
-  guidance to convert the result to strings, lists, or maps.
+  MCP, or both. AI submits either Groovy script source or a path to a
+  Groovy script file, with optional map and node context. If
+  `ai_script_execution_requires_review` is enabled, tool chat shows the
+  resolved script text in a temporary Groovy/plain-text editor pane
+  with allow and skip controls before execution. If the user allows the
+  script, Freeplane executes it with the configured AI-script
+  permissions, captures stdout, and returns a plain-data result. If the
+  user skips execution, that outcome is returned to AI. If the script
+  returns unsupported Java objects, the tool fails with guidance to
+  convert the result to strings, lists, or maps.
 - **Constraints:**
   - Tool exposure to internal AI and MCP must be controlled
     separately.
@@ -39,9 +41,12 @@
     unless research finds a concrete difference.
   - The feature needs built-in usage guidance for LLMs, not only a bare
     tool signature.
-  - When script review is enabled and a tool call includes script
-    source, tool chat must show a temporary `JEditorPane` with the
-    submitted script and allow/skip buttons before execution.
+  - The request must accept exactly one script input source: inline
+    script content or a script file path.
+  - When script review is enabled and a tool call includes inline
+    script content or a script file path, tool chat must show a
+    temporary `JEditorPane` with the resolved script text and allow/skip
+    buttons before execution.
   - After the user chooses allow or skip, the temporary review editor
     must be hidden again.
   - Skipped execution must be returned to AI as an explicit
@@ -105,11 +110,11 @@ Engine --> ScriptSurface: result and stdout
   - Reuse existing scripting permission enforcement, but source it from
     the dedicated AI-script configuration block rather than general
     script defaults.
-  - Keep script input minimal: script source, optional map identifier,
-    optional node identifier, and optional requested result mode.
+  - Keep script input minimal: exactly one of inline script source or
+    script file path, optional map identifier, optional node
+    identifier, and optional requested result mode.
   - If `ai_script_execution_requires_review` is `true` and the request
-    includes
-    script source:
+    includes inline script source or a script file path:
     - show a temporary tool-chat `JEditorPane` for Groovy/plain-text
       display,
     - render the submitted script in that editor,
@@ -157,8 +162,12 @@ Target request and response structure:
 ExecuteGroovyScriptRequest
   mapIdentifier : String?
   nodeIdentifier : String?
-  script : String
+  script : String?
+  scriptFilePath : String?
   resultMode : ScriptResultMode?
+
+Request invariants
+  exactly one of script or scriptFilePath must be provided
 
 ScriptResultMode
   AUTO
@@ -195,11 +204,16 @@ ScriptExecutionStatus
       serialization error with guidance to convert to plain data.
     - Verify stdout capture is returned alongside successful or failed
       execution.
+    - Verify inline script content and script file input are both
+      supported.
+    - Verify requests with both `script` and `scriptFilePath`, or with
+      neither, fail with a clear validation error.
     - Verify `ai_script_execution_requires_review` defaults to `true`.
     - Verify a script call shows the review `JEditorPane` only when the
-      review flag is enabled and script source is present.
-    - Verify the review pane shows the submitted script together with
-      allow and skip controls.
+      review flag is enabled and inline script content or script file
+      input is present.
+    - Verify the review pane shows the resolved script text together
+      with allow and skip controls.
     - Verify allow continues execution and skip returns a non-success
       result to AI without executing the script.
     - Verify the review editor is hidden again after allow or skip.
