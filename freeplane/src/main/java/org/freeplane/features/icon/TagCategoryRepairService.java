@@ -1,10 +1,11 @@
 package org.freeplane.features.icon;
 
-import java.util.ArrayList;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -81,18 +82,13 @@ public class TagCategoryRepairService {
         }
         Tag tag = tagCategories.tagWithoutCategories(node);
         String originalQualifiedName = tagCategories.categorizedContent(node);
-        String normalizedName = TagCategoryNamePolicy.normalizeSegment(tag.getContent());
-        String normalizedQualifiedName = TagCategoryNamePolicy.normalizeQualifiedName(
+        String normalizedName = replaceBoundaryWhitespace(tag.getContent());
+        String normalizedQualifiedName = replaceBoundaryWhitespaceInQualifiedName(
             originalQualifiedName,
             tagCategories.getTagCategorySeparator());
         if (!originalQualifiedName.equals(normalizedQualifiedName)) {
             replacements.add(new ReferenceReplacement(originalQualifiedName, normalizedQualifiedName));
             changes.add(changeDescription(originalQualifiedName, normalizedQualifiedName));
-        }
-        if (normalizedName.isEmpty()) {
-            liftChildren(tagCategories, node);
-            tagCategories.removeNodeFromParent(node);
-            return;
         }
         if (!normalizedName.equals(tag.getContent())) {
             DefaultTreeModel nodes = tagCategories.getNodes();
@@ -110,14 +106,10 @@ public class TagCategoryRepairService {
         for (DefaultMutableTreeNode childNode : childNodes) {
             Tag tag = tagCategories.tagWithoutCategories(childNode);
             String originalContent = tag.getContent();
-            String normalizedContent = TagCategoryNamePolicy.normalizeSegment(originalContent);
+            String normalizedContent = replaceBoundaryWhitespace(originalContent);
             if (!originalContent.equals(normalizedContent)) {
                 replacements.add(new ReferenceReplacement(originalContent, normalizedContent));
                 changes.add(changeDescription(originalContent, normalizedContent));
-            }
-            if (normalizedContent.isEmpty()) {
-                tagCategories.removeNodeFromParent(childNode);
-                continue;
             }
             if (!normalizedContent.equals(originalContent)
                 && hasExactTarget(tagCategories, childNode, normalizedContent)) {
@@ -130,6 +122,36 @@ public class TagCategoryRepairService {
                 nodes.valueForPathChanged(pathToRoot, new Tag(normalizedContent, tag.getColor()));
             }
         }
+    }
+
+    private String replaceBoundaryWhitespaceInQualifiedName(String qualifiedName, String separator) {
+        if (qualifiedName == null) {
+            return "";
+        }
+        if (separator == null || separator.isEmpty()) {
+            return replaceBoundaryWhitespace(qualifiedName);
+        }
+        String[] segments = qualifiedName.split(Pattern.quote(separator), -1);
+        for (int i = 0; i < segments.length; i++) {
+            segments[i] = replaceBoundaryWhitespace(segments[i]);
+        }
+        return String.join(separator, segments);
+    }
+
+    private String replaceBoundaryWhitespace(String value) {
+        if (value == null || value.isEmpty()) {
+            return value == null ? "" : value;
+        }
+        char[] chars = value.toCharArray();
+        int leading = 0;
+        while (leading < chars.length && chars[leading] <= ' ') {
+            chars[leading] = '_';
+            leading++;
+        }
+        for (int trailing = chars.length - 1; trailing >= 0 && chars[trailing] <= ' '; trailing--) {
+            chars[trailing] = '_';
+        }
+        return new String(chars);
     }
 
     private boolean hasExactTarget(TagCategories tagCategories,
@@ -175,18 +197,6 @@ public class TagCategoryRepairService {
         tagCategories.updateTagReferences();
     }
 
-    private void liftChildren(TagCategories tagCategories, DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
-        DefaultTreeModel nodes = tagCategories.getNodes();
-        List<DefaultMutableTreeNode> childNodes = childTagNodes(node, tagCategories);
-        int insertionIndex = parentNode.getIndex(node);
-        for (DefaultMutableTreeNode childNode : childNodes) {
-            nodes.removeNodeFromParent(childNode);
-            nodes.insertNodeInto(childNode, parentNode, insertionIndex++);
-            tagCategories.merge(childNode);
-        }
-    }
-
     private List<DefaultMutableTreeNode> childTagNodes(DefaultMutableTreeNode parentNode, TagCategories tagCategories) {
         ArrayList<DefaultMutableTreeNode> childNodes = new ArrayList<>(parentNode.getChildCount());
         for (int childIndex = 0; childIndex < parentNode.getChildCount(); childIndex++) {
@@ -199,9 +209,7 @@ public class TagCategoryRepairService {
     }
 
     private String changeDescription(String from, String to) {
-        return to.isEmpty()
-            ? translatedFormat("tag_category_repair_report_removed", "\"{0}\" -> removed", from)
-            : translatedFormat("tag_category_repair_report_renamed", "\"{0}\" -> \"{1}\"", from, to);
+        return translatedFormat("tag_category_repair_report_renamed", "\"{0}\" -> \"{1}\"", from, to);
     }
 
     private static String translatedText(String key, String fallback) {

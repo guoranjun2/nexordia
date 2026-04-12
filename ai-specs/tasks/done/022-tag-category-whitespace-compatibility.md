@@ -228,3 +228,52 @@ from already-valid `TagCategories`.
       removed, normalized, or merged after repair.
     - Try to create or rename tags to whitespace-only values in both
       editors and confirm consistent behavior.
+
+## Subtask: Simplify legacy whitespace repair to underscore substitution
+- **Status:** done
+- **Scope:** Update `TagCategoryRepairService` so legacy repair replaces
+  boundary whitespace with underscores instead of trim-based removal.
+- **Motivation:** Keep legacy tag paths representable and make repair
+  behavior deterministic while preserving non-blank validation for
+  category state objects.
+- **Scenario:** A map contains uncategorized tags or categorized path
+  segments with leading or trailing characters `<= ' '`. On map load,
+  repair rewrites those boundary characters to `_`, updates tag
+  references, and avoids deleting tags or segments only because they
+  were blank after trim.
+- **Constraints:**
+  - Keep task file location in `done` (do not move to
+    `in-progress`).
+  - Replace only leading and trailing characters `<= ' '`.
+  - Do not remove tags or path segments solely because trim would
+    produce empty text.
+  - Keep collision handling through existing merge and reference rewrite
+    logic.
+- **Briefing:** The change is local to repair behavior and tests:
+  `TagCategoryRepairService` and
+  `TagCategoryRepairServiceTest`.
+- **Research:**
+  - Current repair uses `TagCategoryNamePolicy.normalizeSegment(...)`
+    and removes blank-after-trim tags or segments.
+  - This creates special-case removal paths (`liftChildren`, delete
+    uncategorized nodes, and "removed" report text) that are no longer
+    needed for the requested behavior.
+- **Design:**
+  - Add local helpers in `TagCategoryRepairService`:
+    - `replaceBoundaryWhitespace(String)`
+    - `replaceBoundaryWhitespaceInQualifiedName(String, String)`
+  - Use those helpers for uncategorized values and categorized
+    qualified names.
+  - Remove blank-result deletion branches and keep merge/reference
+    rewrite flow.
+  - Keep repair reporting as rename entries (`"from" -> "to"`).
+- **Test specification:**
+  - Automated tests:
+    - `replacesBoundaryWhitespaceInUncategorizedTags`
+    - `replacesBoundaryWhitespaceInCategorizedPaths`
+    - `keepsLegacyBlankCategoryAsUnderscores`
+    - `repairsLegacyWhitespaceTagsWhenMapLoadCompletes`
+    - Run: `gradle :freeplane:test --tests
+      org.freeplane.features.icon.TagCategoryRepairServiceTest`
+  - Manual tests:
+    - N/A (covered by automated tests for this localized repair change).
