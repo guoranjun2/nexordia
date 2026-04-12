@@ -539,3 +539,59 @@ ScriptingApiExample
       returning JSON-safe plain data.
     - Connect through MCP and verify the same documentation tools are
       discoverable and usable before calling the script execution tool.
+
+## Subtask: Enable formula authoring and migration through script tooling
+- **Status:** backlog
+- **Scope:** Extend the Groovy script tool path so AI can intentionally
+  create, replace, and migrate formula content in nodes through script
+  execution, with explicit guidance and guardrails.
+- **Motivation:** Formula edits are currently blocked in the typed edit
+  flow. Users still need safe formula operations for advanced
+  automation, and scripting is the right surface for explicit power-user
+  behavior.
+- **Scenario:** A user asks AI to convert selected node text to formulas
+  or replace existing formulas with plain values. AI uses the scripting
+  API documentation tools to verify the correct API, then executes a
+  reviewed Groovy script that applies formula changes. The tool returns
+  structured results and stdout so AI can confirm exactly what changed.
+- **Constraints:**
+  - Keep formula support in the scripting tool family; do not broaden
+    typed edit support in this subtask.
+  - Formula operations must remain behind script-tool exposure and
+    permission controls.
+  - When script review is enabled, formula scripts must still pass the
+    same allow/skip review gate before execution.
+  - Script examples and guidance must clearly distinguish plain text,
+    HTML, markdown/latex content, and formula semantics.
+  - Results must stay JSON-safe or text-only; do not return arbitrary
+    object graphs.
+- **Briefing:** Freeplane scripting already exposes `c` and `node` and
+  can access write APIs unavailable in the typed edit contract. The
+  script execution and scripting-doc tools in this task are intended to
+  support these advanced operations with explicit user-controlled review
+  and permissions.
+- **Research:** To be done when this subtask becomes current.
+- **Design:**
+  - Add a formula-focused section to script tool guidance and cookbook
+    examples.
+  - Add dedicated documentation-tool examples for discovering formula-
+    related APIs.
+  - Define deterministic result payloads for bulk formula migration
+    scripts (counts, target IDs, and per-target outcomes in plain data).
+  - Keep typed edit restrictions unchanged; reference this subtask as the
+    approved formula path.
+- **Test specification:**
+  - Automated tests:
+    - Verify reviewed script execution can set formula content on target
+      nodes when script tool exposure is enabled.
+    - Verify formula migration scripts can replace formula content with
+      plain values and report structured outcomes.
+    - Verify formula scripts respect configured script permissions and
+      review gate behavior.
+    - Verify documentation tools can locate and return formula-relevant
+      API entries/examples used by scripts.
+  - Manual tests:
+    - Run a reviewed script that converts a small subtree from plain text
+      to formulas and verify map results.
+    - Run a reviewed rollback script that converts formulas back to plain
+      values and verify results and tool response payloads.
