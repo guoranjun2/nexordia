@@ -68,6 +68,7 @@ import org.freeplane.plugin.ai.tools.move.MoveNodesTool;
 import org.freeplane.plugin.ai.tools.move.SummaryNodeCreator;
 import org.freeplane.plugin.ai.tools.read.FetchNodesForEditingRequest;
 import org.freeplane.plugin.ai.tools.read.FetchNodesForEditingResponse;
+import org.freeplane.plugin.ai.tools.read.ReadNodesWithDescendantsAsPlainTextResponse;
 import org.freeplane.plugin.ai.tools.read.ReadNodesWithDescendantsRequest;
 import org.freeplane.plugin.ai.tools.read.ReadNodesWithDescendantsResponse;
 import org.freeplane.plugin.ai.tools.read.ReadNodesWithDescendantsTool;
@@ -215,6 +216,21 @@ public class AIToolSet {
             return response;
         } catch (RuntimeException error) {
             publishToolCallSummary(readNodesWithDescendantsTool.buildToolCallErrorSummary(request, error));
+            throw error;
+        }
+    }
+
+    @Tool("Read nodes with descendants as compact plain text for context gathering. Uses the same request fields as "
+        + "readNodesWithDescendants but returns indentation-preserving plain text instead of per-node JSON.")
+    public ReadNodesWithDescendantsAsPlainTextResponse readNodesWithDescendantsAsPlainText(
+        ReadNodesWithDescendantsRequest request) {
+        try {
+            ReadNodesWithDescendantsAsPlainTextResponse response =
+                readNodesWithDescendantsTool.readNodesWithDescendantsAsPlainText(request);
+            publishToolCallSummary(readNodesWithDescendantsTool.buildPlainTextToolCallSummary(request, response));
+            return response;
+        } catch (RuntimeException error) {
+            publishToolCallSummary(readNodesWithDescendantsTool.buildPlainTextToolCallErrorSummary(request, error));
             throw error;
         }
     }
