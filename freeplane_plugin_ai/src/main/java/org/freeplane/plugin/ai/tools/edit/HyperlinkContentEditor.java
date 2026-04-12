@@ -21,6 +21,15 @@ public class HyperlinkContentEditor {
     }
 
     public void editHyperlink(NodeModel nodeModel, EditOperation operation, String hyperlink) {
+        processHyperlink(nodeModel, operation, hyperlink, false);
+    }
+
+    public void validateHyperlink(NodeModel nodeModel, EditOperation operation, String hyperlink) {
+        processHyperlink(nodeModel, operation, hyperlink, true);
+    }
+
+    private void processHyperlink(NodeModel nodeModel, EditOperation operation, String hyperlink,
+                                  boolean dryRun) {
         if (nodeModel == null) {
             throw new IllegalArgumentException("Missing node model.");
         }
@@ -28,11 +37,16 @@ public class HyperlinkContentEditor {
             throw new IllegalArgumentException("Missing edit operation.");
         }
         if (operation == EditOperation.DELETE) {
-            linkController.setLink(nodeModel, (String) null, LinkController.LINK_ABSOLUTE);
+            if (!dryRun) {
+                linkController.setLink(nodeModel, (String) null, LinkController.LINK_ABSOLUTE);
+            }
             return;
         }
         if (operation != EditOperation.REPLACE) {
             throw new IllegalArgumentException("Unsupported hyperlink edit operation: " + operation);
+        }
+        if (dryRun) {
+            return;
         }
         if (hyperlink == null) {
             linkController.setLink(nodeModel, (String) null, LinkController.LINK_ABSOLUTE);

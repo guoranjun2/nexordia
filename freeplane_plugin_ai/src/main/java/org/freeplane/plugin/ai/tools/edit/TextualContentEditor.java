@@ -154,6 +154,18 @@ public class TextualContentEditor {
     public void editExistingTextualContent(NodeModel nodeModel, EditedElement editedElement,
                                            ContentType originalContentType, String value,
                                            TextController textController) {
+        processExistingTextualContent(nodeModel, editedElement, originalContentType, value, textController, false);
+    }
+
+    public void validateExistingTextualContent(NodeModel nodeModel, EditedElement editedElement,
+                                               ContentType originalContentType, String value,
+                                               TextController textController) {
+        processExistingTextualContent(nodeModel, editedElement, originalContentType, value, textController, true);
+    }
+
+    private void processExistingTextualContent(NodeModel nodeModel, EditedElement editedElement,
+                                               ContentType originalContentType, String value,
+                                               TextController textController, boolean dryRun) {
         if (nodeModel == null) {
             throw new IllegalArgumentException("Missing node model.");
         }
@@ -171,7 +183,9 @@ public class TextualContentEditor {
                     nodeModel, currentTextValue, textController);
                 validateContentType(nodeTextContentType.contentType, originalContentType, true);
                 String updatedTextValue = prepareTextValue(nodeTextContentType, value);
-                textContentWriteController.setNodeText(nodeModel, updatedTextValue);
+                if (!dryRun) {
+                    textContentWriteController.setNodeText(nodeModel, updatedTextValue);
+                }
                 break;
             case DETAILS:
                 DetailModel detailModel = DetailModel.getDetail(nodeModel);
@@ -180,8 +194,10 @@ public class TextualContentEditor {
                 ContentType currentDetailsContentType = resolveContentType(
                     currentDetails, DetailModel.getDetailContentType(nodeModel), textController);
                 validateContentType(currentDetailsContentType, originalContentType, false);
-                String updatedDetailsValue = prepareRichTextValue(currentDetailsContentType, value, editedElement);
-                textContentWriteController.setDetails(nodeModel, updatedDetailsValue);
+                String updatedDetailsValue = prepareRichTextValue(currentDetailsContentType, value);
+                if (!dryRun) {
+                    textContentWriteController.setDetails(nodeModel, updatedDetailsValue);
+                }
                 break;
             case NOTE:
                 NoteModel noteModel = NoteModel.getNote(nodeModel);
@@ -190,8 +206,10 @@ public class TextualContentEditor {
                 ContentType currentNoteContentType = resolveContentType(
                     currentNote, NoteModel.getNoteContentType(nodeModel), textController);
                 validateContentType(currentNoteContentType, originalContentType, false);
-                String updatedNoteValue = prepareRichTextValue(currentNoteContentType, value, editedElement);
-                noteContentWriteController.setNoteText(nodeModel, updatedNoteValue);
+                String updatedNoteValue = prepareRichTextValue(currentNoteContentType, value);
+                if (!dryRun) {
+                    noteContentWriteController.setNoteText(nodeModel, updatedNoteValue);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported edited element for textual content: " + editedElement);
@@ -261,7 +279,7 @@ public class TextualContentEditor {
         return value;
     }
 
-    private String prepareRichTextValue(ContentType currentContentType, String value, EditedElement editedElement) {
+    private String prepareRichTextValue(ContentType currentContentType, String value) {
         if (currentContentType == ContentType.LATEX) {
             boolean allowLatexPrefixWithoutReapply = true;
             return prepareLatexValue(value, null, allowLatexPrefixWithoutReapply);

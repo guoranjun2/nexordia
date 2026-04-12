@@ -45,13 +45,25 @@ public class NodeContentEditor {
             return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL);
         }
         for (NodeContentEditItem edit : items) {
-            applyEdit(nodeModel, edit);
+            processEdit(nodeModel, edit, false);
         }
         aiEditsMarker.addAiEditsMarkerWithUndo(nodeModel);
         return nodeContentItemReader.readNodeContentItem(nodeModel, NodeContentPreset.FULL, true, true, true);
     }
 
-    private void applyEdit(NodeModel nodeModel, NodeContentEditItem edit) {
+    public void validate(NodeModel nodeModel, List<NodeContentEditItem> items) {
+        if (nodeModel == null) {
+            throw new IllegalArgumentException("Missing node model.");
+        }
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        for (NodeContentEditItem edit : items) {
+            processEdit(nodeModel, edit, true);
+        }
+    }
+
+    private void processEdit(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
         if (edit == null) {
             return;
         }
@@ -61,80 +73,120 @@ public class NodeContentEditor {
         }
         switch (editedElement) {
             case TEXT:
-                applyTextualContent(nodeModel, edit);
-                break;
             case DETAILS:
-                applyTextualContent(nodeModel, edit);
-                break;
             case NOTE:
-                applyTextualContent(nodeModel, edit);
+                processTextualContent(nodeModel, edit, dryRun);
                 break;
             case ATTRIBUTES:
-                applyAttributes(nodeModel, edit);
+                processAttributes(nodeModel, edit, dryRun);
                 break;
             case TAGS:
-                applyTags(nodeModel, edit);
+                processTags(nodeModel, edit, dryRun);
                 break;
             case ICONS:
-                applyIcons(nodeModel, edit);
+                processIcons(nodeModel, edit, dryRun);
                 break;
             case STYLE:
-                applyStyle(nodeModel, edit);
+                processStyle(nodeModel, edit, dryRun);
                 break;
             case HYPERLINK:
-                applyHyperlink(nodeModel, edit);
+                processHyperlink(nodeModel, edit, dryRun);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown edited element: " + editedElement);
         }
     }
 
-    private void applyTextualContent(NodeModel nodeModel, NodeContentEditItem edit) {
+    private void processTextualContent(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
         if (edit.getOriginalContentType() == null) {
             throw new IllegalArgumentException("Missing originalContentType for textual content edits.");
         }
         String value = resolveTextualValue(edit);
-        textualContentEditor.editExistingTextualContent(
-            nodeModel,
-            edit.getEditedElement(),
-            edit.getOriginalContentType(),
-            value,
-            textController);
+        if (dryRun) {
+            textualContentEditor.validateExistingTextualContent(
+                nodeModel,
+                edit.getEditedElement(),
+                edit.getOriginalContentType(),
+                value,
+                textController);
+        } else {
+            textualContentEditor.editExistingTextualContent(
+                nodeModel,
+                edit.getEditedElement(),
+                edit.getOriginalContentType(),
+                value,
+                textController);
+        }
     }
 
-    private void applyAttributes(NodeModel nodeModel, NodeContentEditItem edit) {
-        attributesContentEditor.editExistingAttributesContent(
-            nodeModel,
-            edit.getOperation(),
-            edit.getTargetKey(),
-            edit.getIndex(),
-            edit.getValue());
+    private void processAttributes(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
+        if (dryRun) {
+            attributesContentEditor.validateExistingAttributesContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        } else {
+            attributesContentEditor.editExistingAttributesContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        }
     }
 
-    private void applyTags(NodeModel nodeModel, NodeContentEditItem edit) {
-        tagsContentEditor.editExistingTagsContent(
-            nodeModel,
-            edit.getOperation(),
-            edit.getTargetKey(),
-            edit.getIndex(),
-            edit.getValue());
+    private void processTags(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
+        if (dryRun) {
+            tagsContentEditor.validateExistingTagsContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        } else {
+            tagsContentEditor.editExistingTagsContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        }
     }
 
-    private void applyIcons(NodeModel nodeModel, NodeContentEditItem edit) {
-        iconsContentEditor.editExistingIconsContent(
-            nodeModel,
-            edit.getOperation(),
-            edit.getTargetKey(),
-            edit.getIndex(),
-            edit.getValue());
+    private void processIcons(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
+        if (dryRun) {
+            iconsContentEditor.validateExistingIconsContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        } else {
+            iconsContentEditor.editExistingIconsContent(
+                nodeModel,
+                edit.getOperation(),
+                edit.getTargetKey(),
+                edit.getIndex(),
+                edit.getValue());
+        }
     }
 
-    private void applyStyle(NodeModel nodeModel, NodeContentEditItem edit) {
-        nodeStyleContentEditor.editMainStyle(nodeModel, edit.getOperation(), edit.getValue());
+    private void processStyle(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
+        if (dryRun) {
+            nodeStyleContentEditor.validateMainStyle(nodeModel, edit.getOperation(), edit.getValue());
+        } else {
+            nodeStyleContentEditor.editMainStyle(nodeModel, edit.getOperation(), edit.getValue());
+        }
     }
 
-    private void applyHyperlink(NodeModel nodeModel, NodeContentEditItem edit) {
-        hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getValue());
+    private void processHyperlink(NodeModel nodeModel, NodeContentEditItem edit, boolean dryRun) {
+        if (dryRun) {
+            hyperlinkContentEditor.validateHyperlink(nodeModel, edit.getOperation(), edit.getValue());
+        } else {
+            hyperlinkContentEditor.editHyperlink(nodeModel, edit.getOperation(), edit.getValue());
+        }
     }
 
     private String resolveTextualValue(NodeContentEditItem edit) {

@@ -9,13 +9,16 @@
   duplicating per-node items, which is verbose for clients and covers a
   large subset of the use cases raised for script execution.
 - **Scenario:** When a user asks AI to apply the same change across a
-  set of nodes, AI can send one typed batch instruction instead of one
-  edit item per node. For `TEXT`, `DETAILS`, and `NOTE`, AI first reads
-  editable metadata for the target nodes, groups compatible nodes by
-  content type when needed, and applies one batch edit per compatible
-  group. If any node is missing, not editable, or has an incompatible
-  context, the tool follows an explicit policy and reports that outcome
-  instead of silently skipping the node.
+  set of nodes, AI sends one typed batch instruction with
+  `nodeIdentifiers` instead of duplicating one item per node. For
+  `TEXT`, `DETAILS`, and `NOTE`, AI first reads editable metadata for
+  the target nodes and groups compatible nodes by content type when
+  needed. With default `SKIP_INCOMPATIBLE_FIELDS`, the tool applies
+  compatible target-field edits and reports deterministic skip reasons
+  for incompatible targets. With `REJECT_ON_ANY_INCOMPATIBLE`, the
+  tool performs strict dry-run validation first; if incompatibilities
+  exist, it performs no writes and returns only incompatible targets as
+  `REJECTED` with reasons.
 - **Constraints:**
   - Stay within the typed edit tool family; do not require script
     execution for same-change bulk edits.
@@ -26,12 +29,18 @@
     `HYPERLINK`) should remain usable without
     `fetchNodesForEditing` unless research identifies hidden
     compatibility rules.
-  - Default semantics must be deterministic and must not silently omit
-    incompatible targets.
-  - If best-effort mode is supported, it must be explicit and must
-    return per-node `APPLIED`, `SKIPPED`, or `FAILED` status.
-  - Avoid applying any writes before validating node existence and
-    request compatibility when the chosen policy is fail-fast.
+  - Edit instructions must use `nodeIdentifiers` only; each instruction
+    requires a non-empty array.
+  - Compatibility handling must be explicit and deterministic:
+    `SKIP_INCOMPATIBLE_FIELDS` is the default, and
+    `REJECT_ON_ANY_INCOMPATIBLE` performs strict dry-run validation
+    before writes.
+  - `SKIP_INCOMPATIBLE_FIELDS` must return deterministic per-target
+    `APPLIED`, `SKIPPED`, or `FAILED` statuses with clear field-level
+    skip reasons.
+  - `REJECT_ON_ANY_INCOMPATIBLE` must validate the whole request before
+    any writes, apply zero writes when incompatibility exists, and
+    return only incompatible targets as `REJECTED` with reasons.
 - **Briefing:** The current AI tool surface already separates
   `fetchNodesForEditing` from `edit`. Textual edits require
   `originalContentType` and revalidate the current content type at write
@@ -83,22 +92,26 @@ Editor --> ToolSet: per-node content response
 - **Design:**
   - Extend the current `edit` tool contract instead of adding a
     scripting workaround for bulk edits.
-  - Add first-class batch targeting to one edit instruction so the
-    caller can target either one node or a list of nodes without
-    repeating the rest of the instruction payload.
+  - Replace per-item `nodeIdentifier` targeting with required
+    `nodeIdentifiers` array targeting in each edit instruction.
   - Keep `fetchNodesForEditing` as the discovery step for
     `TEXT`, `DETAILS`, and `NOTE`. A batch textual edit may use one
-    shared `originalContentType` only when all targeted nodes are
-    homogeneous. Mixed textual content types must either be split by
-    the caller into multiple batch instructions or be handled through
-    an explicit skip policy if that mode is approved.
-  - Introduce an explicit compatibility policy enum so batch edits can
-    distinguish deterministic fail-fast behavior from approved
-    best-effort behavior.
-  - Prevalidate node existence and policy-dependent compatibility before
-    any writes in fail-fast mode.
-  - Return per-node outcome records whenever an instruction targets more
-    than one node or uses best-effort compatibility handling.
+    shared `originalContentType` only when targeted nodes are
+    homogeneous for that instruction. If mixed textual content types are
+    sent in one instruction, incompatible targets are handled by the
+    selected compatibility policy.
+  - Add request-level `compatibilityPolicy` with default
+    `SKIP_INCOMPATIBLE_FIELDS`.
+  - In `REJECT_ON_ANY_INCOMPATIBLE`, execute dry-run validation for the
+    whole request before writes; when any target is incompatible,
+    persist zero writes and return only incompatible targets as
+    `REJECTED` with reasons.
+  - In `SKIP_INCOMPATIBLE_FIELDS`, apply compatible target-field edits
+    and return deterministic field-level skip reasons for incompatible
+    targets.
+  - Return `List<EditResultItem>` for all `edit` responses so single-
+    node and multi-node flows share one output contract. In strict
+    rejection responses, include only incompatible `REJECTED` targets.
   - Prefer one underlying execution path for single-node and multi-node
     edits so validation and undo-aware behavior stay aligned.
 
@@ -110,12 +123,12 @@ participant "BatchEditNormalizer" as Normalizer
 participant "BatchEditValidator" as Validator
 participant "NodeContentEditor" as Editor
 
-LLM -> ToolSet: edit(request with single or multi-node items)
+LLM -> ToolSet: edit(request with batch items and policy)
 ToolSet -> Normalizer: normalize targets and operations
 Normalizer -> Validator: validate node existence and compatibility
-Validator --> Normalizer: approved targets and per-node statuses
+Validator --> Normalizer: approved targets and per-target statuses
 Normalizer -> Editor: apply writes for approved targets
-Editor --> ToolSet: per-node content results
+Editor --> ToolSet: per-target content results
 ToolSet --> LLM: applied/skipped/failed results
 @enduml
 ```
@@ -126,49 +139,63 @@ Target request and response structure:
 EditRequest
   mapIdentifier : String
   userSummary : String?
+  compatibilityPolicy : EditCompatibilityPolicy?
   items : List<EditInstruction>
 
 EditInstruction
-  nodeIdentifier : String?
-  nodeIdentifiers : List<String>?
+  nodeIdentifiers : List<String>
   editedElement : EditedElement
   originalContentType : ContentType?
   value : String?
   index : Integer?
   operation : EditOperation?
   targetKey : String?
-  compatibilityPolicy : EditCompatibilityPolicy?
 
 EditCompatibilityPolicy
-  FAIL_FAST
-  SKIP_INCOMPATIBLE
+  SKIP_INCOMPATIBLE_FIELDS
+  REJECT_ON_ANY_INCOMPATIBLE
 
 EditResultItem
+  itemIndex : Integer
   nodeIdentifier : String
+  editedElement : EditedElement
   status : EditTargetStatus
-  skipReason : String?
+  incompatibleFieldReasons : List<String>?
   errorMessage : String?
   content : NodeContentItem?
 
 EditTargetStatus
   APPLIED
   SKIPPED
+  REJECTED
   FAILED
 ```
 - **Test specification:**
   - Automated tests:
+    - Verify each edit instruction requires a non-empty
+      `nodeIdentifiers` array.
     - Verify a non-textual batch edit can target multiple nodes without
       `fetchNodesForEditing`.
-    - Verify textual batch edits reject missing `originalContentType`
-      and still revalidate current content type at write time.
+    - Verify textual batch edits with missing `originalContentType`
+      follow the selected compatibility policy (skip in default mode,
+      reject in strict mode) and still revalidate current content type
+      at write time.
     - Verify formula-based or otherwise non-editable textual targets are
       reported deterministically.
-    - Verify fail-fast mode validates node identifiers and compatibility
-      before any writes occur.
-    - Verify skip mode returns stable per-node `APPLIED`, `SKIPPED`,
-      and `FAILED` statuses with reasons.
-    - Verify mixed textual content types require caller splitting or
-      follow the approved explicit skip semantics.
-    - Verify single-node edits and batch edits share consistent
-      validation and undo-aware behavior.
+    - Verify `SKIP_INCOMPATIBLE_FIELDS` is the default policy when the
+      request omits `compatibilityPolicy`.
+    - Verify `REJECT_ON_ANY_INCOMPATIBLE` validates the whole request
+      before writes and performs zero writes on incompatibility.
+    - Verify strict incompatibility responses include only incompatible
+      targets with `REJECTED` status and field-level reasons.
+    - Verify `SKIP_INCOMPATIBLE_FIELDS` returns stable per-target
+      `APPLIED`, `SKIPPED`, and `FAILED` statuses with field-level
+      reasons.
+    - Verify mixed textual content types are surfaced as
+      incompatibilities when mixed in one instruction and follow the
+      selected compatibility policy.
+    - Verify `edit` returns `List<EditResultItem>` for both single-node
+      and multi-node instructions.
+    - Verify single-node and batch edits share consistent validation and
+      undo-aware behavior.
   - Manual tests: N/A

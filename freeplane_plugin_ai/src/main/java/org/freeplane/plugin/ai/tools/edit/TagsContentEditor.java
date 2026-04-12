@@ -48,6 +48,16 @@ public class TagsContentEditor {
 
     public void editExistingTagsContent(NodeModel nodeModel, EditOperation operation, String targetKey, Integer index,
                                         String value) {
+        processExistingTagsContent(nodeModel, operation, targetKey, index, value, false);
+    }
+
+    public void validateExistingTagsContent(NodeModel nodeModel, EditOperation operation, String targetKey,
+                                            Integer index, String value) {
+        processExistingTagsContent(nodeModel, operation, targetKey, index, value, true);
+    }
+
+    private void processExistingTagsContent(NodeModel nodeModel, EditOperation operation, String targetKey,
+                                            Integer index, String value, boolean dryRun) {
         if (nodeModel == null) {
             throw new IllegalArgumentException("Missing node model.");
         }
@@ -61,8 +71,10 @@ public class TagsContentEditor {
             case ADD:
                 String addedValue = requireTagValue(value);
                 int addIndex = resolveAddIndex(tags.size(), index);
-                insertTag(tags, addIndex, addedValue);
-                setTagReferences(nodeModel, tags);
+                if (!dryRun) {
+                    insertTag(tags, addIndex, addedValue);
+                    setTagReferences(nodeModel, tags);
+                }
                 break;
             case REPLACE:
                 String replacementValue = requireTagValue(value);
@@ -70,16 +82,20 @@ public class TagsContentEditor {
                 if (replaceIndex < 0) {
                     throw new IllegalArgumentException("Invalid tag index for replace.");
                 }
-                tags.set(replaceIndex, replacementValue);
-                setTagReferences(nodeModel, tags);
+                if (!dryRun) {
+                    tags.set(replaceIndex, replacementValue);
+                    setTagReferences(nodeModel, tags);
+                }
                 break;
             case DELETE:
                 int deleteIndex = findTagIndex(tags, targetKey, index);
                 if (deleteIndex < 0) {
                     throw new IllegalArgumentException("Invalid tag index for delete.");
                 }
-                tags.remove(deleteIndex);
-                setTagReferences(nodeModel, tags);
+                if (!dryRun) {
+                    tags.remove(deleteIndex);
+                    setTagReferences(nodeModel, tags);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported tag operation: " + resolvedOperation);

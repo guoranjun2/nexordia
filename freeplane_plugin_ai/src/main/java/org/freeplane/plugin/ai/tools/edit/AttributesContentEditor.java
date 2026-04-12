@@ -38,6 +38,16 @@ public class AttributesContentEditor {
 
     public void editExistingAttributesContent(NodeModel nodeModel, EditOperation operation, String targetKey,
                                               Integer index, String value) {
+        processExistingAttributesContent(nodeModel, operation, targetKey, index, value, false);
+    }
+
+    public void validateExistingAttributesContent(NodeModel nodeModel, EditOperation operation, String targetKey,
+                                                  Integer index, String value) {
+        processExistingAttributesContent(nodeModel, operation, targetKey, index, value, true);
+    }
+
+    private void processExistingAttributesContent(NodeModel nodeModel, EditOperation operation, String targetKey,
+                                                  Integer index, String value, boolean dryRun) {
         if (nodeModel == null) {
             throw new IllegalArgumentException("Missing node model.");
         }
@@ -47,11 +57,13 @@ public class AttributesContentEditor {
             case ADD:
                 String name = requireAttributeName(targetKey);
                 Attribute attribute = new Attribute(name, value == null ? "" : value);
-                if (index == null) {
-                    attributeController.addAttribute(nodeModel, attribute);
-                } else {
-                    int boundedIndex = Math.max(0, Math.min(index, model.getRowCount()));
-                    attributeController.insertAttribute(nodeModel, boundedIndex, attribute);
+                if (!dryRun) {
+                    if (index == null) {
+                        attributeController.addAttribute(nodeModel, attribute);
+                    } else {
+                        int boundedIndex = Math.max(0, Math.min(index, model.getRowCount()));
+                        attributeController.insertAttribute(nodeModel, boundedIndex, attribute);
+                    }
                 }
                 break;
             case REPLACE:
@@ -64,15 +76,19 @@ public class AttributesContentEditor {
                     Attribute existing = model.getAttribute(targetIndex);
                     attributeName = existing == null ? null : existing.getName();
                 }
-                attributeController.setAttribute(nodeModel, targetIndex,
-                    new Attribute(attributeName, value == null ? "" : value));
+                if (!dryRun) {
+                    attributeController.setAttribute(nodeModel, targetIndex,
+                        new Attribute(attributeName, value == null ? "" : value));
+                }
                 break;
             case DELETE:
                 int deleteIndex = findAttributeIndex(model, targetKey, index);
                 if (deleteIndex < 0) {
                     throw new IllegalArgumentException("Missing attribute index or name for delete.");
                 }
-                attributeController.performRemoveAttribute(nodeModel, deleteIndex);
+                if (!dryRun) {
+                    attributeController.performRemoveAttribute(nodeModel, deleteIndex);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported attribute operation: " + resolvedOperation);

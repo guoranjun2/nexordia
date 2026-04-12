@@ -1,11 +1,8 @@
 package org.freeplane.plugin.ai.tools;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.attribute.mindmapmode.MAttributeController;
@@ -17,8 +14,6 @@ import org.freeplane.features.icon.mindmapmode.FreeplaneTagCategoryAccess;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.link.LinkController;
 import org.freeplane.features.link.mindmapmode.MLinkController;
-import org.freeplane.features.map.MapModel;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
@@ -31,7 +26,6 @@ import org.freeplane.plugin.ai.tools.content.ListTool;
 import org.freeplane.plugin.ai.tools.content.ModifiedNodeSummaryBuilder;
 import org.freeplane.plugin.ai.tools.content.NodeContentApplier;
 import org.freeplane.plugin.ai.tools.content.NodeContentFactories;
-import org.freeplane.plugin.ai.tools.content.NodeContentItem;
 import org.freeplane.plugin.ai.tools.create.AnchorPlacementCalculator;
 import org.freeplane.plugin.ai.tools.create.CreateNodesPreferences;
 import org.freeplane.plugin.ai.tools.create.CreateNodesRequest;
@@ -44,10 +38,12 @@ import org.freeplane.plugin.ai.tools.delete.DeleteNodesRequest;
 import org.freeplane.plugin.ai.tools.delete.DeleteNodesResponse;
 import org.freeplane.plugin.ai.tools.delete.DeleteNodesTool;
 import org.freeplane.plugin.ai.tools.edit.AttributesContentEditor;
+import org.freeplane.plugin.ai.tools.edit.BatchEditTool;
 import org.freeplane.plugin.ai.tools.edit.EditRequest;
+import org.freeplane.plugin.ai.tools.edit.EditResultItem;
+import org.freeplane.plugin.ai.tools.edit.EditTargetStatus;
 import org.freeplane.plugin.ai.tools.edit.HyperlinkContentEditor;
 import org.freeplane.plugin.ai.tools.edit.IconsContentEditor;
-import org.freeplane.plugin.ai.tools.edit.NodeContentEditItem;
 import org.freeplane.plugin.ai.tools.edit.NodeContentEditor;
 import org.freeplane.plugin.ai.tools.edit.NoteContentWriteController;
 import org.freeplane.plugin.ai.tools.edit.NoteContentWriteControllerAdapter;
@@ -108,11 +104,9 @@ public class AIToolSet {
     private final MoveNodesIntoSummaryTool moveNodesIntoSummaryTool;
     private final ListTool listTool;
     private final ConnectorEditTool connectorEditTool;
-    private final NodeContentEditor nodeContentEditor;
+    private final BatchEditTool batchEditTool;
     private final GetTagCategoriesTool getTagCategoriesTool;
     private final EditTagCategoriesTool editTagCategoriesTool;
-    private final AvailableMaps availableMaps;
-    private final AvailableMaps.MapAccessListener mapAccessListener;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
     private final ToolCaller toolCaller;
 
@@ -121,8 +115,7 @@ public class AIToolSet {
               NodeContentFactories nodeContentFactories, MMapController mapController,
               ToolCaller toolCaller) {
         Objects.requireNonNull(mapController, "mapController");
-        this.availableMaps = Objects.requireNonNull(availableMaps, "availableMaps");
-        this.mapAccessListener = mapAccessListener;
+        Objects.requireNonNull(availableMaps, "availableMaps");
         NodeModelCreator nodeModelCreator = new NodeModelCreator();
         AnchorPlacementCalculator anchorPlacementCalculator = new AnchorPlacementCalculator();
         NodeInserter nodeInserter = new NodeInserter(mapController, anchorPlacementCalculator);
@@ -153,6 +146,7 @@ public class AIToolSet {
         NodeContentEditor nodeContentEditor = new NodeContentEditor(textController, nodeContentFactories.nodeContentItemReader,
             textualContentEditor, attributesContentEditor, tagsContentEditor, iconsContentEditor,
             nodeStyleContentEditor, hyperlinkContentEditor);
+        BatchEditTool batchEditTool = new BatchEditTool(availableMaps, mapAccessListener, nodeContentEditor);
         MessageBuilder messageBuilder = new MessageBuilder();
         ReadNodesWithDescendantsTool readNodesWithDescendantsTool = new ReadNodesWithDescendantsTool(
             availableMaps, mapAccessListener, nodeContentFactories.nodeContentItemReader, textController);
@@ -195,7 +189,7 @@ public class AIToolSet {
         this.moveNodesIntoSummaryTool = Objects.requireNonNull(moveNodesIntoSummaryTool, "moveNodesIntoSummaryTool");
         this.listTool = Objects.requireNonNull(listTool, "listTool");
         this.connectorEditTool = Objects.requireNonNull(connectorEditTool, "connectorEditTool");
-        this.nodeContentEditor = Objects.requireNonNull(nodeContentEditor, "nodeContentEditor");
+        this.batchEditTool = Objects.requireNonNull(batchEditTool, "batchEditTool");
         this.getTagCategoriesTool = Objects.requireNonNull(getTagCategoriesTool, "getTagCategoriesTool");
         this.editTagCategoriesTool = Objects.requireNonNull(editTagCategoriesTool, "editTagCategoriesTool");
         this.toolCallSummaryHandler = toolCallSummaryHandler;
@@ -369,6 +363,7 @@ public class AIToolSet {
     }
 
     @Tool("Edit node content through undo-aware controllers.\n"
+        + "Each edit item targets nodeIdentifiers (non-empty array).\n"
         + "Before TEXT/DETAILS/NOTE edits, call fetchNodesForEditing and pass originalContentType from that response.\n"
         + "For TEXT/DETAILS/NOTE, values starting with <html> are HTML; all others are plain text.\n"
         + "TEXT supports REPLACE only; to clear TEXT, use REPLACE with an empty value.\n"
@@ -378,12 +373,15 @@ public class AIToolSet {
         + "ATTRIBUTES ADD: targetKey is attribute name; value is attribute value.\n"
         + "TAGS ADD: value is tag text; optional index inserts at position.\n"
         + "ICONS ADD: value is icon description from listAvailableIcons (or emoji); icons append, so index/targetKey ignored.\n"
-        + "originalContentType is required for TEXT/DETAILS/NOTE and ignored otherwise.\n"
-        + "For TEXT/DETAILS/NOTE, Markdown/LaTeX formatting applies only when originalContentType is MARKDOWN/LATEX; "
-        + "otherwise it is literal text.")
-    public List<NodeContentItem> edit(EditRequest request) {
+        + "compatibilityPolicy applies to the whole request: SKIP_INCOMPATIBLE_FIELDS (default) or "
+        + "REJECT_ON_ANY_INCOMPATIBLE.\n"
+        + "SKIP_INCOMPATIBLE_FIELDS returns per-target APPLIED/SKIPPED/FAILED results.\n"
+        + "REJECT_ON_ANY_INCOMPATIBLE performs full dry-run validation first; if any target is incompatible, no writes "
+        + "occur and only incompatible targets are returned as REJECTED with reasons. If validation passes, writes run "
+        + "and write-time failures are reported as FAILED per target.")
+    public List<EditResultItem> edit(EditRequest request) {
         try {
-            List<NodeContentItem> response = editNodes(request);
+            List<EditResultItem> response = editNodes(request);
             publishToolCallSummary(buildEditToolSummary(request, response, false, null));
             return response;
         } catch (RuntimeException error) {
@@ -403,68 +401,24 @@ public class AIToolSet {
         }
     }
 
-    private List<NodeContentItem> editNodes(EditRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Missing request");
-        }
-        String mapIdentifierValue = requireValue(request.getMapIdentifier(), "mapIdentifier");
-        UUID mapIdentifier = parseMapIdentifier(mapIdentifierValue);
-        MapModel mapModel = availableMaps.findMapModel(mapIdentifier, mapAccessListener);
-        if (mapModel == null) {
-            throw new IllegalArgumentException("Unknown map identifier: " + mapIdentifierValue);
-        }
-        List<NodeContentEditItem> items = request.getItems();
-        if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("Missing edit items");
-        }
-        Map<String, List<NodeContentEditItem>> itemsByNode = new LinkedHashMap<>();
-        for (NodeContentEditItem item : items) {
-            if (item == null) {
-                continue;
-            }
-            String nodeIdentifier = requireValue(item.getNodeIdentifier(), "nodeIdentifier");
-            itemsByNode.computeIfAbsent(nodeIdentifier, key -> new ArrayList<>()).add(item);
-        }
-        List<NodeContentItem> results = new ArrayList<>(itemsByNode.size());
-        List<String> unknownNodeIdentifiers = new ArrayList<>();
-        for (Map.Entry<String, List<NodeContentEditItem>> entry : itemsByNode.entrySet()) {
-            String nodeIdentifier = entry.getKey();
-            NodeModel nodeModel = mapModel.getNodeForID(nodeIdentifier);
-            if (nodeModel == null) {
-                unknownNodeIdentifiers.add(nodeIdentifier);
-                continue;
-            }
-            results.add(nodeContentEditor.edit(nodeModel, entry.getValue()));
-        }
-        if (!unknownNodeIdentifiers.isEmpty()) {
-            throw new IllegalArgumentException("Invalid node identifiers: " + String.join(", ", unknownNodeIdentifiers));
-        }
-        return results;
+    private List<EditResultItem> editNodes(EditRequest request) {
+        return batchEditTool.edit(request);
     }
 
-    private String requireValue(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Missing " + fieldName + ".");
-        }
-        return value;
-    }
-
-    private UUID parseMapIdentifier(String mapIdentifier) {
-        try {
-            return UUID.fromString(mapIdentifier);
-        } catch (IllegalArgumentException error) {
-            throw new IllegalArgumentException("Invalid map identifier: " + mapIdentifier);
-        }
-    }
-
-    private ToolCallSummary buildEditToolSummary(EditRequest request, List<NodeContentItem> response,
+    private ToolCallSummary buildEditToolSummary(EditRequest request, List<EditResultItem> response,
                                                  boolean hasError, String errorMessage) {
         if (request == null) {
             return null;
         }
         int itemCount = request.getItems() == null ? 0 : request.getItems().size();
-        int nodeCount = response == null ? 0 : response.size();
-        String summaryText = "edit: nodes=" + nodeCount + ", items=" + itemCount;
+        int resultCount = response == null ? 0 : response.size();
+        int appliedCount = countEditResults(response, EditTargetStatus.APPLIED);
+        int skippedCount = countEditResults(response, EditTargetStatus.SKIPPED);
+        int rejectedCount = countEditResults(response, EditTargetStatus.REJECTED);
+        int failedCount = countEditResults(response, EditTargetStatus.FAILED);
+        String summaryText = "edit: results=" + resultCount + ", items=" + itemCount
+            + ", applied=" + appliedCount + ", skipped=" + skippedCount
+            + ", rejected=" + rejectedCount + ", failed=" + failedCount;
         if (request.getUserSummary() != null && !request.getUserSummary().isEmpty()) {
             summaryText = summaryText + ", userSummary=\"" + request.getUserSummary() + "\"";
         }
@@ -477,6 +431,19 @@ public class AIToolSet {
             }
         }
         return new ToolCallSummary("edit", summaryText, hasError);
+    }
+
+    private int countEditResults(List<EditResultItem> response, EditTargetStatus status) {
+        if (response == null || status == null) {
+            return 0;
+        }
+        int count = 0;
+        for (EditResultItem item : response) {
+            if (item != null && status == item.getStatus()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private MLinkController requireLinkController() {
