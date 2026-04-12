@@ -25,7 +25,10 @@ public class LineComparator {
             }
         }
 
-        return Integer.compare(segments1.size(), segments2.size());
+        int comparedSegmentLength = Integer.compare(segments1.size(), segments2.size());
+        if(comparedSegmentLength != 0)
+            return comparedSegmentLength;
+        return Integer.compare(line1.length(), line2.length());
     }
 
     private static List<String> parseLine(String line) {
