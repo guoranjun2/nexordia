@@ -277,3 +277,113 @@ from already-valid `TagCategories`.
       org.freeplane.features.icon.TagCategoryRepairServiceTest`
   - Manual tests:
     - N/A (covered by automated tests for this localized repair change).
+
+## Subtask: Move whitespace repair to load-time fragment normalization
+- **Status:** review
+- **Scope:** Rework legacy whitespace repair so
+  `TagCategoryRepairService` normalizes loaded tag fragments and no
+  longer traverses `TagCategories` trees or qualified category paths.
+- **Motivation:** The current implementation violates the intended
+  design: repair is coupled to category structure, while the expected
+  repair point is fragment normalization during load.
+- **Scenario:** During map load, each parsed tag fragment (from
+  uncategorized tags and categorized paths) is normalized before it is
+  materialized into `TagCategories`. User-facing repair information only
+  lists replaced fragment pairs; path-level rename details are not
+  required.
+- **Constraints:**
+  - `TagCategoryRepairService` keeps only
+    `replaceBoundaryWhitespace(String)` in this increment.
+  - `TagCategoryRepairService` must not call `TagCategories` tree APIs
+    (`getRootNode`, `getUncategorizedTagsNode`, `categorizedContent`,
+    `merge`, or `replaceReferencedTags`).
+  - `TagCategoryRepairService` must not parse or compose category paths.
+  - Reporting must be segment-level only (replaced fragment pairs),
+    with deduplicated entries.
+  - Preserve existing map-load notification timing
+    (`showMessageWhenMapIsVisible` after map open).
+- **Briefing:** The change is centered in map-load orchestration:
+  `MapStyle.MyXmlReader.loadTagProperties`,
+  `TagCategoryRepairService`, and
+  `TagCategoryRepairServiceTest`, while keeping `TagCategories` load
+  APIs unaware of repair service integration.
+- **Research:**
+  - `MapStyle.MyXmlReader.loadTagProperties` currently loads serialized
+    categories via `tagCategories.load(valueAsString)`.
+  - `TagCategories.readTagCategories` already tokenizes each input line
+    into `lineTag` fragments before category tree construction.
+  - Current `TagCategoryRepairService.repairLoadedMap(...)` runs after
+    load in `MapStyle.onCreate`, walks categorized and uncategorized
+    nodes, and rewrites qualified tag references.
+  - Current repair reporting emits qualified-name rename entries, which
+    is broader than the requested segment-level information.
+
+```plantuml
+@startuml
+participant "MapStyle.MyXmlReader" as Reader
+participant "TagCategories" as Categories
+participant "TagCategoryRepairService" as Repair
+participant "MapStyle.onCreate" as OnCreate
+
+Reader -> Categories : load(serializedCategories)
+Categories -> Categories : parse fragments and build tree
+OnCreate -> Repair : repairLoadedMap(map)
+Repair -> Categories : traverse nodes
+Repair -> Categories : replaceReferencedTags(...)\nupdateTagReferences()
+@enduml
+```
+
+- **Design:**
+  - Reduce `TagCategoryRepairService` to one responsibility and one
+    kept normalization method: `replaceBoundaryWhitespace(String)`.
+  - Remove `repair(...)`, `repairLoadedMap(...)`, qualified-path
+    helpers, node traversal, and reference rewrite behavior from
+    `TagCategoryRepairService`.
+  - Instantiate one `TagCategoryRepairService` in
+    `MyXmlReader.loadTagProperties` for each loaded map and let
+    `MyXmlReader` call it while handling loaded category data.
+  - Keep parser logic in `TagCategories` (no duplicate parser in
+    `MapStyle`) by adding a load overload that accepts a fragment
+    normalizer callback.
+  - Keep `TagCategories` unaware of `TagCategoryRepairService` type:
+    `MyXmlReader` passes `repairService::replaceBoundaryWhitespace`
+    as a callback to `tagCategories.load(...)`.
+  - Reuse `TagCategories` path-segmentation for loaded tag color names
+    via a callback-based helper, instead of splitting qualified names
+    in `MapStyle`.
+  - When a fragment changes, collect a segment replacement pair
+    (`"from" -> "to"`) in the service and publish only these pairs in
+    the final repair message.
+
+```plantuml
+@startuml
+participant "MapStyle.MyXmlReader" as Reader
+participant "TagCategoryRepairService" as Repair
+participant "TagCategories" as Categories
+participant "MapStyle" as Style
+
+Reader -> Repair : new per-load instance
+Reader -> Categories : load(serialized, Repair::replaceBoundaryWhitespace)
+Categories -> Repair : replaceBoundaryWhitespace(fragment)
+Repair --> Categories : normalized fragment + collect replacement
+Reader -> Categories : normalizeQualifiedTagContent(name,\nRepair::replaceBoundaryWhitespace)
+Reader -> Categories : setTagColor(normalizedName, color)
+Reader -> Repair : repairResult()
+Reader -> Style : showMessageWhenMapIsVisible(map,\nrepairResult.toMessage())
+@enduml
+```
+
+- **Test specification:**
+  - Automated tests:
+    - `TagCategoryRepairServiceTest` validates
+      `replaceBoundaryWhitespace(...)` in isolation.
+    - Verify blank and boundary-whitespace fragments normalize to
+      underscore-substituted fragments.
+    - Verify `MyXmlReader` passes fragment normalization callback into
+      `tagCategories.load(...)` for loaded categorized and
+      uncategorized data.
+    - Verify map-load reporting records and displays replaced segment
+      pairs only (no qualified path rename entries).
+  - Manual tests:
+    - Load a legacy map with whitespace boundary fragments and confirm
+      the notification lists fragment replacements only.

@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -229,6 +230,13 @@ public class TagCategories {
     }
 
     public void readTagCategories(DefaultMutableTreeNode target, final int firstIndex, Scanner scanner) {
+        readTagCategories(target, firstIndex, scanner, UnaryOperator.identity());
+    }
+
+    private void readTagCategories(DefaultMutableTreeNode target,
+                                   final int firstIndex,
+                                   Scanner scanner,
+                                   UnaryOperator<String> loadedTagFragmentNormalizer) {
         DefaultMutableTreeNode lastNode = target;
         int lastIndentation = -1;
         int index = firstIndex;
@@ -255,7 +263,12 @@ public class TagCategories {
                 int lineTagEnd = lineTags.indexOf(tagCategorySeparator, lineTagIndex);
                 String lineTag = lineTagEnd >= 0 ? lineTags.substring(lineTagIndex, lineTagEnd) : lineTags.substring(lineTagIndex);
                 lineTagIndex =  lineTagEnd >= 0 ? lineTagEnd + tagCategorySeparator.length() : lineTags.length();
-                Tag tag = readTag(lineTag);
+                Tag parsedTag = readTag(lineTag);
+                String normalizedContent = loadedTagFragmentNormalizer.apply(parsedTag.getContent());
+                Tag tag = normalizedContent.equals(parsedTag.getContent())
+                    ? parsedTag
+                    : new Tag(normalizedContent, parsedTag.getColor());
+                boolean hasExplicitColor = ! lineTag.equals(parsedTag.getContent());
                 if(target == uncategorizedTagsNode) {
                     Tag savedTag = mapTags.addAndReturn(tag);
                     insertUncategorizedTagNodeSorted(savedTag);
@@ -283,7 +296,7 @@ public class TagCategories {
                     Tag categorizedTag = new Tag(categorizedTagContent, Color.BLACK);
                     categorizedTag.setAlternativeTag(tag);
                     Tag savedTag =  mapTags.addAndReturn(categorizedTag);
-                    if(! lineTag.equals(tag.getContent()))
+                    if(hasExplicitColor)
                         savedTag.setColor(tag.getColor());
                     else if(savedTag == categorizedTag) {
                         savedTag.setColor(Tag.getDefaultColor(categorizedTagContent));
@@ -372,17 +385,58 @@ public class TagCategories {
     }
 
     public void load(String data) {
+        load(data, UnaryOperator.identity());
+    }
+
+    public void load(String data, UnaryOperator<String> loadedTagFragmentNormalizer) {
         try (Scanner scanner = new Scanner(data)){
-            load(scanner);
+            load(scanner, loadedTagFragmentNormalizer);
         }
     }
 
     private void load(Scanner scanner) {
+        load(scanner, UnaryOperator.identity());
+    }
+
+    private void load(Scanner scanner, UnaryOperator<String> loadedTagFragmentNormalizer) {
+        UnaryOperator<String> fragmentNormalizer = loadedTagFragmentNormalizer != null
+            ? loadedTagFragmentNormalizer
+            : UnaryOperator.identity();
         final DefaultMutableTreeNode rootNode = getRootNode();
         while(rootNode.getChildCount() > 1)
             rootNode.remove(0);
-        readTagCategories(rootNode, 0, scanner);
+        readTagCategories(rootNode, 0, scanner, fragmentNormalizer);
     }
+
+    public String normalizeQualifiedTagContent(String qualifiedContent,
+                                               UnaryOperator<String> loadedTagFragmentNormalizer) {
+        UnaryOperator<String> fragmentNormalizer = loadedTagFragmentNormalizer != null
+            ? loadedTagFragmentNormalizer
+            : UnaryOperator.identity();
+        if (qualifiedContent == null) {
+            return fragmentNormalizer.apply("");
+        }
+        String tagCategorySeparator = getTagCategorySeparator();
+        if (tagCategorySeparator == null || tagCategorySeparator.isEmpty()) {
+            return fragmentNormalizer.apply(qualifiedContent);
+        }
+        StringBuilder normalized = new StringBuilder(qualifiedContent.length());
+        for (int start = 0, end = qualifiedContent.indexOf(tagCategorySeparator);
+             ;
+             start = end + tagCategorySeparator.length(),
+                 end = qualifiedContent.indexOf(tagCategorySeparator, start)) {
+            String fragment = end >= 0
+                ? qualifiedContent.substring(start, end)
+                : qualifiedContent.substring(start);
+            normalized.append(fragmentNormalizer.apply(fragment));
+            if (end < 0) {
+                break;
+            }
+            normalized.append(tagCategorySeparator);
+        }
+        return normalized.toString();
+    }
+
     public DefaultMutableTreeNode getRootNode() {
         return (DefaultMutableTreeNode) nodes.getRoot();
     }

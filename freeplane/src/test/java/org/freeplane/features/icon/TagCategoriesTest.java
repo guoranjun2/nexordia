@@ -162,6 +162,40 @@ public class TagCategoriesTest {
     }
 
     @Test
+    public void normalizesLoadedTagSegmentsViaCallback() {
+        TagCategories uut = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "::");
+        TagCategoryRepairService repairService = new TagCategoryRepairService();
+
+        uut.load("ttag#a9d100ff\n"
+            + "   #65bdffff\n"
+            + "  kk#ceaf00ff\n", repairService::replaceBoundaryWhitespace);
+
+        TagAssertions.assertThatSerializedWithoutColors(uut).isEqualTo("ttag\n"
+            + " __\n"
+            + "  kk\n");
+        assertThat(repairService.repairResult().toMessage())
+            .contains("\"  \" -> \"__\"");
+    }
+
+    @Test
+    public void normalizesQualifiedTagContentBySegments() {
+        TagCategories uut = new TagCategories(
+            new DefaultMutableTreeNode("tags"),
+            new DefaultMutableTreeNode("uncategorized_tags"),
+            "::");
+        TagCategoryRepairService repairService = new TagCategoryRepairService();
+
+        String normalized = uut.normalizeQualifiedTagContent(
+            " Project :: :: State ",
+            repairService::replaceBoundaryWhitespace);
+
+        assertThat(normalized).isEqualTo("_Project_::_::_State_");
+    }
+
+    @Test
     public void preservesWhitespaceOnlyCategorizedContentBeforeRepair() {
         TagCategories uut = new TagCategories(
             new DefaultMutableTreeNode("tags"),

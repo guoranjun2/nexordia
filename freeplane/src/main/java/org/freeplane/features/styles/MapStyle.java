@@ -328,7 +328,7 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 			MapStyleModel mapStyleModel = MapStyleModel.getExtensionOrNull(node);
 			Objects.requireNonNull(mapStyleModel);
             loadMapStyleProperties(mapStyleModel.getProperties(), xml);
-            loadTagProperties(node.getMap().getIconRegistry(), xml);
+            loadTagProperties(node.getMap(), node.getMap().getIconRegistry(), xml);
 		}
 
 		private void loadMapStyleProperties(Map<String, String> properties, XMLElement xml) {
@@ -350,27 +350,39 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 		    }
 		}
 
-		private void loadTagProperties(IconRegistry iconRegistry, XMLElement xml) {
+		private void loadTagProperties(MapModel map, IconRegistry iconRegistry, XMLElement xml) {
 		    final Vector<XMLElement> propertyXml = xml.getChildrenNamed(TAGS_ELEMENT);
-		    if(propertyXml != null && propertyXml.size() >= 1){
-		        final Properties attributes = propertyXml.get(0).getAttributes();
-		        for(Entry<Object, Object> attribute:attributes.entrySet()){
-		            final String key = attribute.getKey().toString();
-		            String valueAsString = attribute.getValue().toString();
-		            final TagCategories tagCategories = iconRegistry.getTagCategories();
-		            String tagCategorySeparator = attributes.getProperty(TAG_CATEGORY_SEPARATOR_ATTRIBUTE, "::");
-		            tagCategories.setTagCategorySeparator(tagCategorySeparator);
-                    if(CATEGORIES_ATTRIBUTE.equals(key)) {
-		                tagCategories.load(valueAsString);
-                    } else if(! TAG_CATEGORY_SEPARATOR_ATTRIBUTE.equals(key)) {
-		                int separatorIndex = valueAsString.lastIndexOf(TAG_COLOR_START);
-		                if(separatorIndex > 0) {
-		                    String name = valueAsString.substring(0, separatorIndex);
-		                    String color = valueAsString.substring(separatorIndex);
-		                    tagCategories.setTagColor(name, color);
-		                }
-		            }
+		    if (propertyXml == null || propertyXml.isEmpty()) {
+		        return;
+		    }
+		    final Properties attributes = propertyXml.get(0).getAttributes();
+		    final TagCategories tagCategories = iconRegistry.getTagCategories();
+		    String tagCategorySeparator = attributes.getProperty(TAG_CATEGORY_SEPARATOR_ATTRIBUTE, "::");
+		    tagCategories.setTagCategorySeparator(tagCategorySeparator);
+		    TagCategoryRepairService repairService = new TagCategoryRepairService();
+		    String serializedCategories = attributes.getProperty(CATEGORIES_ATTRIBUTE);
+		    if (serializedCategories != null) {
+		        tagCategories.load(serializedCategories, repairService::replaceBoundaryWhitespace);
+		    }
+		    for (Entry<Object, Object> attribute : attributes.entrySet()) {
+		        final String key = attribute.getKey().toString();
+		        if (CATEGORIES_ATTRIBUTE.equals(key) || TAG_CATEGORY_SEPARATOR_ATTRIBUTE.equals(key)) {
+		            continue;
 		        }
+		        String valueAsString = attribute.getValue().toString();
+		        int separatorIndex = valueAsString.lastIndexOf(TAG_COLOR_START);
+		        if (separatorIndex > 0) {
+		            String name = valueAsString.substring(0, separatorIndex);
+		            String color = valueAsString.substring(separatorIndex);
+		            String normalizedName = tagCategories.normalizeQualifiedTagContent(
+		                name,
+		                repairService::replaceBoundaryWhitespace);
+		            tagCategories.setTagColor(normalizedName, color);
+		        }
+		    }
+		    TagCategoryRepairService.RepairResult repairResult = repairService.repairResult();
+		    if (repairResult.hasChanges()) {
+		        showMessageWhenMapIsVisible(map, repairResult.toMessage());
 		    }
         }
 	}
@@ -534,10 +546,6 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 	    else {
 	        createDefaultStyleMap(map);
 	    }
-        TagCategoryRepairService.RepairResult repairResult = new TagCategoryRepairService().repairLoadedMap(map);
-        if(repairResult.hasChanges()) {
-            showMessageWhenMapIsVisible(map, repairResult.toMessage());
-        }
 	}
 
 	private void createDefaultStyleMap(final MapModel map) {
