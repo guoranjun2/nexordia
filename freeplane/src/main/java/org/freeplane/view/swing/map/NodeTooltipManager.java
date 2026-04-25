@@ -318,6 +318,8 @@ public class NodeTooltipManager implements IExtension{
         if(popupmenu.isShowing()){
             return;
         }
+        if(event.getX() < 0 || event.getY() < 0 || event.getX() >= component.getWidth() || event.getY() >= component.getHeight())
+        	return;
 		if(insideComponent == component){
 			mouseEvent = event;
 			return;
