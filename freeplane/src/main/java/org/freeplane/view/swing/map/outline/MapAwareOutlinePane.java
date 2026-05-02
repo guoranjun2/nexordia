@@ -30,6 +30,7 @@ import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.bookmarks.mindmapmode.BookmarkScope;
 import org.freeplane.features.bookmarks.mindmapmode.MapBookmarks;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
@@ -384,10 +385,13 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
             }
             return;
         }
-        if ((property == IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT
-                || IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT.equals(property))
-                && displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW) {
-            refreshOutlineLater();
+        if (property == IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT
+                || IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT.equals(property)) {
+            if (displayState.getCurrentMode() == OutlineDisplayMode.MAP_VIEW
+                    || displayState.getCurrentMode() == OutlineDisplayMode.BOOKMARK
+                            && displayState.followsJumpIn()) {
+                refreshOutlineLater();
+            }
             return;
         }
     }
@@ -683,6 +687,28 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         return mapModel != null && MapBookmarks.of(mapModel).contains(node.getID());
     }
 
+    private boolean isBookmarkVisibleInCurrentScope(NodeModel node) {
+        if (!containsBookmark(node)) {
+            return false;
+        }
+        if (!displayState.followsJumpIn()) {
+            return true;
+        }
+        return isWithinCurrentViewRoot(node);
+    }
+
+    private boolean isWithinCurrentViewRoot(NodeModel node) {
+        if (node == null || currentMapView == null || currentMapView.getRoot() == null) {
+            return false;
+        }
+        NodeView rootView = currentMapView.getRoot();
+        if (rootView == null || rootView.getNode() == null) {
+            return false;
+        }
+        NodeModel viewRoot = rootView.getNode();
+        return BookmarkScope.isAtOrBelow(node, viewRoot);
+    }
+
     private Color getBackgroundColor() {
         if(currentMapView == null)
             return null;
@@ -705,7 +731,7 @@ public class MapAwareOutlinePane extends OutlinePane implements IMapViewChangeLi
         OutlineDisplayMode mode = displayState.getCurrentMode();
         if (mode == OutlineDisplayMode.BOOKMARK) {
             return bookmarkFilterCache.prepare(mapView,
-                    () -> Filter.createFilter(this::containsBookmark, true, false, false, null));
+                    () -> Filter.createFilter(this::isBookmarkVisibleInCurrentScope, true, false, false, null));
         }
         Filter filter = displayState.getFilter();
         if (filter != null) {

@@ -54,7 +54,7 @@ If the constitution is known, you must comply with its rules and immediately emi
 - Ask for help immediately when blocked or uncertain; don’t guess.
 - Apply minimal-change fixes; avoid refactors unless approved.
 - Use verification gates before logic changes/refactors; describe planned diffs first.
-- Answer user questions fully before coding; pause implementation while questions are open.
+- Answer user questions fully before coding. Pause only when blocked by missing scope/constraints or rule conflict; when pausing, state the exact blocking rule and exact missing input in one sentence.
 - Never modify core logic without explicit approval; prefer parameterization over restructuring.
 
 ## Legacy Removal Policy

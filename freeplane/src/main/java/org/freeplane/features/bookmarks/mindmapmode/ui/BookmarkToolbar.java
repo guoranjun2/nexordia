@@ -62,6 +62,7 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 	private final BookmarkClipboardHandler clipboardHandler;
 	private final DropExecutor dropExecutor;
 	private MapModel map;
+	private boolean followsViewRootScope;
 
 	public BookmarkToolbar(BookmarksController bookmarksController, MapModel map) {
 		super(FreeplaneToolBar.FLOATING_HORIZONTAL);
@@ -103,7 +104,13 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 		return map;
 	}
 
+	public boolean followsViewRootScope() {
+		return followsViewRootScope;
+	}
 
+	public void setFollowsViewRootScope(boolean followsViewRootScope) {
+		this.followsViewRootScope = followsViewRootScope;
+	}
 
 	public void setMap(MapModel map) {
 		this.map = map;
@@ -230,8 +237,20 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 	}
 
 	private void paintEndDropLine(Graphics g) {
-		final Rectangle bounds = getComponent(getComponentCount() - 2).getBounds();
-		paintDropLine(g, bounds, GAP, true);
+		final int componentCount = getComponentCount();
+		if (componentCount == 0) {
+			return;
+		}
+		for (int i = 0; i < componentCount; i++) {
+			Component component = getComponent(i);
+			if (!(component instanceof BookmarkButton)) {
+				Rectangle bounds = component.getBounds();
+				paintDropLine(g, bounds, GAP, true);
+				return;
+			}
+		}
+		Rectangle bounds = getComponent(componentCount - 1).getBounds();
+		paintDropLine(g, bounds, GAP, false);
 	}
 
 	public void requestInitialFocusInWindow() {

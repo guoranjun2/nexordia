@@ -208,9 +208,7 @@ public class BookmarkToolbarPane extends JComponent implements IMapViewChangeLis
             }
         }
         if (property.equals(IMapViewManager.MapChangeEventProperty.MAP_VIEW_ROOT)) {
-            if (bookmarksToolbar != null) {
-                bookmarksToolbar.repaint();
-            }
+            updateBookmarksToolbarLater();
         }
     }
 
