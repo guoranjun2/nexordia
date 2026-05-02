@@ -141,6 +141,7 @@ import org.freeplane.view.swing.map.ShowNotesInMapAction;
 import org.freeplane.view.swing.map.attribute.AttributePanelManager;
 import org.freeplane.view.swing.map.attribute.EditAttributesAction;
 import org.freeplane.view.swing.ui.DefaultNodeKeyListener;
+import org.freeplane.view.swing.ui.MapDisplayNameRefreshCoordinator;
 import org.freeplane.view.swing.ui.UserInputListenerFactory;
 import org.freeplane.view.swing.ui.mindmapmode.MMapMouseListener;
 import org.freeplane.view.swing.ui.mindmapmode.MNodeDragListener;
@@ -356,6 +357,11 @@ public class MModeControllerFactory {
 		mapController.addUIMapChangeListener(uiFactory);
 		controller.getMapViewManager().addMapSelectionListener(uiFactory);
 		modeController.addExtension(MUIFactory.class, uiFactory);
+
+		MapDisplayNameRefreshCoordinator mapDisplayNameRefreshCoordinator = new MapDisplayNameRefreshCoordinator();
+		mapController.addUINodeChangeListener(mapDisplayNameRefreshCoordinator);
+		mapController.addUIMapChangeListener(mapDisplayNameRefreshCoordinator);
+		controller.getMapViewManager().addMapViewChangeListener(mapDisplayNameRefreshCoordinator);
 
 		modeController.addUiBuilder(Phase.ACTIONS, "main_toolbar_font_name", new ComponentBuilder(
 		    new ComponentProvider() {

@@ -91,7 +91,6 @@ import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 
-import net.infonode.docking.View;
 
 public class UserInputListenerFactory implements IUserInputListenerFactory {
 	private final class ActionEnabler implements IMapSelectionListener, IFreeplanePropertyListener {
@@ -460,10 +459,13 @@ public class UserInputListenerFactory implements IUserInputListenerFactory {
 		for (final Component mapView : sortedMapViewVector) {
 			final String displayName = mapView.getName();
 			Entry actionEntry = new Entry();
-			View view = (View) SwingUtilities.getAncestorOfClass(View.class, mapView);
-			String viewTitle = view.getTitle();
-			boolean hasCustomTitle = !displayName.equals(viewTitle);
-			String label = displayName + (hasCustomTitle? " : \'" + viewTitle + "\'":"");
+			MapView concreteMapView = (MapView) mapView;
+			String resolvedTitle = MapDisplayNameResolver.resolveBaseLabel(concreteMapView);
+			if (!concreteMapView.getMap().isSaved() && !concreteMapView.getMap().isReadOnly()) {
+				resolvedTitle += " *";
+			}
+			boolean hasCustomTitle = !displayName.equals(resolvedTitle);
+			String label = displayName + (hasCustomTitle ? " : " + resolvedTitle : "");
 			final MapsMenuAction action = new MapsMenuAction(displayName, label);
 			actionEntry.setName(action.getKey());
 			modeController.addActionIfNotAlreadySet(action);

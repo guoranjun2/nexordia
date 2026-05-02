@@ -79,6 +79,7 @@ import org.freeplane.view.swing.map.MapViewController;
 import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.map.overview.MapViewPane;
 import org.freeplane.view.swing.ui.DefaultMapMouseListener;
+import org.freeplane.view.swing.ui.MapDisplayNameResolver;
 
 import net.infonode.docking.AbstractTabWindow;
 import net.infonode.docking.DockingWindow;
@@ -124,7 +125,7 @@ import net.infonode.util.Direction;
 class MapViewDockingWindows implements IMapViewChangeListener {
 
 	private static final String FREEPLANE_FLOATING_WINDOW = "freeplaneFloatingWindow";
-	private static final String CUSTOMIZED_TAB_NAME_PROPERTY = "customizedTabName";
+	private static final String CUSTOMIZED_TAB_NAME_PROPERTY = MapDisplayNameResolver.CUSTOMIZED_TAB_NAME_PROPERTY;
 
 	private static final String OPENED_NOW = "openedNow_1.3.04";
 	private RootWindow rootWindow = null;
@@ -424,7 +425,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
                         mapView.putClientProperty(CUSTOMIZED_TAB_NAME_PROPERTY, newName);
                     }
                 	addTitleProvider(window);
-                    setTitle();
+                    Controller.getCurrentController().getMapViewManager().setMapTitles();
                 });
 				menu.add(renameItem);
 				return menu;
@@ -761,11 +762,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 				if(containingDockedWindow != null) {
 					String oldTitle = containingDockedWindow.getViewProperties().getTitle();
 					MapView mapView = (MapView)mapViewComponent;
-					if(oldTitle != null && !oldTitle.equals("") && !oldTitle.equals(mapView.getName())){
-						if(oldTitle.endsWith(" *")) {
-							oldTitle = oldTitle.substring(0,oldTitle.length()-2);
+					if(oldTitle != null && !oldTitle.equals("")){
+						String titleWithoutDirtyMarker = MapDisplayNameResolver.removeDirtyMarker(oldTitle);
+						if(!MapDisplayNameResolver.matchesAnyAutomaticLabel(mapView, titleWithoutDirtyMarker)) {
+							mapView.putClientProperty(CUSTOMIZED_TAB_NAME_PROPERTY, titleWithoutDirtyMarker);
 						}
-						mapView.putClientProperty(CUSTOMIZED_TAB_NAME_PROPERTY, oldTitle);
 					}
 				}
 			}
@@ -836,8 +837,7 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 	private String createTitle(Component mapViewComponent) {
 		MapView mapView = (MapView)mapViewComponent;
-		String customizedTabName = (String) mapView.getClientProperty(CUSTOMIZED_TAB_NAME_PROPERTY);
-		String name = customizedTabName != null ? customizedTabName : mapView.getName();
+		String name = MapDisplayNameResolver.resolveBaseLabel(mapView);
 		String title;
 		if(mapView.getMap().isSaved() || mapView.getMap().isReadOnly())
 			title = name;
