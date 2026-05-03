@@ -4,7 +4,7 @@
 Tag category AI tools
 Tag category scripting API
 Copying selected chat messages as markdown
-Options show root node text or bookmark titles on tab titles and map menu labels
+Options to show root node text or bookmark titles on tab titles and map menu labels
   - Preferences…->Appearance->Look and Feel->Tab titles
   - Preferences…->Appearance->Look and Feel->Maximum tab title length
 Bookmarks outline and bookmark toolbar can follow the view root
