@@ -24,28 +24,57 @@ import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.resources.ResourceController;
 import java.util.function.Supplier;
 
 public class AIChatService {
     private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
+    public static final String ANNOUNCES_TOOLS_PROPERTY = "ai_announces_tools";
 
-    private final AIAssistant assistant;
+    private AIAssistant assistant;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
     private final ToolArgumentsErrorHandler toolArgumentsErrorHandler;
+    private final ChatModel chatLanguageModel;
+    private final AIToolSet toolSet;
+    private final ChatMemory chatMemory;
+    private final ChatTokenUsageTracker chatTokenUsageTracker;
+    private final Supplier<Boolean> cancellationSupplier;
+    private final Consumer<TokenUsage> tokenUsageConsumer;
+    private final ToolExecutorRegistry toolExecutorRegistry;
+    private boolean lastAnnouncesTools;
 
     public AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
                          ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler,
                          Supplier<Boolean> cancellationSupplier, Consumer<TokenUsage> tokenUsageConsumer) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
+        this.chatLanguageModel = chatLanguageModel;
+        this.toolSet = toolSet;
+        this.chatMemory = chatMemory;
+        this.chatTokenUsageTracker = chatTokenUsageTracker;
         this.toolCallSummaryHandler = toolCallSummaryHandler;
         this.toolArgumentsErrorHandler = buildToolArgumentsErrorHandler();
+        this.cancellationSupplier = cancellationSupplier;
+        this.tokenUsageConsumer = tokenUsageConsumer;
         ToolExecutorFactory toolExecutorFactory = new ToolExecutorFactory(true, true, cancellationSupplier);
-        ToolExecutorRegistry toolExecutorRegistry = toolExecutorFactory.createRegistry(toolSet);
+        this.toolExecutorRegistry = toolExecutorFactory.createRegistry(toolSet);
+        this.lastAnnouncesTools = announcesTools();
+        this.assistant = buildAssistant(lastAnnouncesTools);
+    }
+
+    public String chat(String message) {
+        boolean announcesTools = this.announcesTools();
+        if (announcesTools != lastAnnouncesTools) {
+            assistant = buildAssistant(announcesTools);
+            lastAnnouncesTools = announcesTools;
+        }
+        return assistant.chat(message);
+    }
+
+    private AIAssistant buildAssistant(boolean announcesTools) {
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
             .toolArgumentsErrorHandler(toolArgumentsErrorHandler)
             .chatModel(chatLanguageModel)
             .systemMessageProvider(toolSet::systemMessageForChat)
-            .tools(toolExecutorRegistry.getExecutorsBySpecification())
             .registerListener(new AiServiceListener<AiServiceErrorEvent>() {
 
                 @Override
@@ -86,14 +115,26 @@ public class AIChatService {
                     chatTokenUsageTracker.logToolExecuted(event);
                 }
             });
+        if (announcesTools) {
+            builder.tools(toolExecutorRegistry.getExecutorsBySpecification());
+        }
         if (chatMemory != null) {
             builder.chatMemory(chatMemory);
         }
-        this.assistant = builder.build();
+        return builder.build();
     }
 
-    public String chat(String message) {
-        return assistant.chat(message);
+    private boolean announcesTools() {
+        try {
+            ResourceController rc = ResourceController.getResourceController();
+            if (rc != null) {
+                String value = rc.getProperty(ANNOUNCES_TOOLS_PROPERTY, "true");
+                return "true".equalsIgnoreCase(value);
+            }
+        } catch (Exception ignored) {
+            // In test or non-UI environments, ResourceController may not be available
+        }
+        return true;
     }
 
     public interface AIAssistant {
