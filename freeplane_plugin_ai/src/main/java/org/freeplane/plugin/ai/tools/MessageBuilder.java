@@ -2,6 +2,7 @@ package org.freeplane.plugin.ai.tools;
 
 import dev.langchain4j.data.message.UserMessage;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.plugin.ai.chat.AIChatService;
 
 public class MessageBuilder {
     public static final String SYSTEM_MESSAGE_PROPERTY = "ai_system_message";
@@ -20,6 +21,7 @@ public class MessageBuilder {
             + "Treat the latest profile change as authoritative. "
             + "Older profile changes may omit profile definition and include only "
             + "\"Now you have the profile <Name>.\"";
+    
     @FunctionalInterface
     interface MessageTextProvider {
         String getMessageText();
@@ -36,9 +38,28 @@ public class MessageBuilder {
     }
 
     public String buildForChat() {
+        boolean announcesTools = true;
+        try {
+            ResourceController rc = ResourceController.getResourceController();
+            if (rc != null) {
+                announcesTools = "true".equalsIgnoreCase(
+                    rc.getProperty(AIChatService.ANNOUNCES_TOOLS_PROPERTY, "true"));
+            }
+        } catch (Exception ignored) {
+            // In test or non-UI environments, ResourceController may not be available
+        }
+        return buildForChat(announcesTools);
+    }
+
+    public String buildForChat(boolean announcesTools) {
         String message = messageTextProvider.getMessageText();
-        String guidance = MAP_SELECTION_GUIDANCE + "\n\n" + PROFILE_CONTROL_GUIDANCE + "\n\n"
-            + MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+        String guidance;
+        if (announcesTools) {
+            guidance = MAP_SELECTION_GUIDANCE + "\n\n" + PROFILE_CONTROL_GUIDANCE + "\n\n"
+                + MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+        } else {
+            guidance = PROFILE_CONTROL_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE;
+        }
         if (message == null) {
             return guidance;
         }
