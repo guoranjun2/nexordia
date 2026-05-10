@@ -3,9 +3,11 @@ package org.freeplane.plugin.ai.chat;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.resources.SetBooleanPropertyAction;
+import org.freeplane.core.resources.SetStringPropertyAction;
 import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.LabelAndMnemonicSetter;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
+import org.freeplane.core.ui.components.JAutoRadioButtonMenuItem;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.html.ScaledEditorKit;
 import org.freeplane.core.ui.textchanger.TranslatedElement;
@@ -29,12 +31,14 @@ import dev.langchain4j.memory.ChatMemory;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.Icon;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -427,6 +431,7 @@ public class AIChatPanel extends JPanel {
         JMenuItem preferencesMenuItem = TranslatedElementFactory.createMenuItem(openPreferencesAction, "preferences");
         preferencesMenuItem.setIcon(preferencesIcon);
         menuPopup.add(preferencesMenuItem);
+        addChatToolAvailabilityMenu(menuPopup);
         Action manageProfilesAction = new AbstractAction() {
             private static final long serialVersionUID = 1L;
 
@@ -447,6 +452,29 @@ public class AIChatPanel extends JPanel {
         menuPopup.add(copyMarkdownMenuItem);
         addAiEditsMenuItems(menuPopup);
         return menuPopup;
+    }
+
+    private void addChatToolAvailabilityMenu(JPopupMenu menuPopup) {
+        JMenu toolAvailabilityMenu = TranslatedElementFactory.createMenu(
+            "OptionPanel." + ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY);
+        ButtonGroup buttonGroup = new ButtonGroup();
+        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.EDITING);
+        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.READING);
+        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.DISABLED);
+        menuPopup.add(toolAvailabilityMenu);
+    }
+
+    private void addToolAvailabilityMenuItem(JMenu menu, ButtonGroup buttonGroup,
+                                             ChatToolAvailability toolAvailability) {
+        SetStringPropertyAction action = new SetStringPropertyAction(
+            ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY + "."
+                + toolAvailability.getPreferenceValue());
+        String labelKey = action.getTextKey();
+        JAutoRadioButtonMenuItem menuItem = new JAutoRadioButtonMenuItem(action, buttonGroup);
+        LabelAndMnemonicSetter.setLabelAndMnemonic(menuItem, TextUtils.getRawText(labelKey));
+        TranslatedElement.TEXT.setKey(menuItem, labelKey);
+        TranslatedElementFactory.createTooltip(menuItem, action.getTooltipKey());
+        menu.add(menuItem);
     }
 
     private void addAiEditsMenuItems(JPopupMenu menuPopup) {

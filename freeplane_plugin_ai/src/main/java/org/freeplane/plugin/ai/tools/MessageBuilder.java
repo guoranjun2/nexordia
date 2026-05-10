@@ -2,7 +2,8 @@ package org.freeplane.plugin.ai.tools;
 
 import dev.langchain4j.data.message.UserMessage;
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.plugin.ai.chat.AIChatService;
+import org.freeplane.plugin.ai.chat.ChatToolAvailability;
+import org.freeplane.plugin.ai.chat.ChatToolAvailabilitySettings;
 
 public class MessageBuilder {
     public static final String SYSTEM_MESSAGE_PROPERTY = "ai_system_message";
@@ -12,9 +13,15 @@ public class MessageBuilder {
         "Any tool calls in this chat require arguments wrapped under the single parameter named request. "
             + "Example: tool({ \"request\": { ... } })";
     private static final String MARKDOWN_RESPONSE_GUIDANCE = "Respond in Markdown.";
+    private static final String NO_TOOLS_GUIDANCE =
+        "No application tools are available in this chat. Do not call or invent tools. "
+            + "Answer as a general-purpose assistant.";
     private static final String MAP_SELECTION_GUIDANCE =
         "Map selection can change between messages. If a request seems misaligned with prior map references, "
             + "confirm the current map before proceeding.";
+    private static final String READ_ONLY_FREEPLANE_GUIDANCE =
+        "Available Freeplane tools are limited to reading, searching, and node selection. "
+            + "Do not change the map.";
     private static final String PROFILE_CONTROL_GUIDANCE =
         "Control instructions start with: " + CONTROL_INSTRUCTION_PREFIX
             + "Profile changes are communicated through these control instructions. "
@@ -38,27 +45,34 @@ public class MessageBuilder {
     }
 
     public String buildForChat() {
-        boolean announcesTools = true;
+        ChatToolAvailability toolAvailability = ChatToolAvailability.EDITING;
         try {
             ResourceController rc = ResourceController.getResourceController();
             if (rc != null) {
-                announcesTools = "true".equalsIgnoreCase(
-                    rc.getProperty(AIChatService.ANNOUNCES_TOOLS_PROPERTY, "true"));
+                toolAvailability = new ChatToolAvailabilitySettings().getToolAvailability();
             }
         } catch (Exception ignored) {
             // In test or non-UI environments, ResourceController may not be available
         }
-        return buildForChat(announcesTools);
+        return buildForChat(toolAvailability);
     }
 
-    public String buildForChat(boolean announcesTools) {
+    public String buildForChat(ChatToolAvailability toolAvailability) {
+        ChatToolAvailability normalizedAvailability = toolAvailability == null
+            ? ChatToolAvailability.EDITING
+            : toolAvailability;
         String message = messageTextProvider.getMessageText();
         String guidance;
-        if (announcesTools) {
+        if (normalizedAvailability == ChatToolAvailability.DISABLED) {
+            guidance = NO_TOOLS_GUIDANCE + "\n\n" + PROFILE_CONTROL_GUIDANCE + "\n\n"
+                + MARKDOWN_RESPONSE_GUIDANCE;
+        } else if (normalizedAvailability == ChatToolAvailability.READING) {
+            guidance = MAP_SELECTION_GUIDANCE + "\n\n" + READ_ONLY_FREEPLANE_GUIDANCE + "\n\n"
+                + PROFILE_CONTROL_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE + "\n\n"
+                + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
+        } else {
             guidance = MAP_SELECTION_GUIDANCE + "\n\n" + PROFILE_CONTROL_GUIDANCE + "\n\n"
                 + MARKDOWN_RESPONSE_GUIDANCE + "\n\n" + TOOL_CALL_REQUEST_WRAPPER_GUIDANCE;
-        } else {
-            guidance = PROFILE_CONTROL_GUIDANCE + "\n\n" + MARKDOWN_RESPONSE_GUIDANCE;
         }
         if (message == null) {
             return guidance;

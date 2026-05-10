@@ -4,6 +4,7 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
@@ -24,12 +25,10 @@ import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.core.resources.ResourceController;
 import java.util.function.Supplier;
 
 public class AIChatService {
     private static final int MAXIMUM_SUMMARY_TEXT_LENGTH = 160;
-    public static final String ANNOUNCES_TOOLS_PROPERTY = "ai_announces_tools";
 
     private AIAssistant assistant;
     private final ToolCallSummaryHandler toolCallSummaryHandler;
@@ -41,11 +40,33 @@ public class AIChatService {
     private final Supplier<Boolean> cancellationSupplier;
     private final Consumer<TokenUsage> tokenUsageConsumer;
     private final ToolExecutorRegistry toolExecutorRegistry;
-    private boolean lastAnnouncesTools;
+    private final Supplier<ChatToolAvailability> toolAvailabilitySupplier;
+    private final Function<ChatToolAvailability, AIAssistant> assistantFactory;
+    private ChatToolAvailability lastToolAvailability;
 
     public AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
                          ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler,
                          Supplier<Boolean> cancellationSupplier, Consumer<TokenUsage> tokenUsageConsumer) {
+        this(chatLanguageModel, toolSet, chatMemory, chatTokenUsageTracker, toolCallSummaryHandler,
+            cancellationSupplier, tokenUsageConsumer,
+            new Supplier<ChatToolAvailability>() {
+                @Override
+                public ChatToolAvailability get() {
+                    try {
+                        return new ChatToolAvailabilitySettings().getToolAvailability();
+                    } catch (Exception ignored) {
+                        return ChatToolAvailability.EDITING;
+                    }
+                }
+            },
+            null);
+    }
+
+    AIChatService(ChatModel chatLanguageModel, AIToolSet toolSet, ChatMemory chatMemory,
+                  ChatTokenUsageTracker chatTokenUsageTracker, ToolCallSummaryHandler toolCallSummaryHandler,
+                  Supplier<Boolean> cancellationSupplier, Consumer<TokenUsage> tokenUsageConsumer,
+                  Supplier<ChatToolAvailability> toolAvailabilitySupplier,
+                  Function<ChatToolAvailability, AIAssistant> assistantFactory) {
         Objects.requireNonNull(chatTokenUsageTracker, "chatTokenUsageTracker");
         this.chatLanguageModel = chatLanguageModel;
         this.toolSet = toolSet;
@@ -57,24 +78,33 @@ public class AIChatService {
         this.tokenUsageConsumer = tokenUsageConsumer;
         ToolExecutorFactory toolExecutorFactory = new ToolExecutorFactory(true, true, cancellationSupplier);
         this.toolExecutorRegistry = toolExecutorFactory.createRegistry(toolSet);
-        this.lastAnnouncesTools = announcesTools();
-        this.assistant = buildAssistant(lastAnnouncesTools);
+        this.toolAvailabilitySupplier = Objects.requireNonNull(toolAvailabilitySupplier, "toolAvailabilitySupplier");
+        this.assistantFactory = assistantFactory != null
+            ? assistantFactory
+            : new Function<ChatToolAvailability, AIAssistant>() {
+                @Override
+                public AIAssistant apply(ChatToolAvailability toolAvailability) {
+                    return buildAssistant(toolAvailability);
+                }
+            };
+        this.lastToolAvailability = currentToolAvailability();
+        this.assistant = this.assistantFactory.apply(lastToolAvailability);
     }
 
     public String chat(String message) {
-        boolean announcesTools = this.announcesTools();
-        if (announcesTools != lastAnnouncesTools) {
-            assistant = buildAssistant(announcesTools);
-            lastAnnouncesTools = announcesTools;
+        ChatToolAvailability toolAvailability = currentToolAvailability();
+        if (toolAvailability != lastToolAvailability) {
+            assistant = assistantFactory.apply(toolAvailability);
+            lastToolAvailability = toolAvailability;
         }
         return assistant.chat(message);
     }
 
-    private AIAssistant buildAssistant(boolean announcesTools) {
+    private AIAssistant buildAssistant(ChatToolAvailability toolAvailability) {
         AiServices<AIAssistant> builder = AiServices.builder(AIAssistant.class)
             .toolArgumentsErrorHandler(toolArgumentsErrorHandler)
             .chatModel(chatLanguageModel)
-            .systemMessageProvider(toolSet::systemMessageForChat)
+            .systemMessageProvider(systemMessageProvider(toolAvailability))
             .registerListener(new AiServiceListener<AiServiceErrorEvent>() {
 
                 @Override
@@ -115,8 +145,9 @@ public class AIChatService {
                     chatTokenUsageTracker.logToolExecuted(event);
                 }
             });
-        if (announcesTools) {
-            builder.tools(toolExecutorRegistry.getExecutorsBySpecification());
+        if (toolAvailability.includesTools()) {
+            builder.tools(toolExecutorRegistry.filtered(toolAvailability.allowedToolNames())
+                .getExecutorsBySpecification());
         }
         if (chatMemory != null) {
             builder.chatMemory(chatMemory);
@@ -124,17 +155,23 @@ public class AIChatService {
         return builder.build();
     }
 
-    private boolean announcesTools() {
-        try {
-            ResourceController rc = ResourceController.getResourceController();
-            if (rc != null) {
-                String value = rc.getProperty(ANNOUNCES_TOOLS_PROPERTY, "true");
-                return "true".equalsIgnoreCase(value);
+    private ChatToolAvailability currentToolAvailability() {
+        ChatToolAvailability toolAvailability = toolAvailabilitySupplier.get();
+        return toolAvailability == null
+            ? ChatToolAvailability.EDITING
+            : toolAvailability;
+    }
+
+    Function<Object, String> systemMessageProvider(ChatToolAvailability toolAvailability) {
+        final ChatToolAvailability normalizedAvailability = toolAvailability == null
+            ? ChatToolAvailability.EDITING
+            : toolAvailability;
+        return new Function<Object, String>() {
+            @Override
+            public String apply(Object input) {
+                return toolSet.systemMessageForChat(input, normalizedAvailability);
             }
-        } catch (Exception ignored) {
-            // In test or non-UI environments, ResourceController may not be available
-        }
-        return true;
+        };
     }
 
     public interface AIAssistant {
