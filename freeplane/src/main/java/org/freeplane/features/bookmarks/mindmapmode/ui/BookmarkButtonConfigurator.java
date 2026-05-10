@@ -100,22 +100,25 @@ class BookmarkButtonConfigurator {
 		button.setText(descriptor.getName());
 		button.addActionListener(this::applyAction);
 		button.putClientProperty(NodeTooltipManager.TOOLTIP_LOCATION_PROPERTY, NodeTooltipManager.TOOLTIP_LOCATION_ABOVE);
-
-		registerTooltip(button);
-		setButtonIcon(button, node, descriptor);
-		setupDragAndDrop(button, toolbar);
+		if (toolbar.isInteractive()) {
+			registerTooltip(button);
+			setButtonIcon(button, node, descriptor);
+			setupDragAndDrop(button, toolbar);
+		}
 		setupActionMap(button, toolbar);
 		addMouseListener(button);
 	}
 
-	void configureNonBookmarkComponent(Component component) {
-		@SuppressWarnings("unused")
-		final DropTarget dropTarget = new DropTarget(component, DnDConstants.ACTION_NONE, new DropTargetAdapter() {
-			@Override
-			public void drop(DropTargetDropEvent dtde) {
-				dtde.rejectDrop();
-			}
-		});
+	void configureNonBookmarkComponent(Component component, boolean interactive) {
+		if (interactive) {
+			@SuppressWarnings("unused")
+			final DropTarget dropTarget = new DropTarget(component, DnDConstants.ACTION_NONE, new DropTargetAdapter() {
+				@Override
+				public void drop(DropTargetDropEvent dtde) {
+					dtde.rejectDrop();
+				}
+			});
+		}
 		if(component instanceof AbstractButton) {
 			final AbstractButton button = (AbstractButton)component;
 			button.getInputMap().put(enterKeyStroke, ENTER_ACTION_KEY);

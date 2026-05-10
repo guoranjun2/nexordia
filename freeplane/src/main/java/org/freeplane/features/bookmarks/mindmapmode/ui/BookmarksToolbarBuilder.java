@@ -3,7 +3,6 @@ package org.freeplane.features.bookmarks.mindmapmode.ui;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -39,29 +38,39 @@ public class BookmarksToolbarBuilder {
 
 		toolbar.removeAll();
 
-		List<NodeBookmark> bookmarks = bookmarksController.getBookmarks(map).getBookmarks();
-		bookmarks = filterBookmarksBySelectionRoot(toolbar, map, selection, bookmarks);
-		for (NodeBookmark bookmark : bookmarks) {
-			final BookmarkButton button = createBookmarkButton(bookmark, toolbar, selection);
+		List<NodeBookmark> allBookmarks = bookmarksController.getBookmarks(map).getBookmarks();
+		toolbar.setBookmarkListSize(allBookmarks.size());
+
+		final JToggleButton followRootToggleButton = createFollowRootToggleButton(toolbar, map);
+		followRootToggleButton.setFocusable(true);
+		toolbar.add(followRootToggleButton);
+		buttonConfigurator.configureNonBookmarkComponent(followRootToggleButton, toolbar.isInteractive());
+
+		toolbar.addSeparator();
+		buttonConfigurator.configureNonBookmarkComponent(toolbar.getComponent(toolbar.getComponentCount() - 1), toolbar.isInteractive());
+
+		int visibleBookmarkCount = 0;
+		for (int bookmarkListIndex = 0; bookmarkListIndex < allBookmarks.size(); bookmarkListIndex++) {
+			NodeBookmark bookmark = allBookmarks.get(bookmarkListIndex);
+			if (!isVisibleInSelectionRoot(toolbar, map, selection, bookmark)) {
+				continue;
+			}
+			final BookmarkButton button = createBookmarkButton(bookmark, bookmarkListIndex, toolbar, selection);
 			toolbar.add(button);
 			button.setFocusable(true);
+			visibleBookmarkCount++;
 		}
 
-		final int bookmarkButtonCount = toolbar.getComponentCount();
-		final JToggleButton followRootToggleButton = createFollowRootToggleButton(toolbar, map);
+		if (visibleBookmarkCount > 0) {
+			toolbar.addSeparator();
+			buttonConfigurator.configureNonBookmarkComponent(toolbar.getComponent(toolbar.getComponentCount() - 1), toolbar.isInteractive());
+		}
 
 		JButton addRootBranchButton = TranslatedElementFactory.createButtonWithIcon("bookmark.addRootBranch.icon", "bookmark.addRootBranch.text");
 		addRootBranchButton.addActionListener(e -> bookmarksController.addNewNode(map.getRootNode()));
-
-		toolbar.addSeparator();
-		toolbar.add(followRootToggleButton);
-		toolbar.add(addRootBranchButton);
 		addRootBranchButton.setFocusable(true);
-
-		for(int i = 0; i < 3; i++) {
-			final Component component = toolbar.getComponent(bookmarkButtonCount + i);
-			buttonConfigurator.configureNonBookmarkComponent(component);
-		}
+		toolbar.add(addRootBranchButton);
+		buttonConfigurator.configureNonBookmarkComponent(addRootBranchButton, toolbar.isInteractive());
 
 		if(focusIndex >= 0) {
 			if(toolbar.getComponentCount() > focusIndex) {
@@ -78,8 +87,10 @@ public class BookmarksToolbarBuilder {
 		toolbar.repaint();
 	}
 
-	private BookmarkButton createBookmarkButton(NodeBookmark bookmark, BookmarkToolbar toolbar, IMapSelection selection) {
+	private BookmarkButton createBookmarkButton(NodeBookmark bookmark, int bookmarkListIndex,
+			BookmarkToolbar toolbar, IMapSelection selection) {
 		final BookmarkButton button = new BookmarkButton(bookmark, modeController);
+		button.setBookmarkListIndex(bookmarkListIndex);
 		buttonConfigurator.configureButton(button, bookmark, toolbar, selection);
 		return button;
 	}
@@ -96,21 +107,17 @@ public class BookmarksToolbarBuilder {
 		return toggleButton;
 	}
 
-	private List<NodeBookmark> filterBookmarksBySelectionRoot(BookmarkToolbar toolbar, MapModel map,
-			IMapSelection selection, List<NodeBookmark> bookmarks) {
+	private boolean isVisibleInSelectionRoot(BookmarkToolbar toolbar, MapModel map,
+			IMapSelection selection, NodeBookmark bookmark) {
 		if (!toolbar.followsViewRootScope() || selection == null) {
-			return bookmarks;
+			return true;
 		}
 		NodeModel selectionRoot = selection.getSelectionRoot();
 		if (selectionRoot == null || selectionRoot.getMap() != map) {
-			return bookmarks;
+			return true;
 		}
-		return bookmarks.stream()
-				.filter(bookmark -> {
-					NodeModel node = bookmark != null ? bookmark.getNode() : null;
-					return BookmarkScope.isAtOrBelow(node, selectionRoot);
-				})
-				.collect(Collectors.toList());
+		NodeModel node = bookmark != null ? bookmark.getNode() : null;
+		return BookmarkScope.isAtOrBelow(node, selectionRoot);
 	}
 
 }

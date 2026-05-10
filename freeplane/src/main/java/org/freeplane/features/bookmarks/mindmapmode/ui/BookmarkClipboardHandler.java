@@ -48,7 +48,7 @@ class BookmarkClipboardHandler {
 		}
 		BookmarkToolbar toolbar = (BookmarkToolbar) parent;
 		NodeBookmark bookmark = button.getBookmark();
-		int sourceIndex = toolbar.getComponentIndex(button);
+		int sourceIndex = button.getBookmarkListIndex();
 
 		BookmarkTransferables.CombinedTransferable transferable =
 			BookmarkTransferableFactory.createCombinedTransferable(bookmark, sourceIndex,

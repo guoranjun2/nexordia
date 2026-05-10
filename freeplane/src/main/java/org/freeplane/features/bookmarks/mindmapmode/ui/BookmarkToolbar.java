@@ -24,7 +24,6 @@ import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.ToolbarLayout;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
-import org.freeplane.features.bookmarks.mindmapmode.ui.BookmarkIndexCalculator.ToolbarDropPosition.Type;
 import org.freeplane.features.map.MapModel;
 
 public class BookmarkToolbar extends FreeplaneToolBar {
@@ -61,12 +60,19 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 	private DropIndicatorType indicatorType = DropIndicatorType.NONE;
 	private final BookmarkClipboardHandler clipboardHandler;
 	private final DropExecutor dropExecutor;
+	private final boolean interactive;
 	private MapModel map;
 	private boolean followsViewRootScope;
+	private int bookmarkListSize;
 
 	public BookmarkToolbar(BookmarksController bookmarksController, MapModel map) {
+		this(bookmarksController, map, true);
+	}
+
+	BookmarkToolbar(BookmarksController bookmarksController, MapModel map, boolean interactive) {
 		super(FreeplaneToolBar.FLOATING_HORIZONTAL);
 		this.map = map;
+		this.interactive = interactive;
     	ToolbarLayout layout = (ToolbarLayout) getLayout();
     	layout.setGap(GAP, 0, true, false);
     	setDisablesFocus(false);
@@ -91,11 +97,13 @@ public class BookmarkToolbar extends FreeplaneToolBar {
     	this.dropExecutor = new DropExecutor(this, bookmarksController);
     	this.clipboardHandler = new BookmarkClipboardHandler(bookmarksController, dropExecutor);
 
-    	new DropTarget(this,
-				DnDConstants.ACTION_COPY | DnDConstants.ACTION_MOVE,
-				new BookmarkDropTargetListener(this, bookmarksController));
+    	if (interactive) {
+    		new DropTarget(this,
+					DnDConstants.ACTION_COPY | DnDConstants.ACTION_MOVE,
+					new BookmarkDropTargetListener(this, bookmarksController));
 
-		clipboardHandler.setupToolbarClipboardActions(this);
+			clipboardHandler.setupToolbarClipboardActions(this);
+    	}
 	}
 
 
@@ -108,8 +116,20 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 		return followsViewRootScope;
 	}
 
+	boolean isInteractive() {
+		return interactive;
+	}
+
 	public void setFollowsViewRootScope(boolean followsViewRootScope) {
 		this.followsViewRootScope = followsViewRootScope;
+	}
+
+	int getBookmarkListSize() {
+		return bookmarkListSize;
+	}
+
+	void setBookmarkListSize(int bookmarkListSize) {
+		this.bookmarkListSize = bookmarkListSize;
 	}
 
 	public void setMap(MapModel map) {
@@ -146,12 +166,7 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 	}
 
 	private Component getComponentToFocus(BookmarkIndexCalculator.ToolbarDropPosition position) {
-		if (position.buttonIndex >= 0 && (position.type == Type.BEFORE_BUTTON && position.buttonIndex < getComponentCount()
-				|| position.type == Type.AFTER_BUTTON && position.buttonIndex < getComponentCount() - 1)) {
-			return getComponent(position.buttonIndex);
-		}
-		else
-			return this;
+		return position.getTargetButton() != null ? position.getTargetButton() : this;
 	}
 
 	@Override
@@ -241,16 +256,27 @@ public class BookmarkToolbar extends FreeplaneToolBar {
 		if (componentCount == 0) {
 			return;
 		}
-		for (int i = 0; i < componentCount; i++) {
-			Component component = getComponent(i);
-			if (!(component instanceof BookmarkButton)) {
-				Rectangle bounds = component.getBounds();
-				paintDropLine(g, bounds, GAP, true);
-				return;
-			}
+		Component endDropAnchor = getEndDropAnchor();
+		if (endDropAnchor != null) {
+			paintDropLine(g, endDropAnchor.getBounds(), GAP, true);
+			return;
 		}
 		Rectangle bounds = getComponent(componentCount - 1).getBounds();
 		paintDropLine(g, bounds, GAP, false);
+	}
+
+	Component getEndDropAnchor() {
+		boolean seenBookmark = false;
+		for (int i = 0; i < getComponentCount(); i++) {
+			Component component = getComponent(i);
+			if (component instanceof BookmarkButton) {
+				seenBookmark = true;
+			}
+			else if (seenBookmark) {
+				return component;
+			}
+		}
+		return seenBookmark || getComponentCount() == 0 ? null : getComponent(getComponentCount() - 1);
 	}
 
 	public void requestInitialFocusInWindow() {

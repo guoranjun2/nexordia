@@ -20,8 +20,17 @@ import java.awt.Component;
 @SuppressWarnings("serial")
 class BookmarkButton extends JButton {
 	private final NodeBookmark bookmark;
+	private int bookmarkListIndex = -1;
 	public NodeBookmark getBookmark() {
 		return bookmark;
+	}
+
+	public int getBookmarkListIndex() {
+		return bookmarkListIndex;
+	}
+
+	public void setBookmarkListIndex(int bookmarkListIndex) {
+		this.bookmarkListIndex = bookmarkListIndex;
 	}
 
 	private final ModeController modeController;

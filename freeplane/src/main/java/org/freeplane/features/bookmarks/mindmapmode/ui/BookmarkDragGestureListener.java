@@ -19,7 +19,7 @@ class BookmarkDragGestureListener implements DragGestureListener {
 
 		DragActionDetector.DragActionResult actionResult = DragActionDetector.detectDragAction(dge);
 
-		int sourceIndex = toolbar.getComponentIndex(button);
+		int sourceIndex = button.getBookmarkListIndex();
 		BookmarkTransferables.CombinedTransferable transferable =
 			BookmarkTransferableFactory.createCombinedTransferable(bookmark, sourceIndex, actionResult.dragAction);
 

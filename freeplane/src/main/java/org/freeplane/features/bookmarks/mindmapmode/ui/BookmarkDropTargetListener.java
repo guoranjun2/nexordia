@@ -349,21 +349,13 @@ class BookmarkDropTargetListener extends DropTargetAdapter {
 	private void showToolbarDropFeedback(BookmarkToolbar toolbar, BookmarkIndexCalculator.ToolbarDropPosition position) {
 		switch (position.type) {
 			case BEFORE_BUTTON:
-				if (position.buttonIndex < toolbar.getComponentCount()) {
-					Component component = toolbar.getComponent(position.buttonIndex);
-					if (component instanceof BookmarkButton) {
-						BookmarkButton button = (BookmarkButton) component;
-						button.showFeedback(BookmarkToolbar.DropIndicatorType.DROP_BEFORE);
-					}
+				if (position.getTargetButton() != null) {
+					position.getTargetButton().showFeedback(BookmarkToolbar.DropIndicatorType.DROP_BEFORE);
 				}
 				break;
 			case AFTER_BUTTON:
-				if (position.buttonIndex < toolbar.getComponentCount()) {
-					Component component = toolbar.getComponent(position.buttonIndex);
-					if (component instanceof BookmarkButton) {
-						BookmarkButton button = (BookmarkButton) component;
-						button.showFeedback(BookmarkToolbar.DropIndicatorType.DROP_AFTER);
-					}
+				if (position.getTargetButton() != null) {
+					position.getTargetButton().showFeedback(BookmarkToolbar.DropIndicatorType.DROP_AFTER);
 				}
 				break;
 			case AT_END:
@@ -377,13 +369,9 @@ class BookmarkDropTargetListener extends DropTargetAdapter {
 		int edgeThreshold = Math.max(BookmarkToolbar.GAP, buttonWidth / 6);
 
 		if (dropPoint.x <= edgeThreshold) {
-			BookmarkToolbar toolbar = (BookmarkToolbar) button.getParent();
-			int buttonIndex = toolbar.getComponentIndex(button);
-			return new NodeDropZone(true, false, buttonIndex);
+			return new NodeDropZone(true, false, button.getBookmarkListIndex());
 		} else if (dropPoint.x >= buttonWidth - edgeThreshold) {
-			BookmarkToolbar toolbar = (BookmarkToolbar) button.getParent();
-			int buttonIndex = toolbar.getComponentIndex(button);
-			return new NodeDropZone(true, true, buttonIndex + 1);
+			return new NodeDropZone(true, true, button.getBookmarkListIndex() + 1);
 		} else {
 			return new NodeDropZone(false, false, -1);
 		}
