@@ -1,6 +1,7 @@
 package org.freeplane.features.bookmarks.mindmapmode.ui;
 
 import java.awt.Component;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragSource;
@@ -35,12 +36,19 @@ class BookmarkButtonConfigurator {
 	private static final String PASTE_ACTION_KEY = "bookmarkPaste";
 	private static final String ENTER_ACTION_KEY = "bookmarkEnter";
 	private static final ButtonEnterAction CLICK_ACTION = new ButtonEnterAction();
-	private static final int menuShortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+	private static final int menuShortcutKeyMask = menuShortcutKeyMask();
 
 	private static final KeyStroke copyKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_C, menuShortcutKeyMask);
 	private static final KeyStroke pasteKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutKeyMask);
 	private static final KeyStroke enterKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 	private static final KeyStroke altEnterKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.ALT_MASK);
+
+	private static int menuShortcutKeyMask() {
+		if (GraphicsEnvironment.isHeadless()) {
+			return InputEvent.CTRL_DOWN_MASK;
+		}
+		return Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+	}
 
 	@SuppressWarnings("serial")
 	private static class ButtonCopyAction extends AbstractAction {

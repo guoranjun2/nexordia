@@ -8,12 +8,14 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragSource;
 import java.awt.dnd.DropTarget;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.Insets;
@@ -53,9 +55,16 @@ class NodeButton extends JButton {
     private static final long serialVersionUID = 1L;
     private static final String COPY_ACTION_KEY = "outlineCopy";
     private static final String PASTE_ACTION_KEY = "outlinePaste";
-    private static final int MENU_SHORTCUT_MASK = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+    private static final int MENU_SHORTCUT_MASK = menuShortcutKeyMask();
     private static final KeyStroke COPY_KEY_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_C, MENU_SHORTCUT_MASK);
     private static final KeyStroke PASTE_KEY_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_V, MENU_SHORTCUT_MASK);
+
+    private static int menuShortcutKeyMask() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return InputEvent.CTRL_DOWN_MASK;
+        }
+        return Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+    }
 	private static final FocusListener repaint = new FocusListener() {
 
 		@Override

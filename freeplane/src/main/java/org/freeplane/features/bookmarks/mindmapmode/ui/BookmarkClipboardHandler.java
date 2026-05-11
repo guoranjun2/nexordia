@@ -1,9 +1,11 @@
 package org.freeplane.features.bookmarks.mindmapmode.ui;
 
+import java.awt.Component;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.Component;
 
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -34,7 +36,7 @@ class BookmarkClipboardHandler {
 		InputMap inputMap = toolbar.getInputMap(JComponent.WHEN_FOCUSED);
 		ActionMap actionMap = toolbar.getActionMap();
 
-		int menuShortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+		int menuShortcutKeyMask = menuShortcutKeyMask();
 
 		KeyStroke pasteKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutKeyMask);
 		inputMap.put(pasteKeyStroke, PASTE_ACTION_KEY);
@@ -118,6 +120,13 @@ class BookmarkClipboardHandler {
 		} catch (Exception e) {
 			// Handle paste error silently
 		}
+	}
+
+	private static int menuShortcutKeyMask() {
+		if (GraphicsEnvironment.isHeadless()) {
+			return InputEvent.CTRL_DOWN_MASK;
+		}
+		return Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 	}
 
 	@SuppressWarnings("serial")
