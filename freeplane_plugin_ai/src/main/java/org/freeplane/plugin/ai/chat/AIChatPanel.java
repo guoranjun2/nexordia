@@ -23,6 +23,9 @@ import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
+import org.freeplane.plugin.ai.prompt.AiPrompt;
+import org.freeplane.plugin.ai.prompt.AiPromptRequestComposer;
+import org.freeplane.plugin.ai.prompt.HiddenPromptRequestRunner;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
@@ -105,6 +108,9 @@ public class AIChatPanel extends JPanel {
     private final ChatRequestFlow chatRequestFlow;
     private final AssistantProfileSelectionSync assistantProfileSelectionSync;
     private final AssistantProfilePaneBuilder assistantProfilePaneBuilder;
+    private final AiPromptRequestComposer aiPromptRequestComposer;
+    private final HiddenPromptRequestRunner hiddenPromptRequestRunner;
+    private boolean currentSessionUsesAssistantProfile = true;
 
     public AIChatPanel() {
         setLayout(new BorderLayout());
@@ -167,6 +173,7 @@ public class AIChatPanel extends JPanel {
         messageRenderer = new ChatMessageRenderer();
         chatMemoryHistoryRenderer = new ChatMemoryHistoryRenderer(messageHistory, messageRenderer);
         availableMaps = new AvailableMaps(new ControllerMapModelProvider());
+        aiPromptRequestComposer = new AiPromptRequestComposer(availableMaps, requireTextController());
         chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         liveChatController = new LiveChatController(
             this,
@@ -185,6 +192,22 @@ public class AIChatPanel extends JPanel {
             assistantProfileSelectionModel,
             assistantProfileSelectionSync,
             assistantProfileIcon);
+        hiddenPromptRequestRunner = new HiddenPromptRequestRunner(new HiddenPromptRequestRunner.Callbacks() {
+            @Override
+            public void onRequestStarted(String promptName) {
+                SwingUtilities.invokeLater(() -> updateInputState());
+            }
+
+            @Override
+            public void onRequestFinished(String promptName) {
+                SwingUtilities.invokeLater(() -> updateInputState());
+            }
+
+            @Override
+            public void onRequestFailed(String promptName, String errorMessage) {
+                notifyUser(promptFailureMessage(promptName, errorMessage), true);
+            }
+        });
         chatRequestFlow = new ChatRequestFlow(new ChatRequestFlow.RequestCallbacks() {
             @Override
             public void onRequestStarted() {
@@ -611,12 +634,18 @@ public class AIChatPanel extends JPanel {
     }
 
     private void sendMessage() {
+        if (hiddenPromptRequestRunner.isRequestActive()) {
+            notifyUser(TextUtils.getText("ai_prompt_request_active"), false);
+            return;
+        }
         String userMessage = inputArea.getText().trim();
         if (userMessage.isEmpty()) {
             return;
         }
         chatRequestFlow.beginRequest(userMessage);
-        assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
+        if (currentSessionUsesAssistantProfile) {
+            assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
+        }
         chatRequestFlow.captureChatSnapshot();
         appendChatMessage(userMessage, ChatMessageCategory.USER);
         chatRequestFlow.refreshTokenCounters();
@@ -630,8 +659,71 @@ public class AIChatPanel extends JPanel {
         chatRequestFlow.submitRequest(chatService);
     }
 
+    public void runPrompt(AiPrompt prompt) {
+        if (prompt == null) {
+            return;
+        }
+        if (isAnyAiRequestActive()) {
+            notifyUser(TextUtils.getText("ai_prompt_request_active"), false);
+            return;
+        }
+        final String preparedMessage;
+        try {
+            preparedMessage = aiPromptRequestComposer.compose(prompt);
+        } catch (RuntimeException error) {
+            notifyUser(error.getMessage(), true);
+            return;
+        }
+        ChatMemory promptChatMemory = createChatMemory();
+        if (prompt.isShowInChat()) {
+            AIChatService promptService = createPromptChatService(
+                promptChatMemory,
+                liveChatController.mapAccessListener(),
+                chatRequestFlow::onToolCallSummary,
+                chatRequestFlow.cancellationSupplier(),
+                chatRequestFlow::onProviderUsage,
+                chatTokenUsageTracker);
+            if (promptService == null) {
+                return;
+            }
+            liveChatController.startNewPromptChat(promptChatMemory, promptSessionDisplayName(prompt.getName()));
+            chatService = promptService;
+            showChatTab();
+            submitPreparedVisibleMessage(preparedMessage);
+        } else {
+            AIChatService promptService = createPromptChatService(
+                promptChatMemory,
+                null,
+                null,
+                null,
+                null,
+                new ChatTokenUsageTracker(totals -> {
+                }));
+            if (promptService == null) {
+                return;
+            }
+            hiddenPromptRequestRunner.submit(prompt.getName(), promptService, preparedMessage);
+        }
+    }
+
+    private void submitPreparedVisibleMessage(String userMessage) {
+        if (userMessage == null || userMessage.trim().isEmpty()) {
+            return;
+        }
+        chatRequestFlow.beginRequest(userMessage);
+        chatRequestFlow.captureChatSnapshot();
+        appendChatMessage(userMessage, ChatMessageCategory.USER);
+        chatRequestFlow.refreshTokenCounters();
+        inputArea.setText("");
+        chatRequestFlow.submitRequest(chatService);
+    }
+
     private boolean isRequestActive() {
         return chatRequestFlow.isRequestActive();
+    }
+
+    private boolean isAnyAiRequestActive() {
+        return chatRequestFlow.isRequestActive() || hiddenPromptRequestRunner.isRequestActive();
     }
 
     private void cancelActiveRequest() {
@@ -668,6 +760,11 @@ public class AIChatPanel extends JPanel {
             updateUndoRedoButtonState();
             return;
         }
+        if (hiddenPromptRequestRunner.isRequestActive()) {
+            setHiddenPromptRunState();
+            updateUndoRedoButtonState();
+            return;
+        }
         if (isProviderConfigured()) {
             setProviderReadyState();
         } else {
@@ -690,6 +787,7 @@ public class AIChatPanel extends JPanel {
 
     private void setProviderReadyState() {
         inputArea.setEditable(true);
+        sendButton.setEnabled(true);
         if (noProviderConfiguredText != null && noProviderConfiguredText.equals(inputArea.getText())) {
             inputArea.setText("");
         }
@@ -698,9 +796,15 @@ public class AIChatPanel extends JPanel {
 
     private void setNoProviderState() {
         inputArea.setEditable(false);
+        sendButton.setEnabled(true);
         inputArea.setText(noProviderConfiguredText);
         inputArea.setCaretPosition(0);
         setSendButtonPreferencesState();
+    }
+
+    private void setHiddenPromptRunState() {
+        inputArea.setEditable(false);
+        sendButton.setEnabled(false);
     }
 
     private boolean isProviderConfigured() {
@@ -717,31 +821,12 @@ public class AIChatPanel extends JPanel {
         if (chatService != null) {
             return;
         }
-        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
-        if (selection == null) {
-            appendChatMessage("Missing AI model selection.", ChatMessageCategory.ASSISTANT);
+        String configurationError = configurationErrorMessage();
+        if (configurationError != null) {
+            appendChatMessage(configurationError, ChatMessageCategory.ASSISTANT);
             return;
         }
-        String providerName = selection.getProviderName();
-        if (AIChatModelFactory.PROVIDER_NAME_OPENROUTER.equalsIgnoreCase(providerName)) {
-            if (configuration.getOpenRouterKey() == null || configuration.getOpenRouterKey().isEmpty()) {
-                appendChatMessage("Missing OpenRouter key setting.", ChatMessageCategory.ASSISTANT);
-                return;
-            }
-        } else if (AIChatModelFactory.PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
-            if (configuration.getGeminiKey() == null || configuration.getGeminiKey().isEmpty()) {
-                appendChatMessage("Missing Gemini key setting.", ChatMessageCategory.ASSISTANT);
-                return;
-            }
-        } else if (AIChatModelFactory.PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
-            if (!configuration.hasOllamaServiceAddress()) {
-                appendChatMessage("Missing Ollama service address setting.", ChatMessageCategory.ASSISTANT);
-                return;
-            }
-        } else {
-            appendChatMessage("Unknown AI provider selection.", ChatMessageCategory.ASSISTANT);
-            return;
-        }
+        ChatToolAvailability toolAvailabilityOverride = liveChatController.currentSessionToolAvailabilityOverride();
         chatService = AIChatServiceFactory.createService(new AIToolSetBuilder()
                 .toolCallSummaryHandler(chatRequestFlow::onToolCallSummary)
                 .availableMaps(availableMaps)
@@ -751,7 +836,58 @@ public class AIChatPanel extends JPanel {
             chatTokenUsageTracker,
             chatRequestFlow::onToolCallSummary,
             chatRequestFlow.cancellationSupplier(),
-            chatRequestFlow::onProviderUsage);
+            chatRequestFlow::onProviderUsage,
+            toolAvailabilityOverride == null
+                ? null
+                : () -> toolAvailabilityOverride);
+    }
+
+    private AIChatService createPromptChatService(ChatMemory promptChatMemory,
+                                                  AvailableMaps.MapAccessListener mapAccessListener,
+                                                  ToolCallSummaryHandler toolCallSummaryHandler,
+                                                  java.util.function.Supplier<Boolean> cancellationSupplier,
+                                                  java.util.function.Consumer<dev.langchain4j.model.output.TokenUsage> tokenUsageConsumer,
+                                                  ChatTokenUsageTracker tokenUsageTracker) {
+        String configurationError = configurationErrorMessage();
+        if (configurationError != null) {
+            notifyUser(configurationError, true);
+            return null;
+        }
+        return AIChatServiceFactory.createService(new AIToolSetBuilder()
+                .toolCallSummaryHandler(toolCallSummaryHandler)
+                .availableMaps(availableMaps)
+                .mapAccessListener(mapAccessListener)
+                .build(),
+            promptChatMemory,
+            tokenUsageTracker,
+            toolCallSummaryHandler,
+            cancellationSupplier,
+            tokenUsageConsumer,
+            () -> ChatToolAvailability.EDITING);
+    }
+
+    private String configurationErrorMessage() {
+        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
+        if (selection == null) {
+            return "Missing AI model selection.";
+        }
+        String providerName = selection.getProviderName();
+        if (AIChatModelFactory.PROVIDER_NAME_OPENROUTER.equalsIgnoreCase(providerName)) {
+            if (configuration.getOpenRouterKey() == null || configuration.getOpenRouterKey().isEmpty()) {
+                return "Missing OpenRouter key setting.";
+            }
+        } else if (AIChatModelFactory.PROVIDER_NAME_GEMINI.equalsIgnoreCase(providerName)) {
+            if (configuration.getGeminiKey() == null || configuration.getGeminiKey().isEmpty()) {
+                return "Missing Gemini key setting.";
+            }
+        } else if (AIChatModelFactory.PROVIDER_NAME_OLLAMA.equalsIgnoreCase(providerName)) {
+            if (!configuration.hasOllamaServiceAddress()) {
+                return "Missing Ollama service address setting.";
+            }
+        } else {
+            return "Unknown AI provider selection.";
+        }
+        return null;
     }
 
     private void appendChatMessage(String text, ChatMessageCategory category) {
@@ -814,6 +950,44 @@ public class AIChatPanel extends JPanel {
         messageHistory.appendMessage(sourceText, renderedText, ChatMessageCategory.ERROR.getStyleClassName());
     }
 
+    private void notifyUser(String message, boolean error) {
+        if (message == null || message.trim().isEmpty()) {
+            return;
+        }
+        Controller controller = Controller.getCurrentController();
+        if (controller != null && controller.getViewController() != null) {
+            controller.getViewController().out(message);
+            return;
+        }
+        if (error) {
+            UITools.errorMessage(message);
+        } else {
+            UITools.informationMessage(message);
+        }
+    }
+
+    private String promptFailureMessage(String promptName, String errorMessage) {
+        String safePromptName = promptName == null ? "" : promptName.trim();
+        String safeErrorMessage = errorMessage == null ? "" : errorMessage.trim();
+        return TextUtils.format("ai_prompt_hidden_failed",
+            safePromptName,
+            safeErrorMessage.isEmpty() ? "Unknown error" : safeErrorMessage);
+    }
+
+    private String promptSessionDisplayName(String promptName) {
+        String safePromptName = promptName == null ? "" : promptName.trim();
+        if (safePromptName.isEmpty()) {
+            safePromptName = TextUtils.getText("ai_prompt_untitled");
+        }
+        return TextUtils.getText("ai_prompt_session_prefix") + safePromptName;
+    }
+
+    private void showChatTab() {
+        if (UITools.getFreeplaneTabbedPanel() != null) {
+            UITools.getFreeplaneTabbedPanel().setSelectedComponent(this);
+        }
+    }
+
     public ToolCallSummaryHandler toolCallSummaryHandler() {
         return chatRequestFlow::onToolCallSummary;
     }
@@ -837,10 +1011,14 @@ public class AIChatPanel extends JPanel {
     private void activateSession(ChatMemory sessionChatMemory, boolean fromTranscriptRestore) {
         chatMemory = sessionChatMemory;
         chatService = null;
+        currentSessionUsesAssistantProfile = liveChatController.currentSessionUsesAssistantProfile();
         chatTokenUsageTracker.restoreState(liveChatController.getCurrentTokenUsageState());
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         assistantProfileSelectionSync.setChatMemory(chatMemory);
-        assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
+        assistantProfilePaneBuilder.setSelectionEnabled(currentSessionUsesAssistantProfile);
+        if (currentSessionUsesAssistantProfile) {
+            assistantProfilePaneBuilder.syncSelection(fromTranscriptRestore);
+        }
         chatRequestFlow.resetRequestState();
         rebuildHistoryFromMemory();
         refreshTokenCounters();
@@ -848,13 +1026,13 @@ public class AIChatPanel extends JPanel {
     }
 
     private void updateUndoRedoButtonState() {
-        boolean enabled = !isRequestActive();
+        boolean enabled = !isAnyAiRequestActive();
         undoButton.setEnabled(enabled && liveChatController.canUndo());
         redoButton.setEnabled(enabled && liveChatController.canRedo());
     }
 
     private void undoLastTurn() {
-        if (isRequestActive()) {
+        if (isAnyAiRequestActive()) {
             return;
         }
         boolean canUndo = liveChatController.canUndo();
@@ -874,7 +1052,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void redoLastTurn() {
-        if (isRequestActive()) {
+        if (isAnyAiRequestActive()) {
             return;
         }
         if (!liveChatController.canRedo()) {

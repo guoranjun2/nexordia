@@ -30,6 +30,8 @@ import org.freeplane.plugin.ai.edits.AiEditsStateIconProvider;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer;
+import org.freeplane.plugin.ai.prompt.AiPromptActionRegistry;
+import org.freeplane.plugin.ai.prompt.AiPromptMenuInstaller;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.MessageBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
@@ -46,6 +48,7 @@ public class Activator implements BundleActivator {
 	private static final String MCP_TOKEN_PROPERTY = "ai_mcp_token";
 	private ModelContextProtocolServer modelContextProtocolServer;
 	private AIChatPanel aiChatPanel;
+	private AiPromptActionRegistry promptActionRegistry;
 
 	/*
 	 * (non-Javadoc)
@@ -69,6 +72,7 @@ public class Activator implements BundleActivator {
 				    aiChatPanel = new AIChatPanel();
 				    tabs.addTab("", ResourceController.getResourceController().getIcon("/images/panelTabs/aiTab.svg?useAccentColor=true"),
 				        aiChatPanel, TextUtils.getText("ai_panel"));
+				    promptActionRegistry = AiPromptMenuInstaller.install(modeController, aiChatPanel);
 				    startModelContextProtocolServer(aiChatPanel, modeController);
 				    addPreferencesToOptionPanel();
 				}
@@ -187,6 +191,9 @@ public class Activator implements BundleActivator {
 	public void stop(final BundleContext context) throws Exception {
 		if (aiChatPanel != null) {
 			aiChatPanel.persistCurrentChatIfNeeded();
+		}
+		if (promptActionRegistry != null) {
+			promptActionRegistry.persistStateIfChanged();
 		}
 		if (modelContextProtocolServer != null) {
 			modelContextProtocolServer.stop();

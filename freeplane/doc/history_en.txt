@@ -9,6 +9,8 @@ Options to show root node text or bookmark titles on tab titles and map menu lab
   - Preferences…->Appearance->Look and Feel->Maximum tab title length
 Bookmarks outline and bookmark toolbar can follow the view root
 Switch AI Chat tool availability between reading, editing and disabled
+Add reusable AI prompts that are managed in a dialog like assistant profiles, exposed as dynamic actions
+  - Tools->AI prompts->Edit prompts...
 Bug fixes
 
 ==============================

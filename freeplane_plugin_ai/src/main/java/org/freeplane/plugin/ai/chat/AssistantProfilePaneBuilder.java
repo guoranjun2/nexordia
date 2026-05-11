@@ -47,6 +47,11 @@ class AssistantProfilePaneBuilder {
         setAssistantProfileSelection(selected, false);
     }
 
+    void setSelectionEnabled(boolean enabled) {
+        selector.setEnabled(enabled);
+        manageProfilesButton.setEnabled(enabled);
+    }
+
     private void handleAssistantProfileSelection() {
         if (updatingSelection) {
             return;

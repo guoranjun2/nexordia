@@ -15,6 +15,8 @@ final class LiveChatSession {
     private final ChatMemory chatMemory;
     private final Set<String> mapIds;
     private final List<MapRootShortTextCount> mapRootShortTextCounts;
+    private final boolean assistantProfileEnabled;
+    private final ChatToolAvailability toolAvailabilityOverride;
     private List<ChatTranscriptEntry> transcriptEntries;
     private ChatTranscriptId transcriptId;
     private String displayName;
@@ -24,12 +26,20 @@ final class LiveChatSession {
     private ChatTokenUsageState tokenUsageState;
 
     LiveChatSession(LiveChatSessionId id, ChatMemory chatMemory, String displayName) {
+        this(id, chatMemory, displayName, true, null);
+    }
+
+    LiveChatSession(LiveChatSessionId id, ChatMemory chatMemory, String displayName,
+                    boolean assistantProfileEnabled,
+                    ChatToolAvailability toolAvailabilityOverride) {
         this.id = id;
         this.chatMemory = chatMemory;
         this.displayName = displayName;
-        this.mapIds = new LinkedHashSet<>();
-        this.mapRootShortTextCounts = new ArrayList<>();
-        this.transcriptEntries = new ArrayList<>();
+        this.assistantProfileEnabled = assistantProfileEnabled;
+        this.toolAvailabilityOverride = toolAvailabilityOverride;
+        this.mapIds = new LinkedHashSet<String>();
+        this.mapRootShortTextCounts = new ArrayList<MapRootShortTextCount>();
+        this.transcriptEntries = new ArrayList<ChatTranscriptEntry>();
     }
 
     LiveChatSessionId getId() {
@@ -109,6 +119,14 @@ final class LiveChatSession {
 
     void setTokenUsageState(ChatTokenUsageState tokenUsageState) {
         this.tokenUsageState = tokenUsageState;
+    }
+
+    boolean isAssistantProfileEnabled() {
+        return assistantProfileEnabled;
+    }
+
+    ChatToolAvailability getToolAvailabilityOverride() {
+        return toolAvailabilityOverride;
     }
 
 }

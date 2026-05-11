@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
@@ -64,6 +65,33 @@ public class LiveChatController {
 
     public void startNewChat() {
         switchToNewSession();
+    }
+
+    public void startNewPromptChat(ChatMemory chatMemory, String displayName) {
+        if (chatMemory == null) {
+            return;
+        }
+        persistCurrentSession();
+        String effectiveDisplayName = displayName == null || displayName.trim().isEmpty()
+            ? buildDefaultChatName()
+            : displayName;
+        LiveChatSession promptSession = liveChatSessionManager.createSession(
+            chatMemory,
+            effectiveDisplayName,
+            false,
+            ChatToolAvailability.EDITING);
+        promptSession.setNameEdited(true);
+        switchToSession(promptSession.getId(), false, false);
+    }
+
+    public boolean currentSessionUsesAssistantProfile() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        return session == null || session.isAssistantProfileEnabled();
+    }
+
+    public ChatToolAvailability currentSessionToolAvailabilityOverride() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        return session == null ? null : session.getToolAvailabilityOverride();
     }
 
     public void openLiveChats() {
@@ -337,10 +365,18 @@ public class LiveChatController {
             return;
         }
         ChatMemory newChatMemory = createChatMemory();
-        LiveChatSession newSession = liveChatSessionManager.createSession(newChatMemory,
-            record.getDisplayName() == null || record.getDisplayName().trim().isEmpty()
-                ? buildDefaultChatName()
-                : record.getDisplayName());
+        String displayName = record.getDisplayName() == null || record.getDisplayName().trim().isEmpty()
+            ? buildDefaultChatName()
+            : record.getDisplayName();
+        boolean promptConversation = isPromptDisplayName(displayName);
+        LiveChatSession newSession = liveChatSessionManager.createSession(
+            newChatMemory,
+            displayName,
+            !promptConversation,
+            promptConversation ? ChatToolAvailability.EDITING : null);
+        if (promptConversation) {
+            newSession.setNameEdited(true);
+        }
         newSession.setTranscriptId(transcriptId);
         newSession.setLastActivityTimestamp(record.getTimestamp());
         newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
@@ -389,5 +425,13 @@ public class LiveChatController {
             return;
         }
         session.setTokenUsageState(tokenUsageStateSupplier.get());
+    }
+
+    private boolean isPromptDisplayName(String displayName) {
+        String prefix = TextUtils.getText("ai_prompt_session_prefix");
+        return prefix != null
+            && !prefix.isEmpty()
+            && displayName != null
+            && displayName.startsWith(prefix);
     }
 }

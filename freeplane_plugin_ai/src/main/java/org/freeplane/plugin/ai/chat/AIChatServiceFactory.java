@@ -33,9 +33,24 @@ public class AIChatServiceFactory {
                                               ToolCallSummaryHandler toolCallSummaryHandler,
                                               Supplier<Boolean> cancellationSupplier,
                                               Consumer<TokenUsage> tokenUsageConsumer) {
+        return createService(toolSet, chatMemory, chatTokenUsageTracker, toolCallSummaryHandler,
+            cancellationSupplier, tokenUsageConsumer, null);
+    }
+
+    public static AIChatService createService(AIToolSet toolSet, ChatMemory chatMemory,
+                                              ChatTokenUsageTracker chatTokenUsageTracker,
+                                              ToolCallSummaryHandler toolCallSummaryHandler,
+                                              Supplier<Boolean> cancellationSupplier,
+                                              Consumer<TokenUsage> tokenUsageConsumer,
+                                              Supplier<ChatToolAvailability> toolAvailabilitySupplier) {
         AIProviderConfiguration configuration = new AIProviderConfiguration();
         ChatModel chatLanguageModel = AIChatModelFactory.createChatLanguageModel(configuration);
+        if (toolAvailabilitySupplier == null) {
+            return new AIChatService(chatLanguageModel, toolSet, chatMemory,
+                chatTokenUsageTracker, toolCallSummaryHandler, cancellationSupplier, tokenUsageConsumer);
+        }
         return new AIChatService(chatLanguageModel, toolSet, chatMemory,
-            chatTokenUsageTracker, toolCallSummaryHandler, cancellationSupplier, tokenUsageConsumer);
+            chatTokenUsageTracker, toolCallSummaryHandler, cancellationSupplier, tokenUsageConsumer,
+            toolAvailabilitySupplier, null);
     }
 }

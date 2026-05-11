@@ -7,12 +7,19 @@ import java.util.List;
 import java.util.Map;
 
 final class LiveChatSessionManager {
-    private final Map<LiveChatSessionId, LiveChatSession> sessions = new LinkedHashMap<>();
+    private final Map<LiveChatSessionId, LiveChatSession> sessions = new LinkedHashMap<LiveChatSessionId, LiveChatSession>();
     private LiveChatSessionId currentSessionId;
 
     LiveChatSession createSession(ChatMemory chatMemory, String displayName) {
+        return createSession(chatMemory, displayName, true, null);
+    }
+
+    LiveChatSession createSession(ChatMemory chatMemory, String displayName,
+                                  boolean assistantProfileEnabled,
+                                  ChatToolAvailability toolAvailabilityOverride) {
         LiveChatSessionId id = LiveChatSessionId.create();
-        LiveChatSession session = new LiveChatSession(id, chatMemory, displayName);
+        LiveChatSession session = new LiveChatSession(id, chatMemory, displayName,
+            assistantProfileEnabled, toolAvailabilityOverride);
         session.setLastActivityTimestamp(System.currentTimeMillis());
         sessions.put(id, session);
         if (currentSessionId == null) {

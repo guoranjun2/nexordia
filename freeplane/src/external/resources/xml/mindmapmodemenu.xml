@@ -644,6 +644,11 @@
 						<Entry name="formula.TracePrecedentsAction" plugin="org.freeplane.plugin.formula" accelerator="alt F6" />
 						<Entry name="formula.TraceDependentsAction" plugin="org.freeplane.plugin.formula" accelerator="alt F7" />
 			<Entry builder="separator" />
+			<Entry name="aiPromptMenu" textKey="ai_prompt_menu">
+				<Entry name="ManageAiPromptsAction" />
+				<Entry builder="ai_prompt_actions" />
+			</Entry>
+			<Entry builder="separator" />
 			<Entry name="SetAcceleratorOnNextClickAction" />
 			<Entry name="acceleratorPresets">
 				<Entry name="load_accelerator_presets" >
@@ -785,6 +790,10 @@
 		<Entry name="SetShortenerStateAction" />
 						<Entry name="styleActions" textKey="menu_applyStyle" >
 								<Entry builder="style_actions" />
+						</Entry>
+						<Entry name="aiPromptMenu" textKey="ai_prompt_menu">
+							<Entry name="ManageAiPromptsAction" />
+							<Entry builder="ai_prompt_actions" />
 						</Entry>
 				</Entry>
 		<Entry builder="separator" />
