@@ -3,7 +3,8 @@ package org.freeplane.plugin.ai.prompt.ui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -11,6 +12,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
@@ -46,16 +50,29 @@ public class AiPromptProgressDialog extends JDialog {
 
         promptNameLabel = new JLabel();
         promptNameLabel.setIcon(promptIcon);
+        promptNameLabel.setIconTextGap(8);
+        promptNameLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         cancelButton = new JButton(cancelIcon);
         cancelButton.setToolTipText(cancelTooltipText);
+        cancelButton.setAlignmentY(Component.CENTER_ALIGNMENT);
         cancelButton.addActionListener(event -> cancel());
 
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.add(promptNameLabel, BorderLayout.CENTER);
+        JPanel rowPanel = new JPanel();
+        rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+        rowPanel.add(promptNameLabel);
+        rowPanel.add(Box.createHorizontalGlue());
+        rowPanel.add(cancelButton);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        buttonPanel.add(cancelButton);
-        contentPanel.add(buttonPanel, BorderLayout.EAST);
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.anchor = GridBagConstraints.CENTER;
+        contentPanel.add(rowPanel, constraints);
 
         add(contentPanel, BorderLayout.CENTER);
         setMinimumSize(new Dimension(280, 90));
