@@ -10,14 +10,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class AiPromptNameValidator {
+public class AiPromptNameValidator {
     private static final String DEFAULT_NEW_PROMPT_NAME = "New Prompt";
     private static final Pattern NUMBERED_NAME_PATTERN = Pattern.compile("^(.*)\\s+(\\d+)$");
 
     private AiPromptNameValidator() {
     }
 
-    static List<AiPrompt> normalizeAndDeduplicate(List<AiPrompt> prompts, String defaultName) {
+    public static List<AiPrompt> normalizeAndDeduplicate(List<AiPrompt> prompts, String defaultName) {
         List<AiPrompt> normalizedPrompts = new ArrayList<AiPrompt>();
         if (prompts == null) {
             return normalizedPrompts;
@@ -35,7 +35,7 @@ class AiPromptNameValidator {
         return normalizedPrompts;
     }
 
-    static AiPrompt normalizeForSave(AiPrompt prompt, List<AiPrompt> existingPrompts, String defaultName) {
+    public static AiPrompt normalizeForSave(AiPrompt prompt, List<AiPrompt> existingPrompts, String defaultName) {
         List<AiPrompt> prompts = new ArrayList<AiPrompt>();
         if (existingPrompts != null) {
             for (AiPrompt existingPrompt : existingPrompts) {
@@ -47,7 +47,7 @@ class AiPromptNameValidator {
         return normalizedPrompts.get(normalizedPrompts.size() - 1);
     }
 
-    static String normalizeName(String name) {
+    public static String normalizeName(String name) {
         return name == null ? "" : name.trim();
     }
 

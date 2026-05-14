@@ -23,23 +23,24 @@ public class AiPromptStoreTest {
             AiPromptStore store = new AiPromptStore(new ObjectMapper(), path);
             AiPromptStore.PersistedState state = new AiPromptStore.PersistedState(
                 Arrays.asList(
-                    new AiPrompt("Rewrite", "Rewrite node", true),
-                    new AiPrompt("Summarize", "Summarize subtree", false)),
+                    new AiPrompt("Rewrite", "Rewrite node", true, "openrouter|openai/gpt-4.1-mini"),
+                    new AiPrompt("Summarize", "Summarize subtree", false, "")),
                 new AiPromptStore.PersistedDialogState(
                     "",
-                    new AiPrompt("", "Draft prompt", true)));
+                    new AiPrompt("", "Draft prompt", true, "gemini|gemini-2.5-flash")));
 
             store.saveState(state);
             AiPromptStore.PersistedState loaded = store.loadState();
 
             assertThat(loaded.getSavedPrompts())
-                .extracting(AiPrompt::getName, AiPrompt::getPrompt, AiPrompt::isShowInChat)
+                .extracting(AiPrompt::getName, AiPrompt::getPrompt, AiPrompt::isShowInChat, AiPrompt::getModelSelectionValue)
                 .containsExactly(
-                    tuple("Rewrite", "Rewrite node", true),
-                    tuple("Summarize", "Summarize subtree", false));
+                    tuple("Rewrite", "Rewrite node", true, "openrouter|openai/gpt-4.1-mini"),
+                    tuple("Summarize", "Summarize subtree", false, ""));
             assertThat(loaded.getDialogState().getSelectedPromptName()).isEmpty();
             assertThat(loaded.getDialogState().getDraft().getPrompt()).isEqualTo("Draft prompt");
             assertThat(loaded.getDialogState().getDraft().isShowInChat()).isTrue();
+            assertThat(loaded.getDialogState().getDraft().getModelSelectionValue()).isEqualTo("gemini|gemini-2.5-flash");
         }
         finally {
             deleteRecursively(tempDir);

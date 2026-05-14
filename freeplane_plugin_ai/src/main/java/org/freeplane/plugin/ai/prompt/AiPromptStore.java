@@ -13,7 +13,7 @@ import java.util.Objects;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.LogUtils;
 
-class AiPromptStore {
+public class AiPromptStore {
     static final String PROMPTS_FILE_NAME = "ai-prompts.json";
 
     private final ObjectMapper objectMapper;
@@ -114,7 +114,7 @@ class AiPromptStore {
         public PersistedDialogState() {
         }
 
-        PersistedDialogState(String selectedPromptName, AiPrompt draft) {
+        public PersistedDialogState(String selectedPromptName, AiPrompt draft) {
             setSelectedPromptName(selectedPromptName);
             setDraft(draft);
         }

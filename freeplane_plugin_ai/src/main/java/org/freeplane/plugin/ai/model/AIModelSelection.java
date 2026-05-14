@@ -1,6 +1,6 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.model;
 
-class AIModelSelection {
+public class AIModelSelection {
     static final String SELECTION_SEPARATOR = "|";
     private final String providerName;
     private final String modelName;
@@ -10,7 +10,7 @@ class AIModelSelection {
         this.modelName = modelName;
     }
 
-    static AIModelSelection fromSelectionValue(String selectionValue) {
+    public static AIModelSelection fromSelectionValue(String selectionValue) {
         if (selectionValue == null || selectionValue.isEmpty()) {
             return null;
         }
@@ -26,15 +26,15 @@ class AIModelSelection {
         return new AIModelSelection(providerName, modelName);
     }
 
-    static String createSelectionValue(String providerName, String modelName) {
+    public static String createSelectionValue(String providerName, String modelName) {
         return providerName + SELECTION_SEPARATOR + modelName;
     }
 
-    String getProviderName() {
+    public String getProviderName() {
         return providerName;
     }
 
-    String getModelName() {
+    public String getModelName() {
         return modelName;
     }
 }

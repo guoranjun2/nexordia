@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.chat;
 
+import org.freeplane.plugin.ai.model.AIChatModelFactory;
+import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.freeplane.plugin.ai.tools.AIToolSet;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
@@ -34,7 +36,7 @@ public class AIChatServiceFactory {
                                               Supplier<Boolean> cancellationSupplier,
                                               Consumer<TokenUsage> tokenUsageConsumer) {
         return createService(toolSet, chatMemory, chatTokenUsageTracker, toolCallSummaryHandler,
-            cancellationSupplier, tokenUsageConsumer, null);
+            cancellationSupplier, tokenUsageConsumer, null, null);
     }
 
     public static AIChatService createService(AIToolSet toolSet, ChatMemory chatMemory,
@@ -43,7 +45,18 @@ public class AIChatServiceFactory {
                                               Supplier<Boolean> cancellationSupplier,
                                               Consumer<TokenUsage> tokenUsageConsumer,
                                               Supplier<ChatToolAvailability> toolAvailabilitySupplier) {
-        AIProviderConfiguration configuration = new AIProviderConfiguration();
+        return createService(toolSet, chatMemory, chatTokenUsageTracker, toolCallSummaryHandler,
+            cancellationSupplier, tokenUsageConsumer, toolAvailabilitySupplier, null);
+    }
+
+    public static AIChatService createService(AIToolSet toolSet, ChatMemory chatMemory,
+                                              ChatTokenUsageTracker chatTokenUsageTracker,
+                                              ToolCallSummaryHandler toolCallSummaryHandler,
+                                              Supplier<Boolean> cancellationSupplier,
+                                              Consumer<TokenUsage> tokenUsageConsumer,
+                                              Supplier<ChatToolAvailability> toolAvailabilitySupplier,
+                                              String selectedModelOverride) {
+        AIProviderConfiguration configuration = new AIProviderConfiguration(selectedModelOverride);
         ChatModel chatLanguageModel = AIChatModelFactory.createChatLanguageModel(configuration);
         if (toolAvailabilitySupplier == null) {
             return new AIChatService(chatLanguageModel, toolSet, chatMemory,

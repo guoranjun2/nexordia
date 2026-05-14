@@ -1,59 +1,73 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.model;
 
 import java.util.Objects;
 import org.freeplane.core.util.TextUtils;
 
-class AIModelDescriptor {
+public class AIModelDescriptor {
     private final String providerName;
     private final String modelName;
     private final String displayName;
-    private final boolean isFreeModel;
+    private final boolean freeModel;
     private final boolean unavailable;
+    private final boolean useCurrentModel;
 
-    AIModelDescriptor(String providerName, String modelName, String displayName, boolean isFreeModel) {
-        this(providerName, modelName, displayName, isFreeModel, false);
+    public AIModelDescriptor(String providerName, String modelName, String displayName, boolean freeModel) {
+        this(providerName, modelName, displayName, freeModel, false, false);
     }
 
-    AIModelDescriptor(String providerName, String modelName, String displayName, boolean isFreeModel,
-                      boolean unavailable) {
+    private AIModelDescriptor(String providerName, String modelName, String displayName,
+                              boolean freeModel, boolean unavailable, boolean useCurrentModel) {
         this.providerName = Objects.requireNonNull(providerName, "providerName");
         this.modelName = Objects.requireNonNull(modelName, "modelName");
         this.displayName = Objects.requireNonNull(displayName, "displayName");
-        this.isFreeModel = isFreeModel;
+        this.freeModel = freeModel;
         this.unavailable = unavailable;
+        this.useCurrentModel = useCurrentModel;
     }
 
-    static AIModelDescriptor unavailable(String providerName, String modelName) {
+    public static AIModelDescriptor unavailable(String providerName, String modelName) {
         String availableDisplayName = providerDisplayName(providerName) + ": " + modelName;
         return new AIModelDescriptor(
             providerName,
             modelName,
             TextUtils.format("ai_unavailable_format", availableDisplayName),
             false,
-            true);
+            true,
+            false);
     }
 
-    String getProviderName() {
+    public static AIModelDescriptor useCurrentModelOption(String displayName) {
+        return new AIModelDescriptor("", "", displayName, false, false, true);
+    }
+
+    public String getProviderName() {
         return providerName;
     }
 
-    String getModelName() {
+    public String getModelName() {
         return modelName;
     }
 
-    String getDisplayName() {
+    public String getDisplayName() {
         return displayName;
     }
 
-    boolean isFreeModel() {
-        return isFreeModel;
+    public boolean isFreeModel() {
+        return freeModel;
     }
 
-    boolean isUnavailable() {
+    public boolean isUnavailable() {
         return unavailable;
     }
 
-    String getSelectionValue() {
+    public boolean usesCurrentModel() {
+        return useCurrentModel;
+    }
+
+    public String getSelectionValue() {
+        if (useCurrentModel) {
+            return "";
+        }
         return AIModelSelection.createSelectionValue(providerName, modelName);
     }
 
@@ -62,7 +76,7 @@ class AIModelDescriptor {
         return displayName;
     }
 
-    private static String providerDisplayName(String providerName) {
+    static String providerDisplayName(String providerName) {
         if (AIChatModelFactory.PROVIDER_NAME_OPENROUTER.equals(providerName)) {
             return "OpenRouter";
         }

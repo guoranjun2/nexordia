@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -44,6 +44,15 @@ public class AIProviderConfigurationTest {
 
         assertThat(hasAddressBeforeUpdate).isFalse();
         assertThat(hasAddressAfterUpdate).isTrue();
+    }
+
+    @Test
+    public void getSelectedModelValue_prefersExplicitOverride() {
+        ResourceController resourceController = mock(ResourceController.class);
+        when(resourceController.getProperty("ai_selected_model")).thenReturn("gemini|gemini-2.5-flash");
+        AIProviderConfiguration uut = new AIProviderConfiguration(resourceController, "openrouter|openai/gpt-4.1-mini");
+
+        assertThat(uut.getSelectedModelValue()).isEqualTo("openrouter|openai/gpt-4.1-mini");
     }
 
     private AIProviderConfiguration configurationWith(ResourceController resourceController) {

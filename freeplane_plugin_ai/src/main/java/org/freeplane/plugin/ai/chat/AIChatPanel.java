@@ -23,6 +23,10 @@ import org.freeplane.plugin.ai.edits.ClearAiMarkersInMapAction;
 import org.freeplane.plugin.ai.edits.ClearAiMarkersInSelectionAction;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.maps.ControllerMapModelProvider;
+import org.freeplane.plugin.ai.model.AIChatModelFactory;
+import org.freeplane.plugin.ai.model.AIModelCatalog;
+import org.freeplane.plugin.ai.model.AIModelSelection;
+import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.freeplane.plugin.ai.prompt.AiPrompt;
 import org.freeplane.plugin.ai.prompt.AiPromptRequestComposer;
 import org.freeplane.plugin.ai.prompt.HiddenPromptRequestRunner;
@@ -205,7 +209,7 @@ public class AIChatPanel extends JPanel {
 
             @Override
             public void onRequestFailed(String promptName, String errorMessage) {
-                notifyUser(promptFailureMessage(promptName, errorMessage), true);
+                UITools.errorMessage(promptFailureMessage(promptName, errorMessage));
             }
         });
         chatRequestFlow = new ChatRequestFlow(new ChatRequestFlow.RequestCallbacks() {
@@ -674,6 +678,7 @@ public class AIChatPanel extends JPanel {
             notifyUser(error.getMessage(), true);
             return;
         }
+        String selectedModelOverride = prompt.getModelSelectionValue();
         ChatMemory promptChatMemory = createChatMemory();
         if (prompt.isShowInChat()) {
             AIChatService promptService = createPromptChatService(
@@ -682,7 +687,8 @@ public class AIChatPanel extends JPanel {
                 chatRequestFlow::onToolCallSummary,
                 chatRequestFlow.cancellationSupplier(),
                 chatRequestFlow::onProviderUsage,
-                chatTokenUsageTracker);
+                chatTokenUsageTracker,
+                selectedModelOverride);
             if (promptService == null) {
                 return;
             }
@@ -698,7 +704,8 @@ public class AIChatPanel extends JPanel {
                 null,
                 null,
                 new ChatTokenUsageTracker(totals -> {
-                }));
+                }),
+                selectedModelOverride);
             if (promptService == null) {
                 return;
             }
@@ -847,8 +854,9 @@ public class AIChatPanel extends JPanel {
                                                   ToolCallSummaryHandler toolCallSummaryHandler,
                                                   java.util.function.Supplier<Boolean> cancellationSupplier,
                                                   java.util.function.Consumer<dev.langchain4j.model.output.TokenUsage> tokenUsageConsumer,
-                                                  ChatTokenUsageTracker tokenUsageTracker) {
-        String configurationError = configurationErrorMessage();
+                                                  ChatTokenUsageTracker tokenUsageTracker,
+                                                  String selectedModelOverride) {
+        String configurationError = configurationErrorMessage(selectedModelOverride);
         if (configurationError != null) {
             notifyUser(configurationError, true);
             return null;
@@ -863,11 +871,19 @@ public class AIChatPanel extends JPanel {
             toolCallSummaryHandler,
             cancellationSupplier,
             tokenUsageConsumer,
-            () -> ChatToolAvailability.EDITING);
+            () -> ChatToolAvailability.EDITING,
+            selectedModelOverride);
     }
 
     private String configurationErrorMessage() {
-        AIModelSelection selection = AIModelSelection.fromSelectionValue(configuration.getSelectedModelValue());
+        return configurationErrorMessage(null);
+    }
+
+    private String configurationErrorMessage(String selectedModelOverride) {
+        String effectiveSelectionValue = selectedModelOverride == null || selectedModelOverride.trim().isEmpty()
+            ? configuration.getSelectedModelValue()
+            : selectedModelOverride;
+        AIModelSelection selection = AIModelSelection.fromSelectionValue(effectiveSelectionValue);
         if (selection == null) {
             return "Missing AI model selection.";
         }

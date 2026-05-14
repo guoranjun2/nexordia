@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-class AIModelCatalog {
+public class AIModelCatalog {
     private static final long OPENROUTER_REFRESH_INTERVAL_MILLISECONDS = 30L * 60L * 1000L;
 
     private static final Object openrouterLock = new Object();
@@ -33,12 +33,12 @@ class AIModelCatalog {
     private final AIProviderConfiguration configuration;
     private final ObjectMapper objectMapper;
 
-    AIModelCatalog(AIProviderConfiguration configuration) {
+    public AIModelCatalog(AIProviderConfiguration configuration) {
         this.configuration = configuration;
         this.objectMapper = new ObjectMapper();
     }
 
-    List<AIModelDescriptor> getAvailableModels(boolean allowsRefresh) {
+    public List<AIModelDescriptor> getAvailableModels(boolean allowsRefresh) {
         List<AIModelDescriptor> modelDescriptors = new ArrayList<>();
         if (hasOpenrouterKey()) {
             List<AIModelDescriptor> openrouterModels = getOpenrouterModels(allowsRefresh);

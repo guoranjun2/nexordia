@@ -1,4 +1,4 @@
-package org.freeplane.plugin.ai.chat;
+package org.freeplane.plugin.ai.model;
 
 import java.util.Collections;
 import java.util.Map;
@@ -19,16 +19,29 @@ public class AIProviderConfiguration {
     private static final String AI_OLLAMA_MODEL_ALLOWLIST_PROPERTY = "ai_ollama_model_allowlist";
 
     private final ResourceController resourceController;
+    private final String selectedModelValueOverride;
 
     public AIProviderConfiguration() {
-        this(ResourceController.getResourceController());
+        this(ResourceController.getResourceController(), null);
+    }
+
+    public AIProviderConfiguration(String selectedModelValueOverride) {
+        this(ResourceController.getResourceController(), selectedModelValueOverride);
     }
 
     AIProviderConfiguration(ResourceController resourceController) {
+        this(resourceController, null);
+    }
+
+    AIProviderConfiguration(ResourceController resourceController, String selectedModelValueOverride) {
         this.resourceController = resourceController;
+        this.selectedModelValueOverride = normalizeOverride(selectedModelValueOverride);
     }
 
     public String getSelectedModelValue() {
+        if (selectedModelValueOverride != null) {
+            return selectedModelValueOverride;
+        }
         String selectedModelValue = getStoredSelectedModelValue();
         if (selectedModelValue != null) {
             return selectedModelValue;
@@ -103,5 +116,10 @@ public class AIProviderConfiguration {
 
     private String trimToEmpty(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalizeOverride(String selectedModelValueOverride) {
+        String normalized = trimToEmpty(selectedModelValueOverride);
+        return normalized.isEmpty() ? null : normalized;
     }
 }

@@ -1,5 +1,10 @@
 package org.freeplane.plugin.ai.chat;
 
+import org.freeplane.plugin.ai.model.AIModelCatalog;
+import org.freeplane.plugin.ai.model.AIModelDescriptor;
+import org.freeplane.plugin.ai.model.AIModelSelection;
+import org.freeplane.plugin.ai.model.AIProviderConfiguration;
+
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;

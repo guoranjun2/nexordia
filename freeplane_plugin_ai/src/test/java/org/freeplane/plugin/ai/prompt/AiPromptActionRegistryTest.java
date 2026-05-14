@@ -12,6 +12,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
+import org.freeplane.plugin.ai.prompt.ui.AiPromptManagerDialog;
 import org.junit.Test;
 
 public class AiPromptActionRegistryTest {
@@ -54,7 +55,7 @@ public class AiPromptActionRegistryTest {
                 });
             registry.getDialogState().loadSavedPrompts(Arrays.asList(new AiPrompt("Rewrite", "Prompt", false)));
             registry.getDialogState().beginNewDraft();
-            registry.getDialogState().updateDraft("", "Draft prompt", true);
+            registry.getDialogState().updateDraft("", "Draft prompt", true, "openrouter|openai/gpt-4.1-mini");
 
             registry.persistStateIfChanged();
 
@@ -63,6 +64,8 @@ public class AiPromptActionRegistryTest {
             assertThat(loaded.getDialogState().getSelectedPromptName()).isEmpty();
             assertThat(loaded.getDialogState().getDraft().getPrompt()).isEqualTo("Draft prompt");
             assertThat(loaded.getDialogState().getDraft().isShowInChat()).isTrue();
+            assertThat(loaded.getDialogState().getDraft().getModelSelectionValue())
+                .isEqualTo("openrouter|openai/gpt-4.1-mini");
         }
         finally {
             deleteRecursively(tempDir);

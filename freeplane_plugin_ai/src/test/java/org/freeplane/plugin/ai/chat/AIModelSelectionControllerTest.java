@@ -18,6 +18,9 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.plugin.ai.model.AIModelCatalog;
+import org.freeplane.plugin.ai.model.AIModelDescriptor;
+import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 
@@ -79,13 +82,14 @@ public class AIModelSelectionControllerTest {
     public void renderer_showsFormattedDisplayName_forSelectedUnavailableValue() {
         AIModelSelectionController uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
-        AIModelDescriptor descriptor = new AIModelDescriptor(
-            "openrouter",
-            "openai/gpt-4.1-mini",
-            "OpenRouter: openai/gpt-4.1-mini unavailable",
-            false,
-            true
-        );
+        AIModelDescriptor descriptor;
+        try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
+            textUtils.when(() -> TextUtils.format(
+                "ai_unavailable_format",
+                "OpenRouter: openai/gpt-4.1-mini"
+            )).thenReturn("OpenRouter: openai/gpt-4.1-mini unavailable");
+            descriptor = AIModelDescriptor.unavailable("openrouter", "openai/gpt-4.1-mini");
+        }
 
         JLabel label = renderLabel(selector, descriptor, -1);
 

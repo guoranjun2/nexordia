@@ -12,6 +12,7 @@ import java.util.Set;
 import javax.swing.SwingUtilities;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
+import org.freeplane.plugin.ai.prompt.ui.AiPromptManagerDialog;
 
 public class AiPromptActionRegistry {
     static final String PROMPT_ACTION_PREFIX = "RunAiPromptAction.";
@@ -34,7 +35,7 @@ public class AiPromptActionRegistry {
         return dialogState.getSavedPrompts();
     }
 
-    AiPromptManagerDialog.EditorState getDialogState() {
+    public AiPromptManagerDialog.EditorState getDialogState() {
         return dialogState;
     }
 
@@ -63,7 +64,7 @@ public class AiPromptActionRegistry {
         dialog.openDialog();
     }
 
-    void persistStateAndRefreshMenus() {
+    public void persistStateAndRefreshMenus() {
         persistStateIfChanged();
         menusRebuilder.run();
     }
@@ -77,7 +78,7 @@ public class AiPromptActionRegistry {
         lastPersistedState = copyState(currentState);
     }
 
-    void runPrompt(AiPrompt prompt) {
+    public void runPrompt(AiPrompt prompt) {
         if (prompt != null) {
             aiChatPanel.runPrompt(prompt.copy());
         }
@@ -155,7 +156,8 @@ public class AiPromptActionRegistry {
         }
         return safe(first.getName()).equals(safe(second.getName()))
             && safe(first.getPrompt()).equals(safe(second.getPrompt()))
-            && first.isShowInChat() == second.isShowInChat();
+            && first.isShowInChat() == second.isShowInChat()
+            && safe(first.getModelSelectionValue()).equals(safe(second.getModelSelectionValue()));
     }
 
     private static String safe(String value) {

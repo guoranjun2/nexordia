@@ -962,7 +962,7 @@ AIModelSelectionController --> AIModelDescriptor : available + unavailable items
       setting update normally.
 
 ## Subtask: Persist optional per-prompt model selection
-- **Status:** backlog
+- **Status:** review
 - **Scope:**
   Add optional per-prompt model selection to saved prompts and prompt
   drafts, keep it aligned with the advisory selector policy from the
