@@ -29,7 +29,34 @@ public class HiddenPromptRequestRunnerTest {
         assertThat(uut.isRequestActive()).isFalse();
     }
 
+    @Test
+    public void cancelActiveRequest_suppressesFailureAndClearsActiveFlag() throws Exception {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        HiddenPromptRequestRunner uut = new HiddenPromptRequestRunner(callbacks);
+        AIChatService chatService = mock(AIChatService.class);
+        when(chatService.chat("prompt")).thenAnswer(invocation -> {
+            callbacks.chatStartedLatch.countDown();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return "cancelled";
+        });
+
+        uut.submit("Rewrite", chatService, "prompt");
+        assertThat(callbacks.awaitChatStarted()).isTrue();
+
+        uut.cancelActiveRequest();
+
+        assertThat(callbacks.awaitFinished()).isTrue();
+        assertThat(callbacks.failedPromptName).isNull();
+        assertThat(uut.isRequestActive()).isFalse();
+        assertThat(uut.cancellationSupplier().get()).isTrue();
+    }
+
     private static class RecordingCallbacks implements HiddenPromptRequestRunner.Callbacks {
+        private final CountDownLatch chatStartedLatch = new CountDownLatch(1);
         private final CountDownLatch finishedLatch = new CountDownLatch(1);
         private String startedPromptName;
         private String finishedPromptName;
@@ -51,6 +78,10 @@ public class HiddenPromptRequestRunnerTest {
         public void onRequestFailed(String promptName, String errorMessage) {
             failedPromptName = promptName;
             failureMessage = errorMessage;
+        }
+
+        boolean awaitChatStarted() throws InterruptedException {
+            return chatStartedLatch.await(5, TimeUnit.SECONDS);
         }
 
         boolean awaitFinished() throws InterruptedException {

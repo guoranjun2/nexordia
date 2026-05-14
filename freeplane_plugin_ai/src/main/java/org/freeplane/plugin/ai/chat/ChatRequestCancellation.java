@@ -1,17 +1,17 @@
 package org.freeplane.plugin.ai.chat;
 
-class ChatRequestCancellation {
+public class ChatRequestCancellation {
     private volatile boolean cancelled;
 
-    void reset() {
+    public void reset() {
         cancelled = false;
     }
 
-    void cancel() {
+    public void cancel() {
         cancelled = true;
     }
 
-    boolean isCancelled() {
+    public boolean isCancelled() {
         return cancelled;
     }
 }

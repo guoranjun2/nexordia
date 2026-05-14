@@ -30,6 +30,7 @@ import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.freeplane.plugin.ai.prompt.AiPrompt;
 import org.freeplane.plugin.ai.prompt.AiPromptRequestComposer;
 import org.freeplane.plugin.ai.prompt.HiddenPromptRequestRunner;
+import org.freeplane.plugin.ai.prompt.ui.AiPromptProgressDialog;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
@@ -89,6 +90,7 @@ public class AIChatPanel extends JPanel {
     private final Icon stopIcon;
     private final Icon preferencesIcon;
     private final Icon assistantProfileIcon;
+    private final Icon aiTabIcon;
     private String sendTooltipText;
     private String cancelTooltipText;
     private String undoTooltipText;
@@ -114,6 +116,7 @@ public class AIChatPanel extends JPanel {
     private final AssistantProfilePaneBuilder assistantProfilePaneBuilder;
     private final AiPromptRequestComposer aiPromptRequestComposer;
     private final HiddenPromptRequestRunner hiddenPromptRequestRunner;
+    private AiPromptProgressDialog hiddenPromptProgressDialog;
     private boolean currentSessionUsesAssistantProfile = true;
 
     public AIChatPanel() {
@@ -151,6 +154,8 @@ public class AIChatPanel extends JPanel {
             .getImageIcon("/images/generic_settings.svg?useAccentColor=true");
         assistantProfileIcon = ResourceController.getResourceController()
             .getImageIcon("/images/EggheadCB.svg?useAccentColor=true");
+        aiTabIcon = ResourceController.getResourceController()
+            .getImageIcon("/images/panelTabs/aiTab.svg?useAccentColor=true");
         Dimension sendButtonSize = sendButton.getPreferredSize();
         Dimension sideButtonSize = new Dimension(sendButtonSize.width, Math.max(1, sendButtonSize.height / 2));
         Dimension tallSendButtonSize = new Dimension(sendButtonSize.width, sideButtonSize.height * 2);
@@ -199,12 +204,18 @@ public class AIChatPanel extends JPanel {
         hiddenPromptRequestRunner = new HiddenPromptRequestRunner(new HiddenPromptRequestRunner.Callbacks() {
             @Override
             public void onRequestStarted(String promptName) {
-                SwingUtilities.invokeLater(() -> updateInputState());
+                SwingUtilities.invokeLater(() -> {
+                    updateInputState();
+                    showHiddenPromptProgressDialog(promptName);
+                });
             }
 
             @Override
             public void onRequestFinished(String promptName) {
-                SwingUtilities.invokeLater(() -> updateInputState());
+                SwingUtilities.invokeLater(() -> {
+                    closeHiddenPromptProgressDialog();
+                    updateInputState();
+                });
             }
 
             @Override
@@ -701,7 +712,7 @@ public class AIChatPanel extends JPanel {
                 promptChatMemory,
                 null,
                 null,
-                null,
+                hiddenPromptRequestRunner.cancellationSupplier(),
                 null,
                 new ChatTokenUsageTracker(totals -> {
                 }),
@@ -996,6 +1007,29 @@ public class AIChatPanel extends JPanel {
             safePromptName = TextUtils.getText("ai_prompt_untitled");
         }
         return TextUtils.getText("ai_prompt_session_prefix") + safePromptName;
+    }
+
+    private void showHiddenPromptProgressDialog(String promptName) {
+        closeHiddenPromptProgressDialog();
+        hiddenPromptProgressDialog = new AiPromptProgressDialog(
+            this,
+            aiTabIcon,
+            stopIcon,
+            cancelTooltipText,
+            this::cancelHiddenPromptRequest);
+        hiddenPromptProgressDialog.showPrompt(promptName);
+    }
+
+    private void closeHiddenPromptProgressDialog() {
+        if (hiddenPromptProgressDialog == null) {
+            return;
+        }
+        hiddenPromptProgressDialog.closeDialog();
+        hiddenPromptProgressDialog = null;
+    }
+
+    private void cancelHiddenPromptRequest() {
+        hiddenPromptRequestRunner.cancelActiveRequest();
     }
 
     private void showChatTab() {

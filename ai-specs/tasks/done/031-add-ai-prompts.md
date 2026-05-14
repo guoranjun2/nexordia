@@ -1278,7 +1278,7 @@ end
       extra popup.
 
 ## Subtask: Show cancellable progress dialog for hidden prompt runs
-- **Status:** backlog
+- **Status:** review
 - **Scope:**
   Show a small non-modal progress dialog for hidden prompt runs
   (`showInChat = false`), display the prompt name together with the AI

@@ -1,8 +1,10 @@
 package org.freeplane.plugin.ai.prompt;
 
+import java.util.concurrent.CancellationException;
+import java.util.function.Supplier;
 import javax.swing.SwingWorker;
-
 import org.freeplane.plugin.ai.chat.AIChatService;
+import org.freeplane.plugin.ai.chat.ChatRequestCancellation;
 
 public class HiddenPromptRequestRunner {
 
@@ -13,7 +15,9 @@ public class HiddenPromptRequestRunner {
     }
 
     private final Callbacks callbacks;
+    private final ChatRequestCancellation requestCancellation = new ChatRequestCancellation();
     private SwingWorker<String, Void> activeWorker;
+    private String activePromptName;
     private boolean requestActive;
 
     public HiddenPromptRequestRunner(Callbacks callbacks) {
@@ -24,15 +28,34 @@ public class HiddenPromptRequestRunner {
         return requestActive;
     }
 
+    public Supplier<Boolean> cancellationSupplier() {
+        return requestCancellation::isCancelled;
+    }
+
+    public void cancelActiveRequest() {
+        if (!requestActive) {
+            return;
+        }
+        requestCancellation.cancel();
+        String promptName = activePromptName;
+        SwingWorker<String, Void> worker = activeWorker;
+        clearActiveState();
+        if (worker != null) {
+            worker.cancel(true);
+        }
+        if (callbacks != null) {
+            callbacks.onRequestFinished(promptName);
+        }
+    }
+
     public void submit(String promptName, AIChatService chatService, String userMessage) {
         if (requestActive) {
             throw new IllegalStateException("A hidden prompt request is already active.");
         }
+        requestCancellation.reset();
         requestActive = true;
-        if (callbacks != null) {
-            callbacks.onRequestStarted(promptName);
-        }
-        activeWorker = new SwingWorker<String, Void>() {
+        activePromptName = promptName;
+        SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() {
                 return chatService.chat(userMessage);
@@ -40,22 +63,41 @@ public class HiddenPromptRequestRunner {
 
             @Override
             protected void done() {
+                if (this != activeWorker) {
+                    return;
+                }
                 try {
                     get();
+                } catch (CancellationException cancelled) {
+                    return;
                 } catch (Exception error) {
-                    if (callbacks != null) {
+                    if (!requestCancellation.isCancelled() && callbacks != null) {
                         callbacks.onRequestFailed(promptName, normalizeErrorMessage(error));
                     }
                 } finally {
-                    activeWorker = null;
-                    requestActive = false;
-                    if (callbacks != null) {
-                        callbacks.onRequestFinished(promptName);
+                    if (this == activeWorker) {
+                        clearActiveState();
+                        if (callbacks != null) {
+                            callbacks.onRequestFinished(promptName);
+                        }
                     }
                 }
             }
         };
-        activeWorker.execute();
+        activeWorker = worker;
+        if (callbacks != null) {
+            callbacks.onRequestStarted(promptName);
+        }
+        if (requestCancellation.isCancelled()) {
+            return;
+        }
+        worker.execute();
+    }
+
+    private void clearActiveState() {
+        activeWorker = null;
+        activePromptName = null;
+        requestActive = false;
     }
 
     private String normalizeErrorMessage(Exception error) {
