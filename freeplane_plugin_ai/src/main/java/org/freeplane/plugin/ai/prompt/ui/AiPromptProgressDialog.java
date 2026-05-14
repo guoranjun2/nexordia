@@ -59,12 +59,14 @@ public class AiPromptProgressDialog extends JDialog {
 
         JPanel rowPanel = new JPanel();
         rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+        rowPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
         rowPanel.add(promptNameLabel);
+        rowPanel.add(Box.createHorizontalStrut(12));
         rowPanel.add(Box.createHorizontalGlue());
         rowPanel.add(cancelButton);
 
         JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
         constraints.gridy = 0;
@@ -75,7 +77,7 @@ public class AiPromptProgressDialog extends JDialog {
         contentPanel.add(rowPanel, constraints);
 
         add(contentPanel, BorderLayout.CENTER);
-        setMinimumSize(new Dimension(280, 90));
+        setMinimumSize(new Dimension(260, 96));
         installEscapeCancellation();
         pack();
         setLocationRelativeTo(owner);
