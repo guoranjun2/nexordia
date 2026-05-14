@@ -801,3 +801,674 @@ Registry -> Store : save(savedPrompts + dialogState)
       widening the dialog;
     - verify the main-menu and node-popup submenu label is
       `AI prompts` and the first action label is `Edit prompts…`.
+
+## Subtask: Align chat model selector with advisory availability policy
+- **Status:** review
+- **Scope:**
+  Keep the current AI chat model selector as a single combined
+  `provider|model` choice, but stop clearing the stored global
+  selection when it disappears from the currently loaded model list.
+  Instead, treat the list as advisory, keep the stored value, and show
+  that missing value in the selector as an explicit unavailable choice.
+- **Motivation:**
+  The current chat selector silently clears missing stored selections.
+  That makes behavior change merely by opening chat, and it would make
+  the future prompt selector inconsistent unless the policy is aligned
+  first.
+- **Scenario:**
+  A user previously selected `OpenRouter: openai/gpt-4.1-mini` as the
+  global chat model. Later the configured allowlist changes and that
+  combined value is no longer in the loaded model list. When the user
+  opens AI chat, Freeplane keeps the stored `ai_selected_model` value
+  and shows that model through `TextUtils.format("ai_unavailable_format",
+  displayName)` in the selector instead of clearing the selection.
+
+  If the user sends a chat without changing the selector, Freeplane
+  still uses the stored combined value and lets the provider decide. If
+  the user selects another model, the new selection is persisted as
+  usual.
+- **Constraints:**
+  - Keep one non-editable combined selector; do not split provider and
+    model into separate controls.
+  - Keep the existing chat-side model-list refresh timing for this
+    increment; this subtask changes selection semantics, not provider
+    discovery policy.
+  - If the stored selection is absent from the loaded list, Freeplane
+    must keep the stored value and show it as an unavailable selector
+    item instead of clearing `ai_selected_model`.
+  - Sending chat messages must not be blocked merely because the stored
+    combined value is absent from the currently loaded local list.
+  - Provider rejection remains the source of truth for invalid or stale
+    configured model values.
+- **Briefing:**
+  `AIModelSelectionController` currently owns the global chat combo box,
+  persists `ai_selected_model`, and loads available models through
+  `AIModelCatalog`. `AIChatModelFactory` already uses the persisted
+  combined value directly and does not validate it against the current
+  catalog first.
+- **Research:**
+  - `AIModelSelectionController.applySelectionFromConfiguration(...)`
+    currently clears the stored global selection when it finds no match
+    in the loaded list.
+  - The chat model combo box is already non-editable, which fits the
+    desired `available list plus explicit unavailable item` approach.
+  - `AIChatModelFactory.createChatLanguageModel(...)` already uses the
+    combined stored selection value directly, so preserving an
+    unavailable stored value is behaviorally consistent with current
+    send-time logic.
+  - `AIModelDescriptor` already carries the combined selection value and
+    display name, so it is the natural place to represent an explicit
+    unavailable selector item.
+
+```plantuml
+@startuml
+actor User
+participant "AIModelSelectionController" as Controller
+participant "AIModelCatalog" as Catalog
+participant "AIProviderConfiguration" as Config
+
+User -> Controller : open chat / load selector
+Controller -> Catalog : getAvailableModels(...)
+Catalog --> Controller : loaded model list
+Controller -> Config : read ai_selected_model
+alt stored combined value is present
+  Controller -> Controller : select matching item
+else stored combined value is absent
+  Controller -> Controller : add unavailable item
+  Controller -> Controller : keep stored value selected
+end
+@enduml
+```
+- **Design:**
+  Final structural decisions:
+
+  1. The global chat selector remains one non-editable combined
+     `provider|model` selector.
+  2. `AIModelSelectionController` keeps the stored
+     `ai_selected_model` value when it is absent from the currently
+     loaded list.
+  3. The selector represents that case as an explicit unavailable item
+     whose display name is built with
+     `TextUtils.format("ai_unavailable_format", displayName)` so
+     translations can place the unavailable marker anywhere.
+  4. Choosing another available model still persists the new combined
+     value immediately, like today.
+  5. Chat send-time behavior stays provider-driven; this subtask does
+     not add local request blocking based on the current catalog.
+  6. Package moves are intentionally deferred to the later prompt-model
+     subtask. This increment keeps the existing chat-owned package
+     placement and only aligns behavior.
+
+  Externally meaningful identifiers for this increment:
+
+  | Identifier | Kind | Purpose |
+  | --- | --- | --- |
+  | `ai_selected_model` | persisted property | Global combined chat model selection, now preserved even when unavailable. |
+  | `ai_unavailable_format` | translation key | Format string used with `TextUtils.format(...)` to render unavailable selector items; English default: `{0} unavailable`. |
+
+```plantuml
+@startuml
+set separator none
+package "freeplane_plugin_ai" {
+  package "org.freeplane.plugin.ai.chat" {
+    class AIModelSelectionController
+    class AIModelDescriptor
+    class AIModelCatalog
+    class AIProviderConfiguration
+  }
+}
+
+AIModelSelectionController --> AIModelCatalog : load selector items
+AIModelSelectionController --> AIProviderConfiguration : read/write ai_selected_model
+AIModelSelectionController --> AIModelDescriptor : available + unavailable items
+@enduml
+```
+
+  Structural review boundary for this increment:
+
+  Fixed by approved design and subject to prior review:
+
+  - the global chat selector remains a single non-editable combined
+    `provider|model` choice;
+  - missing stored selections are preserved instead of cleared;
+  - missing stored selections are shown as explicit unavailable items;
+  - chat send-time behavior remains provider-driven rather than locally
+    blocked by the current selector list.
+
+  Left intentionally implementation-local:
+
+  - whether unavailable state is carried by a descriptor flag or by a
+    dedicated factory/helper method;
+  - the exact combo-box renderer details beyond using
+    `ai_unavailable_format`.
+- **Test specification:**
+  - Automated tests:
+    - extend `AIModelSelectionControllerTest` so a stored combined value
+      that is absent from the loaded list remains selected instead of
+      being cleared;
+    - add controller tests for unavailable display formatting via
+      `ai_unavailable_format` and for switching from an unavailable
+      stored item to an available one;
+    - add controller/configuration tests proving the stored value is not
+      overwritten during selector load when the current list lacks it.
+  - Manual tests:
+    - configure a global chat model, remove it from the currently loaded
+      selector list, open AI chat, and verify the selector shows that
+      value with unavailable formatting instead of clearing it;
+    - send a chat without changing that unavailable selection and verify
+      Freeplane attempts the provider request instead of forcing a local
+      fallback;
+    - choose another available model and verify the selector and stored
+      setting update normally.
+
+## Subtask: Persist optional per-prompt model selection
+- **Status:** backlog
+- **Scope:**
+  Add optional per-prompt model selection to saved prompts and prompt
+  drafts, keep it aligned with the advisory selector policy from the
+  chat-selector subtask, and use that optional combined selection as a
+  prompt-specific override when a prompt is run.
+- **Motivation:**
+  Some reusable prompts should stay pinned to a specific model even when
+  the regular chat model changes, but prompt model selection should
+  behave like the aligned chat selector instead of introducing a second
+  policy.
+- **Scenario:**
+  A user saves prompt `Rewrite branch` with
+  `OpenRouter: openai/gpt-4.1-mini` selected in the prompt manager.
+  Later they switch the regular AI chat to Gemini. Running
+  `Rewrite branch` still uses the saved OpenRouter model.
+
+  If the prompt manager is opened later and that saved combined value is
+  not in the refreshed list, the selector still shows that model
+  through `TextUtils.format("ai_unavailable_format", displayName)`. If
+  the user sends the prompt without changing that selector, Freeplane
+  still uses the saved value and lets the provider decide. If the
+  provider rejects the request, shown prompts keep that returned error
+  visible in the shown prompt chat, while hidden prompts show it via
+  `UITools.errorMessage(...)`, instead of inventing a local missing-
+  model classification.
+- **Constraints:**
+  - This subtask supersedes the earlier main-task rule that prompt
+    actions always use the current selected AI model and that prompt
+    definitions do not store model-specific configuration.
+  - Prompt model selection is optional. An empty prompt-model selection
+    means `use the current global AI model at execution time`.
+  - Saved prompt data and persisted prompt-dialog draft state must both
+    preserve the optional prompt-model selection.
+  - Dirty-draft detection, `Save`, `Save as new`, close persistence,
+    and restore must all treat model selection as part of the draft.
+  - The prompt selector remains non-editable and uses the same combined
+    `provider|model` architecture as chat.
+  - Opening the prompt manager refreshes the available model list.
+  - If a saved prompt model is absent from the refreshed list, the
+    prompt dialog must keep it selected as an explicit unavailable item
+    instead of clearing it to `Use current model`.
+  - Sending a prompt must not be blocked merely because its saved model
+    is absent from the refreshed local list.
+  - If a provider rejects a prompt-triggered request, Freeplane must
+    surface the returned error to the user rather than replacing it with
+    a locally inferred missing-model message. Hidden prompt failures use
+    `UITools.errorMessage(...)`; shown prompt failures stay visible in
+    the shown prompt chat and do not require an extra popup.
+  - Existing provider-key and service-address validation stays in place
+    after the effective prompt model has been resolved.
+- **Briefing:**
+  This increment depends on the chat-selector alignment subtask for the
+  advisory selector policy. It is localized to prompt domain and
+  persistence classes in `org.freeplane.plugin.ai.prompt`, prompt UI
+  classes in `org.freeplane.plugin.ai.prompt.ui`, prompt execution in
+  `AIChatPanel`, and shared provider/model infrastructure that should
+  move out of `org.freeplane.plugin.ai.chat` into a neutral package both
+  chat and prompts can reuse.
+- **Research:**
+  - `AiPrompt` currently persists only `name`, `prompt`, and
+    `showInChat`.
+  - `AiPromptStore` copies prompt objects into both `savedPrompts` and
+    persisted `dialogState.draft`, so any prompt-owned persisted field
+    must be preserved in both places.
+  - `AiPromptManagerDialog.EditorState` dirty-state comparison, save,
+    restore, and persistence currently compare only name, prompt text,
+    and `showInChat`.
+  - `AIChatPanel.runPrompt(...)` currently creates prompt services
+    through `AIChatServiceFactory.createService(...)`, which constructs
+    a fresh `AIProviderConfiguration` and therefore always uses the
+    current global model selection.
+  - The existing model infrastructure is shared in practice:
+    `AIModelSelection`, `AIModelDescriptor`, `AIModelCatalog`,
+    `AIProviderConfiguration`, and `AIChatModelFactory` are needed by
+    both chat and prompt selection flows.
+  - `AIModelSelectionController` remains chat-specific because it owns
+    global `ai_selected_model` persistence and chat-top-bar rendering.
+    Prompt drafts need their own controller even though they follow the
+    same advisory selector policy.
+  - Hidden prompt failures already surface a user-visible notification,
+    while shown prompt failures remain visible in the prompt chat
+    transcript. This subtask should keep provider-returned failure text
+    on those existing surfaces rather than adding provider-specific
+    model parsing or duplicate shown-prompt popups.
+
+```plantuml
+@startuml
+actor User
+participant "AiPromptManagerDialog" as Dialog
+participant "AiPromptModelSelectionController" as Selector
+participant "AIModelCatalog" as Catalog
+participant "AiPromptStore" as Store
+
+User -> Dialog : open prompt manager
+Dialog -> Selector : refresh model list
+Selector -> Catalog : getAvailableModels(...)
+Catalog --> Selector : loaded model list
+Selector -> Dialog : available list + unavailable saved item if needed
+User -> Dialog : save prompt draft
+Dialog -> Store : persist name + prompt + showInChat + modelSelectionValue
+@enduml
+```
+- **Design:**
+  This subtask intentionally revisits the earlier package split.
+  Prompt-specific UI should not depend on chat-owned model internals,
+  and prompt UI should be grouped separately from prompt persistence,
+  actions, and execution helpers.
+
+  Final structural decisions:
+
+  1. `AiPrompt` gains the optional persisted field
+     `modelSelectionValue`. The stored value is the existing combined
+     `provider|model` selection string. The empty string means `use the
+     current global model`.
+  2. Shared provider/model infrastructure moves from
+     `org.freeplane.plugin.ai.chat` to
+     `org.freeplane.plugin.ai.model`:
+     `AIModelSelection`, `AIModelDescriptor`, `AIModelCatalog`,
+     `AIProviderConfiguration`, and `AIChatModelFactory`.
+  3. `AIModelDescriptor` becomes the shared model-selector value type
+     for both chat and prompt selectors, including the ability to
+     represent an explicit unavailable combined value rendered via
+     `TextUtils.format("ai_unavailable_format", displayName)`.
+  4. `AIModelSelectionController` stays in
+     `org.freeplane.plugin.ai.chat` because it owns global
+     `ai_selected_model` persistence and chat-top-bar rendering.
+  5. Prompt UI classes move under `org.freeplane.plugin.ai.prompt.ui`.
+     This increment places `AiPromptManagerDialog` and
+     `AiPromptModelSelectionController` there. The later hidden-prompt
+     progress-dialog subtask should place `AiPromptProgressDialog`
+     there as well.
+  6. `org.freeplane.plugin.ai.prompt` keeps non-UI prompt classes:
+     prompt data, persistence, validation, registry/menu wiring,
+     request composition, and hidden prompt execution helpers.
+  7. `AiPromptManagerDialog` adds a model selector through the new
+     `AiPromptModelSelectionController`, which refreshes the current
+     model list when the dialog opens, prepends a `Use current model`
+     option, and keeps a saved missing selection visible as an explicit
+     unavailable item instead of clearing it.
+  8. `AiPromptManagerDialog.EditorState`, `AiPromptStore`, and
+     `AiPromptActionRegistry` all treat `modelSelectionValue` as part of
+     the prompt identity for dirty detection, save/restore, and
+     persistence.
+  9. `AIChatPanel.runPrompt(...)` resolves an effective model selection
+     without local existence gating:
+     - if `prompt.modelSelectionValue` is empty, use the current global
+       model selection;
+     - if it is present, pass that combined value unchanged as a
+       selected-model override;
+     - if the provider rejects the request, hidden prompts surface the
+       provider's returned error via `UITools.errorMessage(...)`, while
+       shown prompts keep that returned error in the shown prompt chat,
+       instead of replacing it with a local `model missing`
+       inference.
+  10. `AIChatServiceFactory.createService(...)` gains an overload with
+      an optional selected-model override so prompt runs can use a
+      saved prompt model without mutating the globally selected chat
+      model.
+
+  Externally meaningful identifiers for this increment:
+
+  | Identifier | Kind | Purpose |
+  | --- | --- | --- |
+  | `modelSelectionValue` | persisted field | Optional combined `provider|model` selection stored per saved prompt and draft. |
+  | `ai_prompt_model_label` | translation key | Prompt-manager label for the optional model selector. |
+  | `ai_prompt_use_current_model` | translation key | Blank prompt-model option that delegates to the current global model. |
+  | `ai_unavailable_format` | translation key | Format string used with `TextUtils.format(...)` to render unavailable selector items in chat and prompt UIs; English default: `{0} unavailable`. |
+  | `org.freeplane.plugin.ai.model` | package name | Shared provider/model infrastructure used by both chat and prompts. |
+  | `org.freeplane.plugin.ai.prompt.ui` | package name | Prompt-owned Swing UI classes, separate from prompt persistence and execution. |
+
+```plantuml
+@startuml
+set separator none
+package "freeplane_plugin_ai" {
+  package "org.freeplane.plugin.ai.model" {
+    class AIChatModelFactory
+    class AIModelCatalog
+    class AIModelDescriptor
+    class AIModelSelection
+    class AIProviderConfiguration
+  }
+  package "org.freeplane.plugin.ai.chat" {
+    class AIChatPanel
+    class AIChatServiceFactory
+    class AIModelSelectionController
+  }
+  package "org.freeplane.plugin.ai.prompt" {
+    class AiPrompt
+    class AiPromptActionRegistry
+    class AiPromptStore
+    class RunAiPromptAction
+  }
+  package "org.freeplane.plugin.ai.prompt.ui" {
+    class AiPromptManagerDialog
+    class AiPromptModelSelectionController
+  }
+}
+
+AiPromptStore --> AiPrompt : persist copies with modelSelectionValue
+AiPromptActionRegistry --> AiPromptManagerDialog : open dialog
+AiPromptActionRegistry --> RunAiPromptAction : create/update actions
+AiPromptManagerDialog --> AiPromptModelSelectionController : load/show options
+AiPromptModelSelectionController --> AIModelCatalog : refreshed items
+AiPromptModelSelectionController --> AIModelDescriptor : available + unavailable items
+RunAiPromptAction --> AIChatPanel : runPrompt(prompt copy)
+AIChatPanel --> AIChatServiceFactory : createService(..., selectedModelOverride)
+AIChatServiceFactory --> AIProviderConfiguration : base provider settings
+AIChatServiceFactory --> AIChatModelFactory : create model
+AIModelSelectionController --> AIModelDescriptor : available + unavailable items
+@enduml
+```
+
+```plantuml
+@startuml
+actor User
+participant "RunAiPromptAction" as Action
+participant "AIChatPanel" as ChatPanel
+participant "AIChatServiceFactory" as Factory
+participant "Provider" as Provider
+participant "Prompt chat" as PromptChat
+participant "UITools" as UiTools
+
+User -> Action : run prompt
+Action -> ChatPanel : runPrompt(prompt)
+alt prompt.modelSelectionValue is empty
+  ChatPanel -> Factory : createService(..., no override)
+else prompt.modelSelectionValue is set
+  ChatPanel -> Factory : createService(..., selectedModelOverride)
+end
+ChatPanel -> Provider : request via selected model
+alt provider rejects request
+  Provider --> ChatPanel : returned provider error
+  alt prompt.showInChat
+    ChatPanel -> PromptChat : show returned provider error
+  else hidden prompt
+    ChatPanel -> UiTools : errorMessage(returned provider error)
+  end
+end
+@enduml
+```
+
+  Structural review boundary for this increment:
+
+  Fixed by approved design and subject to prior review:
+
+  - prompt definitions and drafts persist optional
+    `modelSelectionValue`;
+  - provider/model infrastructure stops being chat-owned and moves to
+    `org.freeplane.plugin.ai.model`;
+  - chat keeps its own `AIModelSelectionController`, while prompt-owned
+    Swing UI moves under `org.freeplane.plugin.ai.prompt.ui`;
+  - opening the prompt dialog refreshes model choices but does not clear
+    missing saved prompt-model selections;
+  - prompt execution uses a saved prompt-model override without local
+    catalog-based request blocking;
+  - provider-returned prompt failures stay user-visible on the existing
+    request surface: hidden prompts use `UITools.errorMessage(...)`,
+    while shown prompts keep the failure in the shown prompt chat,
+    instead of being replaced with a local missing-model heuristic;
+  - the current global selected model remains unchanged when a prompt
+    uses its own saved model override.
+
+  Left intentionally implementation-local:
+
+  - the exact combo-box renderer used for unavailable or current-model
+    options beyond applying `ai_unavailable_format`;
+  - whether model-list loading in `AiPromptModelSelectionController`
+    uses a `SwingWorker` or another contained async helper;
+  - the exact helper used inside `AIChatServiceFactory` to apply a
+    selected-model override.
+- **Test specification:**
+  - Automated tests:
+    - extend `AiPromptStoreTest` so saved prompts and persisted dialog
+      drafts preserve `modelSelectionValue`;
+    - extend `AiPromptManagerDialogTest` so dirty-state comparison,
+      `Save`, `Save as new`, restore, and persisted draft state all
+      include `modelSelectionValue`;
+    - add `AiPromptModelSelectionController` tests for the `Use current
+      model` option, refreshed list loading on dialog open, and stable
+      display of a restored unavailable model;
+    - add prompt-run coordination tests so a prompt-specific
+      `modelSelectionValue` overrides the current global model while an
+      empty prompt value still delegates to the global model;
+    - add prompt-run tests proving an unavailable locally listed model
+      is still sent to the provider rather than blocked locally;
+    - add prompt-failure notification tests so provider rejection keeps
+      the returned error visible to the user, uses
+      `UITools.errorMessage(...)` for hidden prompts, keeps shown-prompt
+      failures in chat without an extra popup, and does not depend on a
+      local `missing model` classification;
+    - add `AIChatServiceFactory` tests for the selected-model override
+      path to prove prompt-specific model use does not mutate the global
+      model selection property.
+  - Manual tests:
+    - open the prompt manager, assign a specific model to a prompt,
+      save it, reopen the dialog, and verify the same model is still
+      selected for that prompt;
+    - clear the prompt-model selector to `Use current model`, save,
+      change the global chat model, run the prompt, and verify the
+      prompt follows the new global model;
+    - save a prompt with a specific model, change the global chat model,
+      run the prompt, and verify the prompt still uses its saved model;
+    - save a prompt with a specific model, remove it from the refreshed
+      prompt-dialog list, reopen the dialog, and verify it is still
+      shown with unavailable formatting rather than being cleared;
+    - run that prompt without changing the unavailable selection and
+      verify Freeplane attempts the provider request instead of forcing a
+      local fallback;
+    - force provider rejection for a hidden prompt and verify
+      `UITools.errorMessage(...)` shows the returned error;
+    - force provider rejection for a shown prompt and verify the
+      returned error is visible in the shown prompt chat without an
+      extra popup.
+
+## Subtask: Show cancellable progress dialog for hidden prompt runs
+- **Status:** backlog
+- **Scope:**
+  Show a small non-modal progress dialog for hidden prompt runs
+  (`showInChat = false`), display the prompt name together with the AI
+  chat icon, and route the dialog's cancel control through the same
+  cancellation semantics used by chat message cancellation.
+- **Motivation:**
+  Hidden prompt runs currently provide no running-state feedback and no
+  cancel affordance outside the chat UI.
+- **Scenario:**
+  A user triggers a hidden prompt from the map popup. Freeplane shows a
+  small modeless dialog containing the prompt name, the AI icon used by
+  the chat tab, and a cancel control styled like the chat's active-
+  request stop button.
+
+  The user can keep editing the map while the dialog stays open. If the
+  hidden prompt finishes successfully, the dialog closes silently. If
+  the user presses cancel, the request stops using the same
+  cancellation behavior as cancelling a chat message, and the dialog
+  closes without reporting a prompt failure.
+- **Constraints:**
+  - Keep the existing prompt rule that successful hidden runs stay
+    silent while failures remain user-visible.
+  - The dialog must be modeless and must not block map editing.
+  - The cancel control should reuse the same stop-icon styling and
+    cancel tooltip language as the active-request button in the AI chat
+    for UI consistency.
+  - Cancelling must propagate both SwingWorker cancellation and tool-
+    level cancellation so in-flight tool execution aborts like visible
+    chat-message cancellation.
+  - User-triggered cancellation must not be reported as a prompt
+    failure.
+  - Shown prompt runs (`showInChat = true`) must not show this extra
+    dialog.
+  - Prompt concurrency stays unchanged: if any AI request is already
+    active, the prompt still refuses to start.
+- **Briefing:**
+  The existing hidden prompt path is split between `AIChatPanel` and
+  `HiddenPromptRequestRunner`. Visible chat cancellation already flows
+  through `ChatRequestFlow` plus `ChatRequestCancellation`, while hidden
+  prompts currently pass no cancellation supplier into
+  `AIChatServiceFactory` and expose no UI outside failure reporting.
+- **Research:**
+  - `HiddenPromptRequestRunner` currently supports only
+    `submit(...)`, `isRequestActive()`, and start/finish/failure
+    callbacks.
+  - Hidden prompt services are currently created with a `null`
+    cancellation supplier, so tool executors do not see user
+    cancellation for those runs.
+  - `ChatRequestFlow.cancelActiveRequest()` already defines the expected
+    visible-chat behavior: set `ChatRequestCancellation`, cancel the
+    worker, restore visible state, and suppress normal completion.
+  - `AIChatPanel` already owns the stop icon
+    `/images/ai_stop.svg?useAccentColor=true`, the AI tab icon
+    `/images/panelTabs/aiTab.svg?useAccentColor=true`, and the
+    translated cancel tooltip used by the visible chat send button.
+  - `UITools.createCancelDialog(...)` creates a modeless cancel dialog,
+    but it does not provide the prompt-name + AI-icon layout or the
+    stop-style cancel button required here.
+
+```plantuml
+@startuml
+actor User
+participant "Menu / Dialog" as Entry
+participant "AIChatPanel" as ChatPanel
+participant "HiddenPromptRequestRunner" as Runner
+participant "AIChatService" as Service
+
+User -> Entry : run hidden prompt
+Entry -> ChatPanel : runPrompt(prompt)
+ChatPanel -> Runner : submit(promptName, service, message)
+Runner -> Service : chat(message) in SwingWorker
+Runner --> ChatPanel : finished / failed callback only
+@enduml
+```
+- **Design:**
+  Final structural decisions:
+
+  1. `HiddenPromptRequestRunner` gains `cancelActiveRequest()`, its own
+     `ChatRequestCancellation`, and request-state handling that can
+     distinguish `finished`, `failed`, and `cancelled` outcomes.
+  2. Hidden prompt services receive the runner's cancellation supplier
+     so tool executors and long-running AI work stop on user
+     cancellation just like visible chat requests.
+  3. Hidden prompt progress is surfaced through the new
+     `org.freeplane.plugin.ai.prompt.ui.AiPromptProgressDialog`, a
+     small modeless Swing dialog that shows the effective prompt name,
+     the AI tab icon, and a cancel control using the same stop icon and
+     cancel tooltip as the active AI chat send button.
+  4. `AIChatPanel` owns the dialog lifecycle for hidden prompts: it
+     shows the dialog when a hidden prompt starts, closes it on finish,
+     failure, or cancellation, and routes cancel actions to
+     `HiddenPromptRequestRunner.cancelActiveRequest()`.
+  5. Only real failures keep the existing hidden-prompt error path.
+     User-triggered cancellation closes the dialog and leaves no failure
+     notification.
+
+  Externally meaningful identifiers for this increment:
+
+  | Identifier | Kind | Purpose |
+  | --- | --- | --- |
+  | `AiPromptProgressDialog` | top-level type | Modeless prompt-run progress UI for hidden prompts. |
+  | `ai_prompt_running_title` | translation key | Title or heading for the prompt-run progress dialog. |
+
+```plantuml
+@startuml
+set separator none
+package "freeplane_plugin_ai" {
+  package "org.freeplane.plugin.ai.chat" {
+    class AIChatPanel
+    class AIChatService
+    class ChatRequestCancellation
+  }
+  package "org.freeplane.plugin.ai.prompt" {
+    class HiddenPromptRequestRunner
+  }
+  package "org.freeplane.plugin.ai.prompt.ui" {
+    class AiPromptProgressDialog
+  }
+}
+
+AIChatPanel --> AiPromptProgressDialog : show / close
+AIChatPanel --> HiddenPromptRequestRunner : submit / cancelActiveRequest()
+HiddenPromptRequestRunner --> ChatRequestCancellation : owns
+HiddenPromptRequestRunner --> AIChatService : chat(userMessage)
+@enduml
+```
+
+```plantuml
+@startuml
+actor User
+participant "AiPromptProgressDialog" as Dialog
+participant "AIChatPanel" as ChatPanel
+participant "HiddenPromptRequestRunner" as Runner
+participant "ChatRequestCancellation" as Cancellation
+
+User -> Dialog : press cancel
+Dialog -> ChatPanel : cancel hidden prompt
+ChatPanel -> Runner : cancelActiveRequest()
+Runner -> Cancellation : cancel()
+Runner --> ChatPanel : finished(cancelled)
+ChatPanel -> Dialog : close()
+@enduml
+```
+
+  Structural review boundary for this increment:
+
+  Fixed by approved design and subject to prior review:
+
+  - hidden prompt runs get a dedicated modeless progress dialog;
+  - prompt-run UI lives under `org.freeplane.plugin.ai.prompt.ui`,
+    while hidden execution stays outside that UI package;
+  - the dialog shows the prompt name plus the same AI-branding and
+    stop-style cancellation affordance used by the chat UI;
+  - hidden prompt cancellation now reaches both the worker and the
+    tool-cancellation path;
+  - user cancellation closes the dialog silently and is not surfaced as
+    a prompt failure;
+  - shown prompt runs do not show the extra dialog.
+
+  Left intentionally implementation-local:
+
+  - the exact dialog layout manager and component spacing;
+  - whether dialog close-box or Escape handling also routes through the
+    same cancel path;
+  - the exact callback shape used between `AIChatPanel` and
+    `AiPromptProgressDialog`.
+- **Test specification:**
+  - Automated tests:
+    - extend `HiddenPromptRequestRunnerTest` so cancellation clears the
+      active flag, suppresses failure reporting, and still triggers the
+      completion callback path needed for dialog cleanup;
+    - add hidden prompt coordination tests so hidden prompt runs show
+      `AiPromptProgressDialog`, successful completion closes it, and
+      real failures still surface the existing prompt error message;
+    - add cancellation-path tests so pressing the dialog cancel control
+      calls `HiddenPromptRequestRunner.cancelActiveRequest()` and passes
+      cancellation through to the hidden prompt service;
+    - add `AiPromptProgressDialog` tests for modeless behavior, prompt-
+      name display, AI icon display, and reuse of the chat stop-icon
+      cancel styling.
+  - Manual tests:
+    - run a hidden prompt and verify a small modeless dialog appears
+      with the prompt name and AI icon;
+    - verify the dialog's cancel control looks like the active-request
+      stop button in the AI chat;
+    - keep editing the map while the dialog is open and verify the
+      dialog does not block interaction;
+    - cancel the hidden prompt from the dialog and verify the dialog
+      closes, the prompt stops, and no hidden-prompt failure
+      notification is shown;
+    - force the hidden prompt to fail and verify the dialog closes and
+      the existing user-visible failure notification still appears;
+    - run a shown prompt and verify no extra progress dialog is shown.

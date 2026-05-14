@@ -3,17 +3,23 @@ package org.freeplane.plugin.ai.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.Collections;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
+import org.freeplane.core.util.TextUtils;
 import org.junit.Test;
+import org.mockito.MockedStatic;
 
 public class AIModelSelectionControllerTest {
     @Test
@@ -70,12 +76,107 @@ public class AIModelSelectionControllerTest {
     }
 
     @Test
+    public void renderer_showsFormattedDisplayName_forSelectedUnavailableValue() {
+        AIModelSelectionController uut = newController();
+        JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
+        AIModelDescriptor descriptor = new AIModelDescriptor(
+            "openrouter",
+            "openai/gpt-4.1-mini",
+            "OpenRouter: openai/gpt-4.1-mini unavailable",
+            false,
+            true
+        );
+
+        JLabel label = renderLabel(selector, descriptor, -1);
+
+        assertThat(label.getText()).isEqualTo("OpenRouter: openai/gpt-4.1-mini unavailable");
+    }
+
+    @Test
     public void constructor_usesRegularComboboxSizing() {
         AIModelSelectionController uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
 
         assertThat(selector.getPrototypeDisplayValue()).isNull();
         assertThat(selector.getItemCount()).isZero();
+    }
+
+    @Test
+    public void applyModelSelectionList_keepsUnavailableStoredSelectionSelected() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getStoredSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
+        when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
+        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+
+        try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
+            textUtils.when(() -> TextUtils.format(
+                "ai_unavailable_format",
+                "OpenRouter: openai/gpt-4.1-mini"
+            )).thenReturn("OpenRouter: openai/gpt-4.1-mini unavailable");
+
+            uut.applyModelSelectionList(Collections.singletonList(new AIModelDescriptor(
+                "gemini",
+                "gemini-2.5-flash",
+                "Gemini: gemini-2.5-flash",
+                false
+            )));
+        }
+
+        AIModelDescriptor selectedItem = (AIModelDescriptor) uut.getModelSelectionComboBox().getSelectedItem();
+        assertThat(selectedItem).isNotNull();
+        assertThat(selectedItem.getSelectionValue()).isEqualTo("openrouter|openai/gpt-4.1-mini");
+        assertThat(selectedItem.isUnavailable()).isTrue();
+        verify(configuration, never()).setSelectedModelValue("");
+    }
+
+    @Test
+    public void applyModelSelectionList_persistsLegacySelectionWhenUnavailable() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getStoredSelectedModelValue()).thenReturn(null);
+        when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
+        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+
+        try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
+            textUtils.when(() -> TextUtils.format(
+                "ai_unavailable_format",
+                "OpenRouter: openai/gpt-4.1-mini"
+            )).thenReturn("OpenRouter: openai/gpt-4.1-mini unavailable");
+
+            uut.applyModelSelectionList(Collections.singletonList(new AIModelDescriptor(
+                "gemini",
+                "gemini-2.5-flash",
+                "Gemini: gemini-2.5-flash",
+                false
+            )));
+        }
+
+        verify(configuration).setSelectedModelValue("openrouter|openai/gpt-4.1-mini");
+    }
+
+    @Test
+    public void selectionChange_fromUnavailableToAvailable_persistsNewSelectionValue() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getStoredSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
+        when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
+        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        AIModelDescriptor availableDescriptor = new AIModelDescriptor(
+            "gemini",
+            "gemini-2.5-flash",
+            "Gemini: gemini-2.5-flash",
+            false
+        );
+
+        try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
+            textUtils.when(() -> TextUtils.format(
+                "ai_unavailable_format",
+                "OpenRouter: openai/gpt-4.1-mini"
+            )).thenReturn("OpenRouter: openai/gpt-4.1-mini unavailable");
+
+            uut.applyModelSelectionList(Collections.singletonList(availableDescriptor));
+        }
+        uut.getModelSelectionComboBox().setSelectedItem(availableDescriptor);
+
+        verify(configuration, atLeastOnce()).setSelectedModelValue("gemini|gemini-2.5-flash");
     }
 
     @Test

@@ -82,7 +82,7 @@ class AIModelSelectionController {
         }.execute();
     }
 
-    private void applyModelSelectionList(List<AIModelDescriptor> modelDescriptors) {
+    void applyModelSelectionList(List<AIModelDescriptor> modelDescriptors) {
         isModelSelectionUpdateInProgress = true;
         try {
             List<AIModelDescriptor> sortedModelDescriptors = new ArrayList<>(modelDescriptors);
@@ -92,14 +92,15 @@ class AIModelSelectionController {
             );
             modelSelectionComboBox.setModel(comboBoxModel);
             modelSelectionComboBox.setSelectedIndex(-1);
-            applySelectionFromConfiguration(sortedModelDescriptors);
+            applySelectionFromConfiguration(sortedModelDescriptors, comboBoxModel);
             modelSelectionComboBox.setEnabled(hasAnyProviderEnabled());
         } finally {
             isModelSelectionUpdateInProgress = false;
         }
     }
 
-    private void applySelectionFromConfiguration(List<AIModelDescriptor> modelDescriptors) {
+    private void applySelectionFromConfiguration(List<AIModelDescriptor> modelDescriptors,
+                                                 DefaultComboBoxModel<AIModelDescriptor> comboBoxModel) {
         String storedSelectionValue = configuration.getStoredSelectedModelValue();
         String selectionValue = configuration.getSelectedModelValue();
         AIModelSelection selection = AIModelSelection.fromSelectionValue(selectionValue);
@@ -117,9 +118,15 @@ class AIModelSelectionController {
                 return;
             }
         }
-        configuration.setSelectedModelValue("");
-        modelSelectionComboBox.setSelectedIndex(-1);
-        notifyModelSelectionChange(null);
+        AIModelDescriptor unavailableSelection = AIModelDescriptor.unavailable(
+            selection.getProviderName(),
+            selection.getModelName());
+        comboBoxModel.addElement(unavailableSelection);
+        modelSelectionComboBox.setSelectedItem(unavailableSelection);
+        if (storedSelectionValue == null || storedSelectionValue.isEmpty()) {
+            configuration.setSelectedModelValue(unavailableSelection.getSelectionValue());
+        }
+        notifyModelSelectionChange(unavailableSelection);
     }
 
     private boolean hasAnyProviderEnabled() {
@@ -146,7 +153,7 @@ class AIModelSelectionController {
                 AIModelDescriptor modelDescriptor = (AIModelDescriptor) value;
                 preferredSizeText = index < 0 ? modelDescriptor.getDisplayName() : null;
                 String renderedText = index < 0
-                    ? renderSelectedModelName(modelDescriptor.getModelName())
+                    ? renderSelectedModelName(modelDescriptor)
                     : modelDescriptor.getDisplayName();
                 setText(renderedText);
             }
@@ -172,7 +179,11 @@ class AIModelSelectionController {
             return super.getText();
         }
 
-        private String renderSelectedModelName(String modelName) {
+        private String renderSelectedModelName(AIModelDescriptor modelDescriptor) {
+            if (modelDescriptor.isUnavailable()) {
+                return modelDescriptor.getDisplayName();
+            }
+            String modelName = modelDescriptor.getModelName();
             int separatorIndex = modelName.indexOf('/');
             if (separatorIndex >= 0 && separatorIndex < modelName.length() - 1) {
                 return modelName.substring(separatorIndex + 1);
