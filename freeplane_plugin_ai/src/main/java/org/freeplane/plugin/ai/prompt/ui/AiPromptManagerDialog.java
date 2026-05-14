@@ -15,6 +15,8 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.resources.WindowConfigurationStorage;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -38,6 +40,8 @@ import org.freeplane.plugin.ai.prompt.AiPromptStore;
 
 public class AiPromptManagerDialog extends JDialog {
     private static final long serialVersionUID = 1L;
+    static final String WINDOW_CONFIGURATION_PROPERTY =
+        "ai_prompt_manager_dialog_window_configuration";
     private static final String DEFAULT_NEW_PROMPT_NAME = "New Prompt";
 
     private final AiPromptActionRegistry promptActionRegistry;
@@ -57,13 +61,21 @@ public class AiPromptManagerDialog extends JDialog {
     private final AIProviderConfiguration configuration = new AIProviderConfiguration();
     private final AiPromptModelSelectionController modelSelectionController =
         new AiPromptModelSelectionController(configuration, new AIModelCatalog(configuration));
+    private final WindowGeometryPersistence windowGeometryPersistence;
     private boolean updatingFields;
     private boolean updatingSelection;
 
     public AiPromptManagerDialog(Component owner, AiPromptActionRegistry promptActionRegistry) {
+        this(owner, promptActionRegistry,
+            new WindowGeometryPersistence(WINDOW_CONFIGURATION_PROPERTY));
+    }
+
+    AiPromptManagerDialog(Component owner, AiPromptActionRegistry promptActionRegistry,
+                          WindowGeometryPersistence windowGeometryPersistence) {
         super(findOwnerWindow(owner));
         this.promptActionRegistry = promptActionRegistry;
         this.editorState = promptActionRegistry.getDialogState();
+        this.windowGeometryPersistence = windowGeometryPersistence;
         setTitle(TextUtils.getText("ai_prompt_manager_title"));
         setModal(true);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -79,7 +91,7 @@ public class AiPromptManagerDialog extends JDialog {
         refreshUi();
         pack();
         ensureButtonRowIsVisible();
-        setLocationRelativeTo(owner);
+        restoreOrPlaceWindow(owner);
     }
 
     public void openDialog() {
@@ -358,8 +370,14 @@ public class AiPromptManagerDialog extends JDialog {
     }
 
     private void closeDialog() {
+        windowGeometryPersistence.store(this);
         setVisible(false);
         dispose();
+    }
+
+    private void restoreOrPlaceWindow(Component owner) {
+        windowGeometryPersistence.restoreOrApplyDefault(this,
+            () -> setLocationRelativeTo(owner));
     }
 
     private static Window findOwnerWindow(Component owner) {
@@ -373,6 +391,38 @@ public class AiPromptManagerDialog extends JDialog {
         SAVE,
         DISCARD,
         CANCEL
+    }
+
+    static class WindowGeometryPersistence {
+        private final String propertyKey;
+        private final ResourceController resourceController;
+        private final WindowConfigurationStorage storage;
+
+        WindowGeometryPersistence(String propertyKey) {
+            this(propertyKey, ResourceController.getResourceController(),
+                new WindowConfigurationStorage(propertyKey));
+        }
+
+        WindowGeometryPersistence(String propertyKey,
+                                 ResourceController resourceController,
+                                 WindowConfigurationStorage storage) {
+            this.propertyKey = propertyKey;
+            this.resourceController = resourceController;
+            this.storage = storage;
+        }
+
+        void restoreOrApplyDefault(JDialog dialog, Runnable defaultPlacement) {
+            if (resourceController.getProperty(propertyKey) != null) {
+                storage.restoreDialogPositions(dialog);
+            }
+            else if (defaultPlacement != null) {
+                defaultPlacement.run();
+            }
+        }
+
+        void store(JDialog dialog) {
+            storage.storeDialogPositions(dialog);
+        }
     }
 
     public static class EditorState {

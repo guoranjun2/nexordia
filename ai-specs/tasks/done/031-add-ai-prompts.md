@@ -1472,3 +1472,164 @@ ChatPanel -> Dialog : close()
     - force the hidden prompt to fail and verify the dialog closes and
       the existing user-visible failure notification still appears;
     - run a shown prompt and verify no extra progress dialog is shown.
+
+## Subtask: Persist prompts and profiles dialog window geometry
+- **Status:** review
+- **Scope:**
+  Save and restore the size and screen position of the prompts dialog
+  and assistant profiles dialog using `WindowConfigurationStorage`,
+  while preserving the current first-open fallback placement for each
+  dialog.
+- **Motivation:**
+  Users often resize and move these larger editors. Reopening them at a
+  default size and position every time makes repeated prompt and profile
+  editing less efficient.
+- **Scenario:**
+  A user moves the prompts dialog to a second monitor and resizes it to
+  show more prompt text. After closing and reopening it, Freeplane shows
+  the prompts dialog at the same size and position.
+
+  The same applies to the assistant profiles dialog. If no saved window
+  geometry exists yet, each dialog still opens using its current default
+  size and fallback placement rather than unexpectedly switching to a
+  new first-open position policy.
+- **Constraints:**
+  - Use `org.freeplane.core.resources.WindowConfigurationStorage`.
+  - Persist prompt and assistant-profile dialog geometry independently;
+    they must not share one storage key.
+  - Keep the current first-open fallback behavior for each dialog when
+    no saved geometry exists yet.
+  - Keep the existing dialog modality and close behavior.
+  - Do not widen this subtask into unrelated dialog-layout refactoring.
+- **Briefing:**
+  `AiPromptManagerDialog` in `org.freeplane.plugin.ai.prompt.ui` and
+  `AssistantProfileManagerDialog` in `org.freeplane.plugin.ai.chat`
+  both currently set a preferred size, pack, and position themselves,
+  but neither persists window geometry. Freeplane already has
+  `WindowConfigurationStorage` for other dialogs such as command search
+  and style editing.
+- **Research:**
+  - `AiPromptManagerDialog` currently uses `setPreferredSize(...)`,
+    `pack()`, and `setLocationRelativeTo(owner)` with no persisted
+    geometry.
+  - `AssistantProfileManagerDialog` currently uses
+    `setPreferredSize(...)`, `pack()`, and `setLocationRelativeTo(null)`
+    with no persisted geometry.
+  - `WindowConfigurationStorage.setBounds(dialog)` both restores bounds
+    and stores them on `windowClosed`, but when no saved value exists it
+    falls back to `pack()` plus `setLocationByPlatform(true)`.
+  - That default `setBounds(...)` fallback does not match the current
+    first-open placement of either AI dialog, so the implementation must
+    preserve the existing fallback placement instead of switching to the
+    generic `location by platform` behavior.
+  - Other Freeplane dialogs already use the lower-level
+    `restoreDialogPositions(...)` and `storeDialogPositions(...)` calls
+    when they need custom first-open behavior together with persisted
+    geometry.
+
+```plantuml
+@startuml
+actor User
+participant "AiPromptManagerDialog" as PromptDialog
+participant "AssistantProfileManagerDialog" as ProfileDialog
+participant "WindowConfigurationStorage" as Storage
+
+User -> PromptDialog : open
+PromptDialog -> Storage : restoreDialogPositions(...) if saved
+Storage --> PromptDialog : saved bounds or none
+User -> PromptDialog : close
+PromptDialog -> Storage : storeDialogPositions(...)
+
+User -> ProfileDialog : open
+ProfileDialog -> Storage : restoreDialogPositions(...) if saved
+Storage --> ProfileDialog : saved bounds or none
+User -> ProfileDialog : close
+ProfileDialog -> Storage : storeDialogPositions(...)
+@enduml
+```
+- **Design:**
+  Final structural decisions:
+
+  1. `AiPromptManagerDialog` gets prompt-dialog-specific geometry
+     persistence using `WindowConfigurationStorage` and the property key
+     `ai_prompt_manager_dialog_window_configuration`.
+  2. `AssistantProfileManagerDialog` gets profile-dialog-specific
+     geometry persistence using `WindowConfigurationStorage` and the
+     property key
+     `ai_assistant_profile_manager_dialog_window_configuration`.
+  3. Each dialog keeps its current first-open fallback path:
+     - prompts dialog: keep the current packed size and
+       `setLocationRelativeTo(owner)` behavior when no saved geometry is
+       available;
+     - profiles dialog: keep the current packed size and
+       `setLocationRelativeTo(null)` behavior when no saved geometry is
+       available.
+  4. If saved geometry exists, each dialog restores that geometry before
+     it is shown.
+  5. When either dialog is closed, its current bounds are stored back
+     through the same dialog-specific `WindowConfigurationStorage`.
+
+  Externally meaningful identifiers for this increment:
+
+  | Identifier | Kind | Purpose |
+  | --- | --- | --- |
+  | `ai_prompt_manager_dialog_window_configuration` | persisted property | Stored bounds for the prompts dialog. |
+  | `ai_assistant_profile_manager_dialog_window_configuration` | persisted property | Stored bounds for the assistant profiles dialog. |
+
+```plantuml
+@startuml
+set separator none
+package "freeplane_plugin_ai" {
+  package "org.freeplane.plugin.ai.prompt.ui" {
+    class AiPromptManagerDialog
+  }
+  package "org.freeplane.plugin.ai.chat" {
+    class AssistantProfileManagerDialog
+  }
+}
+package "freeplane" {
+  package "org.freeplane.core.resources" {
+    class WindowConfigurationStorage
+  }
+}
+
+AiPromptManagerDialog --> WindowConfigurationStorage : restore/store own bounds
+AssistantProfileManagerDialog --> WindowConfigurationStorage : restore/store own bounds
+@enduml
+```
+
+  Structural review boundary for this increment:
+
+  Fixed by approved design and subject to prior review:
+
+  - both dialogs persist their own window geometry via
+    `WindowConfigurationStorage`;
+  - each dialog uses its own persisted property key;
+  - saved geometry changes reopen behavior only after the user has
+    actually created saved geometry;
+  - first-open fallback placement remains dialog-specific and unchanged.
+
+  Left intentionally implementation-local:
+
+  - whether each dialog keeps a field for its storage object or creates
+    it in a contained helper method;
+  - whether persistence is hooked on `windowClosed`, a contained close
+    helper, or both for defensive consistency.
+- **Test specification:**
+  - Automated tests:
+    - extend `AiPromptManagerDialogTest` with a contained seam so tests
+      can verify restore/store interaction with
+      `WindowConfigurationStorage` without depending on real screen
+      geometry;
+    - add `AssistantProfileManagerDialog` tests covering the same
+      restore/store behavior and the unchanged first-open fallback path;
+    - add tests proving the prompt and profiles dialogs use distinct
+      persisted property keys.
+  - Manual tests:
+    - resize and move the prompts dialog, close it, reopen it, and
+      verify the same size and position are restored;
+    - resize and move the assistant profiles dialog, close it, reopen
+      it, and verify the same size and position are restored;
+    - clear the saved window-configuration properties, reopen both
+      dialogs, and verify each still uses its existing default first-
+      open placement.

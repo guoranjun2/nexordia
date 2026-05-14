@@ -3,11 +3,13 @@ package org.freeplane.plugin.ai.chat;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Window;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import javax.swing.DefaultListModel;
-import java.awt.Window;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -18,8 +20,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.resources.WindowConfigurationStorage;
 class AssistantProfileManagerDialog extends JDialog {
     private static final long serialVersionUID = 1L;
+    static final String WINDOW_CONFIGURATION_PROPERTY =
+        "ai_assistant_profile_manager_dialog_window_configuration";
 
     private final AssistantProfileSelectionModel selectionModel;
     private final DefaultListModel<AssistantProfile> listModel = new DefaultListModel<>();
@@ -27,18 +34,34 @@ class AssistantProfileManagerDialog extends JDialog {
     private final JTextField nameField = new JTextField();
     private final JTextArea promptArea = new JTextArea();
     private final JButton deleteButton = new JButton("Delete");
+    private final WindowGeometryPersistence windowGeometryPersistence;
 
     AssistantProfileManagerDialog(Window owner, AssistantProfileSelectionModel selectionModel) {
+        this(owner, selectionModel,
+            new WindowGeometryPersistence(WINDOW_CONFIGURATION_PROPERTY));
+    }
+
+    AssistantProfileManagerDialog(Window owner,
+                                  AssistantProfileSelectionModel selectionModel,
+                                  WindowGeometryPersistence windowGeometryPersistence) {
         super(owner);
         this.selectionModel = selectionModel;
+        this.windowGeometryPersistence = windowGeometryPersistence;
         setTitle("Assistant Profiles");
         setModal(true);
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                closeDialog();
+            }
+        });
         setLayout(new BorderLayout(10, 10));
         setPreferredSize(new Dimension(520, 360));
         buildUi();
         loadProfiles();
         pack();
-        setLocationRelativeTo(null);
+        restoreOrPlaceWindow();
     }
 
     void openDialog() {
@@ -170,7 +193,45 @@ class AssistantProfileManagerDialog extends JDialog {
     }
 
     private void closeDialog() {
+        windowGeometryPersistence.store(this);
         setVisible(false);
         dispose();
+    }
+
+    private void restoreOrPlaceWindow() {
+        windowGeometryPersistence.restoreOrApplyDefault(this,
+            () -> setLocationRelativeTo(null));
+    }
+
+    static class WindowGeometryPersistence {
+        private final String propertyKey;
+        private final ResourceController resourceController;
+        private final WindowConfigurationStorage storage;
+
+        WindowGeometryPersistence(String propertyKey) {
+            this(propertyKey, ResourceController.getResourceController(),
+                new WindowConfigurationStorage(propertyKey));
+        }
+
+        WindowGeometryPersistence(String propertyKey,
+                                  ResourceController resourceController,
+                                  WindowConfigurationStorage storage) {
+            this.propertyKey = propertyKey;
+            this.resourceController = resourceController;
+            this.storage = storage;
+        }
+
+        void restoreOrApplyDefault(JDialog dialog, Runnable defaultPlacement) {
+            if (resourceController.getProperty(propertyKey) != null) {
+                storage.restoreDialogPositions(dialog);
+            }
+            else if (defaultPlacement != null) {
+                defaultPlacement.run();
+            }
+        }
+
+        void store(JDialog dialog) {
+            storage.storeDialogPositions(dialog);
+        }
     }
 }
