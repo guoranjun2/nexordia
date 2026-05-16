@@ -5,6 +5,8 @@ repositories {
     maven { url "https://repo.spring.io/plugins-release/"}
 }
 
+def freeplaneProject = project(':freeplane')
+
 dependencies {
 	def exclusions = [project.name, 'freeplane_ant']
 	if (! Os.isFamily(Os.FAMILY_MAC)) {
@@ -14,10 +16,10 @@ dependencies {
 		runtimeOnly it
 	}
 
-	runtimeOnly project(':freeplane').sourceSets.viewer.resources.sourceDirectories
-	runtimeOnly project(':freeplane').sourceSets.editor.resources.sourceDirectories
-	runtimeOnly project(':freeplane').sourceSets.external.resources.sourceDirectories
-	runtimeOnly files("${project(':freeplane').buildDir}/emoji/xml")
+	runtimeOnly freeplaneProject.sourceSets.viewer.resources.sourceDirectories
+	runtimeOnly freeplaneProject.sourceSets.editor.resources.sourceDirectories
+	runtimeOnly freeplaneProject.sourceSets.external.resources.sourceDirectories
+	runtimeOnly files("${freeplaneProject.buildDir}/emoji/xml")
 }
 
 java {
