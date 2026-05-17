@@ -26,6 +26,9 @@ public class ChatTranscriptStoreTest {
                 new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "assistant"),
                 new AssistantProfileTranscriptEntry("profile-a", "A sayer", true),
                 new ChatTranscriptEntry(ChatTranscriptRole.REMOVED_FOR_SPACE_SYSTEM, "removed"));
+            record.setAssistantProfileEnabled(false);
+            record.setSelectedModelOverride("openrouter|openai/gpt-4.1-mini");
+            record.setToolAvailabilityOverride("reading");
             record.setEntries(entries);
 
             ChatTranscriptId id = store.save(record, null);
@@ -45,6 +48,30 @@ public class ChatTranscriptStoreTest {
             assertThat(profileEntry.getProfileId()).isEqualTo("profile-a");
             assertThat(profileEntry.getProfileName()).isEqualTo("A sayer");
             assertThat(profileEntry.containsProfileDefinition()).isTrue();
+            assertThat(loaded.getAssistantProfileEnabled()).isFalse();
+            assertThat(loaded.getSelectedModelOverride()).isEqualTo("openrouter|openai/gpt-4.1-mini");
+            assertThat(loaded.getToolAvailabilityOverride()).isEqualTo("reading");
+            assertThat(loaded.hasToolAvailabilityOverrideMetadata()).isTrue();
+        } finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void saveAndLoad_preservesNullToolAvailabilityOverrideMetadataPresence() throws IOException {
+        Path tempDir = Files.createTempDirectory("chat-transcripts");
+        try {
+            ChatTranscriptStore store = new ChatTranscriptStore(new ObjectMapper(), tempDir);
+            ChatTranscriptRecord record = new ChatTranscriptRecord();
+            record.setAssistantProfileEnabled(false);
+            record.setToolAvailabilityOverride(null);
+
+            ChatTranscriptId id = store.save(record, null);
+            ChatTranscriptRecord loaded = store.load(id);
+
+            assertThat(loaded).isNotNull();
+            assertThat(loaded.getToolAvailabilityOverride()).isNull();
+            assertThat(loaded.hasToolAvailabilityOverrideMetadata()).isTrue();
         } finally {
             deleteRecursively(tempDir);
         }

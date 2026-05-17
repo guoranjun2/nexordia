@@ -1,5 +1,7 @@
 package org.freeplane.plugin.ai.chat.history;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +10,8 @@ public class ChatTranscriptRecord {
     private String displayName;
     private Boolean assistantProfileEnabled;
     private String selectedModelOverride;
+    private String toolAvailabilityOverride;
+    private boolean toolAvailabilityOverrideMetadata;
     private List<MapRootShortTextCount> mapRootShortTextCounts = new ArrayList<>();
     private List<ChatTranscriptEntry> entries = new ArrayList<>();
 
@@ -44,6 +48,29 @@ public class ChatTranscriptRecord {
 
     public void setSelectedModelOverride(String selectedModelOverride) {
         this.selectedModelOverride = selectedModelOverride;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public String getToolAvailabilityOverride() {
+        return toolAvailabilityOverride;
+    }
+
+    public void setToolAvailabilityOverride(String toolAvailabilityOverride) {
+        this.toolAvailabilityOverride = toolAvailabilityOverride;
+        this.toolAvailabilityOverrideMetadata = true;
+    }
+
+    public boolean isToolAvailabilityOverrideMetadata() {
+        return toolAvailabilityOverrideMetadata;
+    }
+
+    public void setToolAvailabilityOverrideMetadata(boolean toolAvailabilityOverrideMetadata) {
+        this.toolAvailabilityOverrideMetadata = toolAvailabilityOverrideMetadata;
+    }
+
+    @JsonIgnore
+    public boolean hasToolAvailabilityOverrideMetadata() {
+        return toolAvailabilityOverrideMetadata;
     }
 
     public List<MapRootShortTextCount> getMapRootShortTextCounts() {

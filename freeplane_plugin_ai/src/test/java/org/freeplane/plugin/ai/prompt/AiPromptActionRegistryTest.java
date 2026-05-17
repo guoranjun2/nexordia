@@ -55,7 +55,12 @@ public class AiPromptActionRegistryTest {
                 });
             registry.getDialogState().loadSavedPrompts(Arrays.asList(new AiPrompt("Rewrite", "Prompt", false)));
             registry.getDialogState().beginNewDraft();
-            registry.getDialogState().updateDraft("", "Draft prompt", true, "openrouter|openai/gpt-4.1-mini");
+            registry.getDialogState().updateDraft(
+                "",
+                "Draft prompt",
+                true,
+                "openrouter|openai/gpt-4.1-mini",
+                "reading");
 
             registry.persistStateIfChanged();
 
@@ -66,6 +71,8 @@ public class AiPromptActionRegistryTest {
             assertThat(loaded.getDialogState().getDraft().isShowInChat()).isTrue();
             assertThat(loaded.getDialogState().getDraft().getModelSelectionValue())
                 .isEqualTo("openrouter|openai/gpt-4.1-mini");
+            assertThat(loaded.getDialogState().getDraft().getToolAvailabilitySelectionValue())
+                .isEqualTo("reading");
         }
         finally {
             deleteRecursively(tempDir);

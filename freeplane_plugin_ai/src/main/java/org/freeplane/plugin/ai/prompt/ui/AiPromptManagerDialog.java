@@ -61,6 +61,8 @@ public class AiPromptManagerDialog extends JDialog {
     private final AIProviderConfiguration configuration = new AIProviderConfiguration();
     private final AiPromptModelSelectionController modelSelectionController =
         new AiPromptModelSelectionController(configuration, new AIModelCatalog(configuration));
+    private final AiPromptToolSelectionController toolSelectionController =
+        new AiPromptToolSelectionController();
     private final WindowGeometryPersistence windowGeometryPersistence;
     private boolean updatingFields;
     private boolean updatingSelection;
@@ -128,6 +130,7 @@ public class AiPromptManagerDialog extends JDialog {
         promptArea.getDocument().addDocumentListener(documentListener);
         showInChatCheckBox.addActionListener(event -> updateDraftFromFields());
         modelSelectionController.setModelSelectionChangeListener(selectionValue -> updateDraftFromFields());
+        toolSelectionController.setToolSelectionChangeListener(selectionValue -> updateDraftFromFields());
 
         JPanel listPanel = new JPanel(new BorderLayout(5, 5));
         listPanel.add(new JLabel(TextUtils.getText("ai_prompt_list_label")), BorderLayout.NORTH);
@@ -142,15 +145,23 @@ public class AiPromptManagerDialog extends JDialog {
         JComboBox<AIModelDescriptor> modelSelectionComboBox = modelSelectionController.getModelSelectionComboBox();
         modelPanel.add(modelSelectionComboBox, BorderLayout.CENTER);
 
+        JPanel toolPanel = new JPanel(new BorderLayout(5, 5));
+        toolPanel.add(new JLabel(TextUtils.getText("ai_prompt_tool_label")), BorderLayout.NORTH);
+        toolPanel.add(toolSelectionController.getToolSelectionComboBox(), BorderLayout.CENTER);
+
         JPanel promptPanel = new JPanel(new BorderLayout(5, 5));
         promptPanel.add(new JLabel(TextUtils.getText("ai_prompt_prompt_label")), BorderLayout.NORTH);
         promptArea.setLineWrap(true);
         promptArea.setWrapStyleWord(true);
         promptPanel.add(new JScrollPane(promptArea), BorderLayout.CENTER);
 
+        JPanel selectionPanel = new JPanel(new java.awt.GridLayout(1, 2, 5, 0));
+        selectionPanel.add(modelPanel);
+        selectionPanel.add(toolPanel);
+
         JPanel fieldsPanel = new JPanel(new BorderLayout(5, 5));
         fieldsPanel.add(namePanel, BorderLayout.NORTH);
-        fieldsPanel.add(modelPanel, BorderLayout.SOUTH);
+        fieldsPanel.add(selectionPanel, BorderLayout.SOUTH);
 
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
         rightPanel.add(fieldsPanel, BorderLayout.NORTH);
@@ -301,7 +312,8 @@ public class AiPromptManagerDialog extends JDialog {
             nameField.getText(),
             promptArea.getText(),
             showInChatCheckBox.isSelected(),
-            modelSelectionController.getSelectedModelSelectionValue());
+            modelSelectionController.getSelectedModelSelectionValue(),
+            toolSelectionController.getSelectedToolAvailabilitySelectionValue());
         refreshButtons();
     }
 
@@ -343,6 +355,8 @@ public class AiPromptManagerDialog extends JDialog {
             promptArea.setText(currentDraft.getPrompt() == null ? "" : currentDraft.getPrompt());
             showInChatCheckBox.setSelected(currentDraft.isShowInChat());
             modelSelectionController.setSelectedModelSelectionValue(currentDraft.getModelSelectionValue());
+            toolSelectionController.setSelectedToolAvailabilitySelectionValue(
+                currentDraft.getToolAvailabilitySelectionValue());
         }
         finally {
             updatingFields = false;
@@ -481,11 +495,14 @@ public class AiPromptManagerDialog extends JDialog {
             return currentDraft.copy();
         }
 
-        public void updateDraft(String name, String prompt, boolean showInChat, String modelSelectionValue) {
+        public void updateDraft(String name, String prompt, boolean showInChat,
+                                String modelSelectionValue,
+                                String toolAvailabilitySelectionValue) {
             currentDraft.setName(safe(name));
             currentDraft.setPrompt(safe(prompt));
             currentDraft.setShowInChat(showInChat);
             currentDraft.setModelSelectionValue(safe(modelSelectionValue));
+            currentDraft.setToolAvailabilitySelectionValue(safe(toolAvailabilitySelectionValue));
         }
 
         public boolean isDirty() {
@@ -568,7 +585,9 @@ public class AiPromptManagerDialog extends JDialog {
             return safe(left.getName()).equals(safe(right.getName()))
                 && safe(left.getPrompt()).equals(safe(right.getPrompt()))
                 && left.isShowInChat() == right.isShowInChat()
-                && safe(left.getModelSelectionValue()).equals(safe(right.getModelSelectionValue()));
+                && safe(left.getModelSelectionValue()).equals(safe(right.getModelSelectionValue()))
+                && safe(left.getToolAvailabilitySelectionValue())
+                    .equals(safe(right.getToolAvailabilitySelectionValue()));
         }
 
         private static AiPrompt safePrompt(AiPrompt prompt) {
@@ -576,6 +595,7 @@ public class AiPromptManagerDialog extends JDialog {
             safePrompt.setName(safe(safePrompt.getName()));
             safePrompt.setPrompt(safe(safePrompt.getPrompt()));
             safePrompt.setModelSelectionValue(safe(safePrompt.getModelSelectionValue()));
+            safePrompt.setToolAvailabilitySelectionValue(safe(safePrompt.getToolAvailabilitySelectionValue()));
             return safePrompt;
         }
 
@@ -584,7 +604,7 @@ public class AiPromptManagerDialog extends JDialog {
         }
 
         private static AiPrompt emptyDraft() {
-            return new AiPrompt("", "", false, "");
+            return new AiPrompt("", "", false, "", "");
         }
     }
 }

@@ -5,24 +5,32 @@ public class AiPrompt {
     private String prompt;
     private boolean showInChat;
     private String modelSelectionValue;
+    private String toolAvailabilitySelectionValue;
 
     public AiPrompt() {
-        this("", "", false, "");
+        this("", "", false, "", "");
     }
 
     public AiPrompt(String name, String prompt, boolean showInChat) {
-        this(name, prompt, showInChat, "");
+        this(name, prompt, showInChat, "", "");
     }
 
     public AiPrompt(String name, String prompt, boolean showInChat, String modelSelectionValue) {
+        this(name, prompt, showInChat, modelSelectionValue, "");
+    }
+
+    public AiPrompt(String name, String prompt, boolean showInChat,
+                    String modelSelectionValue,
+                    String toolAvailabilitySelectionValue) {
         this.name = name;
         this.prompt = prompt;
         this.showInChat = showInChat;
         this.modelSelectionValue = modelSelectionValue;
+        this.toolAvailabilitySelectionValue = toolAvailabilitySelectionValue;
     }
 
     public AiPrompt copy() {
-        return new AiPrompt(name, prompt, showInChat, modelSelectionValue);
+        return new AiPrompt(name, prompt, showInChat, modelSelectionValue, toolAvailabilitySelectionValue);
     }
 
     public String getName() {
@@ -55,6 +63,14 @@ public class AiPrompt {
 
     public void setModelSelectionValue(String modelSelectionValue) {
         this.modelSelectionValue = modelSelectionValue;
+    }
+
+    public String getToolAvailabilitySelectionValue() {
+        return toolAvailabilitySelectionValue;
+    }
+
+    public void setToolAvailabilitySelectionValue(String toolAvailabilitySelectionValue) {
+        this.toolAvailabilitySelectionValue = toolAvailabilitySelectionValue;
     }
 
     @Override

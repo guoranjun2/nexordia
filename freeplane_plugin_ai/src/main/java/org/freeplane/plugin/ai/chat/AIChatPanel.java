@@ -3,11 +3,9 @@ package org.freeplane.plugin.ai.chat;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.resources.SetBooleanPropertyAction;
-import org.freeplane.core.resources.SetStringPropertyAction;
 import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.LabelAndMnemonicSetter;
 import org.freeplane.core.ui.components.JAutoCheckBoxMenuItem;
-import org.freeplane.core.ui.components.JAutoRadioButtonMenuItem;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.components.html.ScaledEditorKit;
 import org.freeplane.core.ui.textchanger.TranslatedElement;
@@ -50,11 +48,14 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -70,6 +71,7 @@ import java.awt.event.KeyEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 
 public class AIChatPanel extends JPanel {
@@ -100,8 +102,11 @@ public class AIChatPanel extends JPanel {
     private AIChatService chatService;
     private final JPopupMenu menuPopup;
     private final AIProviderConfiguration configuration;
+    private final ChatToolAvailabilitySettings chatToolAvailabilitySettings;
     private final ChatDisplaySettings chatDisplaySettings;
     private final AIModelSelectionController modelSelectionController;
+    private final EnumMap<ChatToolAvailability, JRadioButtonMenuItem> toolAvailabilityMenuItems =
+        new EnumMap<ChatToolAvailability, JRadioButtonMenuItem>(ChatToolAvailability.class);
     private ChatMemory chatMemory;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
@@ -168,6 +173,7 @@ public class AIChatPanel extends JPanel {
         redoButton.setPreferredSize(sideButtonSize);
         redoButton.setMinimumSize(sideButtonSize);
         redoButton.setMaximumSize(sideButtonSize);
+        chatToolAvailabilitySettings = new ChatToolAvailabilitySettings();
         menuPopup = buildMenuPopup();
         messageHistoryPane.setComponentPopupMenu(menuPopup);
         configuration = new AIProviderConfiguration();
@@ -493,6 +499,20 @@ public class AIChatPanel extends JPanel {
             "ai_chat_copy_markdown");
         menuPopup.add(copyMarkdownMenuItem);
         addAiEditsMenuItems(menuPopup);
+        menuPopup.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent event) {
+                updateToolAvailabilityMenuSelection();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent event) {
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent event) {
+            }
+        });
         return menuPopup;
     }
 
@@ -508,14 +528,15 @@ public class AIChatPanel extends JPanel {
 
     private void addToolAvailabilityMenuItem(JMenu menu, ButtonGroup buttonGroup,
                                              ChatToolAvailability toolAvailability) {
-        SetStringPropertyAction action = new SetStringPropertyAction(
-            ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY + "."
-                + toolAvailability.getPreferenceValue());
-        String labelKey = action.getTextKey();
-        JAutoRadioButtonMenuItem menuItem = new JAutoRadioButtonMenuItem(action, buttonGroup);
+        String labelKey = "OptionPanel." + ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY + "."
+            + toolAvailability.getPreferenceValue();
+        JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem();
+        buttonGroup.add(menuItem);
         LabelAndMnemonicSetter.setLabelAndMnemonic(menuItem, TextUtils.getRawText(labelKey));
         TranslatedElement.TEXT.setKey(menuItem, labelKey);
-        TranslatedElementFactory.createTooltip(menuItem, action.getTooltipKey());
+        TranslatedElementFactory.createTooltip(menuItem, labelKey + ".tooltip");
+        menuItem.addActionListener(event -> applyUserSelectedToolAvailability(toolAvailability));
+        toolAvailabilityMenuItems.put(toolAvailability, menuItem);
         menu.add(menuItem);
     }
 
@@ -694,6 +715,9 @@ public class AIChatPanel extends JPanel {
             return;
         }
         String selectedModelOverride = normalizeSelectionValue(prompt.getModelSelectionValue());
+        String toolAvailabilitySelectionValue = normalizeSelectionValue(prompt.getToolAvailabilitySelectionValue());
+        ChatToolAvailability resolvedToolAvailability = resolvePromptToolAvailability(toolAvailabilitySelectionValue);
+        ChatToolAvailability toolAvailabilityOverride = promptToolAvailabilityOverride(toolAvailabilitySelectionValue);
         ChatMemory promptChatMemory = createChatMemory();
         if (prompt.isShowInChat()) {
             AIChatService promptService = createPromptChatService(
@@ -703,14 +727,16 @@ public class AIChatPanel extends JPanel {
                 chatRequestFlow.cancellationSupplier(),
                 chatRequestFlow::onProviderUsage,
                 chatTokenUsageTracker,
-                selectedModelOverride);
+                selectedModelOverride,
+                resolvedToolAvailability);
             if (promptService == null) {
                 return;
             }
             liveChatController.startNewPromptChat(
                 promptChatMemory,
                 promptSessionDisplayName(prompt.getName()),
-                selectedModelOverride);
+                selectedModelOverride,
+                toolAvailabilityOverride);
             chatService = promptService;
             showChatTab();
             submitPreparedVisibleMessage(preparedMessage);
@@ -723,7 +749,8 @@ public class AIChatPanel extends JPanel {
                 null,
                 new ChatTokenUsageTracker(totals -> {
                 }),
-                selectedModelOverride);
+                selectedModelOverride,
+                resolvedToolAvailability);
             if (promptService == null) {
                 return;
             }
@@ -842,6 +869,48 @@ public class AIChatPanel extends JPanel {
         return value != null && !value.trim().isEmpty();
     }
 
+    private ChatToolAvailability resolvePromptToolAvailability(String toolAvailabilitySelectionValue) {
+        String normalizedSelectionValue = normalizeSelectionValue(toolAvailabilitySelectionValue);
+        return normalizedSelectionValue == null
+            ? chatToolAvailabilitySettings.getToolAvailability()
+            : ChatToolAvailability.fromPreferenceValue(normalizedSelectionValue);
+    }
+
+    private ChatToolAvailability promptToolAvailabilityOverride(String toolAvailabilitySelectionValue) {
+        String normalizedSelectionValue = normalizeSelectionValue(toolAvailabilitySelectionValue);
+        return normalizedSelectionValue == null
+            ? null
+            : ChatToolAvailability.fromPreferenceValue(normalizedSelectionValue);
+    }
+
+    private ChatToolAvailability currentEffectiveToolAvailability() {
+        ChatToolAvailability toolAvailabilityOverride = liveChatController.currentSessionToolAvailabilityOverride();
+        return toolAvailabilityOverride == null
+            ? chatToolAvailabilitySettings.getToolAvailability()
+            : toolAvailabilityOverride;
+    }
+
+    private void applyUserSelectedToolAvailability(ChatToolAvailability toolAvailability) {
+        if (toolAvailability == null) {
+            return;
+        }
+        ResourceController.getResourceController().setProperty(
+            ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY,
+            toolAvailability.getPreferenceValue());
+        liveChatController.clearCurrentSessionToolAvailabilityOverride();
+        chatService = null;
+    }
+
+    private void updateToolAvailabilityMenuSelection() {
+        ChatToolAvailability effectiveToolAvailability = currentEffectiveToolAvailability();
+        for (ChatToolAvailability toolAvailability : ChatToolAvailability.values()) {
+            JRadioButtonMenuItem menuItem = toolAvailabilityMenuItems.get(toolAvailability);
+            if (menuItem != null) {
+                menuItem.setSelected(toolAvailability == effectiveToolAvailability);
+            }
+        }
+    }
+
     private String normalizeSelectionValue(String selectionValue) {
         if (selectionValue == null) {
             return null;
@@ -883,7 +952,8 @@ public class AIChatPanel extends JPanel {
                                                   java.util.function.Supplier<Boolean> cancellationSupplier,
                                                   java.util.function.Consumer<dev.langchain4j.model.output.TokenUsage> tokenUsageConsumer,
                                                   ChatTokenUsageTracker tokenUsageTracker,
-                                                  String selectedModelOverride) {
+                                                  String selectedModelOverride,
+                                                  ChatToolAvailability toolAvailability) {
         String configurationError = configurationErrorMessage(selectedModelOverride);
         if (configurationError != null) {
             notifyUser(configurationError, true);
@@ -899,7 +969,7 @@ public class AIChatPanel extends JPanel {
             toolCallSummaryHandler,
             cancellationSupplier,
             tokenUsageConsumer,
-            () -> ChatToolAvailability.EDITING,
+            () -> toolAvailability,
             selectedModelOverride);
     }
 
@@ -1077,6 +1147,7 @@ public class AIChatPanel extends JPanel {
         currentSessionUsesAssistantProfile = liveChatController.currentSessionUsesAssistantProfile();
         modelSelectionController.setDisplayedSelectionValueOverride(
             liveChatController.currentSessionSelectedModelOverride());
+        updateToolAvailabilityMenuSelection();
         chatTokenUsageTracker.restoreState(liveChatController.getCurrentTokenUsageState());
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         assistantProfileSelectionSync.setChatMemory(chatMemory);

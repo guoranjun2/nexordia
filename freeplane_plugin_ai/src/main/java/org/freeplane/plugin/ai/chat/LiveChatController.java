@@ -106,6 +106,12 @@ public class LiveChatController {
     }
 
     public void startNewPromptChat(ChatMemory chatMemory, String displayName, String selectedModelOverride) {
+        startNewPromptChat(chatMemory, displayName, selectedModelOverride, ChatToolAvailability.EDITING);
+    }
+
+    public void startNewPromptChat(ChatMemory chatMemory, String displayName,
+                                   String selectedModelOverride,
+                                   ChatToolAvailability toolAvailabilityOverride) {
         if (chatMemory == null) {
             return;
         }
@@ -117,7 +123,7 @@ public class LiveChatController {
             chatMemory,
             effectiveDisplayName,
             false,
-            ChatToolAvailability.EDITING);
+            toolAvailabilityOverride);
         promptSession.setSelectedModelOverride(selectedModelOverride);
         promptSession.setNameEdited(true);
         switchToSession(promptSession.getId(), false, false);
@@ -144,6 +150,14 @@ public class LiveChatController {
             return;
         }
         session.setSelectedModelOverride(null);
+    }
+
+    public void clearCurrentSessionToolAvailabilityOverride() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        session.setToolAvailabilityOverride(null);
     }
 
     public void openLiveChats() {
@@ -317,6 +331,7 @@ public class LiveChatController {
         record.setDisplayName(session.getDisplayName());
         record.setAssistantProfileEnabled(session.isAssistantProfileEnabled());
         record.setSelectedModelOverride(session.getSelectedModelOverride());
+        record.setToolAvailabilityOverride(toToolAvailabilityPreferenceValue(session.getToolAvailabilityOverride()));
         record.setEntries(new ArrayList<>(session.getTranscriptEntries()));
         List<MapRootShortTextCount> currentCounts = mapRootShortTextFormatter.buildCounts(
             new ArrayList<>(session.getMapIds()));
@@ -426,9 +441,10 @@ public class LiveChatController {
         boolean assistantProfileEnabled = hasSessionMetadata
             ? record.getAssistantProfileEnabled().booleanValue()
             : true;
-        ChatToolAvailability toolAvailabilityOverride = hasSessionMetadata && !assistantProfileEnabled
-            ? ChatToolAvailability.EDITING
-            : null;
+        ChatToolAvailability toolAvailabilityOverride = restoreToolAvailabilityOverride(
+            record,
+            hasSessionMetadata,
+            assistantProfileEnabled);
         LiveChatSession newSession = liveChatSessionManager.createSession(
             newChatMemory,
             displayName,
@@ -486,6 +502,29 @@ public class LiveChatController {
             return;
         }
         session.setTokenUsageState(tokenUsageStateSupplier.get());
+    }
+
+    private ChatToolAvailability restoreToolAvailabilityOverride(ChatTranscriptRecord record,
+                                                                 boolean hasSessionMetadata,
+                                                                 boolean assistantProfileEnabled) {
+        if (!hasSessionMetadata) {
+            return null;
+        }
+        if (record.hasToolAvailabilityOverrideMetadata()) {
+            return parseToolAvailabilityOverride(record.getToolAvailabilityOverride());
+        }
+        return assistantProfileEnabled ? null : ChatToolAvailability.EDITING;
+    }
+
+    private ChatToolAvailability parseToolAvailabilityOverride(String preferenceValue) {
+        if (preferenceValue == null || preferenceValue.trim().isEmpty()) {
+            return null;
+        }
+        return ChatToolAvailability.fromPreferenceValue(preferenceValue);
+    }
+
+    private String toToolAvailabilityPreferenceValue(ChatToolAvailability toolAvailability) {
+        return toolAvailability == null ? null : toolAvailability.getPreferenceValue();
     }
 
 }

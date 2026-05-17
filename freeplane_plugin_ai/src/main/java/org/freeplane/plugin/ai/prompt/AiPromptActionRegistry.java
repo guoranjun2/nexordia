@@ -157,7 +157,9 @@ public class AiPromptActionRegistry {
         return safe(first.getName()).equals(safe(second.getName()))
             && safe(first.getPrompt()).equals(safe(second.getPrompt()))
             && first.isShowInChat() == second.isShowInChat()
-            && safe(first.getModelSelectionValue()).equals(safe(second.getModelSelectionValue()));
+            && safe(first.getModelSelectionValue()).equals(safe(second.getModelSelectionValue()))
+            && safe(first.getToolAvailabilitySelectionValue())
+                .equals(safe(second.getToolAvailabilitySelectionValue()));
     }
 
     private static String safe(String value) {
