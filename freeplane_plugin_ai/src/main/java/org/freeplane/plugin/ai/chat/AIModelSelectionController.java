@@ -25,6 +25,8 @@ class AIModelSelectionController {
     private boolean isModelSelectionUpdateInProgress;
     private boolean isModelListLoadInProgress;
     private Consumer<AIModelDescriptor> modelSelectionChangeListener;
+    private Consumer<AIModelDescriptor> explicitUserModelSelectionChangeListener;
+    private String displayedSelectionValueOverride;
 
     AIModelSelectionController(AIProviderConfiguration configuration, AIModelCatalog modelCatalog) {
         this.configuration = configuration;
@@ -42,6 +44,16 @@ class AIModelSelectionController {
         this.modelSelectionChangeListener = modelSelectionChangeListener;
     }
 
+    void setExplicitUserModelSelectionChangeListener(
+        Consumer<AIModelDescriptor> explicitUserModelSelectionChangeListener) {
+        this.explicitUserModelSelectionChangeListener = explicitUserModelSelectionChangeListener;
+    }
+
+    void setDisplayedSelectionValueOverride(String selectionValueOverride) {
+        displayedSelectionValueOverride = normalizeSelectionValue(selectionValueOverride);
+        applyDisplayedSelectionValue(false);
+    }
+
     void loadInitialModelSelectionList() {
         updateModelSelectionList(true);
     }
@@ -54,11 +66,13 @@ class AIModelSelectionController {
         if (!(selectedValue instanceof AIModelDescriptor)) {
             configuration.setSelectedModelValue("");
             notifyModelSelectionChange(null);
+            notifyExplicitUserModelSelectionChange(null);
             return;
         }
         AIModelDescriptor selectedModel = (AIModelDescriptor) selectedValue;
         configuration.setSelectedModelValue(selectedModel.getSelectionValue());
         notifyModelSelectionChange(selectedModel);
+        notifyExplicitUserModelSelectionChange(selectedModel);
     }
 
     private void updateModelSelectionList(boolean allowsRefresh) {
@@ -96,18 +110,28 @@ class AIModelSelectionController {
                 sortedModelDescriptors.toArray(new AIModelDescriptor[0])
             );
             modelSelectionComboBox.setModel(comboBoxModel);
-            modelSelectionComboBox.setSelectedIndex(-1);
-            applySelectionFromConfiguration(sortedModelDescriptors, comboBoxModel);
+            applyDisplayedSelectionValue(true);
             modelSelectionComboBox.setEnabled(hasAnyProviderEnabled());
         } finally {
             isModelSelectionUpdateInProgress = false;
         }
     }
 
-    private void applySelectionFromConfiguration(List<AIModelDescriptor> modelDescriptors,
-                                                 DefaultComboBoxModel<AIModelDescriptor> comboBoxModel) {
-        String storedSelectionValue = configuration.getStoredSelectedModelValue();
-        String selectionValue = configuration.getSelectedModelValue();
+    private void applyDisplayedSelectionValue(boolean notifySelectionChange) {
+        isModelSelectionUpdateInProgress = true;
+        try {
+            modelSelectionComboBox.setSelectedIndex(-1);
+            DefaultComboBoxModel<AIModelDescriptor> comboBoxModel = currentComboBoxModel();
+            applySelectionValue(descriptorsFrom(comboBoxModel), comboBoxModel, notifySelectionChange);
+        } finally {
+            isModelSelectionUpdateInProgress = false;
+        }
+    }
+
+    private void applySelectionValue(List<AIModelDescriptor> modelDescriptors,
+                                     DefaultComboBoxModel<AIModelDescriptor> comboBoxModel,
+                                     boolean notifySelectionChange) {
+        String selectionValue = effectiveSelectionValue();
         AIModelSelection selection = AIModelSelection.fromSelectionValue(selectionValue);
         if (selection == null) {
             return;
@@ -116,10 +140,10 @@ class AIModelSelectionController {
             if (selection.getProviderName().equalsIgnoreCase(modelDescriptor.getProviderName())
                 && selection.getModelName().equals(modelDescriptor.getModelName())) {
                 modelSelectionComboBox.setSelectedItem(modelDescriptor);
-                if (storedSelectionValue == null || storedSelectionValue.isEmpty()) {
-                    configuration.setSelectedModelValue(modelDescriptor.getSelectionValue());
+                persistLegacySelectionIfNeeded(modelDescriptor.getSelectionValue());
+                if (notifySelectionChange) {
+                    notifyModelSelectionChange(modelDescriptor);
                 }
-                notifyModelSelectionChange(modelDescriptor);
                 return;
             }
         }
@@ -128,10 +152,10 @@ class AIModelSelectionController {
             selection.getModelName());
         comboBoxModel.addElement(unavailableSelection);
         modelSelectionComboBox.setSelectedItem(unavailableSelection);
-        if (storedSelectionValue == null || storedSelectionValue.isEmpty()) {
-            configuration.setSelectedModelValue(unavailableSelection.getSelectionValue());
+        persistLegacySelectionIfNeeded(unavailableSelection.getSelectionValue());
+        if (notifySelectionChange) {
+            notifyModelSelectionChange(unavailableSelection);
         }
-        notifyModelSelectionChange(unavailableSelection);
     }
 
     private boolean hasAnyProviderEnabled() {
@@ -140,9 +164,62 @@ class AIModelSelectionController {
         return hasOpenrouterKey || hasGeminiKey || configuration.hasOllamaServiceAddress();
     }
 
+    private DefaultComboBoxModel<AIModelDescriptor> currentComboBoxModel() {
+        Object comboBoxModel = modelSelectionComboBox.getModel();
+        if (comboBoxModel instanceof DefaultComboBoxModel) {
+            @SuppressWarnings("unchecked")
+            DefaultComboBoxModel<AIModelDescriptor> typedModel =
+                (DefaultComboBoxModel<AIModelDescriptor>) comboBoxModel;
+            return typedModel;
+        }
+        return new DefaultComboBoxModel<>();
+    }
+
+    private List<AIModelDescriptor> descriptorsFrom(DefaultComboBoxModel<AIModelDescriptor> comboBoxModel) {
+        List<AIModelDescriptor> descriptors = new ArrayList<>();
+        for (int index = 0; index < comboBoxModel.getSize(); index++) {
+            AIModelDescriptor descriptor = comboBoxModel.getElementAt(index);
+            if (descriptor != null) {
+                descriptors.add(descriptor);
+            }
+        }
+        return descriptors;
+    }
+
+    private String effectiveSelectionValue() {
+        if (displayedSelectionValueOverride != null) {
+            return displayedSelectionValueOverride;
+        }
+        return configuration.getSelectedModelValue();
+    }
+
+    private void persistLegacySelectionIfNeeded(String selectionValue) {
+        if (displayedSelectionValueOverride != null) {
+            return;
+        }
+        String storedSelectionValue = configuration.getStoredSelectedModelValue();
+        if (storedSelectionValue == null || storedSelectionValue.isEmpty()) {
+            configuration.setSelectedModelValue(selectionValue);
+        }
+    }
+
+    private String normalizeSelectionValue(String selectionValue) {
+        if (selectionValue == null) {
+            return null;
+        }
+        String normalized = selectionValue.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
     private void notifyModelSelectionChange(AIModelDescriptor modelDescriptor) {
         if (modelSelectionChangeListener != null) {
             modelSelectionChangeListener.accept(modelDescriptor);
+        }
+    }
+
+    private void notifyExplicitUserModelSelectionChange(AIModelDescriptor modelDescriptor) {
+        if (explicitUserModelSelectionChangeListener != null) {
+            explicitUserModelSelectionChangeListener.accept(modelDescriptor);
         }
     }
 

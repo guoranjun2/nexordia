@@ -192,6 +192,10 @@ public class AIChatPanel extends JPanel {
             this::activateSession,
             chatTokenUsageTracker::snapshotState
         );
+        modelSelectionController.setExplicitUserModelSelectionChangeListener(modelDescriptor -> {
+            liveChatController.clearCurrentSessionSelectedModelOverride();
+            chatService = null;
+        });
         assistantProfileSelectionSync = new AssistantProfileSelectionSync(
             assistantProfileSelectionModel,
             liveChatController);
@@ -689,7 +693,7 @@ public class AIChatPanel extends JPanel {
             notifyUser(error.getMessage(), true);
             return;
         }
-        String selectedModelOverride = prompt.getModelSelectionValue();
+        String selectedModelOverride = normalizeSelectionValue(prompt.getModelSelectionValue());
         ChatMemory promptChatMemory = createChatMemory();
         if (prompt.isShowInChat()) {
             AIChatService promptService = createPromptChatService(
@@ -703,7 +707,10 @@ public class AIChatPanel extends JPanel {
             if (promptService == null) {
                 return;
             }
-            liveChatController.startNewPromptChat(promptChatMemory, promptSessionDisplayName(prompt.getName()));
+            liveChatController.startNewPromptChat(
+                promptChatMemory,
+                promptSessionDisplayName(prompt.getName()),
+                selectedModelOverride);
             chatService = promptService;
             showChatTab();
             submitPreparedVisibleMessage(preparedMessage);
@@ -835,11 +842,20 @@ public class AIChatPanel extends JPanel {
         return value != null && !value.trim().isEmpty();
     }
 
+    private String normalizeSelectionValue(String selectionValue) {
+        if (selectionValue == null) {
+            return null;
+        }
+        String normalized = selectionValue.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
     private void ensureChatService() {
         if (chatService != null) {
             return;
         }
-        String configurationError = configurationErrorMessage();
+        String selectedModelOverride = liveChatController.currentSessionSelectedModelOverride();
+        String configurationError = configurationErrorMessage(selectedModelOverride);
         if (configurationError != null) {
             appendChatMessage(configurationError, ChatMessageCategory.ASSISTANT);
             return;
@@ -857,7 +873,8 @@ public class AIChatPanel extends JPanel {
             chatRequestFlow::onProviderUsage,
             toolAvailabilityOverride == null
                 ? null
-                : () -> toolAvailabilityOverride);
+                : () -> toolAvailabilityOverride,
+            selectedModelOverride);
     }
 
     private AIChatService createPromptChatService(ChatMemory promptChatMemory,
@@ -884,10 +901,6 @@ public class AIChatPanel extends JPanel {
             tokenUsageConsumer,
             () -> ChatToolAvailability.EDITING,
             selectedModelOverride);
-    }
-
-    private String configurationErrorMessage() {
-        return configurationErrorMessage(null);
     }
 
     private String configurationErrorMessage(String selectedModelOverride) {
@@ -1062,6 +1075,8 @@ public class AIChatPanel extends JPanel {
         chatMemory = sessionChatMemory;
         chatService = null;
         currentSessionUsesAssistantProfile = liveChatController.currentSessionUsesAssistantProfile();
+        modelSelectionController.setDisplayedSelectionValueOverride(
+            liveChatController.currentSessionSelectedModelOverride());
         chatTokenUsageTracker.restoreState(liveChatController.getCurrentTokenUsageState());
         chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
         assistantProfileSelectionSync.setChatMemory(chatMemory);

@@ -8,6 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.function.Consumer;
+
 import java.awt.Component;
 import java.awt.Dimension;
 import java.util.Collections;
@@ -181,6 +183,65 @@ public class AIModelSelectionControllerTest {
         uut.getModelSelectionComboBox().setSelectedItem(availableDescriptor);
 
         verify(configuration, atLeastOnce()).setSelectedModelValue("gemini|gemini-2.5-flash");
+    }
+
+    @Test
+    public void setDisplayedSelectionValueOverride_showsOverrideWithoutPersistingConfiguration() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getStoredSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
+        when(configuration.getSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
+        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        AIModelDescriptor geminiDescriptor = new AIModelDescriptor(
+            "gemini",
+            "gemini-2.5-flash",
+            "Gemini: gemini-2.5-flash",
+            false
+        );
+        AIModelDescriptor openRouterDescriptor = new AIModelDescriptor(
+            "openrouter",
+            "openai/gpt-4.1-mini",
+            "OpenRouter: openai/gpt-4.1-mini",
+            false
+        );
+
+        uut.applyModelSelectionList(java.util.Arrays.asList(geminiDescriptor, openRouterDescriptor));
+        uut.setDisplayedSelectionValueOverride("openrouter|openai/gpt-4.1-mini");
+
+        AIModelDescriptor selectedItem = (AIModelDescriptor) uut.getModelSelectionComboBox().getSelectedItem();
+        assertThat(selectedItem).isEqualTo(openRouterDescriptor);
+        verify(configuration, never()).setSelectedModelValue("openrouter|openai/gpt-4.1-mini");
+    }
+
+    @Test
+    public void selectionChange_withDisplayedSelectionOverride_notifiesExplicitUserListener() {
+        AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
+        when(configuration.getStoredSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
+        when(configuration.getSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
+        AIModelCatalog modelCatalog = mock(AIModelCatalog.class);
+        AIModelSelectionController uut = new AIModelSelectionController(configuration, modelCatalog);
+        @SuppressWarnings("unchecked")
+        Consumer<AIModelDescriptor> listener = mock(Consumer.class);
+        uut.setExplicitUserModelSelectionChangeListener(listener);
+        JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
+        AIModelDescriptor geminiDescriptor = new AIModelDescriptor(
+            "gemini",
+            "gemini-2.5-flash",
+            "Gemini: gemini-2.5-flash",
+            false
+        );
+        AIModelDescriptor openRouterDescriptor = new AIModelDescriptor(
+            "openrouter",
+            "openai/gpt-4.1-mini",
+            "OpenRouter: openai/gpt-4.1-mini",
+            false
+        );
+
+        uut.applyModelSelectionList(java.util.Arrays.asList(geminiDescriptor, openRouterDescriptor));
+        uut.setDisplayedSelectionValueOverride("openrouter|openai/gpt-4.1-mini");
+        selector.setSelectedItem(geminiDescriptor);
+
+        verify(configuration, atLeastOnce()).setSelectedModelValue("gemini|gemini-2.5-flash");
+        verify(listener).accept(geminiDescriptor);
     }
 
     @Test

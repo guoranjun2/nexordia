@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.text.TextController;
 import org.freeplane.plugin.ai.chat.history.ChatTranscriptEntry;
@@ -45,14 +44,49 @@ public class LiveChatController {
                               DateTimeFormatter chatNameFormatter,
                               SessionActivationHandler sessionActivationHandler,
                               Supplier<ChatTokenUsageState> tokenUsageStateSupplier) {
+        this(parent,
+            availableMaps,
+            textController,
+            chatNameFormatter,
+            sessionActivationHandler,
+            tokenUsageStateSupplier,
+            new ChatTranscriptStore(),
+            new ChatMemorySettings());
+    }
+
+    LiveChatController(AIChatPanel parent,
+                       AvailableMaps availableMaps,
+                       TextController textController,
+                       DateTimeFormatter chatNameFormatter,
+                       SessionActivationHandler sessionActivationHandler,
+                       Supplier<ChatTokenUsageState> tokenUsageStateSupplier,
+                       ChatTranscriptStore transcriptStore) {
+        this(parent,
+            availableMaps,
+            textController,
+            chatNameFormatter,
+            sessionActivationHandler,
+            tokenUsageStateSupplier,
+            transcriptStore,
+            new ChatMemorySettings());
+    }
+
+    LiveChatController(AIChatPanel parent,
+                       AvailableMaps availableMaps,
+                       TextController textController,
+                       DateTimeFormatter chatNameFormatter,
+                       SessionActivationHandler sessionActivationHandler,
+                       Supplier<ChatTokenUsageState> tokenUsageStateSupplier,
+                       ChatTranscriptStore transcriptStore,
+                       ChatMemorySettings chatMemorySettings) {
         this.owner = parent;
         this.chatNameFormatter = chatNameFormatter;
         this.sessionActivationHandler = sessionActivationHandler;
         this.tokenUsageStateSupplier = tokenUsageStateSupplier;
         this.liveChatSessionManager = new LiveChatSessionManager();
-        this.transcriptStore = new ChatTranscriptStore();
+        this.transcriptStore = transcriptStore;
         this.transcriptMemoryMapper = new TranscriptMemoryMapper();
-        this.chatMemorySettings = new ChatMemorySettings();
+        this.chatMemorySettings = chatMemorySettings;
         this.mapRootShortTextFormatter = new MapRootShortTextFormatter(availableMaps, textController);
         this.mapRootShortTextCountsMerger = new MapRootShortTextCountsMerger();
     }
@@ -68,6 +102,10 @@ public class LiveChatController {
     }
 
     public void startNewPromptChat(ChatMemory chatMemory, String displayName) {
+        startNewPromptChat(chatMemory, displayName, null);
+    }
+
+    public void startNewPromptChat(ChatMemory chatMemory, String displayName, String selectedModelOverride) {
         if (chatMemory == null) {
             return;
         }
@@ -80,6 +118,7 @@ public class LiveChatController {
             effectiveDisplayName,
             false,
             ChatToolAvailability.EDITING);
+        promptSession.setSelectedModelOverride(selectedModelOverride);
         promptSession.setNameEdited(true);
         switchToSession(promptSession.getId(), false, false);
     }
@@ -92,6 +131,19 @@ public class LiveChatController {
     public ChatToolAvailability currentSessionToolAvailabilityOverride() {
         LiveChatSession session = liveChatSessionManager.getCurrentSession();
         return session == null ? null : session.getToolAvailabilityOverride();
+    }
+
+    public String currentSessionSelectedModelOverride() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        return session == null ? null : session.getSelectedModelOverride();
+    }
+
+    public void clearCurrentSessionSelectedModelOverride() {
+        LiveChatSession session = liveChatSessionManager.getCurrentSession();
+        if (session == null) {
+            return;
+        }
+        session.setSelectedModelOverride(null);
     }
 
     public void openLiveChats() {
@@ -263,6 +315,8 @@ public class LiveChatController {
         }
         ChatTranscriptRecord record = new ChatTranscriptRecord();
         record.setDisplayName(session.getDisplayName());
+        record.setAssistantProfileEnabled(session.isAssistantProfileEnabled());
+        record.setSelectedModelOverride(session.getSelectedModelOverride());
         record.setEntries(new ArrayList<>(session.getTranscriptEntries()));
         List<MapRootShortTextCount> currentCounts = mapRootShortTextFormatter.buildCounts(
             new ArrayList<>(session.getMapIds()));
@@ -344,7 +398,7 @@ public class LiveChatController {
 
                 @Override
                 public void startChatFromTranscript(ChatTranscriptId transcriptId) {
-                    startChatFromTranscriptInternal(transcriptId);
+                    startChatFromTranscript(transcriptId);
                 }
 
                 @Override
@@ -355,7 +409,7 @@ public class LiveChatController {
         );
     }
 
-    private void startChatFromTranscriptInternal(ChatTranscriptId transcriptId) {
+    void startChatFromTranscript(ChatTranscriptId transcriptId) {
         if (transcriptId == null) {
             return;
         }
@@ -368,15 +422,22 @@ public class LiveChatController {
         String displayName = record.getDisplayName() == null || record.getDisplayName().trim().isEmpty()
             ? buildDefaultChatName()
             : record.getDisplayName();
-        boolean promptConversation = isPromptDisplayName(displayName);
+        boolean hasSessionMetadata = record.getAssistantProfileEnabled() != null;
+        boolean assistantProfileEnabled = hasSessionMetadata
+            ? record.getAssistantProfileEnabled().booleanValue()
+            : true;
+        ChatToolAvailability toolAvailabilityOverride = hasSessionMetadata && !assistantProfileEnabled
+            ? ChatToolAvailability.EDITING
+            : null;
         LiveChatSession newSession = liveChatSessionManager.createSession(
             newChatMemory,
             displayName,
-            !promptConversation,
-            promptConversation ? ChatToolAvailability.EDITING : null);
-        if (promptConversation) {
+            assistantProfileEnabled,
+            toolAvailabilityOverride);
+        if (!assistantProfileEnabled) {
             newSession.setNameEdited(true);
         }
+        newSession.setSelectedModelOverride(hasSessionMetadata ? record.getSelectedModelOverride() : null);
         newSession.setTranscriptId(transcriptId);
         newSession.setLastActivityTimestamp(record.getTimestamp());
         newSession.setMapRootShortTextCounts(record.getMapRootShortTextCounts());
@@ -427,11 +488,4 @@ public class LiveChatController {
         session.setTokenUsageState(tokenUsageStateSupplier.get());
     }
 
-    private boolean isPromptDisplayName(String displayName) {
-        String prefix = TextUtils.getText("ai_prompt_session_prefix");
-        return prefix != null
-            && !prefix.isEmpty()
-            && displayName != null
-            && displayName.startsWith(prefix);
-    }
 }

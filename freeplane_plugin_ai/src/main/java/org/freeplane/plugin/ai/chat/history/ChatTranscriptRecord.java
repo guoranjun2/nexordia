@@ -6,6 +6,8 @@ import java.util.List;
 public class ChatTranscriptRecord {
     private long timestamp;
     private String displayName;
+    private Boolean assistantProfileEnabled;
+    private String selectedModelOverride;
     private List<MapRootShortTextCount> mapRootShortTextCounts = new ArrayList<>();
     private List<ChatTranscriptEntry> entries = new ArrayList<>();
 
@@ -26,6 +28,22 @@ public class ChatTranscriptRecord {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public Boolean getAssistantProfileEnabled() {
+        return assistantProfileEnabled;
+    }
+
+    public void setAssistantProfileEnabled(Boolean assistantProfileEnabled) {
+        this.assistantProfileEnabled = assistantProfileEnabled;
+    }
+
+    public String getSelectedModelOverride() {
+        return selectedModelOverride;
+    }
+
+    public void setSelectedModelOverride(String selectedModelOverride) {
+        this.selectedModelOverride = selectedModelOverride;
     }
 
     public List<MapRootShortTextCount> getMapRootShortTextCounts() {

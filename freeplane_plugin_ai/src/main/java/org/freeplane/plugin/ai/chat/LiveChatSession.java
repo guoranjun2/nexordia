@@ -17,6 +17,7 @@ final class LiveChatSession {
     private final List<MapRootShortTextCount> mapRootShortTextCounts;
     private final boolean assistantProfileEnabled;
     private final ChatToolAvailability toolAvailabilityOverride;
+    private String selectedModelOverride;
     private List<ChatTranscriptEntry> transcriptEntries;
     private ChatTranscriptId transcriptId;
     private String displayName;
@@ -127,6 +128,19 @@ final class LiveChatSession {
 
     ChatToolAvailability getToolAvailabilityOverride() {
         return toolAvailabilityOverride;
+    }
+
+    String getSelectedModelOverride() {
+        return selectedModelOverride;
+    }
+
+    void setSelectedModelOverride(String selectedModelOverride) {
+        if (selectedModelOverride == null) {
+            this.selectedModelOverride = null;
+            return;
+        }
+        String normalized = selectedModelOverride.trim();
+        this.selectedModelOverride = normalized.isEmpty() ? null : normalized;
     }
 
 }
