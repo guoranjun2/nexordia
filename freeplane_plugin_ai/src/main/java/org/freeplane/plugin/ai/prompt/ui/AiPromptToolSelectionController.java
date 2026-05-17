@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
+import org.freeplane.core.ui.components.JComboBoxFactory;
 import org.freeplane.core.util.TextUtils;
 
 public class AiPromptToolSelectionController {
@@ -25,15 +26,17 @@ public class AiPromptToolSelectionController {
                                     String editingLabel,
                                     String readingLabel,
                                     String disabledLabel) {
-        toolSelectionComboBox = new JComboBox<ToolSelectionOption>();
-        toolSelectionComboBox.setEditable(false);
         options = Arrays.asList(
             new ToolSelectionOption("", useCurrentToolsLabel),
             new ToolSelectionOption("editing", editingLabel),
             new ToolSelectionOption("reading", readingLabel),
             new ToolSelectionOption("disabled", disabledLabel));
-        toolSelectionComboBox.setModel(new DefaultComboBoxModel<ToolSelectionOption>(
-            options.toArray(new ToolSelectionOption[0])));
+        DefaultComboBoxModel<ToolSelectionOption> comboBoxModel =
+            new DefaultComboBoxModel<ToolSelectionOption>(
+                options.toArray(new ToolSelectionOption[0]));
+        toolSelectionComboBox = JComboBoxFactory.create(comboBoxModel);
+        toolSelectionComboBox.setEditable(false);
+        toolSelectionComboBox.setPrototypeDisplayValue(createPrototypeDisplayValue());
         toolSelectionComboBox.addActionListener(event -> onToolSelectionChanged());
         setSelectedToolAvailabilitySelectionValue("");
     }
@@ -70,6 +73,20 @@ public class AiPromptToolSelectionController {
         if (toolSelectionChangeListener != null) {
             toolSelectionChangeListener.accept(getSelectedToolAvailabilitySelectionValue());
         }
+    }
+
+    private ToolSelectionOption createPrototypeDisplayValue() {
+        ToolSelectionOption widestOption = options.get(0);
+        int widestWidth = -1;
+        for (ToolSelectionOption option : options) {
+            int optionWidth = toolSelectionComboBox.getFontMetrics(toolSelectionComboBox.getFont())
+                .stringWidth(option.displayText);
+            if (optionWidth > widestWidth) {
+                widestWidth = optionWidth;
+                widestOption = option;
+            }
+        }
+        return new ToolSelectionOption(widestOption.selectionValue, widestOption.displayText + "xxx");
     }
 
     private ToolSelectionOption resolveOption(String selectionValue) {

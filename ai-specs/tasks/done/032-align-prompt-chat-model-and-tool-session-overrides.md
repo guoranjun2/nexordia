@@ -121,7 +121,7 @@
     - `gradle -Djava.net.preferIPv6Addresses=true -Djava.awt.headless=true :freeplane_plugin_ai:test`
 
 ## Subtask: Add prompt tool selection using the model override pattern
-- **Status:** in-progress
+- **Status:** done
 - **Scope:**
   Add optional per-prompt tool selection in the prompt manager via a
   non-editable dropdown beside the existing model selector, and make
@@ -485,77 +485,72 @@ end
     - run a hidden prompt with an explicit tool setting and verify the
       visible chat defaults remain unchanged.
 
-## Subtask: Refine prompt manager layout for titled borders and asymmetric selector widths
-- **Status:** review
+## Subtask: Refine prompt manager selector widths and sizing stability
+- **Status:** done
 - **Scope:**
-  Refine `AiPromptManagerDialog` so the prompt sections use titled
-  borders instead of separate labels, the tools selector keeps a fixed
-  width based on its preferred width, and the model selector expands to
-  use the remaining horizontal space while still respecting its own
-  preferred width.
+  Refine `AiPromptManagerDialog` so the tools selector keeps a fixed
+  width based on a stable preferred width, and the model selector
+  expands to use the remaining horizontal space while still respecting
+  its own preferred width.
 - **Motivation:**
-  The current dialog uses one label above each section and a two-column
-  `GridLayout` for model and tool selection, so both selectors consume
-  the same width even though the model selector benefits from extra
-  space while the tool selector does not. The dialog should read more
-  like grouped form sections and allocate horizontal space according to
-  the different needs of the two selectors.
+  The current dialog uses a two-column `GridLayout` for model and tool
+  selection, so both selectors consume the same width even though the
+  model selector benefits from extra space while the tool selector does
+  not. The selector row should allocate horizontal space according to
+  those different needs.
 - **Scenario:**
   A user opens the prompt manager on a narrow but still usable window.
-  The prompt list, name, model, tools, and prompt editor each appear as
-  titled sections. In the selection row, the tools combo box keeps a
-  stable fixed width that still fits its preferred content size, while
-  the model combo box takes the remaining width and shows as much model
-  text as the available space allows.
+  In the selection row, the tools combo box keeps a stable fixed width
+  that still fits its preferred content size, while the model combo box
+  takes the remaining width and shows as much model text as the
+  available space allows.
 - **Constraints:**
   - This subtask is UI-only. It must not change prompt persistence,
     prompt execution, session overrides, or transcript behavior.
-  - Reuse the existing translation keys `ai_prompt_list_label`,
-    `ai_prompt_name_label`, `ai_prompt_model_label`,
-    `ai_prompt_tool_label`, and `ai_prompt_prompt_label`; do not add new
-    text keys for the same visible section titles.
-  - Use
-    `org.freeplane.core.ui.textchanger.TranslatedElementFactory.createTitledBorder(JComponent, String)`
-    for those section titles instead of separate `JLabel` headings.
   - The tools selector width is fixed within the selection row for a
-    given dialog instance and must still honor its preferred width.
+    given dialog instance and must still honor a stable preferred
+    width.
   - The model selector must receive all remaining horizontal space in
     that row, but not be compressed below its preferred width sooner
     than required by the overall dialog width.
+  - Visual presentation details such as labels versus titled borders are
+    intentionally not fixed by this task.
 - **Briefing:**
-  `AiPromptManagerDialog.buildUi()` currently creates dedicated panels
-  with `JLabel` headers for the prompt list, name field, model
-  selector, tool selector, and prompt editor. The model/tool selector
-  row currently uses `GridLayout(1, 2, 5, 0)`, which forces equal
-  widths. `TranslatedElementFactory.createTitledBorder(...)` is already
-  available in core UI code and should be used for the section-title
-  conversion.
+  `AiPromptManagerDialog.buildUi()` owns the prompt editor layout. The
+  model/tool selector row previously used `GridLayout(1, 2, 5, 0)`,
+  which forced equal widths. Review feedback also showed that the tools
+  combo box can report a preferred width that is too small on the
+  current macOS look and feel.
 - **Research:**
-  - `AiPromptManagerDialog.buildUi()` currently adds separate labels for
-    `Prompts`, `Name`, `Model`, `Tools`, and `Prompt` above each
-    section's content component.
-  - The selector row is currently assembled as a two-column
-    `GridLayout`, so model and tool panels always get equal width.
-  - `TranslatedElementFactory.createTitledBorder(JComponent, String)`
-    assigns a translated titled border directly to a `JComponent`, so
-    each section can keep its current translation key while dropping the
-    extra heading label.
+  - `AiPromptManagerDialog.buildUi()` currently arranges the prompt
+    editor sections and the model/tool selector row.
+  - The selector row was originally assembled as a two-column
+    `GridLayout`, so model and tool panels always got equal width.
+  - Review feedback after the first layout pass showed that the tools
+    combo box can still truncate its selected text on the current macOS
+    look and feel even when the containing panel uses the combo's
+    preferred width. That points to the combo preferred-width
+    calculation itself as the likely source of the remaining defect,
+    not to the asymmetric row layout alone.
 - **Design:**
-  1. Replace the prompt-manager section-heading labels with titled
-     borders on the corresponding section containers or content-bearing
-     wrapper components.
-  2. Keep the existing visible section order and general dialog flow:
-     prompt list on the left, prompt fields on the right, selection row
-     above the prompt body, and the button row unchanged.
-  3. Replace the equal-width selector-row layout with an asymmetric
+  1. Keep the existing visible dialog flow: prompt list on the left,
+     prompt fields on the right, selector row above the prompt body,
+     and the button row unchanged.
+  2. Replace the equal-width selector-row layout with an asymmetric
      layout in which the tools selector container uses a fixed preferred
      width and the model selector container receives the remaining row
      width.
-  4. The implementation may introduce lightweight wrapper panels for
-     border ownership and sizing control, but it must not change prompt
-     state wiring or controller responsibilities.
-  5. Existing translation keys remain the canonical titles; only the
-     presentation mechanism changes from label text to titled borders.
+  3. Apply a local combo-box sizing workaround for the tools selector so
+     its fixed width is based on a stable preferred width that fits the
+     rendered option text on the current look and feel. Determine the
+     widest option by rendered width and add a small extra suffix width
+     budget to the prototype value.
+  4. Consider `JComboBoxFactory.create(ComboBoxModel<T>)` for the prompt
+     dialog controllers and use it where it improves consistency or size
+     behavior without changing prompt semantics.
+  5. The implementation may introduce lightweight wrapper panels for
+     sizing control, but it must not change prompt state wiring or
+     controller responsibilities.
 
 ```plantuml
 @startuml
@@ -567,7 +562,6 @@ package "org.freeplane.plugin.ai.prompt.ui" {
 
 AiPromptManagerDialog --> AiPromptModelSelectionController : model combo fills remaining width
 AiPromptManagerDialog --> AiPromptToolSelectionController : tool combo keeps fixed preferred width
-AiPromptManagerDialog --> "TranslatedElementFactory" : createTitledBorder(...)
 @enduml
 ```
 
@@ -575,24 +569,25 @@ AiPromptManagerDialog --> "TranslatedElementFactory" : createTitledBorder(...)
 
   Fixed by approved design and subject to prior review:
 
-  - titled borders replace the separate section-heading labels;
   - the tool selector keeps fixed preferred width;
+  - the tool selector uses a local preferred-size workaround if needed
+    for the current look and feel, based on the widest rendered option
+    plus a small extra width budget;
   - the model selector uses the remaining width in the row.
 
   Left intentionally implementation-local:
 
   - the exact Swing layout manager used for the asymmetric selector row;
-  - whether titled borders are attached directly to existing components
-    or to small wrapper containers created for spacing and sizing.
+  - non-behavioral visual presentation details such as labels versus
+    titled borders.
 - **Test specification:**
   - Automated tests:
     - no new automated tests are planned for this layout-only increment
       per User direction, unless the implementation forces an adjustment
       to an existing test.
   - Manual tests:
-    - open the prompt manager and verify `Prompts`, `Name`, `Model`,
-      `Tools`, and `Prompt` are shown as titled borders rather than as
-      separate labels;
+    - verify the tools selector shows its full selected text without
+      truncating `Use current tools` on the current macOS look and feel;
     - resize the dialog wider and verify the model selector grows while
       the tools selector stays fixed;
     - resize the dialog narrower and verify both selectors still honor

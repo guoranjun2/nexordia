@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.SwingWorker;
+import org.freeplane.core.ui.components.JComboBoxFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.plugin.ai.model.AIModelCatalog;
 import org.freeplane.plugin.ai.model.AIModelDescriptor;
@@ -26,7 +27,7 @@ public class AiPromptModelSelectionController {
     public AiPromptModelSelectionController(AIProviderConfiguration configuration, AIModelCatalog modelCatalog) {
         this.configuration = configuration;
         this.modelCatalog = modelCatalog;
-        this.modelSelectionComboBox = new JComboBox<AIModelDescriptor>();
+        this.modelSelectionComboBox = JComboBoxFactory.create(new DefaultComboBoxModel<AIModelDescriptor>());
         this.modelSelectionComboBox.setEditable(false);
         this.modelSelectionComboBox.addActionListener(event -> onModelSelectionChanged());
     }

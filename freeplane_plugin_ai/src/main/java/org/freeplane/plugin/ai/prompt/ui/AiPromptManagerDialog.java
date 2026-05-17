@@ -133,20 +133,20 @@ public class AiPromptManagerDialog extends JDialog {
         modelSelectionController.setModelSelectionChangeListener(selectionValue -> updateDraftFromFields());
         toolSelectionController.setToolSelectionChangeListener(selectionValue -> updateDraftFromFields());
 
-        JPanel listPanel = createTitledPanel("ai_prompt_list_label", new JScrollPane(promptsList));
+        JPanel listPanel = createLabeledPanel("ai_prompt_list_label", new JScrollPane(promptsList));
 
-        JPanel namePanel = createTitledPanel("ai_prompt_name_label", nameField);
+        JPanel namePanel = createLabeledPanel("ai_prompt_name_label", nameField);
 
         JComboBox<AIModelDescriptor> modelSelectionComboBox = modelSelectionController.getModelSelectionComboBox();
         JPanel modelPanel = createTitledPanel("ai_prompt_model_label", modelSelectionComboBox);
 
-        JPanel toolPanel = createTitledPanel(
-            "ai_prompt_tool_label",
-            toolSelectionController.getToolSelectionComboBox());
+        JComboBox<AiPromptToolSelectionController.ToolSelectionOption> toolSelectionComboBox =
+            toolSelectionController.getToolSelectionComboBox();
+        JPanel toolPanel = createTitledPanel("ai_prompt_tool_label", toolSelectionComboBox);
 
         promptArea.setLineWrap(true);
         promptArea.setWrapStyleWord(true);
-        JPanel promptPanel = createTitledPanel("ai_prompt_prompt_label", new JScrollPane(promptArea));
+        JPanel promptPanel = createLabeledPanel("ai_prompt_prompt_label", new JScrollPane(promptArea));
 
         JPanel selectionPanel = new JPanel(new BorderLayout(5, 0));
         selectionPanel.add(modelPanel, BorderLayout.CENTER);
@@ -181,6 +181,13 @@ public class AiPromptManagerDialog extends JDialog {
 
         add(contentPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createLabeledPanel(String titleKey, JComponent component) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.add(TranslatedElementFactory.createLabel(titleKey), BorderLayout.NORTH);
+        panel.add(component, BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel createTitledPanel(String titleKey, JComponent component) {
