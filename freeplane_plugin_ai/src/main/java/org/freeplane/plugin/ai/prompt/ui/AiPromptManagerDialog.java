@@ -14,10 +14,8 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
-import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.resources.WindowConfigurationStorage;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -29,6 +27,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.resources.WindowConfigurationStorage;
+import org.freeplane.core.ui.textchanger.TranslatedElementFactory;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.plugin.ai.model.AIModelCatalog;
 import org.freeplane.plugin.ai.model.AIModelDescriptor;
@@ -132,32 +133,24 @@ public class AiPromptManagerDialog extends JDialog {
         modelSelectionController.setModelSelectionChangeListener(selectionValue -> updateDraftFromFields());
         toolSelectionController.setToolSelectionChangeListener(selectionValue -> updateDraftFromFields());
 
-        JPanel listPanel = new JPanel(new BorderLayout(5, 5));
-        listPanel.add(new JLabel(TextUtils.getText("ai_prompt_list_label")), BorderLayout.NORTH);
-        listPanel.add(new JScrollPane(promptsList), BorderLayout.CENTER);
+        JPanel listPanel = createTitledPanel("ai_prompt_list_label", new JScrollPane(promptsList));
 
-        JPanel namePanel = new JPanel(new BorderLayout(5, 5));
-        namePanel.add(new JLabel(TextUtils.getText("ai_prompt_name_label")), BorderLayout.NORTH);
-        namePanel.add(nameField, BorderLayout.CENTER);
+        JPanel namePanel = createTitledPanel("ai_prompt_name_label", nameField);
 
-        JPanel modelPanel = new JPanel(new BorderLayout(5, 5));
-        modelPanel.add(new JLabel(TextUtils.getText("ai_prompt_model_label")), BorderLayout.NORTH);
         JComboBox<AIModelDescriptor> modelSelectionComboBox = modelSelectionController.getModelSelectionComboBox();
-        modelPanel.add(modelSelectionComboBox, BorderLayout.CENTER);
+        JPanel modelPanel = createTitledPanel("ai_prompt_model_label", modelSelectionComboBox);
 
-        JPanel toolPanel = new JPanel(new BorderLayout(5, 5));
-        toolPanel.add(new JLabel(TextUtils.getText("ai_prompt_tool_label")), BorderLayout.NORTH);
-        toolPanel.add(toolSelectionController.getToolSelectionComboBox(), BorderLayout.CENTER);
+        JPanel toolPanel = createTitledPanel(
+            "ai_prompt_tool_label",
+            toolSelectionController.getToolSelectionComboBox());
 
-        JPanel promptPanel = new JPanel(new BorderLayout(5, 5));
-        promptPanel.add(new JLabel(TextUtils.getText("ai_prompt_prompt_label")), BorderLayout.NORTH);
         promptArea.setLineWrap(true);
         promptArea.setWrapStyleWord(true);
-        promptPanel.add(new JScrollPane(promptArea), BorderLayout.CENTER);
+        JPanel promptPanel = createTitledPanel("ai_prompt_prompt_label", new JScrollPane(promptArea));
 
-        JPanel selectionPanel = new JPanel(new java.awt.GridLayout(1, 2, 5, 0));
-        selectionPanel.add(modelPanel);
-        selectionPanel.add(toolPanel);
+        JPanel selectionPanel = new JPanel(new BorderLayout(5, 0));
+        selectionPanel.add(modelPanel, BorderLayout.CENTER);
+        selectionPanel.add(toolPanel, BorderLayout.EAST);
 
         JPanel fieldsPanel = new JPanel(new BorderLayout(5, 5));
         fieldsPanel.add(namePanel, BorderLayout.NORTH);
@@ -188,6 +181,13 @@ public class AiPromptManagerDialog extends JDialog {
 
         add(contentPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createTitledPanel(String titleKey, JComponent component) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        TranslatedElementFactory.createTitledBorder(panel, titleKey);
+        panel.add(component, BorderLayout.CENTER);
+        return panel;
     }
 
     private void handlePromptSelectionChange() {
