@@ -25,6 +25,8 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.TextUtils;
 
 public class AiPromptProgressDialog extends JDialog {
@@ -33,11 +35,16 @@ public class AiPromptProgressDialog extends JDialog {
     private final JLabel promptNameLabel;
     private final JButton cancelButton;
     private final Runnable cancelAction;
+    private final Component ownerLocationAnchor;
+    private final Component relativeLocationAnchor;
 
-    public AiPromptProgressDialog(Component owner, Icon promptIcon, Icon cancelIcon,
+    public AiPromptProgressDialog(Component owner, Component relativeLocationAnchor,
+                                  Icon promptIcon, Icon cancelIcon,
                                   String cancelTooltipText, Runnable cancelAction) {
         super(findOwnerWindow(owner));
         this.cancelAction = cancelAction;
+        this.ownerLocationAnchor = owner;
+        this.relativeLocationAnchor = relativeLocationAnchor;
         setTitle(TextUtils.getText("ai_prompt_running_title"));
         setModal(false);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -86,6 +93,10 @@ public class AiPromptProgressDialog extends JDialog {
     public void showPrompt(String promptName) {
         promptNameLabel.setText(displayPromptName(promptName));
         pack();
+        setLocationRelativeTo(ownerLocationAnchor);
+        if (relativeLocationAnchor != null) {
+            UITools.setDialogLocationRelativeTo(this, relativeLocationAnchor);
+        }
         setVisible(true);
     }
 

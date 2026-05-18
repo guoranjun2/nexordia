@@ -54,6 +54,7 @@ import javax.swing.event.PopupMenuListener;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FlowLayout;
@@ -395,7 +396,6 @@ public class AIChatPanel extends JPanel {
             noProviderConfiguredText,
             this::updateUndoRedoButtonState);
         chatPromptRunner = new ChatPromptRunner(
-            this,
             aiTabIcon,
             stopIcon,
             cancelTooltipText,
@@ -661,7 +661,11 @@ public class AIChatPanel extends JPanel {
     }
 
     public void runPrompt(AiPrompt prompt) {
-        chatPromptRunner.runPrompt(prompt);
+        runPrompt(prompt, null);
+    }
+
+    public void runPrompt(AiPrompt prompt, Component owner) {
+        chatPromptRunner.runPrompt(prompt, owner);
     }
 
     private void submitPreparedVisibleMessage(String userMessage) {

@@ -1,7 +1,11 @@
 package org.freeplane.plugin.ai.prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -11,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import javax.swing.JPanel;
 import org.freeplane.plugin.ai.chat.AIChatPanel;
 import org.freeplane.plugin.ai.prompt.ui.AiPromptManagerDialog;
 import org.junit.Test;
@@ -73,6 +78,63 @@ public class AiPromptActionRegistryTest {
                 .isEqualTo("openrouter|openai/gpt-4.1-mini");
             assertThat(loaded.getDialogState().getDraft().getToolAvailabilitySelectionValue())
                 .isEqualTo("reading");
+        }
+        finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void runPrompt_withoutOwnerPassesPromptCopyAndNullOwnerToChatPanel() throws IOException {
+        Path tempDir = Files.createTempDirectory("ai-prompts");
+        try {
+            AIChatPanel aiChatPanel = mock(AIChatPanel.class);
+            Path path = tempDir.resolve(AiPromptStore.PROMPTS_FILE_NAME);
+            AiPromptActionRegistry registry = new AiPromptActionRegistry(
+                new AiPromptStore(new ObjectMapper(), path),
+                aiChatPanel,
+                () -> {
+                });
+            AiPrompt prompt = new AiPrompt("Rewrite", "Prompt", false);
+
+            registry.runPrompt(prompt);
+
+            verify(aiChatPanel).runPrompt(
+                argThat(copiedPrompt -> copiedPrompt != null
+                    && copiedPrompt != prompt
+                    && copiedPrompt.getName().equals("Rewrite")
+                    && copiedPrompt.getPrompt().equals("Prompt")
+                    && !copiedPrompt.isShowInChat()),
+                isNull());
+        }
+        finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
+    public void runPrompt_withOwnerPassesPromptCopyAndOwnerToChatPanel() throws IOException {
+        Path tempDir = Files.createTempDirectory("ai-prompts");
+        try {
+            AIChatPanel aiChatPanel = mock(AIChatPanel.class);
+            Path path = tempDir.resolve(AiPromptStore.PROMPTS_FILE_NAME);
+            AiPromptActionRegistry registry = new AiPromptActionRegistry(
+                new AiPromptStore(new ObjectMapper(), path),
+                aiChatPanel,
+                () -> {
+                });
+            AiPrompt prompt = new AiPrompt("Rewrite", "Prompt", false);
+            JPanel owner = new JPanel();
+
+            registry.runPrompt(prompt, owner);
+
+            verify(aiChatPanel).runPrompt(
+                argThat(copiedPrompt -> copiedPrompt != null
+                    && copiedPrompt != prompt
+                    && copiedPrompt.getName().equals("Rewrite")
+                    && copiedPrompt.getPrompt().equals("Prompt")
+                    && !copiedPrompt.isShowInChat()),
+                same(owner));
         }
         finally {
             deleteRecursively(tempDir);

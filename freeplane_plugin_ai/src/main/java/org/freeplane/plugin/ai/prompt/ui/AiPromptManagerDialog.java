@@ -253,7 +253,7 @@ public class AiPromptManagerDialog extends JDialog {
 
     private void sendPrompt() {
         updateDraftFromFields();
-        promptActionRegistry.runPrompt(editorState.getCurrentDraft());
+        promptActionRegistry.runPrompt(editorState.getCurrentDraft(), this);
     }
 
     private void requestClose() {

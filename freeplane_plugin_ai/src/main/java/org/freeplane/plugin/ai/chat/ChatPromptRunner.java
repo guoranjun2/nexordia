@@ -2,15 +2,16 @@ package org.freeplane.plugin.ai.chat;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.output.TokenUsage;
+import java.awt.Component;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.swing.Icon;
-import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.mode.Controller;
 import org.freeplane.plugin.ai.maps.AvailableMaps;
 import org.freeplane.plugin.ai.prompt.AiPrompt;
 import org.freeplane.plugin.ai.prompt.AiPromptRequestComposer;
@@ -29,7 +30,6 @@ class ChatPromptRunner {
                             ChatToolAvailability toolAvailabilityOverride);
     }
 
-    private final JComponent ownerComponent;
     private final Icon aiTabIcon;
     private final Icon stopIcon;
     private final String cancelTooltipText;
@@ -46,9 +46,9 @@ class ChatPromptRunner {
     private final VisiblePromptChatLauncher visiblePromptChatLauncher;
     private final HiddenPromptRequestRunner hiddenPromptRequestRunner;
     private AiPromptProgressDialog hiddenPromptProgressDialog;
+    private Component hiddenPromptOwnerComponent;
 
-    ChatPromptRunner(JComponent ownerComponent,
-                     Icon aiTabIcon,
+    ChatPromptRunner(Icon aiTabIcon,
                      Icon stopIcon,
                      String cancelTooltipText,
                      Runnable inputStateUpdater,
@@ -62,7 +62,6 @@ class ChatPromptRunner {
                      Function<String, String> configurationErrorMessageProvider,
                      BiConsumer<String, Boolean> userNotifier,
                      VisiblePromptChatLauncher visiblePromptChatLauncher) {
-        this.ownerComponent = ownerComponent;
         this.aiTabIcon = aiTabIcon;
         this.stopIcon = stopIcon;
         this.cancelTooltipText = cancelTooltipText;
@@ -109,7 +108,7 @@ class ChatPromptRunner {
         hiddenPromptRequestRunner.cancelActiveRequest();
     }
 
-    void runPrompt(AiPrompt prompt) {
+    void runPrompt(AiPrompt prompt, Component owner) {
         if (prompt == null) {
             return;
         }
@@ -165,6 +164,7 @@ class ChatPromptRunner {
             if (promptService == null) {
                 return;
             }
+            hiddenPromptOwnerComponent = owner;
             hiddenPromptRequestRunner.submit(prompt.getName(), promptService, preparedMessage);
         }
     }
@@ -221,9 +221,16 @@ class ChatPromptRunner {
     }
 
     private void showHiddenPromptProgressDialog(String promptName) {
-        closeHiddenPromptProgressDialog();
+        Component owner = hiddenPromptOwnerComponent != null ? hiddenPromptOwnerComponent : UITools.getCurrentRootComponent();
+        Component locationAnchor = hiddenPromptOwnerComponent == null
+            ? Controller.getCurrentController().getMapViewManager().getSelectedComponent()
+            : null;
+        if (hiddenPromptProgressDialog != null) {
+            hiddenPromptProgressDialog.closeDialog();
+        }
         hiddenPromptProgressDialog = new AiPromptProgressDialog(
-            ownerComponent,
+            owner,
+            locationAnchor,
             aiTabIcon,
             stopIcon,
             cancelTooltipText,
@@ -232,10 +239,10 @@ class ChatPromptRunner {
     }
 
     private void closeHiddenPromptProgressDialog() {
-        if (hiddenPromptProgressDialog == null) {
-            return;
+        if (hiddenPromptProgressDialog != null) {
+            hiddenPromptProgressDialog.closeDialog();
+            hiddenPromptProgressDialog = null;
         }
-        hiddenPromptProgressDialog.closeDialog();
-        hiddenPromptProgressDialog = null;
+        hiddenPromptOwnerComponent = null;
     }
 }

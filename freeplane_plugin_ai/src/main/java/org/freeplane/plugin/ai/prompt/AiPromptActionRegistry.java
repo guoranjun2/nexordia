@@ -79,8 +79,12 @@ public class AiPromptActionRegistry {
     }
 
     public void runPrompt(AiPrompt prompt) {
+        runPrompt(prompt, null);
+    }
+
+    public void runPrompt(AiPrompt prompt, Component owner) {
         if (prompt != null) {
-            aiChatPanel.runPrompt(prompt.copy());
+            aiChatPanel.runPrompt(prompt.copy(), owner);
         }
     }
 
