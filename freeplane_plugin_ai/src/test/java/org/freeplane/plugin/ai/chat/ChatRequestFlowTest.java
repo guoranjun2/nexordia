@@ -4,15 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.output.TokenUsage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import dev.langchain4j.model.output.TokenUsage;
-import org.junit.Test;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummary;
 import org.freeplane.plugin.ai.tools.utilities.ToolCaller;
+import org.junit.Test;
 
 public class ChatRequestFlowTest {
 
@@ -113,6 +115,24 @@ public class ChatRequestFlowTest {
     }
 
     @Test
+    public void restoreChatSnapshot_truncatesAssistantProfileMemoryThroughInternalAdapter() {
+        RecordingCallbacks callbacks = new RecordingCallbacks();
+        ChatRequestFlow uut = new ChatRequestFlow(callbacks, new ChatTokenUsageTracker(totals -> {}));
+        AssistantProfileChatMemory memory = AssistantProfileChatMemory.withMaxTokens(500);
+        memory.add(UserMessage.from("hello"));
+        memory.add(AiMessage.from("world"));
+        uut.updateChatMemory(memory);
+
+        uut.beginRequest("question");
+        memory.add(UserMessage.from("extra"));
+        uut.restoreChatSnapshot();
+
+        assertThat(memory.conversationMessageCount()).isEqualTo(2);
+        assertThat(callbacks.restoreCount).isEqualTo(1);
+        assertThat(callbacks.rebuildHistoryCount).isEqualTo(1);
+    }
+
+    @Test
     public void requestCompletionTriggersPostResponseEvictionWhenWindowAdvances() throws Exception {
         RecordingCallbacks callbacks = new RecordingCallbacks();
         ChatTokenUsageTracker tokenUsageTracker = spy(new ChatTokenUsageTracker(totals -> {}));
@@ -198,7 +218,6 @@ public class ChatRequestFlowTest {
         private int failureRecoveryCount;
         private String lastFailureUserMessage;
         private String lastFailureMessage;
-        private int evictOldestTurnCount;
         private int synchronizeTranscriptCount;
         private int rebuildHistoryCount;
         private int restoreCount;
@@ -240,15 +259,6 @@ public class ChatRequestFlowTest {
         }
 
         @Override
-        public int snapshotMemorySize() {
-            return 3;
-        }
-
-        @Override
-        public void truncateMemoryToSize(int size) {
-        }
-
-        @Override
         public void synchronizeTranscriptWithMemory() {
             synchronizeTranscriptCount++;
         }
@@ -256,12 +266,6 @@ public class ChatRequestFlowTest {
         @Override
         public void rebuildHistoryFromTranscript() {
             rebuildHistoryCount++;
-        }
-
-        @Override
-        public boolean evictOldestTurn() {
-            evictOldestTurnCount++;
-            return true;
         }
 
         @Override

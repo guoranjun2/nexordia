@@ -26,10 +26,10 @@ import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 
-public class AIModelSelectionControllerTest {
+public class ChatModelSelectorTest {
     @Test
     public void renderer_showsTextAfterFirstSlash_forSelectedValue() {
-        AIModelSelectionController uut = newController();
+        ChatModelSelector uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
         AIModelDescriptor descriptor = new AIModelDescriptor(
             "openrouter",
@@ -45,7 +45,7 @@ public class AIModelSelectionControllerTest {
 
     @Test
     public void renderer_showsDisplayName_forDropdownItems() {
-        AIModelSelectionController uut = newController();
+        ChatModelSelector uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
         AIModelDescriptor descriptor = new AIModelDescriptor(
             "openrouter",
@@ -61,7 +61,7 @@ public class AIModelSelectionControllerTest {
 
     @Test
     public void renderer_usesDisplayNameForPreferredSize_whenSelectedValueIsShortened() {
-        AIModelSelectionController uut = newController();
+        ChatModelSelector uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
         AIModelDescriptor descriptor = new AIModelDescriptor(
             "openrouter",
@@ -82,7 +82,7 @@ public class AIModelSelectionControllerTest {
 
     @Test
     public void renderer_showsFormattedDisplayName_forSelectedUnavailableValue() {
-        AIModelSelectionController uut = newController();
+        ChatModelSelector uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
         AIModelDescriptor descriptor;
         try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
@@ -100,7 +100,7 @@ public class AIModelSelectionControllerTest {
 
     @Test
     public void constructor_usesRegularComboboxSizing() {
-        AIModelSelectionController uut = newController();
+        ChatModelSelector uut = newController();
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
 
         assertThat(selector.getPrototypeDisplayValue()).isNull();
@@ -112,7 +112,7 @@ public class AIModelSelectionControllerTest {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         when(configuration.getStoredSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
         when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        ChatModelSelector uut = new ChatModelSelector(configuration, mock(AIModelCatalog.class));
 
         try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
             textUtils.when(() -> TextUtils.format(
@@ -140,7 +140,7 @@ public class AIModelSelectionControllerTest {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         when(configuration.getStoredSelectedModelValue()).thenReturn(null);
         when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        ChatModelSelector uut = new ChatModelSelector(configuration, mock(AIModelCatalog.class));
 
         try (MockedStatic<TextUtils> textUtils = mockStatic(TextUtils.class)) {
             textUtils.when(() -> TextUtils.format(
@@ -164,7 +164,7 @@ public class AIModelSelectionControllerTest {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         when(configuration.getStoredSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
         when(configuration.getSelectedModelValue()).thenReturn("openrouter|openai/gpt-4.1-mini");
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        ChatModelSelector uut = new ChatModelSelector(configuration, mock(AIModelCatalog.class));
         AIModelDescriptor availableDescriptor = new AIModelDescriptor(
             "gemini",
             "gemini-2.5-flash",
@@ -190,7 +190,7 @@ public class AIModelSelectionControllerTest {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         when(configuration.getStoredSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
         when(configuration.getSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, mock(AIModelCatalog.class));
+        ChatModelSelector uut = new ChatModelSelector(configuration, mock(AIModelCatalog.class));
         AIModelDescriptor geminiDescriptor = new AIModelDescriptor(
             "gemini",
             "gemini-2.5-flash",
@@ -218,7 +218,7 @@ public class AIModelSelectionControllerTest {
         when(configuration.getStoredSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
         when(configuration.getSelectedModelValue()).thenReturn("gemini|gemini-2.5-flash");
         AIModelCatalog modelCatalog = mock(AIModelCatalog.class);
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, modelCatalog);
+        ChatModelSelector uut = new ChatModelSelector(configuration, modelCatalog);
         @SuppressWarnings("unchecked")
         Consumer<AIModelDescriptor> listener = mock(Consumer.class);
         uut.setExplicitUserModelSelectionChangeListener(listener);
@@ -248,7 +248,7 @@ public class AIModelSelectionControllerTest {
     public void selectionChange_persistsProviderAndModelValue() {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         AIModelCatalog modelCatalog = mock(AIModelCatalog.class);
-        AIModelSelectionController uut = new AIModelSelectionController(configuration, modelCatalog);
+        ChatModelSelector uut = new ChatModelSelector(configuration, modelCatalog);
         JComboBox<AIModelDescriptor> selector = uut.getModelSelectionComboBox();
         AIModelDescriptor descriptor = new AIModelDescriptor(
             "openrouter",
@@ -263,10 +263,10 @@ public class AIModelSelectionControllerTest {
         verify(configuration, atLeastOnce()).setSelectedModelValue("openrouter|openai/gpt-4.1-mini");
     }
 
-    private AIModelSelectionController newController() {
+    private ChatModelSelector newController() {
         AIProviderConfiguration configuration = mock(AIProviderConfiguration.class);
         AIModelCatalog modelCatalog = mock(AIModelCatalog.class);
-        return new AIModelSelectionController(configuration, modelCatalog);
+        return new ChatModelSelector(configuration, modelCatalog);
     }
 
     private JLabel renderLabel(JComboBox<AIModelDescriptor> selector, AIModelDescriptor descriptor, int index) {

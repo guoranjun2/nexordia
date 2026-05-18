@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-class AIModelSelectionController {
+class ChatModelSelector {
     private final AIProviderConfiguration configuration;
     private final AIModelCatalog modelCatalog;
     private final JComboBox<AIModelDescriptor> modelSelectionComboBox;
@@ -28,7 +28,7 @@ class AIModelSelectionController {
     private Consumer<AIModelDescriptor> explicitUserModelSelectionChangeListener;
     private String displayedSelectionValueOverride;
 
-    AIModelSelectionController(AIProviderConfiguration configuration, AIModelCatalog modelCatalog) {
+    ChatModelSelector(AIProviderConfiguration configuration, AIModelCatalog modelCatalog) {
         this.configuration = configuration;
         this.modelCatalog = modelCatalog;
         this.modelSelectionComboBox = new JComboBox<>();

@@ -385,43 +385,47 @@ public class LiveChatController {
             liveChatSessionManager,
             transcriptStore,
             mapRootShortTextFormatter,
-            new ChatListDialog.ChatListHandler() {
-                @Override
-                public void switchTo(LiveChatSessionId sessionId) {
-                    switchToSession(sessionId);
-                }
-
-                @Override
-                public void close(LiveChatSessionId sessionId) {
-                    closeSession(sessionId);
-                }
-
-                @Override
-                public void deleteLiveSession(LiveChatSessionId sessionId) {
-                    deleteLiveSessionInternal(sessionId);
-                }
-
-                @Override
-                public void rename(LiveChatSessionId sessionId, String displayName) {
-                    liveChatSessionManager.rename(sessionId, displayName);
-                }
-
-                @Override
-                public void renameTranscript(ChatTranscriptId transcriptId, String displayName) {
-                    transcriptStore.rename(transcriptId, displayName);
-                }
-
-                @Override
-                public void startChatFromTranscript(ChatTranscriptId transcriptId) {
-                    startChatFromTranscript(transcriptId);
-                }
-
-                @Override
-                public void deleteTranscript(ChatTranscriptId transcriptId) {
-                    transcriptStore.delete(transcriptId);
-                }
-            }
+            createChatListHandler()
         );
+    }
+
+    ChatListDialog.ChatListHandler createChatListHandler() {
+        return new ChatListDialog.ChatListHandler() {
+            @Override
+            public void switchTo(LiveChatSessionId sessionId) {
+                switchToSession(sessionId);
+            }
+
+            @Override
+            public void close(LiveChatSessionId sessionId) {
+                closeSession(sessionId);
+            }
+
+            @Override
+            public void deleteLiveSession(LiveChatSessionId sessionId) {
+                deleteLiveSessionInternal(sessionId);
+            }
+
+            @Override
+            public void rename(LiveChatSessionId sessionId, String displayName) {
+                liveChatSessionManager.rename(sessionId, displayName);
+            }
+
+            @Override
+            public void renameTranscript(ChatTranscriptId transcriptId, String displayName) {
+                transcriptStore.rename(transcriptId, displayName);
+            }
+
+            @Override
+            public void startChatFromTranscript(ChatTranscriptId transcriptId) {
+                LiveChatController.this.startChatFromTranscript(transcriptId);
+            }
+
+            @Override
+            public void deleteTranscript(ChatTranscriptId transcriptId) {
+                transcriptStore.delete(transcriptId);
+            }
+        };
     }
 
     void startChatFromTranscript(ChatTranscriptId transcriptId) {

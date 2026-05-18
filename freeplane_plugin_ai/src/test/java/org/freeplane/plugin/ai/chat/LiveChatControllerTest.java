@@ -112,6 +112,33 @@ public class LiveChatControllerTest {
     }
 
     @Test
+    public void chatListHandler_startChatFromTranscript_delegatesToController() throws IOException {
+        Path tempDir = Files.createTempDirectory("live-chat-controller");
+        try {
+            ChatTranscriptStore store = newTestStore(tempDir);
+            ChatTranscriptRecord record = new ChatTranscriptRecord();
+            record.setDisplayName("Prompt: Rewrite");
+            record.setAssistantProfileEnabled(false);
+            record.setSelectedModelOverride("openrouter|openai/gpt-4.1-mini");
+            record.setToolAvailabilityOverride("disabled");
+            record.setEntries(java.util.Arrays.asList(
+                new ChatTranscriptEntry(ChatTranscriptRole.USER, "hello"),
+                new ChatTranscriptEntry(ChatTranscriptRole.ASSISTANT, "world")));
+            ChatTranscriptId transcriptId = store.save(record, null);
+            LiveChatController uut = newController(store);
+            uut.initialize(AssistantProfileChatMemory.withMaxTokens(500));
+
+            uut.createChatListHandler().startChatFromTranscript(transcriptId);
+
+            assertThat(uut.currentSessionUsesAssistantProfile()).isFalse();
+            assertThat(uut.currentSessionToolAvailabilityOverride()).isEqualTo(ChatToolAvailability.DISABLED);
+            assertThat(uut.currentSessionSelectedModelOverride()).isEqualTo("openrouter|openai/gpt-4.1-mini");
+        } finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+    @Test
     public void startChatFromTranscript_restoresNoToolOverrideWhenMetadataFieldIsPresentWithNull() throws IOException {
         Path tempDir = Files.createTempDirectory("live-chat-controller");
         try {

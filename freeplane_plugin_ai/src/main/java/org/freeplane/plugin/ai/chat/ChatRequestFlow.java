@@ -14,11 +14,8 @@ class ChatRequestFlow {
         void onRequestFailed(String userText, String errorMessage);
         void onAssistantResponse(String text);
         void onAssistantError(String text);
-        int snapshotMemorySize();
-        void truncateMemoryToSize(int size);
         void synchronizeTranscriptWithMemory();
         void rebuildHistoryFromTranscript();
-        boolean evictOldestTurn();
         void onPostResponseEviction();
         void refreshTokenCounters();
         boolean isToolCallHistoryVisible();
@@ -28,7 +25,8 @@ class ChatRequestFlow {
     private final RequestCallbacks callbacks;
     private final ChatRequestCancellation requestCancellation;
     private final ChatTokenUsageTracker tokenUsageTracker;
-    private AssistantProfileChatMemory chatMemory;
+    private AssistantProfileChatMemory assistantProfileChatMemory;
+    private SingleTurnChatMemory singleTurnChatMemory = SingleTurnChatMemoryFactory.forMemory(null);
     private SwingWorker<String, Void> activeWorker;
     private boolean requestInProgress;
     private int activeRequestId;
@@ -55,16 +53,19 @@ class ChatRequestFlow {
         callbacks.refreshTokenCounters();
     }
 
-    void updateChatMemory(AssistantProfileChatMemory chatMemory) {
-        this.chatMemory = chatMemory;
+    void updateChatMemory(dev.langchain4j.memory.ChatMemory chatMemory) {
+        assistantProfileChatMemory = chatMemory instanceof AssistantProfileChatMemory
+            ? (AssistantProfileChatMemory) chatMemory
+            : null;
+        singleTurnChatMemory = SingleTurnChatMemoryFactory.forMemory(chatMemory);
     }
 
     void onToolCallSummary(ToolCallSummary summary) {
         if (summary == null || !callbacks.isToolCallHistoryVisible()) {
             return;
         }
-        if (chatMemory != null) {
-            chatMemory.addToolCallSummary(summary.getSummaryText(), summary.getToolCaller());
+        if (assistantProfileChatMemory != null) {
+            assistantProfileChatMemory.addToolCallSummary(summary.getSummaryText(), summary.getToolCaller());
         }
         callbacks.onToolSummaryAppended(
             ChatMemoryRenderEntry.forToolSummary(summary.getSummaryText(), summary.getToolCaller()));
@@ -81,7 +82,7 @@ class ChatRequestFlow {
         requestCancellation.reset();
         activeRequestId++;
         snapshotUserText = userMessage;
-        snapshotChatSize = callbacks.snapshotMemorySize();
+        snapshotChatSize = singleTurnChatMemory.snapshotSize();
         requestFailureMessage = null;
         requestInProgress = true;
         callbacks.onRequestStarted();
@@ -92,7 +93,7 @@ class ChatRequestFlow {
     }
 
     void captureChatSnapshot() {
-        snapshotChatSize = callbacks.snapshotMemorySize();
+        snapshotChatSize = singleTurnChatMemory.snapshotSize();
     }
 
     void cancelActiveRequest() {
@@ -109,7 +110,7 @@ class ChatRequestFlow {
     }
 
     void restoreChatSnapshot() {
-        callbacks.truncateMemoryToSize(snapshotChatSize);
+        singleTurnChatMemory.truncateTo(snapshotChatSize);
         callbacks.synchronizeTranscriptWithMemory();
         callbacks.rebuildHistoryFromTranscript();
         activeWorker = null;
@@ -185,7 +186,8 @@ class ChatRequestFlow {
     }
 
     private void applyPostResponseCompaction() {
-        boolean evicted = chatMemory != null && chatMemory.onResponseTokenUsage(responseUsage);
+        boolean evicted = assistantProfileChatMemory != null
+            && assistantProfileChatMemory.onResponseTokenUsage(responseUsage);
         if (evicted) {
             callbacks.onPostResponseEviction();
         }

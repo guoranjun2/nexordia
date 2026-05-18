@@ -27,8 +27,6 @@ import org.freeplane.plugin.ai.model.AIModelSelection;
 import org.freeplane.plugin.ai.model.AIProviderConfiguration;
 import org.freeplane.plugin.ai.prompt.AiPrompt;
 import org.freeplane.plugin.ai.prompt.AiPromptRequestComposer;
-import org.freeplane.plugin.ai.prompt.HiddenPromptRequestRunner;
-import org.freeplane.plugin.ai.prompt.ui.AiPromptProgressDialog;
 import org.freeplane.plugin.ai.tools.AIToolSetBuilder;
 import org.freeplane.plugin.ai.tools.utilities.ToolCallSummaryHandler;
 
@@ -37,18 +35,15 @@ import dev.langchain4j.memory.ChatMemory;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.Icon;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
@@ -71,7 +66,6 @@ import java.awt.event.KeyEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 
 public class AIChatPanel extends JPanel {
@@ -104,24 +98,22 @@ public class AIChatPanel extends JPanel {
     private final AIProviderConfiguration configuration;
     private final ChatToolAvailabilitySettings chatToolAvailabilitySettings;
     private final ChatDisplaySettings chatDisplaySettings;
-    private final AIModelSelectionController modelSelectionController;
-    private final EnumMap<ChatToolAvailability, JRadioButtonMenuItem> toolAvailabilityMenuItems =
-        new EnumMap<ChatToolAvailability, JRadioButtonMenuItem>(ChatToolAvailability.class);
+    private final ChatModelSelector modelSelectionController;
+    private final PromptToolSelectionResolver promptToolSelectionResolver;
+    private final ChatToolAvailabilityMenu chatToolAvailabilityMenu;
+    private final ChatOutputView chatOutputView;
+    private final ChatInputControls chatInputControls;
+    private final ChatPromptRunner chatPromptRunner;
     private ChatMemory chatMemory;
     private final ChatTokenUsageTracker chatTokenUsageTracker;
     private final JLabel tokenUsageLabel;
-    private final ChatMessageRenderer messageRenderer;
     private final ChatMessageHistory messageHistory;
-    private final ChatMemoryHistoryRenderer chatMemoryHistoryRenderer;
     private final AvailableMaps availableMaps;
     private final DateTimeFormatter chatNameFormatter;
     private final LiveChatController liveChatController;
     private final ChatRequestFlow chatRequestFlow;
     private final AssistantProfileSelectionSync assistantProfileSelectionSync;
     private final AssistantProfilePaneBuilder assistantProfilePaneBuilder;
-    private final AiPromptRequestComposer aiPromptRequestComposer;
-    private final HiddenPromptRequestRunner hiddenPromptRequestRunner;
-    private AiPromptProgressDialog hiddenPromptProgressDialog;
     private boolean currentSessionUsesAssistantProfile = true;
 
     public AIChatPanel() {
@@ -174,30 +166,31 @@ public class AIChatPanel extends JPanel {
         redoButton.setMinimumSize(sideButtonSize);
         redoButton.setMaximumSize(sideButtonSize);
         chatToolAvailabilitySettings = new ChatToolAvailabilitySettings();
-        menuPopup = buildMenuPopup();
-        messageHistoryPane.setComponentPopupMenu(menuPopup);
         configuration = new AIProviderConfiguration();
         chatDisplaySettings = new ChatDisplaySettings();
-        modelSelectionController = new AIModelSelectionController(configuration, new AIModelCatalog(configuration));
+        modelSelectionController = new ChatModelSelector(configuration, new AIModelCatalog(configuration));
         modelSelectionController.setModelSelectionChangeListener(modelDescriptor -> chatService = null);
         AssistantProfileSelectionModel assistantProfileSelectionModel = new AssistantProfileSelectionModel();
         chatMemory = createChatMemory();
         tokenUsageLabel = new JLabel();
         tokenUsageLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
         chatTokenUsageTracker = new ChatTokenUsageTracker(this::updateTokenUsageLabel);
-        messageRenderer = new ChatMessageRenderer();
-        chatMemoryHistoryRenderer = new ChatMemoryHistoryRenderer(messageHistory, messageRenderer);
         availableMaps = new AvailableMaps(new ControllerMapModelProvider());
-        aiPromptRequestComposer = new AiPromptRequestComposer(availableMaps, requireTextController());
+        AiPromptRequestComposer aiPromptRequestComposer = new AiPromptRequestComposer(availableMaps, requireTextController());
         chatNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         liveChatController = new LiveChatController(
             this,
             availableMaps,
             requireTextController(),
             chatNameFormatter,
-            this::activateSession,
+            this::syncUiToActivatedSession,
             chatTokenUsageTracker::snapshotState
         );
+        promptToolSelectionResolver = new PromptToolSelectionResolver(chatToolAvailabilitySettings);
+        chatToolAvailabilityMenu = new ChatToolAvailabilityMenu(
+            this::currentEffectiveToolAvailability,
+            this::applyUserSelectedToolAvailability);
+        chatOutputView = new ChatOutputView(messageHistory, liveChatController, tokenUsageLabel);
         modelSelectionController.setExplicitUserModelSelectionChangeListener(modelDescriptor -> {
             liveChatController.clearCurrentSessionSelectedModelOverride();
             chatService = null;
@@ -211,33 +204,13 @@ public class AIChatPanel extends JPanel {
             assistantProfileSelectionModel,
             assistantProfileSelectionSync,
             assistantProfileIcon);
-        hiddenPromptRequestRunner = new HiddenPromptRequestRunner(new HiddenPromptRequestRunner.Callbacks() {
-            @Override
-            public void onRequestStarted(String promptName) {
-                SwingUtilities.invokeLater(() -> {
-                    updateInputState();
-                    showHiddenPromptProgressDialog(promptName);
-                });
-            }
-
-            @Override
-            public void onRequestFinished(String promptName) {
-                SwingUtilities.invokeLater(() -> {
-                    closeHiddenPromptProgressDialog();
-                    updateInputState();
-                });
-            }
-
-            @Override
-            public void onRequestFailed(String promptName, String errorMessage) {
-                UITools.errorMessage(promptFailureMessage(promptName, errorMessage));
-            }
-        });
+        menuPopup = buildMenuPopup();
+        messageHistoryPane.setComponentPopupMenu(menuPopup);
         chatRequestFlow = new ChatRequestFlow(new ChatRequestFlow.RequestCallbacks() {
             @Override
             public void onRequestStarted() {
                 inputArea.setEditable(false);
-                setSendButtonStopState();
+                chatInputControls.setRequestActiveState();
                 updateUndoRedoButtonState();
             }
 
@@ -260,22 +233,12 @@ public class AIChatPanel extends JPanel {
 
             @Override
             public void onAssistantResponse(String text) {
-                appendChatMessage(text, ChatMessageCategory.ASSISTANT);
+                appendAssistantMessage(text);
                 refreshTokenCounters();
             }
 
             @Override
             public void onAssistantError(String text) {
-            }
-
-            @Override
-            public int snapshotMemorySize() {
-                return getMemorySize();
-            }
-
-            @Override
-            public void truncateMemoryToSize(int size) {
-                AIChatPanel.this.truncateMemoryToSize(size);
             }
 
             @Override
@@ -286,15 +249,6 @@ public class AIChatPanel extends JPanel {
             @Override
             public void rebuildHistoryFromTranscript() {
                 AIChatPanel.this.rebuildHistoryFromMemory();
-            }
-
-            @Override
-            public boolean evictOldestTurn() {
-                AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-                if (memory == null || !memory.evictOldestTurn()) {
-                    return false;
-                }
-                return true;
             }
 
             @Override
@@ -319,9 +273,7 @@ public class AIChatPanel extends JPanel {
                 AIChatPanel.this.appendHistoryEntry(entry);
             }
         }, chatTokenUsageTracker);
-        chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
-        liveChatController.initialize(chatMemory);
-        assistantProfilePaneBuilder.initialize();
+        chatRequestFlow.updateChatMemory(chatMemory);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.add(new JScrollPane(inputArea), BorderLayout.CENTER);
@@ -431,6 +383,35 @@ public class AIChatPanel extends JPanel {
                 redoLastTurn();
             }
         });
+        chatInputControls = new ChatInputControls(
+            inputArea,
+            sendButton,
+            sendIcon,
+            stopIcon,
+            preferencesIcon,
+            sendTooltipText,
+            cancelTooltipText,
+            preferencesTooltipText,
+            noProviderConfiguredText,
+            this::updateUndoRedoButtonState);
+        chatPromptRunner = new ChatPromptRunner(
+            this,
+            aiTabIcon,
+            stopIcon,
+            cancelTooltipText,
+            this::updateInputState,
+            availableMaps,
+            aiPromptRequestComposer,
+            promptToolSelectionResolver,
+            liveChatController,
+            chatRequestFlow,
+            chatTokenUsageTracker,
+            this::createChatMemory,
+            this::configurationErrorMessage,
+            this::notifyUser,
+            this::openPromptChat);
+        assistantProfilePaneBuilder.initialize();
+        liveChatController.initialize(chatMemory);
         modelSelectionController.loadInitialModelSelectionList();
         registerProviderConfigurationListener();
         registerModelSelectionRefreshListener();
@@ -517,27 +498,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void addChatToolAvailabilityMenu(JPopupMenu menuPopup) {
-        JMenu toolAvailabilityMenu = TranslatedElementFactory.createMenu(
-            "OptionPanel." + ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY);
-        ButtonGroup buttonGroup = new ButtonGroup();
-        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.EDITING);
-        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.READING);
-        addToolAvailabilityMenuItem(toolAvailabilityMenu, buttonGroup, ChatToolAvailability.DISABLED);
-        menuPopup.add(toolAvailabilityMenu);
-    }
-
-    private void addToolAvailabilityMenuItem(JMenu menu, ButtonGroup buttonGroup,
-                                             ChatToolAvailability toolAvailability) {
-        String labelKey = "OptionPanel." + ChatToolAvailabilitySettings.CHAT_TOOL_AVAILABILITY_PROPERTY + "."
-            + toolAvailability.getPreferenceValue();
-        JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem();
-        buttonGroup.add(menuItem);
-        LabelAndMnemonicSetter.setLabelAndMnemonic(menuItem, TextUtils.getRawText(labelKey));
-        TranslatedElement.TEXT.setKey(menuItem, labelKey);
-        TranslatedElementFactory.createTooltip(menuItem, labelKey + ".tooltip");
-        menuItem.addActionListener(event -> applyUserSelectedToolAvailability(toolAvailability));
-        toolAvailabilityMenuItems.put(toolAvailability, menuItem);
-        menu.add(menuItem);
+        chatToolAvailabilityMenu.addTo(menuPopup);
     }
 
     private void addAiEditsMenuItems(JPopupMenu menuPopup) {
@@ -674,7 +635,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void sendMessage() {
-        if (hiddenPromptRequestRunner.isRequestActive()) {
+        if (chatPromptRunner.isRequestActive()) {
             notifyUser(TextUtils.getText("ai_prompt_request_active"), false);
             return;
         }
@@ -687,7 +648,7 @@ public class AIChatPanel extends JPanel {
             assistantProfileSelectionSync.maybeInjectBeforeUserMessage();
         }
         chatRequestFlow.captureChatSnapshot();
-        appendChatMessage(userMessage, ChatMessageCategory.USER);
+        appendUserMessage(userMessage);
         chatRequestFlow.refreshTokenCounters();
         liveChatController.updateSessionNameFromFirstUserMessage(userMessage);
         inputArea.setText("");
@@ -700,62 +661,7 @@ public class AIChatPanel extends JPanel {
     }
 
     public void runPrompt(AiPrompt prompt) {
-        if (prompt == null) {
-            return;
-        }
-        if (isAnyAiRequestActive()) {
-            notifyUser(TextUtils.getText("ai_prompt_request_active"), false);
-            return;
-        }
-        final String preparedMessage;
-        try {
-            preparedMessage = aiPromptRequestComposer.compose(prompt);
-        } catch (RuntimeException error) {
-            notifyUser(error.getMessage(), true);
-            return;
-        }
-        String selectedModelOverride = normalizeSelectionValue(prompt.getModelSelectionValue());
-        String toolAvailabilitySelectionValue = normalizeSelectionValue(prompt.getToolAvailabilitySelectionValue());
-        ChatToolAvailability resolvedToolAvailability = resolvePromptToolAvailability(toolAvailabilitySelectionValue);
-        ChatToolAvailability toolAvailabilityOverride = promptToolAvailabilityOverride(toolAvailabilitySelectionValue);
-        ChatMemory promptChatMemory = createChatMemory();
-        if (prompt.isShowInChat()) {
-            AIChatService promptService = createPromptChatService(
-                promptChatMemory,
-                liveChatController.mapAccessListener(),
-                chatRequestFlow::onToolCallSummary,
-                chatRequestFlow.cancellationSupplier(),
-                chatRequestFlow::onProviderUsage,
-                chatTokenUsageTracker,
-                selectedModelOverride,
-                resolvedToolAvailability);
-            if (promptService == null) {
-                return;
-            }
-            liveChatController.startNewPromptChat(
-                promptChatMemory,
-                promptSessionDisplayName(prompt.getName()),
-                selectedModelOverride,
-                toolAvailabilityOverride);
-            chatService = promptService;
-            showChatTab();
-            submitPreparedVisibleMessage(preparedMessage);
-        } else {
-            AIChatService promptService = createPromptChatService(
-                promptChatMemory,
-                null,
-                null,
-                hiddenPromptRequestRunner.cancellationSupplier(),
-                null,
-                new ChatTokenUsageTracker(totals -> {
-                }),
-                selectedModelOverride,
-                resolvedToolAvailability);
-            if (promptService == null) {
-                return;
-            }
-            hiddenPromptRequestRunner.submit(prompt.getName(), promptService, preparedMessage);
-        }
+        chatPromptRunner.runPrompt(prompt);
     }
 
     private void submitPreparedVisibleMessage(String userMessage) {
@@ -764,10 +670,26 @@ public class AIChatPanel extends JPanel {
         }
         chatRequestFlow.beginRequest(userMessage);
         chatRequestFlow.captureChatSnapshot();
-        appendChatMessage(userMessage, ChatMessageCategory.USER);
+        appendUserMessage(userMessage);
         chatRequestFlow.refreshTokenCounters();
         inputArea.setText("");
         chatRequestFlow.submitRequest(chatService);
+    }
+
+    private void openPromptChat(ChatMemory promptChatMemory,
+                                AIChatService promptService,
+                                String preparedMessage,
+                                String promptDisplayName,
+                                String selectedModelOverride,
+                                ChatToolAvailability toolAvailabilityOverride) {
+        liveChatController.startNewPromptChat(
+            promptChatMemory,
+            promptDisplayName,
+            selectedModelOverride,
+            toolAvailabilityOverride);
+        chatService = promptService;
+        showChatTab();
+        submitPreparedVisibleMessage(preparedMessage);
     }
 
     private boolean isRequestActive() {
@@ -775,7 +697,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private boolean isAnyAiRequestActive() {
-        return chatRequestFlow.isRequestActive() || hiddenPromptRequestRunner.isRequestActive();
+        return chatRequestFlow.isRequestActive() || chatPromptRunner.isRequestActive();
     }
 
     private void cancelActiveRequest() {
@@ -789,40 +711,11 @@ public class AIChatPanel extends JPanel {
         return null;
     }
 
-    private void setSendButtonStopState() {
-        sendButton.setText(null);
-        sendButton.setIcon(stopIcon);
-        sendButton.setToolTipText(cancelTooltipText);
-    }
-
-    private void setSendButtonSendState() {
-        sendButton.setText(null);
-        sendButton.setIcon(sendIcon);
-        sendButton.setToolTipText(sendTooltipText);
-    }
-
-    private void setSendButtonPreferencesState() {
-        sendButton.setText(null);
-        sendButton.setIcon(preferencesIcon);
-        sendButton.setToolTipText(preferencesTooltipText);
-    }
-
     private void updateInputState() {
-        if (isRequestActive()) {
-            updateUndoRedoButtonState();
-            return;
-        }
-        if (hiddenPromptRequestRunner.isRequestActive()) {
-            setHiddenPromptRunState();
-            updateUndoRedoButtonState();
-            return;
-        }
-        if (isProviderConfigured()) {
-            setProviderReadyState();
-        } else {
-            setNoProviderState();
-        }
-        updateUndoRedoButtonState();
+        chatInputControls.update(
+            isRequestActive(),
+            chatPromptRunner.isRequestActive(),
+            isProviderConfigured());
     }
 
     private void configureEmptyHistoryFocusTransfer() {
@@ -837,28 +730,6 @@ public class AIChatPanel extends JPanel {
         });
     }
 
-    private void setProviderReadyState() {
-        inputArea.setEditable(true);
-        sendButton.setEnabled(true);
-        if (noProviderConfiguredText != null && noProviderConfiguredText.equals(inputArea.getText())) {
-            inputArea.setText("");
-        }
-        setSendButtonSendState();
-    }
-
-    private void setNoProviderState() {
-        inputArea.setEditable(false);
-        sendButton.setEnabled(true);
-        inputArea.setText(noProviderConfiguredText);
-        inputArea.setCaretPosition(0);
-        setSendButtonPreferencesState();
-    }
-
-    private void setHiddenPromptRunState() {
-        inputArea.setEditable(false);
-        sendButton.setEnabled(false);
-    }
-
     private boolean isProviderConfigured() {
         return isNonEmptyText(configuration.getOpenRouterKey())
             || isNonEmptyText(configuration.getGeminiKey())
@@ -867,20 +738,6 @@ public class AIChatPanel extends JPanel {
 
     private boolean isNonEmptyText(String value) {
         return value != null && !value.trim().isEmpty();
-    }
-
-    private ChatToolAvailability resolvePromptToolAvailability(String toolAvailabilitySelectionValue) {
-        String normalizedSelectionValue = normalizeSelectionValue(toolAvailabilitySelectionValue);
-        return normalizedSelectionValue == null
-            ? chatToolAvailabilitySettings.getToolAvailability()
-            : ChatToolAvailability.fromPreferenceValue(normalizedSelectionValue);
-    }
-
-    private ChatToolAvailability promptToolAvailabilityOverride(String toolAvailabilitySelectionValue) {
-        String normalizedSelectionValue = normalizeSelectionValue(toolAvailabilitySelectionValue);
-        return normalizedSelectionValue == null
-            ? null
-            : ChatToolAvailability.fromPreferenceValue(normalizedSelectionValue);
     }
 
     private ChatToolAvailability currentEffectiveToolAvailability() {
@@ -902,21 +759,7 @@ public class AIChatPanel extends JPanel {
     }
 
     private void updateToolAvailabilityMenuSelection() {
-        ChatToolAvailability effectiveToolAvailability = currentEffectiveToolAvailability();
-        for (ChatToolAvailability toolAvailability : ChatToolAvailability.values()) {
-            JRadioButtonMenuItem menuItem = toolAvailabilityMenuItems.get(toolAvailability);
-            if (menuItem != null) {
-                menuItem.setSelected(toolAvailability == effectiveToolAvailability);
-            }
-        }
-    }
-
-    private String normalizeSelectionValue(String selectionValue) {
-        if (selectionValue == null) {
-            return null;
-        }
-        String normalized = selectionValue.trim();
-        return normalized.isEmpty() ? null : normalized;
+        chatToolAvailabilityMenu.refreshSelection();
     }
 
     private void ensureChatService() {
@@ -926,7 +769,7 @@ public class AIChatPanel extends JPanel {
         String selectedModelOverride = liveChatController.currentSessionSelectedModelOverride();
         String configurationError = configurationErrorMessage(selectedModelOverride);
         if (configurationError != null) {
-            appendChatMessage(configurationError, ChatMessageCategory.ASSISTANT);
+            appendAssistantMessage(configurationError);
             return;
         }
         ChatToolAvailability toolAvailabilityOverride = liveChatController.currentSessionToolAvailabilityOverride();
@@ -943,33 +786,6 @@ public class AIChatPanel extends JPanel {
             toolAvailabilityOverride == null
                 ? null
                 : () -> toolAvailabilityOverride,
-            selectedModelOverride);
-    }
-
-    private AIChatService createPromptChatService(ChatMemory promptChatMemory,
-                                                  AvailableMaps.MapAccessListener mapAccessListener,
-                                                  ToolCallSummaryHandler toolCallSummaryHandler,
-                                                  java.util.function.Supplier<Boolean> cancellationSupplier,
-                                                  java.util.function.Consumer<dev.langchain4j.model.output.TokenUsage> tokenUsageConsumer,
-                                                  ChatTokenUsageTracker tokenUsageTracker,
-                                                  String selectedModelOverride,
-                                                  ChatToolAvailability toolAvailability) {
-        String configurationError = configurationErrorMessage(selectedModelOverride);
-        if (configurationError != null) {
-            notifyUser(configurationError, true);
-            return null;
-        }
-        return AIChatServiceFactory.createService(new AIToolSetBuilder()
-                .toolCallSummaryHandler(toolCallSummaryHandler)
-                .availableMaps(availableMaps)
-                .mapAccessListener(mapAccessListener)
-                .build(),
-            promptChatMemory,
-            tokenUsageTracker,
-            toolCallSummaryHandler,
-            cancellationSupplier,
-            tokenUsageConsumer,
-            () -> toolAvailability,
             selectedModelOverride);
     }
 
@@ -1000,64 +816,20 @@ public class AIChatPanel extends JPanel {
         return null;
     }
 
-    private void appendChatMessage(String text, ChatMessageCategory category) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            appendChatMessageInternal(text, category);
-        } else {
-            SwingUtilities.invokeLater(() -> appendChatMessageInternal(text, category));
-        }
+    private void appendUserMessage(String text) {
+        chatOutputView.appendUserMessage(text);
     }
 
-    private void appendChatMessageInternal(String text, ChatMessageCategory category) {
-        if (text == null || category == null) {
-            return;
-        }
-        String messageText = messageRenderer.renderMessage(text, category == ChatMessageCategory.ASSISTANT);
-        messageHistory.appendMessage(text, messageText, category.getStyleClassName());
-        if (category == ChatMessageCategory.USER) {
-            liveChatController.recordUserMessage(text);
-        } else if (category == ChatMessageCategory.ASSISTANT) {
-            liveChatController.recordAssistantMessage(text);
-        }
+    private void appendAssistantMessage(String text) {
+        chatOutputView.appendAssistantMessage(text);
     }
 
     private void appendProfileMessage(String profileName) {
-        String normalizedName = profileName == null ? "" : profileName.trim();
-        String messageText = normalizedName.isEmpty()
-            ? TextUtils.getText("ai_chat_profile_label")
-            : TextUtils.format("ai_chat_profile_message", normalizedName);
-        appendChatMessage(messageText, ChatMessageCategory.PROFILE);
+        chatOutputView.appendProfileMessage(profileName);
     }
 
     private void appendFailureMessages(String userText, String errorMessage) {
-        String normalizedUserMessage = userText == null ? "" : userText.trim();
-        if (!normalizedUserMessage.isEmpty()) {
-            appendTransientMessage(
-                normalizedUserMessage,
-                ChatMessageCategory.SYSTEM,
-                false);
-        }
-        String normalizedErrorMessage = errorMessage == null ? "" : errorMessage.trim();
-        String errorNotice = normalizedErrorMessage.isEmpty()
-            ? "Request failed. Check model availability, account balance, or provider settings."
-            : "Request failed: " + normalizedErrorMessage;
-        appendFailureNotice(errorNotice);
-    }
-
-    private void appendTransientMessage(String sourceText, ChatMessageCategory category, boolean renderAsAssistant) {
-        if (sourceText == null || category == null) {
-            return;
-        }
-        String renderedText = messageRenderer.renderMessage(sourceText, renderAsAssistant);
-        messageHistory.appendMessage(sourceText, renderedText, category.getStyleClassName());
-    }
-
-    private void appendFailureNotice(String sourceText) {
-        if (sourceText == null) {
-            return;
-        }
-        String renderedText = messageRenderer.renderFailureMessage(sourceText);
-        messageHistory.appendMessage(sourceText, renderedText, ChatMessageCategory.ERROR.getStyleClassName());
+        chatOutputView.appendFailureMessages(userText, errorMessage);
     }
 
     private void notifyUser(String message, boolean error) {
@@ -1074,45 +846,6 @@ public class AIChatPanel extends JPanel {
         } else {
             UITools.informationMessage(message);
         }
-    }
-
-    private String promptFailureMessage(String promptName, String errorMessage) {
-        String safePromptName = promptName == null ? "" : promptName.trim();
-        String safeErrorMessage = errorMessage == null ? "" : errorMessage.trim();
-        return TextUtils.format("ai_prompt_hidden_failed",
-            safePromptName,
-            safeErrorMessage.isEmpty() ? "Unknown error" : safeErrorMessage);
-    }
-
-    private String promptSessionDisplayName(String promptName) {
-        String safePromptName = promptName == null ? "" : promptName.trim();
-        if (safePromptName.isEmpty()) {
-            safePromptName = TextUtils.getText("ai_prompt_untitled");
-        }
-        return TextUtils.getText("ai_prompt_session_prefix") + safePromptName;
-    }
-
-    private void showHiddenPromptProgressDialog(String promptName) {
-        closeHiddenPromptProgressDialog();
-        hiddenPromptProgressDialog = new AiPromptProgressDialog(
-            this,
-            aiTabIcon,
-            stopIcon,
-            cancelTooltipText,
-            this::cancelHiddenPromptRequest);
-        hiddenPromptProgressDialog.showPrompt(promptName);
-    }
-
-    private void closeHiddenPromptProgressDialog() {
-        if (hiddenPromptProgressDialog == null) {
-            return;
-        }
-        hiddenPromptProgressDialog.closeDialog();
-        hiddenPromptProgressDialog = null;
-    }
-
-    private void cancelHiddenPromptRequest() {
-        hiddenPromptRequestRunner.cancelActiveRequest();
     }
 
     private void showChatTab() {
@@ -1135,13 +868,10 @@ public class AIChatPanel extends JPanel {
     }
 
     private void updateTokenUsageLabel(ChatUsageTotals totals) {
-        SwingUtilities.invokeLater(() -> {
-            tokenUsageLabel.setVisible(totals.isVisible());
-            tokenUsageLabel.setText(totals.formatStatusLine());
-        });
+        chatOutputView.updateTokenUsageLabel(totals);
     }
 
-    private void activateSession(ChatMemory sessionChatMemory, boolean fromTranscriptRestore) {
+    private void syncUiToActivatedSession(ChatMemory sessionChatMemory, boolean fromTranscriptRestore) {
         chatMemory = sessionChatMemory;
         chatService = null;
         currentSessionUsesAssistantProfile = liveChatController.currentSessionUsesAssistantProfile();
@@ -1149,7 +879,7 @@ public class AIChatPanel extends JPanel {
             liveChatController.currentSessionSelectedModelOverride());
         updateToolAvailabilityMenuSelection();
         chatTokenUsageTracker.restoreState(liveChatController.getCurrentTokenUsageState());
-        chatRequestFlow.updateChatMemory(activeAssistantProfileChatMemory());
+        chatRequestFlow.updateChatMemory(chatMemory);
         assistantProfileSelectionSync.setChatMemory(chatMemory);
         assistantProfilePaneBuilder.setSelectionEnabled(currentSessionUsesAssistantProfile);
         if (currentSessionUsesAssistantProfile) {
@@ -1204,50 +934,12 @@ public class AIChatPanel extends JPanel {
         updateInputState();
     }
 
-    private int getMemorySize() {
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (memory != null) {
-            return memory.conversationMessageCount();
-        }
-        if (chatMemory == null) {
-            return 0;
-        }
-        return chatMemory.messages().size();
-    }
-
-    private void truncateMemoryToSize(int size) {
-        AssistantProfileChatMemory memory = activeAssistantProfileChatMemory();
-        if (memory != null) {
-            memory.truncateConversationMessagesTo(size);
-            return;
-        }
-        if (chatMemory == null) {
-            return;
-        }
-        List<ChatMessage> current = chatMemory.messages();
-        int targetSize = Math.max(0, Math.min(size, current.size()));
-        if (targetSize == current.size()) {
-            return;
-        }
-        chatMemory.clear();
-        for (int index = 0; index < targetSize; index++) {
-            ChatMessage message = current.get(index);
-            if (message != null) {
-                chatMemory.add(message);
-            }
-        }
-    }
-
     private void rebuildHistoryFromMemory() {
-        chatMemoryHistoryRenderer.rebuildFromMessages(historyMessages());
+        chatOutputView.rebuildHistory(historyMessages());
     }
 
     private void appendHistoryEntry(ChatMemoryRenderEntry entry) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            chatMemoryHistoryRenderer.appendEntry(entry);
-        } else {
-            SwingUtilities.invokeLater(() -> chatMemoryHistoryRenderer.appendEntry(entry));
-        }
+        chatOutputView.appendHistoryEntry(entry);
     }
 
     private List<ChatMemoryRenderEntry> historyMessages() {
@@ -1312,26 +1004,6 @@ public class AIChatPanel extends JPanel {
             throw new IllegalStateException("Text controller is not available.");
         }
         return textController;
-    }
-
-    private enum ChatMessageCategory {
-        USER("message-user"),
-        ASSISTANT("message-assistant"),
-        TOOL_CALL("message-tool"),
-        MCP_CALL("message-mcp-call"),
-        PROFILE("message-profile"),
-        ERROR("message-error"),
-        SYSTEM("message-system");
-
-        private final String styleClassName;
-
-        ChatMessageCategory(String styleClassName) {
-            this.styleClassName = styleClassName;
-        }
-
-        String getStyleClassName() {
-            return styleClassName;
-        }
     }
 
 }

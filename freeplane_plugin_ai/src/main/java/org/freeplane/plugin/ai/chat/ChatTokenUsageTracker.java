@@ -20,7 +20,6 @@ public class ChatTokenUsageTracker {
 
     public ChatTokenUsageTracker(Consumer<ChatUsageTotals> totalsConsumer) {
         this.totalsConsumer = Objects.requireNonNull(totalsConsumer, "totalsConsumer");
-        publishTotals(ChatUsageTotals.hidden());
     }
 
     public synchronized void setCounterMode(ChatTokenCounterMode counterMode) {
