@@ -4,7 +4,6 @@ import javax.swing.SizeRequirements;
 import javax.swing.text.Element;
 import javax.swing.text.View;
 import javax.swing.text.ViewFactory;
-import javax.swing.text.html.ImageView;
 import javax.swing.text.html.InlineView;
 import javax.swing.text.html.ParagraphView;
 
@@ -18,6 +17,8 @@ public class SynchronousScaledEditorKit extends ScaledEditorKit {
 		if (kit == null) {
 			synchronousFactory = new SHTMLEditorKit.SHTMLFactory(){
 				public View create(Element elem) {
+					if(elem.getName().equals("img"))
+						return new LazyScaledImageView(elem);
 					View view = super.create(elem);
 					if(elem.getName().equals("br"))
 						return view;
@@ -68,10 +69,6 @@ public class SynchronousScaledEditorKit extends ScaledEditorKit {
 
                           };
                       }
-                    else
-                    	if (view instanceof ImageView) {
-						((ImageView)view).setLoadsSynchronously(true);
-					}
 					return view;
 			    }
 			};
