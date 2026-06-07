@@ -227,6 +227,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	}
 
 	private PaintingMode paintingMode = null;
+	private boolean viewDragInProgress;
+	private static final float FAST_VIEW_DRAG_PAINTING_MAX_ZOOM = 0.7f;
 
 	@Override
 	public void refresh() {
@@ -2313,7 +2315,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	@Override
 	protected void paintChildren(final Graphics g) {
 	    final PaintingMode paintModes[];
-	    if(paintConnectorsBehind)
+	    if(isFastViewDragPainting())
+			paintModes = new PaintingMode[]{
+				PaintingMode.NODES
+				};
+	    else if(paintConnectorsBehind)
 	    	paintModes = new PaintingMode[]{
 	    		PaintingMode.CLOUDS,
 	    		PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES
@@ -2410,6 +2416,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		return paintingMode;
 	}
 
+	public void setViewDragInProgress(boolean viewDragInProgress) {
+		if(this.viewDragInProgress == viewDragInProgress)
+			return;
+		this.viewDragInProgress = viewDragInProgress;
+		repaintVisible();
+	}
+
+	boolean isFastViewDragPainting() {
+		return viewDragInProgress
+				&& zoom <= FAST_VIEW_DRAG_PAINTING_MAX_ZOOM
+				&& paintingPurpose == PaintingPurpose.PAINTING;
+	}
+
 	private void paintConnectors(final Collection<? extends NodeLinkModel> links, final Graphics2D graphics,
 	                        final HashSet<ConnectorModel> alreadyPaintedLinks) {
 		final Font font = graphics.getFont();
@@ -2487,20 +2506,32 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private void paintConnectors(final Graphics2D graphics) {
 		arrowLinkViews = new Vector<ILinkView>();
 		if(hasNodeLinks())
-			paintConnectors(currentRootView, graphics, new HashSet<ConnectorModel>());
+			paintConnectors(currentRootView, graphics, new HashSet<ConnectorModel>(), connectorSearchRect());
 	}
 
-	private void paintConnectors(final NodeView source, final Graphics2D graphics, final HashSet<ConnectorModel> alreadyPaintedConnectors) {
+	private Rectangle connectorSearchRect() {
+		if(paintingPurpose != PaintingPurpose.PAINTING)
+			return null;
+		final JViewport vp = (JViewport) getParent();
+		final Rectangle viewRect = vp.getViewRect();
+		viewRect.x -= viewRect.width;
+		viewRect.y -= viewRect.height;
+		viewRect.width *= 3;
+		viewRect.height *= 3;
+		return viewRect;
+	}
+
+	private void paintConnectors(final NodeView source, final Graphics2D graphics, final HashSet<ConnectorModel> alreadyPaintedConnectors, Rectangle connectorSearchRect) {
 		final NodeModel node = source.getNode();
 		final Collection<? extends NodeLinkModel> outLinks = getLinksFrom(node);
 		paintConnectors(outLinks, graphics, alreadyPaintedConnectors);
 		final Collection<? extends NodeLinkModel> inLinks = getLinksTo(node);
 		paintConnectors(inLinks, graphics, alreadyPaintedConnectors);
-		paintDescendantConnectors(source, graphics, alreadyPaintedConnectors);
+		paintDescendantConnectors(source, graphics, alreadyPaintedConnectors, connectorSearchRect);
 	}
 
     private void paintDescendantConnectors(final NodeView source, final Graphics2D graphics,
-            final HashSet<ConnectorModel> alreadyPaintedConnectors) {
+            final HashSet<ConnectorModel> alreadyPaintedConnectors, Rectangle connectorSearchRect) {
         final int nodeViewCount = source.getComponentCount();
 		for (int i = 0; i < nodeViewCount; i++) {
 			final Component component = source.getComponent(i);
@@ -2512,18 +2543,12 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			    continue;
 			if (paintingPurpose == PaintingPurpose.PAINTING && ! child.isSelected()) {
 				final Rectangle bounds = SwingUtilities.convertRectangle(source, child.getBounds(), this);
-				final JViewport vp = (JViewport) getParent();
-				final Rectangle viewRect = vp.getViewRect();
-				viewRect.x -= viewRect.width;
-				viewRect.y -= viewRect.height;
-				viewRect.width *= 3;
-				viewRect.height *= 3;
-				if (!viewRect.intersects(bounds)) {
-				    paintDescendantConnectors(child, graphics, alreadyPaintedConnectors);
+				if (!connectorSearchRect.intersects(bounds)) {
+				    paintDescendantConnectors(child, graphics, alreadyPaintedConnectors, connectorSearchRect);
 					continue;
 				}
 			}
-			paintConnectors(child, graphics, alreadyPaintedConnectors);
+			paintConnectors(child, graphics, alreadyPaintedConnectors, connectorSearchRect);
 		}
     }
 

@@ -1047,6 +1047,10 @@ public class MainView extends ZoomableLabel {
 		int width = getWidth();
 		int height = getHeight();
 
+		if(shouldPaintSimplified(width, height)) {
+			paintSimplified(graphics, width, height, getBorderColor());
+			return;
+		}
 		AffineTransform t = g2.getTransform();
 		double approxScaleX = Math.abs(t.getScaleX()) + Math.abs(t.getShearY());
 		double approxScaleY = Math.abs(t.getShearX()) + Math.abs(t.getScaleY());

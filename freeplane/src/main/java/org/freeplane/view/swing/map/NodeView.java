@@ -1649,8 +1649,12 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
                 continue;
             }
             final NodeView nodeView = (NodeView) component;
-            final Point p = new Point();
-            UITools.convertPointToAncestor(nodeView, p, this);
+            final Rectangle bounds = nodeView.getBounds();
+            final Rectangle clip = g.getClipBounds();
+            if(clip != null && !clip.intersects(bounds)) {
+                continue;
+            }
+            final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             if (nodeView.isSubtreeVisible()) {
                 nodeView.paintCloud(g);
@@ -2018,7 +2022,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             nodeViewFactory.updateDetails(this, minNodeWidth, maxNodeWidth, cause);
             nodeViewFactory.updateNoteViewer(this, minNodeWidth, maxNodeWidth, cause);
         }
-        if(cause != UpdateCause.SELECTION) {
+        if(cause.updatesContent()) {
             updateShortener(textShortened);
             updateIcons();
             mainView.updateText(getNode());

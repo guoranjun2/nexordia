@@ -209,7 +209,7 @@ class NodeViewFactory {
 	void updateNoteViewer(NodeView nodeView, int minNodeWidth, int maxNodeWidth, UpdateCause cause) {
 		ZoomableLabel noteView = (ZoomableLabel) nodeView.getContent(NodeView.NOTE_VIEWER_POSITION);
 		MapView map = nodeView.getMap();
-		if(cause != UpdateCause.SELECTION) {
+		if(cause.updatesContent()) {
 			String newText  = null;
 			Icon newIcon = null;
 			if (map.showNotes()) {
@@ -258,9 +258,14 @@ class NodeViewFactory {
 				return;
 			}
 		}
+		else if(noteView != null) {
+			noteView.setMinimumWidth(minNodeWidth);
+			noteView.setMaximumWidth(maxNodeWidth);
+		}
 		if(noteView != null) {
 			noteView.revalidate();
-			map.repaint();
+			if(cause.updatesContent())
+				map.repaint();
 		}
 
 	}
@@ -275,7 +280,7 @@ class NodeViewFactory {
 		final DetailModel detailText = DetailModel.getDetail(node);
 		DetailsView detailContent = (DetailsView) nodeView.getContent(NodeView.DETAIL_VIEWER_POSITION);
 		final MapView map = nodeView.getMap();
-		if(cause != UpdateCause.SELECTION) {
+		if(cause.updatesContent()) {
 			if (detailContent == null) {
 				detailContent = createDetailView();
 				nodeView.addContent(detailContent, NodeView.DETAIL_VIEWER_POSITION);
@@ -312,9 +317,14 @@ class NodeViewFactory {
 				detailContent.updateText(text);
 			}
 		}
+		else if(detailContent != null) {
+			detailContent.setMinimumWidth(minNodeWidth);
+			detailContent.setMaximumWidth(maxNodeWidth);
+		}
 		if(detailContent != null) {
 			detailContent.revalidate();
-			map.repaint();
+			if(cause.updatesContent())
+				map.repaint();
 		}
 	}
 

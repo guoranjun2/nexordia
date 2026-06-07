@@ -6,5 +6,9 @@
 package org.freeplane.view.swing.map;
 
 enum UpdateCause {
-	UNKNOWN, ZOOM, SELECTION
+	UNKNOWN, ZOOM, SELECTION;
+
+	boolean updatesContent() {
+		return this == UNKNOWN;
+	}
 }
