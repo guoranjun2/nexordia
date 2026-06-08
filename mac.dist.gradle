@@ -52,6 +52,181 @@ task macosapp_input {
     }
   }
 
+String macosapp_unsigned_input_dir
+
+def unsignedMacArchitecture = System.getProperty('os.arch') in ['aarch64', 'arm64'] ? 'apple' : 'intel'
+def unsignedMacRuntimeDir = "build/macosapp/runtime-${unsignedMacArchitecture}-unsigned"
+def unsignedMacZipExtracted = "build/macosapp/zip-extracted-unsigned"
+def unsignedMacInput = "build/macosapp/input-unsigned"
+def unsignedMacAppImageDir = "build/macosapp/app-image-${unsignedMacArchitecture}-unsigned"
+def unsignedMacDmgResourceDir = "build/macosapp/dmg-resource-dir-unsigned"
+def currentJdkHome = System.getProperty('java.home')
+def currentJlink = "${currentJdkHome}/bin/jlink"
+def currentJpackage = "${currentJdkHome}/bin/jpackage"
+
+task macUnsignedRuntime(type: Exec) {
+    group = 'distribution'
+    description = 'Creates a bundled macOS Java runtime image using the current JDK.'
+    onlyIf { Os.isFamily(Os.FAMILY_MAC) }
+
+    doFirst {
+        if (!file(currentJlink).exists()) {
+            ant.fail("jlink not found at ${currentJlink}; run Gradle with a JDK, not a JRE")
+        }
+        delete unsignedMacRuntimeDir
+        mkdir file(unsignedMacRuntimeDir).parent
+    }
+
+    commandLine currentJlink,
+        '--add-modules', 'ALL-MODULE-PATH',
+        '--strip-debug',
+        '--no-man-pages',
+        '--no-header-files',
+        '--output', unsignedMacRuntimeDir
+}
+
+task macUnsignedInput {
+    group = 'distribution'
+    description = 'Extracts the Freeplane binary zip for unsigned macOS packaging.'
+    dependsOn binZip
+    mustRunAfter macUnsignedRuntime
+
+    doFirst {
+        if (!binZip.archiveFile.get().asFile.exists()) {
+            ant.fail("File ${binZip.archiveFile.get().asFile.path} not found")
+        }
+
+        delete unsignedMacZipExtracted
+        delete unsignedMacInput
+        delete unsignedMacDmgResourceDir
+        mkdir unsignedMacZipExtracted
+        mkdir unsignedMacInput
+        mkdir unsignedMacDmgResourceDir
+
+        copy {
+            from(zipTree(binZip.archiveFile.get().asFile))
+            into(unsignedMacZipExtracted)
+        }
+        macosapp_unsigned_input_dir = unsignedMacZipExtracted + '/' + file(unsignedMacZipExtracted).list()[0]
+
+        copy {
+            from(macosapp_unsigned_input_dir) {
+                include '*.*'
+            }
+            into unsignedMacInput
+        }
+        copy {
+            from file('freeplane_framework/mac-appbundler/freeplane.icns')
+            into unsignedMacDmgResourceDir
+            rename { String fileName ->
+                'Freeplane-volume.icns'
+            }
+        }
+    }
+}
+
+task macUnsignedAppImage(type: Exec) {
+    group = 'distribution'
+    description = 'Creates an unsigned macOS .app image with the bundled runtime.'
+    onlyIf { Os.isFamily(Os.FAMILY_MAC) }
+    dependsOn macUnsignedRuntime, macUnsignedInput
+
+    doFirst {
+        if (!file(currentJpackage).exists()) {
+            ant.fail("jpackage not found at ${currentJpackage}; run Gradle with a JDK, not a JRE")
+        }
+        delete unsignedMacAppImageDir
+    }
+
+    commandLine currentJpackage,
+        '--name', 'Freeplane',
+        '--type', 'app-image',
+        '--icon', 'freeplane_framework/mac-appbundler/freeplane.icns',
+        '--app-version', majorVersion,
+        '--java-options', "-XX:-IgnoreUnrecognizedVMOptions",
+        '--java-options', "-XX:MaxRAM=20g",
+        '--java-options', "-XX:MaxRAMPercentage=15.0",
+        '--java-options', '-Djava.security.manager=allow',
+        '--java-options', '-Dapple.laf.useScreenMenuBar=false',
+        '--java-options', '-Xdock:name=Freeplane',
+        '--java-options', '--add-exports',
+        '--java-options', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
+        '--java-options', '--add-exports',
+        '--java-options', 'java.desktop/com.apple.eawt.event=ALL-UNNAMED',
+        '--java-options', '--add-exports',
+        '--java-options', 'java.desktop/sun.awt=ALL-UNNAMED',
+        '--java-options', '--add-exports',
+        '--java-options', 'java.desktop/sun.swing=ALL-UNNAMED',
+        '--java-options', '--add-exports',
+        '--java-options', 'java.desktop/com.apple.laf=ALL-UNNAMED',
+        '--java-options', '--add-opens',
+        '--java-options', 'java.desktop/javax.swing.text.html=ALL-UNNAMED',
+        '--input', unsignedMacInput,
+        '--main-class', 'org.freeplane.launcher.Launcher',
+        '--main-jar', 'freeplanelauncher.jar',
+        '--runtime-image', unsignedMacRuntimeDir,
+        '--copyright', "Freeplane ${distVersion}",
+        '--dest', unsignedMacAppImageDir
+}
+
+task macUnsignedApp {
+    group = 'distribution'
+    description = 'Copies Freeplane resources into the unsigned macOS .app image.'
+    dependsOn macUnsignedAppImage
+
+    doFirst {
+        copy {
+            from(macosapp_unsigned_input_dir) {
+                include '*/**'
+            }
+            into "${unsignedMacAppImageDir}/Freeplane.app/Contents/app"
+        }
+        copy {
+            from project('freeplane').configurations.maclib
+            into("${unsignedMacAppImageDir}/Freeplane.app/Contents/app/core/org.freeplane.core/lib")
+        }
+        copy {
+            from file('freeplane_framework/mac-appbundler/freeplanedoc.icns')
+            into "${unsignedMacAppImageDir}/Freeplane.app/Contents/Resources"
+        }
+
+        def dist_macos_info = "${unsignedMacAppImageDir}/Freeplane.app/Contents/Info.plist"
+        ant.move(file: dist_macos_info, tofile: dist_macos_info + '2')
+        ant.xslt(in: new File(dist_macos_info + '2'),
+            style: new File('freeplane_framework/mac-appbundler/mac_info_plist.xslt'),
+            out: new File(dist_macos_info))
+        delete dist_macos_info + '2'
+    }
+}
+
+task macUnsignedDmg(type: Exec) {
+    group = 'distribution'
+    description = 'Builds an unsigned macOS DMG installer with a bundled Java runtime.'
+    onlyIf { Os.isFamily(Os.FAMILY_MAC) }
+    dependsOn macUnsignedApp
+
+    doFirst {
+        mkdir globalDist
+        file("$globalDist/Freeplane-${majorVersion}.dmg").delete()
+        file("$globalDist/Freeplane-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg").delete()
+    }
+
+    commandLine currentJpackage,
+        '--name', 'Freeplane',
+        '--type', 'dmg',
+        '--app-version', majorVersion,
+        '--app-image', "${unsignedMacAppImageDir}/Freeplane.app",
+        '--mac-package-identifier', 'org.freeplane.core',
+        '--mac-package-name', 'Freeplane',
+        '--resource-dir', unsignedMacDmgResourceDir,
+        '--dest', globalDist
+
+    doLast {
+        ant.move(file: "$globalDist/Freeplane-${majorVersion}.dmg",
+            tofile: "$globalDist/Freeplane-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg")
+    }
+}
+
 def defineMacBuildTasks =  { architecture -> 
 
    def jpackage = macAppProperties["macapp.${architecture}.jpackage.jdk"] + '/bin/jpackage'

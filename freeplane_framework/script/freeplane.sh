@@ -130,10 +130,25 @@ __move_old_userfpdir_to_XDG_CONFIG_HOME() {
 }
 
 old_userfpdir="${HOME}/.freeplane"
-userfpdir="${XDG_CONFIG_HOME:-$HOME/.config}/freeplane"
-__move_old_userfpdir_to_XDG_CONFIG_HOME
+if [ "$(uname)" = "Darwin" ]; then
+	userfpdir="${HOME}/.freeplane"
+else
+	userfpdir="${XDG_CONFIG_HOME:-$HOME/.config}/freeplane"
+	__move_old_userfpdir_to_XDG_CONFIG_HOME
+fi
 _source /etc/freeplane/freeplanerc
 _source "${userfpdir}/freeplanerc"
+
+if [ "$(uname)" = "Darwin" ] && [ -z "${FREEPLANE_JAVA_HOME}" ]; then
+	script_dir="$(cd "$(dirname "$0")" && pwd)"
+	for bundled_java_home in "${script_dir}/runtime/jbr" "${script_dir}/runtime" "${script_dir}/../runtime/jbr" "${script_dir}/../runtime"
+	do
+		if [ -x "${bundled_java_home}/bin/java" ]; then
+			FREEPLANE_JAVA_HOME="${bundled_java_home}"
+			break
+		fi
+	done
+fi
 
 findjava
 if [ $? -ne 0 ]; then
@@ -152,7 +167,7 @@ else
 	freefile="$0"
 fi
 
-if [ "`echo $OSTYPE | cut -b1-6`" = "darwin" ]; then
+if [ "$(uname)" = "Darwin" ]; then
 	xdockname='-Xdock:name=Freeplane'
 else
 	xdockname=""
@@ -193,9 +208,17 @@ if [ "${JAVA_TYPE}" != "sun" ]; then
 fi
 
 if [ $JAVA_MAJOR_VERSION -ge 11 ]; then
+	JAVA_OPTS="--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-exports java.desktop/com.apple.eawt.event=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-exports java.desktop/sun.awt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-exports java.desktop/sun.lwawt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-exports java.desktop/sun.lwawt.macosx=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-exports java.desktop/sun.swing=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-exports java.desktop/sun.awt.shell=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-exports java.desktop/com.apple.laf=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-opens java.desktop/sun.awt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-opens java.desktop/sun.lwawt=ALL-UNNAMED $JAVA_OPTS"
+	JAVA_OPTS="--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-opens java.desktop/sun.awt.X11=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-opens java.desktop/javax.swing.text.html=ALL-UNNAMED $JAVA_OPTS"
 	JAVA_OPTS="--add-opens java.desktop/com.apple.eawt=ALL-UNNAMED $JAVA_OPTS"

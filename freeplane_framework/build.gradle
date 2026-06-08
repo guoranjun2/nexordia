@@ -52,6 +52,12 @@ task copyFreeplaneShellScript(type: Copy) {
 	 filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
 }
 
+task copyBundledRuntime(type: Copy) {
+	onlyIf { file("${rootDir}/runtime").exists() }
+	from("${rootDir}/runtime")
+	into("${globalBin}/runtime")
+}
+
 ext {launch4jDir = "$System.env.LAUNCH4J_DIR"}
 
 task createExeFiles {
@@ -116,6 +122,5 @@ eclipseJdt {
     }
 }
 
-build.dependsOn (copyLauncherStuff)
-
+build.dependsOn (copyLauncherStuff, copyBundledRuntime)
 

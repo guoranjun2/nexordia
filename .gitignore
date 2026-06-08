@@ -13,12 +13,16 @@
 /BIN*/
 
 /java-runtime*/
+/runtime/
 
 #Ignore everything form IntelliJ
 .idea/
 
 #Ignore everything form VS Code
 .vscode/
+
+#Ignore local Codex workspace configuration
+/.codex/
 
 #Ignore everything form theia
 .theia/
