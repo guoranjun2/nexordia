@@ -50,12 +50,13 @@ class HtmlImageCache {
 					reader.setInput(imageInputStream, true, true);
 					final int sourceWidth = reader.getWidth(0);
 					final int sourceHeight = reader.getHeight(0);
+					final Dimension targetSize = fitWithinSourceSize(sourceWidth, sourceHeight, targetWidth, targetHeight);
 					final ImageReadParam readParam = reader.getDefaultReadParam();
-					final int subsampling = subsampling(sourceWidth, sourceHeight, targetWidth, targetHeight);
+					final int subsampling = subsampling(sourceWidth, sourceHeight, targetSize.width, targetSize.height);
 					if(subsampling > 1)
 						readParam.setSourceSubsampling(subsampling, subsampling, 0, 0);
 					final BufferedImage image = reader.read(0, readParam);
-					return scale(image, targetWidth, targetHeight);
+					return scale(image, targetSize.width, targetSize.height);
 				}
 				finally {
 					reader.dispose();
@@ -78,6 +79,13 @@ class HtmlImageCache {
 			final int widthSubsampling = Math.max(1, sourceWidth / targetWidth);
 			final int heightSubsampling = Math.max(1, sourceHeight / targetHeight);
 			return Math.max(1, Math.min(widthSubsampling, heightSubsampling));
+		}
+
+		static Dimension fitWithinSourceSize(int sourceWidth, int sourceHeight, int targetWidth, int targetHeight) {
+			final double scale = Math.min(1d,
+					Math.min(sourceWidth / (double) targetWidth, sourceHeight / (double) targetHeight));
+			return new Dimension(Math.max(1, (int) Math.floor(targetWidth * scale)),
+					Math.max(1, (int) Math.floor(targetHeight * scale)));
 		}
 
 		private static BufferedImage scale(BufferedImage image, int targetWidth, int targetHeight) {
@@ -310,7 +318,15 @@ class HtmlImageCache {
 		if(pixels <= maxPixels)
 			return new Dimension(width, height);
 		final double scale = Math.sqrt(maxPixels / (double) pixels);
-		return new Dimension(Math.max(1, (int) Math.floor(width * scale)), Math.max(1, (int) Math.floor(height * scale)));
+		int scaledWidth = Math.max(1, (int) Math.floor(width * scale));
+		int scaledHeight = Math.max(1, (int) Math.floor(height * scale));
+		if((long) scaledWidth * (long) scaledHeight > maxPixels) {
+			if(scaledWidth >= scaledHeight)
+				scaledWidth = Math.max(1, maxPixels / scaledHeight);
+			else
+				scaledHeight = Math.max(1, maxPixels / scaledWidth);
+		}
+		return new Dimension(scaledWidth, scaledHeight);
 	}
 
 	private static int bucketLength(int value) {

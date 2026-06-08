@@ -126,6 +126,20 @@ public class HtmlImageCacheTest {
 		assertThat(loader.sizeReadCount).isEqualTo(1);
 	}
 
+	@Test
+	public void limitsScaledImageSizeToSourcePixels() {
+		final Dimension targetSize = HtmlImageCache.ImageLoader.fitWithinSourceSize(640, 480, 8320, 6240);
+
+		assertThat(targetSize).isEqualTo(new Dimension(640, 480));
+	}
+
+	@Test
+	public void keepsExtremeAspectRatioWithinPixelBudget() {
+		final Dimension targetSize = HtmlImageCache.fitWithinMaxPixels(100_000_000, 1, 4_000_000);
+
+		assertThat((long) targetSize.width * targetSize.height).isLessThanOrEqualTo(4_000_000L);
+	}
+
 	private URL source(String name) throws Exception {
 		return new URL("file:/" + name + ".png");
 	}

@@ -100,6 +100,8 @@ public class ZoomableLabel extends JLabel {
 		final int right = Math.max(0, width - 1);
 		final int bottom = Math.max(0, height - 1);
 		final Rectangle visibleRect = map.getVisibleRect();
+		if(width >= visibleRect.getWidth() || height >= visibleRect.getHeight())
+			return true;
 		return visibleRect.contains(topLeft)
 				|| visibleRect.contains(new Point(topLeft.x + right, topLeft.y))
 				|| visibleRect.contains(new Point(topLeft.x, topLeft.y + bottom))

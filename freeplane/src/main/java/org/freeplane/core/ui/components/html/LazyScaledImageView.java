@@ -24,6 +24,8 @@ import javax.swing.text.View;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 
+import org.freeplane.features.mode.Controller;
+
 class LazyScaledImageView extends View {
 	private static final int DEFAULT_WIDTH = 64;
 	private static final int DEFAULT_HEIGHT = 48;
@@ -205,13 +207,17 @@ class LazyScaledImageView extends View {
 			return true;
 		if(! component.isShowing())
 			return false;
-		final Rectangle viewportRectangle = new Rectangle(0, 0, viewport.getWidth(), viewport.getHeight());
-		viewportRectangle.grow(viewport.getWidth() / VIEWPORT_CACHE_MARGIN_DIVISOR,
-				viewport.getHeight() / VIEWPORT_CACHE_MARGIN_DIVISOR);
-		final Rectangle imageRectangle = SwingUtilities.convertRectangle(component, bounds, viewport);
-		return viewportRectangle.intersects(imageRectangle);
-	}
 
+		final Rectangle visibleRect = viewport.getVisibleRect();
+		final float zoom = Controller.getCurrentController().getMapViewManager().getZoom();
+		if(bounds.width * zoom >= visibleRect.width || bounds.height * zoom >= visibleRect.height)
+			return true;
+		visibleRect.grow(visibleRect.width / VIEWPORT_CACHE_MARGIN_DIVISOR,
+				visibleRect.height / VIEWPORT_CACHE_MARGIN_DIVISOR);
+
+		final Rectangle imageRectangle = SwingUtilities.convertRectangle(component, bounds, viewport);
+		return visibleRect.intersects(imageRectangle);
+	}
 	static Dimension targetSize(Graphics graphics, Rectangle imageBounds) {
 		if(! (graphics instanceof Graphics2D))
 			return new Dimension(imageBounds.width, imageBounds.height);
