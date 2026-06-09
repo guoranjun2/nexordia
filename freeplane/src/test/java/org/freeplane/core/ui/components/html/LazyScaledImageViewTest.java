@@ -42,15 +42,6 @@ public class LazyScaledImageViewTest {
 		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(34f);
 	}
 
-	@Test
-	public void detectsGifImageSources() {
-		assertThat(LazyScaledImageView.isGifSource("file:/image.gif")).isTrue();
-		assertThat(LazyScaledImageView.isGifSource("file:/image.GIF?x=1")).isTrue();
-		assertThat(LazyScaledImageView.isGifSource("file:/image.gif#fragment")).isTrue();
-		assertThat(LazyScaledImageView.isGifSource("data:image/gif;base64,R0lGODlhAQABAAAAACw=")).isTrue();
-		assertThat(LazyScaledImageView.isGifSource("file:/image.png")).isFalse();
-	}
-
 	private LazyScaledImageView findImageView(View view) {
 		if(view instanceof LazyScaledImageView)
 			return (LazyScaledImageView)view;

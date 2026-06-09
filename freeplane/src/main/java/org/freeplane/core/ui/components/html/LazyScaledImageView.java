@@ -12,10 +12,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Base64;
-import java.util.Locale;
 
-import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
@@ -62,10 +59,6 @@ class LazyScaledImageView extends View {
 		final Rectangle imageBounds = imageBounds(bounds);
 		if(! isInVisibleViewport(bounds)) {
 			paintPlaceholder(graphics, imageBounds);
-			return;
-		}
-		if(isGifSource()) {
-			paintAnimatedGif(graphics, imageBounds);
 			return;
 		}
 		final URL imageSource = source();
@@ -170,12 +163,8 @@ class LazyScaledImageView extends View {
 	}
 
 	private String sourceKey() {
-		if(sourceKey == null) {
-			final String sourceText = sourceText();
-			sourceKey = isDataGifSource(sourceText)
-					? HtmlImageCache.sourceKey(sourceText)
-					: HtmlImageCache.sourceKey(source());
-		}
+		if(sourceKey == null)
+			sourceKey = HtmlImageCache.sourceKey(source());
 		return sourceKey;
 	}
 
@@ -233,84 +222,6 @@ class LazyScaledImageView extends View {
 
 		final Rectangle imageRectangle = SwingUtilities.convertRectangle(component, bounds, viewport);
 		return visibleRect.intersects(imageRectangle);
-	}
-
-	private boolean isGifSource() {
-		return isGifSource(sourceText());
-	}
-
-	static boolean isGifSource(String sourceText) {
-		if(sourceText == null)
-			return false;
-		if(isDataGifSource(sourceText))
-			return true;
-		final String source = sourceText.toLowerCase(Locale.ROOT);
-		final int queryIndex = source.indexOf('?');
-		final int fragmentIndex = source.indexOf('#');
-		int endIndex = source.length();
-		if(queryIndex >= 0)
-			endIndex = queryIndex;
-		if(fragmentIndex >= 0)
-			endIndex = Math.min(endIndex, fragmentIndex);
-		return source.substring(0, endIndex).endsWith(".gif");
-	}
-
-	private static boolean isDataGifSource(String sourceText) {
-		return sourceText != null && sourceText.toLowerCase(Locale.ROOT).startsWith("data:image/gif");
-	}
-
-	private void paintAnimatedGif(Graphics graphics, Rectangle imageBounds) {
-		final ImageIcon image = animatedGif();
-		if(image == null) {
-			paintPlaceholder(graphics, imageBounds);
-			return;
-		}
-		final int iconWidth = image.getIconWidth();
-		final int iconHeight = image.getIconHeight();
-		if(iconWidth <= 0 || iconHeight <= 0) {
-			paintPlaceholder(graphics, imageBounds);
-			return;
-		}
-		final Container container = getContainer();
-		final Component component = container instanceof Component ? (Component) container : null;
-		final Graphics2D graphics2D = (Graphics2D) graphics.create();
-		try {
-			graphics2D.translate(imageBounds.x, imageBounds.y);
-			graphics2D.scale(imageBounds.width / (double) iconWidth, imageBounds.height / (double) iconHeight);
-			image.paintIcon(component, graphics2D, 0, 0);
-		}
-		finally {
-			graphics2D.dispose();
-		}
-	}
-
-	private ImageIcon animatedGif() {
-		final String sourceText = sourceText();
-		if(isDataGifSource(sourceText)) {
-			final byte[] imageData = dataImageBytes(sourceText);
-			if(imageData == null)
-				return null;
-			return HtmlImageCache.INSTANCE.getOrScheduleAnimated(imageData, sourceKey(), repaintCallback);
-		}
-		final URL imageSource = source();
-		if(imageSource == null)
-			return null;
-		return HtmlImageCache.INSTANCE.getOrScheduleAnimated(imageSource, sourceKey(), repaintCallback);
-	}
-
-	private byte[] dataImageBytes(String sourceText) {
-		final int commaIndex = sourceText.indexOf(',');
-		if(commaIndex < 0)
-			return null;
-		final String header = sourceText.substring(0, commaIndex).toLowerCase(Locale.ROOT);
-		if(! header.contains(";base64"))
-			return null;
-		try {
-			return Base64.getDecoder().decode(sourceText.substring(commaIndex + 1));
-		}
-		catch (IllegalArgumentException e) {
-			return null;
-		}
 	}
 
 	static Dimension targetSize(Graphics graphics, Rectangle imageBounds) {

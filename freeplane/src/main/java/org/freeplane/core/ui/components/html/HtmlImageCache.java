@@ -2,10 +2,8 @@ package org.freeplane.core.ui.components.html;
 
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.MediaTracker;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -26,7 +24,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 
 class HtmlImageCache {
@@ -65,16 +62,6 @@ class HtmlImageCache {
 					reader.dispose();
 				}
 			}
-		}
-
-		ImageIcon loadAnimated(URL source) throws IOException {
-			try (InputStream inputStream = source.openStream()) {
-				return loadAnimated(bytes(inputStream));
-			}
-		}
-
-		ImageIcon loadAnimated(byte[] imageData) throws IOException {
-			return loadedIcon(new ImageIcon(imageData));
 		}
 
 		private static ImageReader imageReader(ImageInputStream imageInputStream) throws IOException {
@@ -116,25 +103,6 @@ class HtmlImageCache {
 			}
 			return scaledImage;
 		}
-
-		private static ImageIcon loadedIcon(ImageIcon icon) throws IOException {
-			if(icon.getImageLoadStatus() != MediaTracker.COMPLETE)
-				throw new IOException("can not load animated image");
-			return icon;
-		}
-
-		private static byte[] bytes(InputStream inputStream) throws IOException {
-			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			final byte[] buffer = new byte[8192];
-			int length;
-			while((length = inputStream.read(buffer)) >= 0)
-				outputStream.write(buffer, 0, length);
-			return outputStream.toByteArray();
-		}
-	}
-
-	private interface AnimatedImageLoader {
-		ImageIcon load() throws IOException;
 	}
 
 	private static class ImageKey {
@@ -179,7 +147,6 @@ class HtmlImageCache {
 
 	private static final int DEFAULT_MAX_CACHE_PIXELS = 32 * 1024 * 1024;
 	private static final int DEFAULT_MAX_IMAGE_PIXELS = 4 * 1024 * 1024;
-	private static final int DEFAULT_MAX_ANIMATED_IMAGES = 4;
 	private static final int DIMENSION_BUCKET = 32;
 	private static final int IMAGE_LOADER_THREADS = 4;
 	private static final ExecutorService IMAGE_LOADER_EXECUTOR = Executors.newFixedThreadPool(IMAGE_LOADER_THREADS, runnable -> {
@@ -189,40 +156,27 @@ class HtmlImageCache {
 	});
 
 	static final HtmlImageCache INSTANCE = new HtmlImageCache(new ImageLoader(), IMAGE_LOADER_EXECUTOR,
-			DEFAULT_MAX_CACHE_PIXELS, DEFAULT_MAX_IMAGE_PIXELS, DEFAULT_MAX_ANIMATED_IMAGES);
+			DEFAULT_MAX_CACHE_PIXELS, DEFAULT_MAX_IMAGE_PIXELS);
 
 	private final ImageLoader imageLoader;
 	private final Executor executor;
 	private final int maxCachePixels;
 	private final int maxImagePixels;
-	private final int maxAnimatedImages;
 	private final Map<ImageKey, Entry> images;
-	private final Map<String, ImageIcon> animatedImages;
 	private final Map<String, Dimension> imageSizes;
 	private final Map<ImageKey, Set<Runnable>> pendingImageCallbacks;
-	private final Map<String, Set<Runnable>> pendingAnimatedImageCallbacks;
 	private final Set<ImageKey> failedImages;
-	private final Set<String> failedAnimatedImages;
 	private int cachedPixels;
 
 	HtmlImageCache(ImageLoader imageLoader, Executor executor, int maxCachePixels, int maxImagePixels) {
-		this(imageLoader, executor, maxCachePixels, maxImagePixels, DEFAULT_MAX_ANIMATED_IMAGES);
-	}
-
-	HtmlImageCache(ImageLoader imageLoader, Executor executor, int maxCachePixels, int maxImagePixels,
-			int maxAnimatedImages) {
 		this.imageLoader = imageLoader;
 		this.executor = executor;
 		this.maxCachePixels = maxCachePixels;
 		this.maxImagePixels = maxImagePixels;
-		this.maxAnimatedImages = maxAnimatedImages;
 		this.images = new LinkedHashMap<ImageKey, Entry>(16, 0.75f, true);
-		this.animatedImages = new LinkedHashMap<String, ImageIcon>(16, 0.75f, true);
 		this.imageSizes = new HashMap<String, Dimension>();
 		this.pendingImageCallbacks = new HashMap<ImageKey, Set<Runnable>>();
-		this.pendingAnimatedImageCallbacks = new HashMap<String, Set<Runnable>>();
 		this.failedImages = new HashSet<ImageKey>();
-		this.failedAnimatedImages = new HashSet<String>();
 	}
 
 	BufferedImage getOrSchedule(URL source, String sourceKey, int targetWidth, int targetHeight, Runnable repaintCallback) {
@@ -244,32 +198,6 @@ class HtmlImageCache {
 		}
 		executor.execute(() -> loadImage(source, key));
 		return fallbackImage;
-	}
-
-	ImageIcon getOrScheduleAnimated(URL source, String sourceKey, Runnable repaintCallback) {
-		return getOrScheduleAnimated(sourceKey, () -> imageLoader.loadAnimated(source), repaintCallback);
-	}
-
-	ImageIcon getOrScheduleAnimated(byte[] imageData, String sourceKey, Runnable repaintCallback) {
-		return getOrScheduleAnimated(sourceKey, () -> imageLoader.loadAnimated(imageData), repaintCallback);
-	}
-
-	private ImageIcon getOrScheduleAnimated(String sourceKey, AnimatedImageLoader animatedImageLoader,
-			Runnable repaintCallback) {
-		synchronized(this) {
-			final ImageIcon image = animatedImages.get(sourceKey);
-			if(image != null)
-				return image;
-			if(failedAnimatedImages.contains(sourceKey))
-				return null;
-			if(pendingAnimatedImageCallbacks.containsKey(sourceKey)) {
-				addAnimatedRepaintCallback(sourceKey, repaintCallback);
-				return null;
-			}
-			pendingAnimatedImageCallbacks.put(sourceKey, repaintCallbacks(repaintCallback));
-		}
-		executor.execute(() -> loadAnimatedImage(sourceKey, animatedImageLoader));
-		return null;
 	}
 
 	private BufferedImage fallbackImage(ImageKey targetKey) {
@@ -329,11 +257,6 @@ class HtmlImageCache {
 			pendingImageCallbacks.get(key).add(repaintCallback);
 	}
 
-	private void addAnimatedRepaintCallback(String sourceKey, Runnable repaintCallback) {
-		if(repaintCallback != null)
-			pendingAnimatedImageCallbacks.get(sourceKey).add(repaintCallback);
-	}
-
 	private void loadImage(URL source, ImageKey key) {
 		final Set<Runnable> repaintCallbacks;
 		try {
@@ -348,24 +271,6 @@ class HtmlImageCache {
 			synchronized(this) {
 				pendingImageCallbacks.remove(key);
 				failedImages.add(key);
-			}
-		}
-	}
-
-	private void loadAnimatedImage(String sourceKey, AnimatedImageLoader animatedImageLoader) {
-		final Set<Runnable> repaintCallbacks;
-		try {
-			final ImageIcon image = animatedImageLoader.load();
-			synchronized(this) {
-				putAnimated(sourceKey, image);
-				repaintCallbacks = pendingAnimatedImageCallbacks.remove(sourceKey);
-			}
-			repaint(repaintCallbacks);
-		}
-		catch (IOException | RuntimeException e) {
-			synchronized(this) {
-				pendingAnimatedImageCallbacks.remove(sourceKey);
-				failedAnimatedImages.add(sourceKey);
 			}
 		}
 	}
@@ -391,28 +296,12 @@ class HtmlImageCache {
 		trim();
 	}
 
-	private void putAnimated(String sourceKey, ImageIcon image) {
-		final ImageIcon oldImage = animatedImages.remove(sourceKey);
-		if(oldImage != null)
-			oldImage.getImage().flush();
-		animatedImages.put(sourceKey, image);
-		trimAnimated();
-	}
-
 	private void trim() {
 		final Iterator<Map.Entry<ImageKey, Entry>> iterator = images.entrySet().iterator();
 		while(cachedPixels > maxCachePixels && iterator.hasNext()) {
 			final Entry entry = iterator.next().getValue();
 			cachedPixels -= entry.pixels;
 			entry.image.flush();
-			iterator.remove();
-		}
-	}
-
-	private void trimAnimated() {
-		final Iterator<Map.Entry<String, ImageIcon>> iterator = animatedImages.entrySet().iterator();
-		while(animatedImages.size() > maxAnimatedImages && iterator.hasNext()) {
-			iterator.next().getValue().getImage().flush();
 			iterator.remove();
 		}
 	}
@@ -450,7 +339,7 @@ class HtmlImageCache {
 		return sourceKey(source.toExternalForm());
 	}
 
-	static String sourceKey(String source) {
+	private static String sourceKey(String source) {
 		try {
 			final MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			final byte[] hash = digest.digest(source.getBytes("UTF-8"));
@@ -471,15 +360,10 @@ class HtmlImageCache {
 	synchronized void clear() {
 		for(Entry entry : images.values())
 			entry.image.flush();
-		for(ImageIcon image : animatedImages.values())
-			image.getImage().flush();
 		images.clear();
-		animatedImages.clear();
 		imageSizes.clear();
 		pendingImageCallbacks.clear();
-		pendingAnimatedImageCallbacks.clear();
 		failedImages.clear();
-		failedAnimatedImages.clear();
 		cachedPixels = 0;
 	}
 }

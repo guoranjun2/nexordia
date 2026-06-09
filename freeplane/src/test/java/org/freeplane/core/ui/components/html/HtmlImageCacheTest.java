@@ -4,19 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 
 import org.junit.Test;
@@ -144,88 +140,6 @@ public class HtmlImageCacheTest {
 		assertThat((long) targetSize.width * targetSize.height).isLessThanOrEqualTo(4_000_000L);
 	}
 
-	@Test
-	public void cachesAnimatedImagesAfterLoading() throws Exception {
-		final CountingImageLoader loader = new CountingImageLoader();
-		final HtmlImageCache cache = new HtmlImageCache(loader, Runnable::run, 1_000_000, 1_000_000);
-		final URL source = url("animated-a.gif");
-		final String sourceKey = HtmlImageCache.sourceKey(source);
-
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNull();
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNotNull();
-		assertThat(loader.animatedLoadCount).isEqualTo(1);
-	}
-
-	@Test
-	public void repaintsAllCallersWaitingForSamePendingAnimatedImage() throws Exception {
-		final CountingImageLoader loader = new CountingImageLoader();
-		final QueuedExecutor executor = new QueuedExecutor();
-		final HtmlImageCache cache = new HtmlImageCache(loader, executor, 1_000_000, 1_000_000);
-		final URL source = url("animated-a.gif");
-		final String sourceKey = HtmlImageCache.sourceKey(source);
-		final AtomicInteger firstRepaints = new AtomicInteger();
-		final AtomicInteger secondRepaints = new AtomicInteger();
-
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, () -> firstRepaints.incrementAndGet())).isNull();
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, () -> secondRepaints.incrementAndGet())).isNull();
-
-		assertThat(executor.taskCount()).isEqualTo(1);
-		executor.runNext();
-		SwingUtilities.invokeAndWait(() -> {
-		});
-
-		assertThat(firstRepaints.get()).isEqualTo(1);
-		assertThat(secondRepaints.get()).isEqualTo(1);
-		assertThat(loader.animatedLoadCount).isEqualTo(1);
-	}
-
-	@Test
-	public void evictsLeastRecentlyUsedAnimatedImagesWhenLimitIsExceeded() throws Exception {
-		final CountingImageLoader loader = new CountingImageLoader();
-		final HtmlImageCache cache = new HtmlImageCache(loader, Runnable::run, 1_000_000, 1_000_000, 2);
-		final URL firstSource = url("animated-a.gif");
-		final URL secondSource = url("animated-b.gif");
-		final URL thirdSource = url("animated-c.gif");
-		final String firstKey = HtmlImageCache.sourceKey(firstSource);
-		final String secondKey = HtmlImageCache.sourceKey(secondSource);
-		final String thirdKey = HtmlImageCache.sourceKey(thirdSource);
-
-		cache.getOrScheduleAnimated(firstSource, firstKey, null);
-		cache.getOrScheduleAnimated(secondSource, secondKey, null);
-		cache.getOrScheduleAnimated(firstSource, firstKey, null);
-		cache.getOrScheduleAnimated(thirdSource, thirdKey, null);
-		cache.getOrScheduleAnimated(secondSource, secondKey, null);
-
-		assertThat(loader.animatedLoadCount).isEqualTo(4);
-	}
-
-	@Test
-	public void doesNotReloadFailedAnimatedImages() throws Exception {
-		final CountingImageLoader loader = new CountingImageLoader();
-		loader.failAnimatedImages = true;
-		final HtmlImageCache cache = new HtmlImageCache(loader, Runnable::run, 1_000_000, 1_000_000);
-		final URL source = url("animated-a.gif");
-		final String sourceKey = HtmlImageCache.sourceKey(source);
-
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNull();
-		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNull();
-		assertThat(loader.animatedLoadCount).isEqualTo(1);
-	}
-
-	@Test
-	public void loadsAnimatedImagesFromUrlBytes() throws Exception {
-		final File imageFile = File.createTempFile("freeplane-animated-image", ".gif");
-		imageFile.deleteOnExit();
-		try (FileOutputStream outputStream = new FileOutputStream(imageFile)) {
-			outputStream.write(Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="));
-		}
-
-		final ImageIcon image = new HtmlImageCache.ImageLoader().loadAnimated(imageFile.toURI().toURL());
-
-		assertThat(image.getIconWidth()).isEqualTo(1);
-		assertThat(image.getIconHeight()).isEqualTo(1);
-	}
-
 	private URL source(String name) throws Exception {
 		return url(name + ".png");
 	}
@@ -237,9 +151,7 @@ public class HtmlImageCacheTest {
 	private static class CountingImageLoader extends HtmlImageCache.ImageLoader {
 		private final Map<String, Dimension> imageSizes = new HashMap<String, Dimension>();
 		private int loadCount;
-		private int animatedLoadCount;
 		private int sizeReadCount;
-		private boolean failAnimatedImages;
 
 		CountingImageLoader() {
 			imageSizes.put("image-a.png", new Dimension(640, 480));
@@ -256,14 +168,6 @@ public class HtmlImageCacheTest {
 		BufferedImage load(URL source, int targetWidth, int targetHeight) throws IOException {
 			loadCount++;
 			return new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
-		}
-
-		@Override
-		ImageIcon loadAnimated(URL source) throws IOException {
-			animatedLoadCount++;
-			if(failAnimatedImages)
-				throw new IOException("failed animated image");
-			return new ImageIcon(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB));
 		}
 
 		private String fileName(URL source) {

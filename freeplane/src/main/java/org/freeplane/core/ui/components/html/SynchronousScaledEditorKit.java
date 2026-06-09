@@ -1,9 +1,12 @@
 package org.freeplane.core.ui.components.html;
 
+import java.util.Locale;
+
 import javax.swing.SizeRequirements;
 import javax.swing.text.Element;
 import javax.swing.text.View;
 import javax.swing.text.ViewFactory;
+import javax.swing.text.html.HTML;
 import javax.swing.text.html.InlineView;
 import javax.swing.text.html.ParagraphView;
 
@@ -17,8 +20,11 @@ public class SynchronousScaledEditorKit extends ScaledEditorKit {
 		if (kit == null) {
 			synchronousFactory = new SHTMLEditorKit.SHTMLFactory(){
 				public View create(Element elem) {
-					if(elem.getName().equals("img"))
+					if(elem.getName().equals("img")) {
+						if(isGifImage(elem))
+							return super.create(elem);
 						return new LazyScaledImageView(elem);
+					}
 					View view = super.create(elem);
 					if(elem.getName().equals("br"))
 						return view;
@@ -82,6 +88,25 @@ public class SynchronousScaledEditorKit extends ScaledEditorKit {
 		return synchronousFactory;
 	}
 
+	static boolean isGifImage(Element elem) {
+		final Object source = elem.getAttributes().getAttribute(HTML.Attribute.SRC);
+		return source != null && isGifSource(source.toString());
+	}
 
+	static boolean isGifSource(String sourceText) {
+		if(sourceText == null)
+			return false;
+		final String source = sourceText.toLowerCase(Locale.ROOT);
+		if(source.startsWith("data:image/gif"))
+			return true;
+		final int queryIndex = source.indexOf('?');
+		final int fragmentIndex = source.indexOf('#');
+		int endIndex = source.length();
+		if(queryIndex >= 0)
+			endIndex = queryIndex;
+		if(fragmentIndex >= 0)
+			endIndex = Math.min(endIndex, fragmentIndex);
+		return source.substring(0, endIndex).endsWith(".gif");
+	}
 
 }
