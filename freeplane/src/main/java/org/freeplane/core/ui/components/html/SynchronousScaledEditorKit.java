@@ -22,7 +22,7 @@ public class SynchronousScaledEditorKit extends ScaledEditorKit {
 				public View create(Element elem) {
 					if(elem.getName().equals("img")) {
 						if(isGifImage(elem))
-							return super.create(elem);
+							return new ScaledGifImageView(elem);
 						return new LazyScaledImageView(elem);
 					}
 					View view = super.create(elem);

@@ -2,6 +2,8 @@ package org.freeplane.core.ui.components.html;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.awt.Rectangle;
+
 import javax.swing.JLabel;
 import javax.swing.text.View;
 
@@ -18,10 +20,11 @@ public class SynchronousScaledEditorKitTest {
 	}
 
 	@Test
-	public void usesDefaultImageViewForGifImages() {
+	public void usesScaledGifImageViewForGifImages() {
 		final ScaledHTML.Renderer renderer = htmlView(
 				"<html><body><img src=\"file:/missing-image.gif\" width=\"12\" height=\"34\"></body></html>");
 
+		assertThat(findView(renderer, ScaledGifImageView.class)).isNotNull();
 		assertThat(findView(renderer, LazyScaledImageView.class)).isNull();
 	}
 
@@ -31,6 +34,13 @@ public class SynchronousScaledEditorKitTest {
 				"<html><body><img src=\"file:/missing-image.png\" width=\"12\" height=\"34\"></body></html>");
 
 		assertThat(findView(renderer, LazyScaledImageView.class)).isNotNull();
+	}
+
+	@Test
+	public void scalesGifRepaintBoundsUsingViewZoom() {
+		final Rectangle scaledBounds = ScaledGifImageView.scaledBounds(new Rectangle(3, 5, 7, 11), 2.5f);
+
+		assertThat(scaledBounds).isEqualTo(new Rectangle(7, 12, 18, 28));
 	}
 
 	private ScaledHTML.Renderer htmlView(String html) {
