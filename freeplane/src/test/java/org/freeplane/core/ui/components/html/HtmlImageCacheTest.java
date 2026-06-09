@@ -4,9 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -207,6 +210,20 @@ public class HtmlImageCacheTest {
 		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNull();
 		assertThat(cache.getOrScheduleAnimated(source, sourceKey, null)).isNull();
 		assertThat(loader.animatedLoadCount).isEqualTo(1);
+	}
+
+	@Test
+	public void loadsAnimatedImagesFromUrlBytes() throws Exception {
+		final File imageFile = File.createTempFile("freeplane-animated-image", ".gif");
+		imageFile.deleteOnExit();
+		try (FileOutputStream outputStream = new FileOutputStream(imageFile)) {
+			outputStream.write(Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="));
+		}
+
+		final ImageIcon image = new HtmlImageCache.ImageLoader().loadAnimated(imageFile.toURI().toURL());
+
+		assertThat(image.getIconWidth()).isEqualTo(1);
+		assertThat(image.getIconHeight()).isEqualTo(1);
 	}
 
 	private URL source(String name) throws Exception {

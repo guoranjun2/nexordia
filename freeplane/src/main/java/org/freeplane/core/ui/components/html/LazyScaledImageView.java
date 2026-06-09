@@ -265,10 +265,23 @@ class LazyScaledImageView extends View {
 			paintPlaceholder(graphics, imageBounds);
 			return;
 		}
+		final int iconWidth = image.getIconWidth();
+		final int iconHeight = image.getIconHeight();
+		if(iconWidth <= 0 || iconHeight <= 0) {
+			paintPlaceholder(graphics, imageBounds);
+			return;
+		}
 		final Container container = getContainer();
 		final Component component = container instanceof Component ? (Component) container : null;
-		graphics.drawImage(image.getImage(), imageBounds.x, imageBounds.y, imageBounds.width, imageBounds.height,
-				component);
+		final Graphics2D graphics2D = (Graphics2D) graphics.create();
+		try {
+			graphics2D.translate(imageBounds.x, imageBounds.y);
+			graphics2D.scale(imageBounds.width / (double) iconWidth, imageBounds.height / (double) iconHeight);
+			image.paintIcon(component, graphics2D, 0, 0);
+		}
+		finally {
+			graphics2D.dispose();
+		}
 	}
 
 	private ImageIcon animatedGif() {

@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.MediaTracker;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -67,7 +68,9 @@ class HtmlImageCache {
 		}
 
 		ImageIcon loadAnimated(URL source) throws IOException {
-			return loadedIcon(new ImageIcon(source));
+			try (InputStream inputStream = source.openStream()) {
+				return loadAnimated(bytes(inputStream));
+			}
 		}
 
 		ImageIcon loadAnimated(byte[] imageData) throws IOException {
@@ -118,6 +121,15 @@ class HtmlImageCache {
 			if(icon.getImageLoadStatus() != MediaTracker.COMPLETE)
 				throw new IOException("can not load animated image");
 			return icon;
+		}
+
+		private static byte[] bytes(InputStream inputStream) throws IOException {
+			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			final byte[] buffer = new byte[8192];
+			int length;
+			while((length = inputStream.read(buffer)) >= 0)
+				outputStream.write(buffer, 0, length);
+			return outputStream.toByteArray();
 		}
 	}
 
