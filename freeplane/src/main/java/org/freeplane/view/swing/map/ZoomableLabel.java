@@ -23,6 +23,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.components.html.ScaledHTML;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
@@ -353,6 +354,13 @@ public class ZoomableLabel extends JLabel {
 
 	public void setTextRenderingIcon(Icon icon) {
 		putClientProperty(TEXT_RENDERING_ICON, icon);
+	}
+
+	void releaseHtmlForMapClose() {
+		ScaledHTML.detachRenderer(this);
+		setTextRenderingIcon(null);
+		setIcon(null);
+		super.setText("");
 	}
 
 	public int getEffectiveHorizontalTextPosition() {

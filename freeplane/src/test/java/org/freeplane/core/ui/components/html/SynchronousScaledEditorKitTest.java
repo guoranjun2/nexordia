@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.awt.Rectangle;
 
 import javax.swing.JLabel;
+import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.text.View;
 
 import org.junit.Test;
@@ -41,6 +42,19 @@ public class SynchronousScaledEditorKitTest {
 		final Rectangle scaledBounds = ScaledGifImageView.scaledBounds(new Rectangle(3, 5, 7, 11), 2.5f);
 
 		assertThat(scaledBounds).isEqualTo(new Rectangle(7, 12, 18, 28));
+	}
+
+	@Test
+	public void detachesRendererFromLabel() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label, "<html><body>text</body></html>");
+		final View child = renderer.getView(0);
+		label.putClientProperty(BasicHTML.propertyKey, renderer);
+
+		ScaledHTML.detachRenderer(label);
+
+		assertThat(label.getClientProperty(BasicHTML.propertyKey)).isNull();
+		assertThat(child.getParent()).isNull();
 	}
 
 	private ScaledHTML.Renderer htmlView(String html) {

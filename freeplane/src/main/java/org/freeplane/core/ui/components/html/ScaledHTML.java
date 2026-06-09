@@ -134,6 +134,16 @@ public class ScaledHTML extends BasicHTML{
     	}
     }
 
+    public static void detachRenderer(JLabel c) {
+        View oldValue = (View)c.getClientProperty(propertyKey);
+        if (oldValue != null) {
+            for (int i = 0; i < oldValue.getViewCount(); i++) {
+                oldValue.getView(i).setParent(null);
+            }
+        }
+        c.putClientProperty(BasicHTML.propertyKey, null);
+    }
+
 
     /**
      * Overrides to the default stylesheet.  Should consider

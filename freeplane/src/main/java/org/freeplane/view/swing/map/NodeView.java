@@ -1808,6 +1808,34 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         map.deselect(this);
     }
 
+    void releaseForMapClose() {
+        for (final ListIterator<NodeView> e = getChildrenViews().listIterator(); e.hasNext();) {
+            NodeView child = e.next();
+            child.releaseForMapClose();
+        }
+        releaseHtmlLabelsForMapClose();
+        getModeController().onViewRemoved(this);
+        if (attributeView != null) {
+            attributeView.viewRemoved();
+        }
+        getNode().removeViewer(this);
+        map.deselect(this);
+    }
+
+    private void releaseHtmlLabelsForMapClose() {
+        if (mainView != null) {
+            mainView.releaseHtmlForMapClose();
+        }
+        releaseHtmlLabelForMapClose(getContent(DETAIL_VIEWER_POSITION));
+        releaseHtmlLabelForMapClose(getContent(NOTE_VIEWER_POSITION));
+    }
+
+    private void releaseHtmlLabelForMapClose(JComponent component) {
+        if (component instanceof ZoomableLabel) {
+            ((ZoomableLabel) component).releaseHtmlForMapClose();
+        }
+    }
+
     protected void removeFromMap() {
         setFocusCycleRoot(false);
         Container parent = getParent();

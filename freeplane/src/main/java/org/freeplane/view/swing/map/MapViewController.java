@@ -355,8 +355,6 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 		}
 		map.removeMapChangeListener(mapView);
 		remove(mapView);
-		mapView.restoreRootNodeTemporarily();
-		mapView.getRoot().remove();
 		return true;
     }
 
@@ -376,7 +374,15 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 			}
 			changeToMapView((mapViewVector.get(index - 1)));
 		}
+		removeRootView(mapView);
 		mapViewChangeListeners.afterMapViewClose(mapView);
+	}
+
+	private void removeRootView(MapView mapView) {
+		mapView.restoreRootNodeTemporarily();
+		final NodeView root = mapView.getRoot();
+		root.releaseForMapClose();
+		mapView.remove(root);
 	}
 
 	@Override
