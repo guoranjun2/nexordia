@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -145,10 +146,11 @@ class HtmlImageCache {
 		}
 	}
 
-	private static final int DEFAULT_MAX_CACHE_PIXELS = 32 * 1024 * 1024;
+	private static final int DEFAULT_MAX_CACHE_PIXELS = 64 * 1024 * 1024;
 	private static final int DEFAULT_MAX_IMAGE_PIXELS = 4 * 1024 * 1024;
 	private static final int DIMENSION_BUCKET = 32;
 	private static final int IMAGE_LOADER_THREADS = 2;
+	private static final int[] IMAGE_SIZE_LEVELS = {16, 32, 64, 128, 256, 512, 1024, 2048};
 	private static final ExecutorService IMAGE_LOADER_EXECUTOR = Executors.newFixedThreadPool(IMAGE_LOADER_THREADS, runnable -> {
 		final Thread thread = new Thread(runnable, "Freeplane HTML image loader");
 		thread.setDaemon(true);
@@ -347,9 +349,8 @@ class HtmlImageCache {
 
 	private Dimension targetSize(int width, int height) {
 		final Dimension boundedSize = fitWithinMaxPixels(Math.max(1, width), Math.max(1, height), maxImagePixels);
-		final int bucketedWidth = bucketLength(boundedSize.width);
-		final int bucketedHeight = bucketLength(boundedSize.height);
-		return fitWithinMaxPixels(bucketedWidth, bucketedHeight, maxImagePixels);
+		final Dimension leveledSize = imageSizeLevel(boundedSize);
+		return fitWithinMaxPixels(leveledSize.width, leveledSize.height, maxImagePixels);
 	}
 
 	static Dimension fitWithinMaxPixels(int width, int height, int maxPixels) {
@@ -368,14 +369,37 @@ class HtmlImageCache {
 		return new Dimension(scaledWidth, scaledHeight);
 	}
 
-	private static int bucketLength(int value) {
-		if(value <= DIMENSION_BUCKET)
-			return value;
-		return ((value + DIMENSION_BUCKET - 1) / DIMENSION_BUCKET) * DIMENSION_BUCKET;
+	static Dimension imageSizeLevel(Dimension size) {
+		final int maxLength = Math.max(size.width, size.height);
+		final int level = imageSizeLevel(maxLength);
+		final double scale = level / (double) maxLength;
+		return new Dimension(Math.max(1, (int)Math.ceil(size.width * scale)),
+				Math.max(1, (int)Math.ceil(size.height * scale)));
+	}
+
+	private static int imageSizeLevel(int length) {
+		for(int level : IMAGE_SIZE_LEVELS) {
+			if(length <= level)
+				return level;
+		}
+		return ((length + DIMENSION_BUCKET - 1) / DIMENSION_BUCKET) * DIMENSION_BUCKET;
 	}
 
 	static String sourceKey(URL source) {
-		return sourceKey(source.toExternalForm());
+		return sourceKey(source.toExternalForm() + sourceVersion(source));
+	}
+
+	private static String sourceVersion(URL source) {
+		if(! "file".equals(source.getProtocol()))
+			return "";
+		try {
+			final URLConnection connection = source.openConnection();
+			final long lastModified = connection.getLastModified();
+			return lastModified > 0 ? "#" + lastModified : "";
+		}
+		catch (IOException e) {
+			return "";
+		}
 	}
 
 	private static String sourceKey(String source) {

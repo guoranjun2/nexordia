@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayDeque;
@@ -72,7 +73,7 @@ public class HtmlImageCacheTest {
 
 		assertThat(fallbackImage).isNotNull();
 		assertThat(fallbackImage.getWidth()).isEqualTo(128);
-		assertThat(targetImage.getWidth()).isEqualTo(224);
+		assertThat(targetImage.getWidth()).isEqualTo(256);
 		assertThat(loader.loadCount).isEqualTo(2);
 	}
 
@@ -137,6 +138,32 @@ public class HtmlImageCacheTest {
 		assertThat(loader.loadCount).isEqualTo(1);
 		assertThat(oldTargetRepaints.get()).isEqualTo(0);
 		assertThat(newTargetRepaints.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void groupsNearbyTargetSizesIntoImageSizeLevels() {
+		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(12, 6))).isEqualTo(new Dimension(16, 8));
+		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(24, 12))).isEqualTo(new Dimension(32, 16));
+		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(100, 50))).isEqualTo(new Dimension(128, 64));
+		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(120, 60))).isEqualTo(new Dimension(128, 64));
+		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(200, 100))).isEqualTo(new Dimension(256, 128));
+	}
+
+	@Test
+	public void includesFileModificationTimeInSourceKey() throws Exception {
+		final File imageFile = File.createTempFile("freeplane-html-image-cache", ".png");
+		try {
+			assertThat(imageFile.setLastModified(1_000L)).isTrue();
+			final String firstKey = HtmlImageCache.sourceKey(imageFile.toURI().toURL());
+
+			assertThat(imageFile.setLastModified(2_000L)).isTrue();
+			final String secondKey = HtmlImageCache.sourceKey(imageFile.toURI().toURL());
+
+			assertThat(secondKey).isNotEqualTo(firstKey);
+		}
+		finally {
+			imageFile.delete();
+		}
 	}
 
 	@Test
