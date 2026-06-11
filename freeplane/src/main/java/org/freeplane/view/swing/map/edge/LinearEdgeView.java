@@ -28,52 +28,68 @@ import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.map.link.CollisionDetector;
 
 /**
- * This class represents a single Edge of a MindMap.
+ * This class represents a single straight Edge of a MindMap.
  */
 public class LinearEdgeView extends EdgeView {
-	public LinearEdgeView(NodeView source, NodeView target, Component paintedComponent, boolean highlightsAscendantEdge) {
-	    super(source, target, paintedComponent, highlightsAscendantEdge);
-    }
+
+	public LinearEdgeView(
+			NodeView source,
+			NodeView target,
+			Component paintedComponent,
+			boolean highlightsAscendantEdge
+	) {
+		super(source, target, paintedComponent, highlightsAscendantEdge);
+	}
+
+
+	@Override
+	protected boolean usesDynamicConnectorPortsForFreeNode(boolean targetIsFree) {
+		return targetIsFree;
+	}
 
 	@Override
 	protected void draw(final Graphics2D g) {
-		final int w = getWidth();
-		if (w <= 1) {
-			g.drawLine(start.x, start.y, shapeStart.x, shapeStart.y);
-			g.drawLine(shapeStart.x, shapeStart.y, end.x, end.y);
-			if (drawHiddenParentEdge()) {
-				g.setColor(g.getBackground());
-				g.setStroke(EdgeView.getEclipsedStroke());
-				g.drawLine(start.x, start.y, shapeStart.x, shapeStart.y);
-				g.drawLine(shapeStart.x, shapeStart.y, end.x, end.y);
-			}
+		final Path2D path = createPath();
+
+		g.draw(path);
+
+		if (drawHiddenParentEdge()) {
+			g.setColor(g.getBackground());
+			g.setStroke(EdgeView.getEclipsedStroke());
+			g.draw(path);
+		}
+	}
+
+	/**
+	 * 创建直线路径。
+	 *
+	 * 逻辑：
+	 *   1. 如果 start 和 shapeStart 不同，先画 start -> shapeStart；
+	 *      这是为了兼容原来 folding mark 的偏移。
+	 *
+	 *   2. 然后画 shapeStart -> end。
+	 *
+	 * 对 FreeNode 来说，EdgeView 已经根据 dx/dy 重新选好了
+	 * TOP/BOTTOM/LEFT/RIGHT 入口，所以这里不需要再判断方向。
+	 */
+	private Path2D createPath() {
+		final Path2D path = new Path2D.Float();
+
+		if (start != shapeStart) {
+			path.moveTo(start.x, start.y);
+			path.lineTo(shapeStart.x, shapeStart.y);
 		}
 		else {
-	        final Point startControlPoint = getControlPoint(getStartConnectorLocation());
-	        final int zoomedXCTRL = w + 1;
-	        final int xctrl = startControlPoint.x * zoomedXCTRL;
-	        final int yctrl = startControlPoint.y * zoomedXCTRL;
-	        final Point endControlPoint = getControlPoint(getEndConnectorLocation());
-	        final int childXctrl = endControlPoint.x * zoomedXCTRL;
-	        final int childYctrl = endControlPoint.y * zoomedXCTRL;
-			final int xs[] = { start.x, shapeStart.x, shapeStart.x + xctrl, end.x + childXctrl, end.x };
-			final int ys[] = { start.y, shapeStart.y, shapeStart.y + yctrl, end.y + childYctrl, end.y };
-			g.drawPolyline(xs, ys, 4);
-			if (drawHiddenParentEdge()) {
-				g.setColor(g.getBackground());
-				g.setStroke(EdgeView.getEclipsedStroke());
-				g.drawPolyline(xs, ys, 4);
-			}
+			path.moveTo(shapeStart.x, shapeStart.y);
 		}
+
+		path.lineTo(end.x, end.y);
+
+		return path;
 	}
 
 	@Override
 	public boolean detectCollision(final Point p) {
-		final Path2D line = new Path2D.Float();
-		line.moveTo(start.x, start.y);
-		if(start != shapeStart)
-			line.lineTo(shapeStart.x, shapeStart.y);
-		line.lineTo(end.x, end.y);
-		return new CollisionDetector().detectCollision(p, line);
+		return new CollisionDetector().detectCollision(p, createPath());
 	}
 }
