@@ -219,7 +219,7 @@ class LazyScaledImageView extends View {
 		visibleRect.grow(visibleRect.width / VIEWPORT_CACHE_MARGIN_DIVISOR,
 				visibleRect.height / VIEWPORT_CACHE_MARGIN_DIVISOR);
 
-		final Rectangle imageRectangle = SwingUtilities.convertRectangle(component, bounds, viewport);
+		final Rectangle imageRectangle = SwingUtilities.convertRectangle(component, scaledBounds(bounds, zoom()), viewport);
 		return visibleRect.intersects(imageRectangle);
 	}
 
