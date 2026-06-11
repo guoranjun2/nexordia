@@ -42,6 +42,13 @@ public class LazyScaledImageViewTest {
 		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(34f);
 	}
 
+	@Test
+	public void scalesRepaintBoundsUsingViewZoom() {
+		final Rectangle scaledBounds = LazyScaledImageView.scaledBounds(new Rectangle(3, 5, 7, 11), 2.5f);
+
+		assertThat(scaledBounds).isEqualTo(new Rectangle(7, 12, 18, 28));
+	}
+
 	private LazyScaledImageView findImageView(View view) {
 		if(view instanceof LazyScaledImageView)
 			return (LazyScaledImageView)view;

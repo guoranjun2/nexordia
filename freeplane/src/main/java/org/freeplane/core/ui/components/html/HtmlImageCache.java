@@ -148,7 +148,7 @@ class HtmlImageCache {
 	private static final int DEFAULT_MAX_CACHE_PIXELS = 32 * 1024 * 1024;
 	private static final int DEFAULT_MAX_IMAGE_PIXELS = 4 * 1024 * 1024;
 	private static final int DIMENSION_BUCKET = 32;
-	private static final int IMAGE_LOADER_THREADS = 4;
+	private static final int IMAGE_LOADER_THREADS = 2;
 	private static final ExecutorService IMAGE_LOADER_EXECUTOR = Executors.newFixedThreadPool(IMAGE_LOADER_THREADS, runnable -> {
 		final Thread thread = new Thread(runnable, "Freeplane HTML image loader");
 		thread.setDaemon(true);
@@ -165,8 +165,11 @@ class HtmlImageCache {
 	private final Map<ImageKey, Entry> images;
 	private final Map<String, Dimension> imageSizes;
 	private final Map<ImageKey, Set<Runnable>> pendingImageCallbacks;
+	private final Map<String, ImageKey> latestPendingImageKeys;
 	private final Set<ImageKey> failedImages;
+	private final Set<Runnable> pendingRepaintCallbacks;
 	private int cachedPixels;
+	private boolean repaintScheduled;
 
 	HtmlImageCache(ImageLoader imageLoader, Executor executor, int maxCachePixels, int maxImagePixels) {
 		this.imageLoader = imageLoader;
@@ -176,7 +179,9 @@ class HtmlImageCache {
 		this.images = new LinkedHashMap<ImageKey, Entry>(16, 0.75f, true);
 		this.imageSizes = new HashMap<String, Dimension>();
 		this.pendingImageCallbacks = new HashMap<ImageKey, Set<Runnable>>();
+		this.latestPendingImageKeys = new HashMap<String, ImageKey>();
 		this.failedImages = new HashSet<ImageKey>();
+		this.pendingRepaintCallbacks = new LinkedHashSet<Runnable>();
 	}
 
 	BufferedImage getOrSchedule(URL source, String sourceKey, int targetWidth, int targetHeight, Runnable repaintCallback) {
@@ -191,9 +196,11 @@ class HtmlImageCache {
 			if(failedImages.contains(key))
 				return fallbackImage;
 			if(pendingImageCallbacks.containsKey(key)) {
+				latestPendingImageKeys.put(sourceKey, key);
 				addRepaintCallback(key, repaintCallback);
 				return fallbackImage;
 			}
+			latestPendingImageKeys.put(sourceKey, key);
 			pendingImageCallbacks.put(key, repaintCallbacks(repaintCallback));
 		}
 		executor.execute(() -> loadImage(source, key));
@@ -259,29 +266,61 @@ class HtmlImageCache {
 
 	private void loadImage(URL source, ImageKey key) {
 		final Set<Runnable> repaintCallbacks;
+		synchronized(this) {
+			if(! isLatestPendingImageKey(key)) {
+				pendingImageCallbacks.remove(key);
+				return;
+			}
+		}
 		try {
 			final BufferedImage image = imageLoader.load(source, key.width, key.height);
 			synchronized(this) {
+				if(! isLatestPendingImageKey(key)) {
+					image.flush();
+					pendingImageCallbacks.remove(key);
+					return;
+				}
 				put(key, image);
 				repaintCallbacks = pendingImageCallbacks.remove(key);
+				latestPendingImageKeys.remove(key.sourceKey);
 			}
 			repaint(repaintCallbacks);
 		}
 		catch (IOException | RuntimeException e) {
 			synchronized(this) {
 				pendingImageCallbacks.remove(key);
+				if(isLatestPendingImageKey(key))
+					latestPendingImageKeys.remove(key.sourceKey);
 				failedImages.add(key);
 			}
 		}
 	}
 
+	private boolean isLatestPendingImageKey(ImageKey key) {
+		return key.equals(latestPendingImageKeys.get(key.sourceKey));
+	}
+
 	private void repaint(Set<Runnable> repaintCallbacks) {
 		if(repaintCallbacks == null || repaintCallbacks.isEmpty())
 			return;
-		SwingUtilities.invokeLater(() -> {
-			for(Runnable repaintCallback : repaintCallbacks)
-				repaintCallback.run();
-		});
+		synchronized(this) {
+			pendingRepaintCallbacks.addAll(repaintCallbacks);
+			if(repaintScheduled)
+				return;
+			repaintScheduled = true;
+		}
+		SwingUtilities.invokeLater(this::repaintPendingCallbacks);
+	}
+
+	private void repaintPendingCallbacks() {
+		final Set<Runnable> repaintCallbacks;
+		synchronized(this) {
+			repaintCallbacks = new LinkedHashSet<Runnable>(pendingRepaintCallbacks);
+			pendingRepaintCallbacks.clear();
+			repaintScheduled = false;
+		}
+		for(Runnable repaintCallback : repaintCallbacks)
+			repaintCallback.run();
 	}
 
 	private void put(ImageKey key, BufferedImage image) {
@@ -363,7 +402,10 @@ class HtmlImageCache {
 		images.clear();
 		imageSizes.clear();
 		pendingImageCallbacks.clear();
+		latestPendingImageKeys.clear();
 		failedImages.clear();
+		pendingRepaintCallbacks.clear();
+		repaintScheduled = false;
 		cachedPixels = 0;
 	}
 }

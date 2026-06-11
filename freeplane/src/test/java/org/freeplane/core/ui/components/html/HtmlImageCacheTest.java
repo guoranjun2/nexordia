@@ -115,6 +115,31 @@ public class HtmlImageCacheTest {
 	}
 
 	@Test
+	public void skipsQueuedImageLoadsReplacedByNewerTargetSize() throws Exception {
+		final CountingImageLoader loader = new CountingImageLoader();
+		final QueuedExecutor executor = new QueuedExecutor();
+		final HtmlImageCache cache = new HtmlImageCache(loader, executor, 1_000_000, 1_000_000);
+		final URL source = source("image-a");
+		final String sourceKey = HtmlImageCache.sourceKey(source);
+		final AtomicInteger oldTargetRepaints = new AtomicInteger();
+		final AtomicInteger newTargetRepaints = new AtomicInteger();
+
+		cache.getOrSchedule(source, sourceKey, 100, 100, () -> oldTargetRepaints.incrementAndGet());
+		cache.getOrSchedule(source, sourceKey, 200, 200, () -> newTargetRepaints.incrementAndGet());
+
+		assertThat(executor.taskCount()).isEqualTo(2);
+		executor.runNext();
+		assertThat(loader.loadCount).isEqualTo(0);
+		executor.runNext();
+		SwingUtilities.invokeAndWait(() -> {
+		});
+
+		assertThat(loader.loadCount).isEqualTo(1);
+		assertThat(oldTargetRepaints.get()).isEqualTo(0);
+		assertThat(newTargetRepaints.get()).isEqualTo(1);
+	}
+
+	@Test
 	public void cachesImageSizes() throws Exception {
 		final CountingImageLoader loader = new CountingImageLoader();
 		final HtmlImageCache cache = new HtmlImageCache(loader, Runnable::run, 1_000_000, 1_000_000);

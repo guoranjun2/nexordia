@@ -36,6 +36,7 @@ class LazyScaledImageView extends View {
 	private final Runnable repaintCallback = this::repaintHost;
 	private URL source;
 	private String sourceKey;
+	private Rectangle repaintBounds;
 	private int width;
 	private int height;
 
@@ -57,6 +58,7 @@ class LazyScaledImageView extends View {
 	public void paint(Graphics graphics, Shape allocation) {
 		final Rectangle bounds = allocation instanceof Rectangle ? (Rectangle) allocation : allocation.getBounds();
 		final Rectangle imageBounds = imageBounds(bounds);
+		repaintBounds = scaledBounds(imageBounds, zoom());
 		if(! isInVisibleViewport(bounds)) {
 			paintPlaceholder(graphics, imageBounds);
 			return;
@@ -214,9 +216,6 @@ class LazyScaledImageView extends View {
 			return false;
 
 		final Rectangle visibleRect = viewport.getVisibleRect();
-		final float zoom = Controller.getCurrentController().getMapViewManager().getZoom();
-		if(bounds.width * zoom >= visibleRect.width || bounds.height * zoom >= visibleRect.height)
-			return true;
 		visibleRect.grow(visibleRect.width / VIEWPORT_CACHE_MARGIN_DIVISOR,
 				visibleRect.height / VIEWPORT_CACHE_MARGIN_DIVISOR);
 
@@ -238,11 +237,26 @@ class LazyScaledImageView extends View {
 		final Container container = getContainer();
 		if(container instanceof JComponent) {
 			final JComponent component = (JComponent) container;
-			component.repaint();
-			final JViewport viewport = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, component);
-			if(viewport != null)
-				viewport.repaint();
+			final Rectangle bounds = repaintBounds;
+			if(bounds != null)
+				component.repaint(0, bounds.x, bounds.y, bounds.width, bounds.height);
+			else
+				component.repaint();
 		}
+	}
+
+	private float zoom() {
+		return Controller.getCurrentController().getMapViewManager().getZoom();
+	}
+
+	static Rectangle scaledBounds(Rectangle bounds, float zoom) {
+		if(zoom == 1f)
+			return new Rectangle(bounds);
+		final int x = (int)Math.floor(bounds.x * zoom);
+		final int y = (int)Math.floor(bounds.y * zoom);
+		final int maxX = (int)Math.ceil((bounds.x + bounds.width) * zoom);
+		final int maxY = (int)Math.ceil((bounds.y + bounds.height) * zoom);
+		return new Rectangle(x, y, Math.max(1, maxX - x), Math.max(1, maxY - y));
 	}
 
 	private float verticalAlignment() {
