@@ -24,5 +24,5 @@ package org.freeplane.view.swing.map;
  * 21.04.2012
  */
 enum PaintingMode {
-	CLOUDS, NODES, SELECTED_NODES, LINKS, SELECTORS
+	CLOUDS, NODES, SELECTED_NODES, LINKS, CLOUD_TEXTS, SELECTORS
 }

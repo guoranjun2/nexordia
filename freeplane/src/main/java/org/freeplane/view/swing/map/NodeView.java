@@ -1654,11 +1654,30 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         cloud.paint(g);
     }
 
+    private void paintCloudText(final Graphics g) {
+        if (!isSubtreeVisible()) {
+            return;
+        }
+        final CloudModel cloudModel = getCloudModel();
+        if (cloudModel == null) {
+            return;
+        }
+        final CloudView cloud = new CloudViewFactory().createCloudView(cloudModel, this);
+        cloud.paintText(g);
+    }
+
     void paintCloudTree(final Graphics2D g) {
         if (isSubtreeVisible()) {
             paintCloud(g);
         }
         paintChildCloudTrees(g);
+    }
+
+    void paintCloudTextTree(final Graphics2D g) {
+        if (isSubtreeVisible()) {
+            paintCloudText(g);
+        }
+        paintChildCloudTextTrees(g);
     }
 
     private void paintChildCloudTrees(final Graphics2D g) {
@@ -1672,6 +1691,21 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             nodeView.paintCloudTree(g);
+            g.translate(-p.x, -p.y);
+        }
+    }
+
+    private void paintChildCloudTextTrees(final Graphics2D g) {
+        for (int i = getComponentCount() - 1; i >= 0; i--) {
+            final Component component = getComponent(i);
+            if (!(component instanceof NodeView)) {
+                continue;
+            }
+            final NodeView nodeView = (NodeView) component;
+            final Rectangle bounds = nodeView.getBounds();
+            final Point p = bounds.getLocation();
+            g.translate(p.x, p.y);
+            nodeView.paintCloudTextTree(g);
             g.translate(-p.x, -p.y);
         }
     }

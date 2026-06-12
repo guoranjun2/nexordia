@@ -1047,8 +1047,11 @@ public class MainView extends ZoomableLabel {
 		int width = getWidth();
 		int height = getHeight();
 
-		if(shouldPaintSimplified(width, height)) {
-			paintSimplified(graphics, width, height, getBorderColor());
+		if(isPaintingSimplified()) {
+			paintSimplified(graphics, width, height,
+					getBorderColor(),
+					getBackground()
+			);
 			return;
 		}
 		AffineTransform t = g2.getTransform();
@@ -1061,6 +1064,10 @@ public class MainView extends ZoomableLabel {
 		}
 		else
 			painter.paintComponent(graphics);
+	}
+
+	public boolean isPaintingSimplified() {
+		return isSmallView(getWidth(), getHeight());
 	}
 
 	@Override

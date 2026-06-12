@@ -21,11 +21,14 @@ package org.freeplane.view.swing.map.cloud;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.Stroke;
 import java.util.LinkedList;
 import java.util.Random;
@@ -34,6 +37,8 @@ import java.util.Vector;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.core.util.HtmlUtils;
+import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
 
@@ -126,7 +131,8 @@ abstract public class CloudView {
 	}
 
 	public void paint(final Graphics graphics) {
-		if (isCloudTooSmallForPainting(getPaintingBounds())) {
+		final Rectangle paintingBounds = getPaintingBounds();
+		if (isCloudTooSmallForPainting(paintingBounds)) {
 			return;
 		}
 		random = new Random(0);
@@ -148,12 +154,118 @@ abstract public class CloudView {
 		g.dispose();
 	}
 
+	public void paintText(final Graphics graphics) {
+		final Rectangle paintingBounds = getPaintingBounds();
+		if (isCloudTooSmallForPainting(paintingBounds)) {
+			return;
+		}
+		final Graphics2D g = (Graphics2D) graphics.create();
+		try {
+			paintSourceTextIfSimplified(g, paintingBounds);
+		}
+		finally {
+			g.dispose();
+		}
+	}
+
 	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
 		return bounds.width < MINIMUM_CLOUD_PAINTING_SIZE || bounds.height < MINIMUM_CLOUD_PAINTING_SIZE;
 	}
 
 	protected Rectangle getPaintingBounds() {
 		return getCoordinates().getBounds();
+	}
+
+	private void paintSourceTextIfSimplified(Graphics2D g, Rectangle cloudBounds) {
+		final MainView mainView = source.getMainView();
+		if (mainView == null || !mainView.isPaintingSimplified()) {
+			return;
+		}
+		final String text = getPlainSourceText(mainView);
+		if (text.isEmpty()) {
+			return;
+		}
+		final Font font = fitFontToBounds(mainView.getFont(), text, g, cloudBounds);
+		if (font == null) {
+			return;
+		}
+		g.setFont(font);
+		g.setColor(mainView.getForeground());
+		final FontMetrics metrics = g.getFontMetrics(font);
+		if (metrics.getHeight() > cloudBounds.height) {
+			return;
+		}
+		final String fittedText = fitTextToWidth(text, metrics, cloudBounds.width);
+		if (fittedText.isEmpty()) {
+			return;
+		}
+		final int x = cloudBounds.x + (cloudBounds.width - metrics.stringWidth(fittedText)) / 2;
+		final int y = cloudBounds.y + (cloudBounds.height - metrics.getHeight()) / 2 + metrics.getAscent();
+		final Shape clip = g.getClip();
+		try {
+			g.clip(cloudBounds);
+			g.drawString(fittedText, x, y);
+		}
+		finally {
+			g.setClip(clip);
+		}
+	}
+
+	private Font fitFontToBounds(Font baseFont, String text, Graphics2D g, Rectangle cloudBounds) {
+		final Font smallestFont = baseFont.deriveFont(1f);
+		if (doesTextFit(text, g.getFontMetrics(smallestFont), cloudBounds)) {
+			float minSize = 1f;
+			float maxSize = Math.max(baseFont.getSize2D(), cloudBounds.height);
+			for (int i = 0; i < 12; i++) {
+				final float middleSize = (minSize + maxSize) / 2f;
+				final Font middleFont = baseFont.deriveFont(middleSize);
+				if (doesTextFit(text, g.getFontMetrics(middleFont), cloudBounds)) {
+					minSize = middleSize;
+				}
+				else {
+					maxSize = middleSize;
+				}
+			}
+			return baseFont.deriveFont(minSize);
+		}
+		return g.getFontMetrics(smallestFont).getHeight() <= cloudBounds.height ? smallestFont : null;
+	}
+
+	private boolean doesTextFit(String text, FontMetrics metrics, Rectangle cloudBounds) {
+		return metrics.stringWidth(text) <= cloudBounds.width && metrics.getHeight() <= cloudBounds.height;
+	}
+
+	private String fitTextToWidth(String text, FontMetrics metrics, int width) {
+		if (metrics.stringWidth(text) <= width) {
+			return text;
+		}
+		final String ellipsis = "...";
+		final int ellipsisWidth = metrics.stringWidth(ellipsis);
+		if (ellipsisWidth > width) {
+			return "";
+		}
+		int begin = 0;
+		int end = text.length();
+		while (begin < end) {
+			final int middle = (begin + end + 1) / 2;
+			if (metrics.stringWidth(text.substring(0, middle)) + ellipsisWidth <= width) {
+				begin = middle;
+			}
+			else {
+				end = middle - 1;
+			}
+		}
+		return begin == 0 ? ellipsis : text.substring(0, begin) + ellipsis;
+	}
+
+	private String getPlainSourceText(MainView mainView) {
+		final String text = mainView.getText();
+		if (text == null) {
+			return "";
+		}
+		final String plainText = HtmlUtils.isHtml(text) ? HtmlUtils.htmlToPlain(text) : text;
+		final int firstLineEnd = plainText.indexOf('\n');
+		return firstLineEnd >= 0 ? plainText.substring(0, firstLineEnd) : plainText;
 	}
 
 	protected Polygon getCoordinates() {

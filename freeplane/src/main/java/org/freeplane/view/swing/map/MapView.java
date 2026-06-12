@@ -2320,15 +2320,17 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 				PaintingMode.NODES
 				};
 	    else if(paintConnectorsBehind)
-	    	paintModes = new PaintingMode[]{
-	    		PaintingMode.CLOUDS,
-	    		PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES
-	    		};
+			paintModes = new PaintingMode[]{
+				PaintingMode.CLOUDS,
+				PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES,
+				PaintingMode.CLOUD_TEXTS
+				};
 	    else
-	    	paintModes = new PaintingMode[]{
-	    		PaintingMode.CLOUDS,
-	    		PaintingMode.NODES, PaintingMode.SELECTED_NODES, PaintingMode.LINKS
-	    		};
+			paintModes = new PaintingMode[]{
+				PaintingMode.CLOUDS,
+				PaintingMode.NODES, PaintingMode.SELECTED_NODES, PaintingMode.LINKS,
+				PaintingMode.CLOUD_TEXTS
+				};
 	    final Graphics2D g2 = (Graphics2D) g;
 	    paintChildren(g2, paintModes);
 	    if(isSpotlightEnabled())
@@ -2374,6 +2376,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			case CLOUDS:
 				paintClouds(g2);
 				break;
+			case CLOUD_TEXTS:
+				paintCloudTexts(g2);
+				break;
 	    		case LINKS:
 	    			if(HIDE_CONNECTORS != showConnectors && paintingPurpose != PaintingPurpose.OVERVIEW)
 	    				paintConnectors(g2);
@@ -2390,6 +2395,18 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         try {
             g.translate(root.getX(), root.getY());
             root.paintCloudTree(g);
+        }
+        finally {
+            g.dispose();
+        }
+    }
+
+    private void paintCloudTexts(final Graphics2D g2) {
+        final NodeView root = getRoot();
+        final Graphics2D g = (Graphics2D) g2.create();
+        try {
+            g.translate(root.getX(), root.getY());
+            root.paintCloudTextTree(g);
         }
         finally {
             g.dispose();

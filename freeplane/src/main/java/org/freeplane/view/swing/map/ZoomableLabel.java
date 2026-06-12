@@ -89,12 +89,14 @@ public class ZoomableLabel extends JLabel {
 	}
 
 	protected boolean shouldPaintSimplified(int width, int height) {
-		final MapView map = getMap();
-		return ! hasVisiblePaintAnchor(map, width, height)
-				|| map.getZoom() <= SIMPLIFIED_PAINTING_MAX_ZOOM
-				&& (width <= SIMPLIFIED_PAINTING_MAX_WIDTH || height <= SIMPLIFIED_PAINTING_MAX_HEIGHT);
+		return ! hasVisiblePaintAnchor(getMap(), width, height)
+				|| isSmallView(width, height);
 	}
 
+	protected boolean isSmallView(int width, int height) {
+		return getMap().getZoom() <= SIMPLIFIED_PAINTING_MAX_ZOOM
+				&& (width <= SIMPLIFIED_PAINTING_MAX_WIDTH || height <= SIMPLIFIED_PAINTING_MAX_HEIGHT);
+	}
 	private boolean hasVisiblePaintAnchor(MapView map, int width, int height) {
 		final Point topLeft = getLocationOnScreen();
 		SwingUtilities.convertPointFromScreen(topLeft, map);
@@ -109,8 +111,8 @@ public class ZoomableLabel extends JLabel {
 				|| visibleRect.contains(new Point(topLeft.x + right, topLeft.y + bottom));
 	}
 
-	protected void paintSimplified(Graphics graphics, int width, int height, Color borderColor) {
-		graphics.setColor(getBackground());
+	protected void paintSimplified(Graphics graphics, int width, int height, Color borderColor, Color backgroundColor) {
+		graphics.setColor(backgroundColor);
 		graphics.fillRect(0, 0, width, height);
 		graphics.setColor(borderColor);
 		graphics.drawRect(0, 0, width - 1, height - 1);
