@@ -36,6 +36,7 @@ import java.util.Vector;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.HtmlUtils;
+import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
 import org.freeplane.features.map.NodeModel;
@@ -50,8 +51,9 @@ abstract public class CloudView {
 	static final Stroke DEF_STROKE = new BasicStroke(1);
 	private static final String CLOUD_PAINTING_MIN_WIDTH = "cloud_painting_min_width";
 	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
+	private static final String TITLE_ATTRIBUTE = "title";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
-	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 50;
+	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
 	/** the layout functions can get the additional height of the clouded node .
@@ -200,7 +202,7 @@ abstract public class CloudView {
 	}
 
 	private void paintSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds) {
-		final String text = getPlainSourceText(mainView);
+		final String text = getCloudTitle(mainView);
 		if (text.isEmpty()) {
 			return;
 		}
@@ -277,11 +279,34 @@ abstract public class CloudView {
 		return begin == 0 ? ellipsis : text.substring(0, begin) + ellipsis;
 	}
 
-	private String getPlainSourceText(MainView mainView) {
+	private String getCloudTitle(MainView mainView) {
+		final String text = getSourceTitleText();
+		if (text != null) {
+			return toFirstPlainTextLine(text);
+		}
+		return getPlainMainViewText(mainView);
+	}
+
+	private String getSourceTitleText() {
+		final NodeAttributeTableModel attributes = NodeAttributeTableModel.getModel(source.getNode());
+		final int titleIndex = attributes.getAttributeIndex(TITLE_ATTRIBUTE);
+		if (titleIndex < 0) {
+			return null;
+		}
+		final Object value = attributes.getValue(titleIndex);
+		final String title = value == null ? "" : value.toString();
+		return title.isEmpty() ? null : title;
+	}
+
+	private String getPlainMainViewText(MainView mainView) {
 		final String text = mainView.getText();
 		if (text == null) {
 			return "";
 		}
+		return toFirstPlainTextLine(text);
+	}
+
+	private String toFirstPlainTextLine(String text) {
 		final String plainText = HtmlUtils.isHtml(text) ? HtmlUtils.htmlToPlain(text) : text;
 		final int firstLineEnd = plainText.indexOf('\n');
 		return firstLineEnd >= 0 ? plainText.substring(0, firstLineEnd) : plainText;
