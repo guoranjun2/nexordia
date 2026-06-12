@@ -52,6 +52,7 @@ abstract public class CloudView {
 	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 50;
+	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
 	/** the layout functions can get the additional height of the clouded node .
 	 * @param cloud */
@@ -159,13 +160,17 @@ abstract public class CloudView {
 	}
 
 	public void paintText(final Graphics graphics) {
+		final MainView mainView = source.getMainView();
+		if (mainView == null || !mainView.isPaintingSimplified()) {
+			return;
+		}
 		final Rectangle paintingBounds = getPaintingBounds();
 		if (isCloudTooSmallForPainting(paintingBounds) || isCloudTooSmallForTextPainting(paintingBounds)) {
 			return;
 		}
 		final Graphics2D g = (Graphics2D) graphics.create();
 		try {
-			paintSourceTextIfSimplified(g, paintingBounds);
+			paintSourceText(g, mainView, paintingBounds);
 		}
 		finally {
 			g.dispose();
@@ -194,11 +199,7 @@ abstract public class CloudView {
 		return getCoordinates().getBounds();
 	}
 
-	private void paintSourceTextIfSimplified(Graphics2D g, Rectangle cloudBounds) {
-		final MainView mainView = source.getMainView();
-		if (mainView == null || !mainView.isPaintingSimplified()) {
-			return;
-		}
+	private void paintSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds) {
 		final String text = getPlainSourceText(mainView);
 		if (text.isEmpty()) {
 			return;
@@ -331,8 +332,9 @@ abstract public class CloudView {
 			final double length = Math.sqrt(dx * dx + dy * dy);
 			dxn = dx / length; /* normalized direction of p0 -> p1 */
 			dyn = dy / length;
-			for (int j = 0;;) {
-				double distanceBetweenPoints = middleDistanceBetweenPoints * random(0.7);
+			for (double j = 0;;) {
+				double distanceBetweenPoints = Math.max(MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS,
+						middleDistanceBetweenPoints * random(0.7));
 				if (j + 2* distanceBetweenPoints < length) {
 					j += distanceBetweenPoints;
 					x3 = x0 + j * dxn;
