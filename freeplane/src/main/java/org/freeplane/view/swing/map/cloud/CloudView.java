@@ -34,10 +34,11 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Vector;
 
+import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
@@ -47,7 +48,10 @@ import org.freeplane.view.swing.map.NodeView;
  */
 abstract public class CloudView {
 	static final Stroke DEF_STROKE = new BasicStroke(1);
-	private static final int MINIMUM_CLOUD_PAINTING_SIZE = 10;
+	private static final String CLOUD_PAINTING_MIN_WIDTH = "cloud_painting_min_width";
+	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
+	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
+	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 50;
 
 	/** the layout functions can get the additional height of the clouded node .
 	 * @param cloud */
@@ -156,7 +160,7 @@ abstract public class CloudView {
 
 	public void paintText(final Graphics graphics) {
 		final Rectangle paintingBounds = getPaintingBounds();
-		if (isCloudTooSmallForPainting(paintingBounds)) {
+		if (isCloudTooSmallForPainting(paintingBounds) || isCloudTooSmallForTextPainting(paintingBounds)) {
 			return;
 		}
 		final Graphics2D g = (Graphics2D) graphics.create();
@@ -169,7 +173,21 @@ abstract public class CloudView {
 	}
 
 	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
-		return bounds.width < MINIMUM_CLOUD_PAINTING_SIZE || bounds.height < MINIMUM_CLOUD_PAINTING_SIZE;
+		return bounds.width < getCloudPaintingMinWidth();
+	}
+
+	private static boolean isCloudTooSmallForTextPainting(Rectangle bounds) {
+		return bounds.width < getCloudTextPaintingMinWidth();
+	}
+
+	private static int getCloudPaintingMinWidth() {
+		return ResourceController.getResourceController().getIntProperty(CLOUD_PAINTING_MIN_WIDTH,
+				DEFAULT_CLOUD_PAINTING_MIN_WIDTH);
+	}
+
+	private static int getCloudTextPaintingMinWidth() {
+		return ResourceController.getResourceController().getIntProperty(CLOUD_TEXT_PAINTING_MIN_WIDTH,
+				DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH);
 	}
 
 	protected Rectangle getPaintingBounds() {

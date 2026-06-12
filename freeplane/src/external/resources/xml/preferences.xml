@@ -232,9 +232,6 @@
 				<length name="grid_size" defaultUnit = "px" min="0" max = "1000" step = "0.01"/>
 				<number name="scrolling_speed" min="1" max="30" />
 				<number name="map_view_zoom_step" min="1" max="100" />
-				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
-				<number name="simplified_painting_max_width" min="1" max="200" />
-				<number name="simplified_painting_max_height" min="1" max="200" />
 				<boolean name="zoomAroundSelectedNode"/>
 				<boolean name="keepSelectedNodeVisible"/>
 				<boolean name="goto_note_end_on_edit" />
@@ -256,6 +253,13 @@
 				<boolean name="enforceModalEditorDialogs" />
 				<boolean name="mouseDrivenNodeShiftsAreDisabled"/>
 				<boolean name="automaticSideDistribution"/>
+			</separator>
+			<separator name="low_zoom_painting">
+				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
+				<number name="simplified_painting_max_width" min="1" max="200" />
+				<number name="simplified_painting_max_height" min="1" max="200" />
+				<number name="cloud_painting_min_width" min="0" max="1000" />
+				<number name="cloud_text_painting_min_width" min="0" max="1000" />
 			</separator>
 			<separator name="reminderOptions">
 				<maybe_boolean name="reminder.showPastRemindersOnStart" />
