@@ -35,9 +35,12 @@ public class ZoomableLabel extends JLabel {
 	public static final String CUSTOM_CSS = "customCss";
 
 	private static final String TEXT_RENDERING_ICON = "TextRenderingIcon";
-	private static final float SIMPLIFIED_PAINTING_MAX_ZOOM = 0.2f;
-	private static final int SIMPLIFIED_PAINTING_MAX_WIDTH = 10;
-	private static final int SIMPLIFIED_PAINTING_MAX_HEIGHT = 3;
+	private static final String SIMPLIFIED_PAINTING_MAX_ZOOM = "simplified_painting_max_zoom";
+	private static final String SIMPLIFIED_PAINTING_MAX_WIDTH = "simplified_painting_max_width";
+	private static final String SIMPLIFIED_PAINTING_MAX_HEIGHT = "simplified_painting_max_height";
+	private static final double DEFAULT_SIMPLIFIED_PAINTING_MAX_ZOOM = 0.2;
+	private static final int DEFAULT_SIMPLIFIED_PAINTING_MAX_WIDTH = 10;
+	private static final int DEFAULT_SIMPLIFIED_PAINTING_MAX_HEIGHT = 3;
 
 	protected static final Graphics2D fmg;
 	static {
@@ -94,8 +97,14 @@ public class ZoomableLabel extends JLabel {
 	}
 
 	protected boolean isSmallView(int width, int height) {
-		return getMap().getZoom() <= SIMPLIFIED_PAINTING_MAX_ZOOM
-				&& (width <= SIMPLIFIED_PAINTING_MAX_WIDTH || height <= SIMPLIFIED_PAINTING_MAX_HEIGHT);
+		final ResourceController resourceController = ResourceController.getResourceController();
+		final double maxZoom = resourceController.getDoubleProperty(SIMPLIFIED_PAINTING_MAX_ZOOM,
+				DEFAULT_SIMPLIFIED_PAINTING_MAX_ZOOM);
+		final int maxWidth = resourceController.getIntProperty(SIMPLIFIED_PAINTING_MAX_WIDTH,
+				DEFAULT_SIMPLIFIED_PAINTING_MAX_WIDTH);
+		final int maxHeight = resourceController.getIntProperty(SIMPLIFIED_PAINTING_MAX_HEIGHT,
+				DEFAULT_SIMPLIFIED_PAINTING_MAX_HEIGHT);
+		return getMap().getZoom() <= maxZoom && (width <= maxWidth || height <= maxHeight);
 	}
 	private boolean hasVisiblePaintAnchor(MapView map, int width, int height) {
 		final Point topLeft = getLocationOnScreen();

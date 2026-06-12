@@ -232,6 +232,9 @@
 				<length name="grid_size" defaultUnit = "px" min="0" max = "1000" step = "0.01"/>
 				<number name="scrolling_speed" min="1" max="30" />
 				<number name="map_view_zoom_step" min="1" max="100" />
+				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
+				<number name="simplified_painting_max_width" min="1" max="200" />
+				<number name="simplified_painting_max_height" min="1" max="200" />
 				<boolean name="zoomAroundSelectedNode"/>
 				<boolean name="keepSelectedNodeVisible"/>
 				<boolean name="goto_note_end_on_edit" />
