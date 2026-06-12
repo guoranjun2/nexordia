@@ -2,6 +2,7 @@ package org.freeplane.view.swing.map.cloud;
 
 import java.awt.Graphics2D;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -27,6 +28,11 @@ public class CircleCloudView extends CloudView {
 		final Ellipse2D.Double circle = getCircle();
 		g.fill(circle);
 		gstroke.draw(circle);
+	}
+
+	@Override
+	protected Rectangle getPaintingBounds() {
+		return getCircle().getBounds();
 	}
 
 	@Override

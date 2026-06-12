@@ -25,16 +25,8 @@ public class RectangleCloudView extends CloudView {
 
 	@Override
     protected void paintDecoration(Graphics2D g, Graphics2D gstroke) {
+	    final Rectangle bounds = getRectangle();
 	    final int distanceToConvexHull = (int) getDistanceToConvexHull();
-	    NodeView parentView = source.getParentView();
-	    final boolean expandHorizontally = parentView == null
-	    		|| ! parentView.usesHorizontalLayout()
-	    		|| ! source.usesHorizontalLayout();
-	    final boolean expandVertically = parentView == null
-	    		|| parentView.usesHorizontalLayout()
-	    		|| source.usesHorizontalLayout();
-	    final Rectangle bounds = RectangleCloudBounds.fromContents(getVisibleContentBounds(), distanceToConvexHull,
-	    		expandHorizontally, expandVertically);
 	    if(isRound){
 	        g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height,
 	        		distanceToConvexHull, distanceToConvexHull);
@@ -46,6 +38,24 @@ public class RectangleCloudView extends CloudView {
 			gstroke.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
 		}
     }
+
+	@Override
+	protected Rectangle getPaintingBounds() {
+		return getRectangle();
+	}
+
+	private Rectangle getRectangle() {
+	    final int distanceToConvexHull = (int) getDistanceToConvexHull();
+	    NodeView parentView = source.getParentView();
+	    final boolean expandHorizontally = parentView == null
+	    		|| ! parentView.usesHorizontalLayout()
+	    		|| ! source.usesHorizontalLayout();
+	    final boolean expandVertically = parentView == null
+	    		|| parentView.usesHorizontalLayout()
+	    		|| source.usesHorizontalLayout();
+	    return RectangleCloudBounds.fromContents(getVisibleContentBounds(), distanceToConvexHull,
+	    		expandHorizontally, expandVertically);
+	}
 
 	@Override
     protected void paintDecoration(Graphics2D g, Graphics2D gstroke, double x0, double y0, double x1, double y1,

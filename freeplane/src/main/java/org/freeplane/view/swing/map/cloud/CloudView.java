@@ -25,6 +25,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.util.LinkedList;
 import java.util.Random;
@@ -41,6 +42,7 @@ import org.freeplane.view.swing.map.NodeView;
  */
 abstract public class CloudView {
 	static final Stroke DEF_STROKE = new BasicStroke(1);
+	private static final int MINIMUM_CLOUD_PAINTING_SIZE = 10;
 
 	/** the layout functions can get the additional height of the clouded node .
 	 * @param cloud */
@@ -124,6 +126,9 @@ abstract public class CloudView {
 	}
 
 	public void paint(final Graphics graphics) {
+		if (isCloudTooSmallForPainting(getPaintingBounds())) {
+			return;
+		}
 		random = new Random(0);
 		final Graphics2D g = (Graphics2D) graphics.create();
 		final Graphics2D gstroke = (Graphics2D) g.create();
@@ -141,6 +146,14 @@ abstract public class CloudView {
 		/** get coordinates */
 		paintDecoration(g, gstroke);
 		g.dispose();
+	}
+
+	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
+		return bounds.width < MINIMUM_CLOUD_PAINTING_SIZE || bounds.height < MINIMUM_CLOUD_PAINTING_SIZE;
+	}
+
+	protected Rectangle getPaintingBounds() {
+		return getCoordinates().getBounds();
 	}
 
 	protected Polygon getCoordinates() {
