@@ -238,6 +238,7 @@
 								<Entry name="CloudShapeAction.STAR" />
 								<Entry name="CloudShapeAction.RECT" />
 								<Entry name="CloudShapeAction.ROUND_RECT" />
+								<Entry name="CloudShapeAction.CIRCLE" />
 							</Entry>
 							<Entry builder="separator" />
 							<Entry name="CloudColorAction" />

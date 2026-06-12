@@ -2371,6 +2371,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    for(final PaintingMode paintingMode : paintModes){
 	    	this.paintingMode = paintingMode;
 			switch(paintingMode){
+			case CLOUDS:
+				paintClouds(g2);
+				break;
 	    		case LINKS:
 	    			if(HIDE_CONNECTORS != showConnectors && paintingPurpose != PaintingPurpose.OVERVIEW)
 	    				paintConnectors(g2);
@@ -2379,6 +2382,18 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 					super.paintChildren(g2);
 			}
 	    }
+    }
+
+    private void paintClouds(final Graphics2D g2) {
+        final NodeView root = getRoot();
+        final Graphics2D g = (Graphics2D) g2.create();
+        try {
+            g.translate(root.getX(), root.getY());
+            root.paintCloudTree(g);
+        }
+        finally {
+            g.dispose();
+        }
     }
 
 

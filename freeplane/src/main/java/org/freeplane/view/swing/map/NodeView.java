@@ -65,6 +65,7 @@ import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
+import org.freeplane.features.cloud.CloudShape;
 import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.edge.EdgeController.Rules;
 import org.freeplane.features.edge.EdgeStyle;
@@ -1385,6 +1386,17 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         }
         update();
         updateNumbering();
+        repaintVisibleForCircleCloud();
+    }
+
+    private void repaintVisibleForCircleCloud() {
+        for (NodeView nodeView = this; nodeView != null; nodeView = nodeView.getParentView()) {
+            final CloudModel cloudModel = nodeView.getCloudModel();
+            if (cloudModel != null && cloudModel.getShape() == CloudShape.CIRCLE) {
+                map.repaintVisible();
+                return;
+            }
+        }
     }
 
     private void updateNumbering() {
@@ -1599,7 +1611,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
                 if (isRoot) {
                     paintCloud(g);
                 }
-                paintClouds(g2);
+                paintChildClouds(g2);
             }
             break;
         case NODES:
@@ -1642,7 +1654,14 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         cloud.paint(g);
     }
 
-    private void paintClouds(final Graphics2D g) {
+    void paintCloudTree(final Graphics2D g) {
+        if (isSubtreeVisible()) {
+            paintCloud(g);
+        }
+        paintChildCloudTrees(g);
+    }
+
+    private void paintChildCloudTrees(final Graphics2D g) {
         for (int i = getComponentCount() - 1; i >= 0; i--) {
             final Component component = getComponent(i);
             if (!(component instanceof NodeView)) {
@@ -1650,17 +1669,28 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             }
             final NodeView nodeView = (NodeView) component;
             final Rectangle bounds = nodeView.getBounds();
-            final Rectangle clip = g.getClipBounds();
-            if(clip != null && !clip.intersects(bounds)) {
+            final Point p = bounds.getLocation();
+            g.translate(p.x, p.y);
+            nodeView.paintCloudTree(g);
+            g.translate(-p.x, -p.y);
+        }
+    }
+
+    private void paintChildClouds(final Graphics2D g) {
+        for (int i = getComponentCount() - 1; i >= 0; i--) {
+            final Component component = getComponent(i);
+            if (!(component instanceof NodeView)) {
                 continue;
             }
+            final NodeView nodeView = (NodeView) component;
+            final Rectangle bounds = nodeView.getBounds();
             final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             if (nodeView.isSubtreeVisible()) {
                 nodeView.paintCloud(g);
             }
             else {
-                nodeView.paintClouds(g);
+                nodeView.paintChildClouds(g);
             }
             g.translate(-p.x, -p.y);
         }

@@ -18,6 +18,8 @@ public class CloudViewFactory {
 			return new RectangleCloudView(cloudModel, nodeView, true);
 		if(CloudShape.RECT.equals(cloudModel.getShape()))
 			return new RectangleCloudView(cloudModel, nodeView, false);
+		if(CloudShape.CIRCLE.equals(cloudModel.getShape()))
+			return new CircleCloudView(cloudModel, nodeView);
 		throw new NoSuchElementException();
 	}
 }
