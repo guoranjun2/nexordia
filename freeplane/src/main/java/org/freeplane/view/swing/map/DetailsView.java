@@ -40,8 +40,8 @@ public class DetailsView extends ZoomableLabel {
         final int width = getWidth();
         final int height = getHeight();
 
-        if(shouldPaintSimplified(width, height)) {
-            paintSimplified(g, width, height,
+        if(shouldPaintSimplified()) {
+            paintSimplified(g,
                     getNodeView().getMainView().getBorderColor(),
                     new Color(0, 0, 0, 0)
             );

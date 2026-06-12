@@ -51,9 +51,13 @@ abstract public class CloudView {
 	static final Stroke DEF_STROKE = new BasicStroke(1);
 	private static final String CLOUD_PAINTING_MIN_WIDTH = "cloud_painting_min_width";
 	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
+	private static final String PAINT_CLOUD_FOR_INVISIBLE_NODE = "paint_cloud_for_invisible_node";
+	private static final String PAINT_CLOUD_TEXT = "paint_cloud_text";
 	private static final String TITLE_ATTRIBUTE = "title";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
+	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = false;
+	private static final boolean DEFAULT_PAINT_CLOUD_TEXT = true;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
 	/** the layout functions can get the additional height of the clouded node .
@@ -138,6 +142,10 @@ abstract public class CloudView {
 	}
 
 	public void paint(final Graphics graphics) {
+		final MainView mainView = source.getMainView();
+		if(!isSourceVisibleForPainting(mainView)) {
+			return;
+		}
 		final Rectangle paintingBounds = getPaintingBounds();
 		if (isCloudTooSmallForPainting(paintingBounds)) {
 			return;
@@ -163,7 +171,7 @@ abstract public class CloudView {
 
 	public void paintText(final Graphics graphics) {
 		final MainView mainView = source.getMainView();
-		if (mainView == null || !mainView.isPaintingSimplified()) {
+		if (!shouldPaintSourceText(mainView)) {
 			return;
 		}
 		final Rectangle paintingBounds = getPaintingBounds();
@@ -177,6 +185,15 @@ abstract public class CloudView {
 		finally {
 			g.dispose();
 		}
+	}
+
+	private boolean shouldPaintSourceText(MainView mainView) {
+		return isCloudTextPaintingEnabled() && isSourceVisibleForPainting(mainView) && mainView.isPaintingSimplified();
+	}
+
+	private boolean isSourceVisibleForPainting(MainView mainView) {
+		return mainView != null
+				&& (isCloudPaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
 	}
 
 	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
@@ -195,6 +212,16 @@ abstract public class CloudView {
 	private static int getCloudTextPaintingMinWidth() {
 		return ResourceController.getResourceController().getIntProperty(CLOUD_TEXT_PAINTING_MIN_WIDTH,
 				DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH);
+	}
+
+	private static boolean isCloudPaintingForInvisibleNodeEnabled() {
+		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_FOR_INVISIBLE_NODE,
+				DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE);
+	}
+
+	private static boolean isCloudTextPaintingEnabled() {
+		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_TEXT,
+				DEFAULT_PAINT_CLOUD_TEXT);
 	}
 
 	protected Rectangle getPaintingBounds() {

@@ -91,12 +91,11 @@ public class ZoomableLabel extends JLabel {
 		return getNodeView().getMap();
 	}
 
-	protected boolean shouldPaintSimplified(int width, int height) {
-		return ! hasVisiblePaintAnchor(getMap(), width, height)
-				|| isSmallView(width, height);
+	protected boolean shouldPaintSimplified() {
+		return ! hasVisiblePaintAnchor(getMap()) || isSmallView();
 	}
 
-	protected boolean isSmallView(int width, int height) {
+	protected boolean isSmallView() {
 		final ResourceController resourceController = ResourceController.getResourceController();
 		final double maxZoom = resourceController.getDoubleProperty(SIMPLIFIED_PAINTING_MAX_ZOOM,
 				DEFAULT_SIMPLIFIED_PAINTING_MAX_ZOOM);
@@ -104,27 +103,20 @@ public class ZoomableLabel extends JLabel {
 				DEFAULT_SIMPLIFIED_PAINTING_MAX_WIDTH);
 		final int maxHeight = resourceController.getIntProperty(SIMPLIFIED_PAINTING_MAX_HEIGHT,
 				DEFAULT_SIMPLIFIED_PAINTING_MAX_HEIGHT);
-		return getMap().getZoom() <= maxZoom && (width <= maxWidth || height <= maxHeight);
+		return getMap().getZoom() <= maxZoom && (getWidth() <= maxWidth || getHeight() <= maxHeight);
 	}
-	private boolean hasVisiblePaintAnchor(MapView map, int width, int height) {
-		final Point topLeft = getLocationOnScreen();
-		SwingUtilities.convertPointFromScreen(topLeft, map);
-		final int right = Math.max(0, width - 1);
-		final int bottom = Math.max(0, height - 1);
+	public boolean hasVisiblePaintAnchor(MapView map) {
+		final Rectangle bounds = SwingUtilities.convertRectangle(this,
+				new Rectangle(0, 0, getWidth(), getHeight()), map);
 		final Rectangle visibleRect = map.getVisibleRect();
-		if(width >= visibleRect.getWidth() || height >= visibleRect.getHeight())
-			return true;
-		return visibleRect.contains(topLeft)
-				|| visibleRect.contains(new Point(topLeft.x + right, topLeft.y))
-				|| visibleRect.contains(new Point(topLeft.x, topLeft.y + bottom))
-				|| visibleRect.contains(new Point(topLeft.x + right, topLeft.y + bottom));
+		return bounds.intersects(visibleRect);
 	}
 
-	protected void paintSimplified(Graphics graphics, int width, int height, Color borderColor, Color backgroundColor) {
+	protected void paintSimplified(Graphics graphics, Color borderColor, Color backgroundColor) {
 		graphics.setColor(backgroundColor);
-		graphics.fillRect(0, 0, width, height);
+		graphics.fillRect(0, 0, getWidth(), getHeight());
 		graphics.setColor(borderColor);
-		graphics.drawRect(0, 0, width - 1, height - 1);
+		graphics.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
 	}
 
 	@Override

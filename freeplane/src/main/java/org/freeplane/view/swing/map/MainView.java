@@ -1044,16 +1044,17 @@ public class MainView extends ZoomableLabel {
 	@Override
 	public void paintComponent(Graphics graphics) {
 		Graphics2D g2 = (Graphics2D) graphics;
-		int width = getWidth();
-		int height = getHeight();
 
-		if(isPaintingSimplified()) {
-			paintSimplified(graphics, width, height,
+		if(shouldPaintSimplified()) {
+			paintSimplified(graphics,
 					getBorderColor(),
 					getBackground()
 			);
 			return;
 		}
+
+		int width = getWidth();
+		int height = getHeight();
 		AffineTransform t = g2.getTransform();
 		double approxScaleX = Math.abs(t.getScaleX()) + Math.abs(t.getShearY());
 		double approxScaleY = Math.abs(t.getShearX()) + Math.abs(t.getScaleY());
@@ -1067,7 +1068,7 @@ public class MainView extends ZoomableLabel {
 	}
 
 	public boolean isPaintingSimplified() {
-		return isSmallView(getWidth(), getHeight());
+		return !hasVisiblePaintAnchor(getMap()) || isSmallView();
 	}
 
 	@Override
