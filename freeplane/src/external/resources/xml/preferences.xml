@@ -186,6 +186,18 @@
 				<number name="fast_access_icon_number" min="0" max="100"/>
 			</separator>
 		</tab>
+		<tab name="Painting">
+			<separator name="low_zoom_painting">
+				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
+				<number name="simplified_painting_max_width" min="1" max="200" />
+				<number name="simplified_painting_max_height" min="1" max="200" />
+				<number name="cloud_painting_min_width" min="0" max="1000" />
+				<number name="cloud_text_painting_min_width" min="0" max="1000" />
+				<boolean name="paint_cloud_text" />
+				<boolean name="paint_cloud_for_invisible_node" />
+				<boolean name="paint_cloud_title_for_invisible_node" />
+			</separator>
+		</tab>
 		<tab name="Defaults">
 			<separator name="cloud">
 				<color name="standardcloudcolor" supports_transparent_color="false"/>
@@ -253,15 +265,6 @@
 				<boolean name="enforceModalEditorDialogs" />
 				<boolean name="mouseDrivenNodeShiftsAreDisabled"/>
 				<boolean name="automaticSideDistribution"/>
-			</separator>
-			<separator name="low_zoom_painting">
-				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
-				<number name="simplified_painting_max_width" min="1" max="200" />
-				<number name="simplified_painting_max_height" min="1" max="200" />
-				<number name="cloud_painting_min_width" min="0" max="1000" />
-				<number name="cloud_text_painting_min_width" min="0" max="1000" />
-				<boolean name="paint_cloud_text" />
-				<boolean name="paint_cloud_for_invisible_node" />
 			</separator>
 			<separator name="reminderOptions">
 				<maybe_boolean name="reminder.showPastRemindersOnStart" />

@@ -52,11 +52,13 @@ abstract public class CloudView {
 	private static final String CLOUD_PAINTING_MIN_WIDTH = "cloud_painting_min_width";
 	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
 	private static final String PAINT_CLOUD_FOR_INVISIBLE_NODE = "paint_cloud_for_invisible_node";
+	private static final String PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = "paint_cloud_title_for_invisible_node";
 	private static final String PAINT_CLOUD_TEXT = "paint_cloud_text";
 	private static final String TITLE_ATTRIBUTE = "title";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
 	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = false;
+	private static final boolean DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = false;
 	private static final boolean DEFAULT_PAINT_CLOUD_TEXT = true;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
@@ -189,12 +191,19 @@ abstract public class CloudView {
 	}
 
 	private boolean shouldPaintSourceText(MainView mainView) {
-		return isCloudTextPaintingEnabled() && isSourceVisibleForPainting(mainView) && mainView.isPaintingSimplified();
+		return isCloudTextPaintingEnabled()
+				&& isSourceVisibleForTextPainting(mainView)
+				&& mainView.isPaintingSimplified();
 	}
 
 	private boolean isSourceVisibleForPainting(MainView mainView) {
 		return mainView != null
 				&& (isCloudPaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
+	}
+
+	private boolean isSourceVisibleForTextPainting(MainView mainView) {
+		return mainView != null
+				&& (isCloudTitlePaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
 	}
 
 	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
@@ -218,6 +227,11 @@ abstract public class CloudView {
 	private static boolean isCloudPaintingForInvisibleNodeEnabled() {
 		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_FOR_INVISIBLE_NODE,
 				DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE);
+	}
+
+	private static boolean isCloudTitlePaintingForInvisibleNodeEnabled() {
+		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE,
+				DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE);
 	}
 
 	private static boolean isCloudTextPaintingEnabled() {
