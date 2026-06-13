@@ -2315,11 +2315,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	@Override
 	protected void paintChildren(final Graphics g) {
 	    final PaintingMode paintModes[];
-	    if(isFastViewDragPainting())
-			paintModes = new PaintingMode[]{
-				PaintingMode.NODES
-				};
-	    else if(paintConnectorsBehind)
+	    if(paintConnectorsBehind)
 			paintModes = new PaintingMode[]{
 				PaintingMode.CLOUDS,
 				PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES,
@@ -2448,18 +2444,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		return paintingMode;
 	}
 
-	public void setViewDragInProgress(boolean viewDragInProgress) {
-		if(this.viewDragInProgress == viewDragInProgress)
-			return;
-		this.viewDragInProgress = viewDragInProgress;
-		repaintVisible();
-	}
-
-	boolean isFastViewDragPainting() {
-		return viewDragInProgress
-				&& zoom <= FAST_VIEW_DRAG_PAINTING_MAX_ZOOM
-				&& paintingPurpose == PaintingPurpose.PAINTING;
-	}
 
 	private void paintConnectors(final Collection<? extends NodeLinkModel> links, final Graphics2D graphics,
 	                        final HashSet<ConnectorModel> alreadyPaintedLinks) {
