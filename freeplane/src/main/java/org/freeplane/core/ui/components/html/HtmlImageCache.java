@@ -381,6 +381,19 @@ class HtmlImageCache {
 			pendingSizeCallbacks.get(sourceKey).add(repaintCallback);
 	}
 
+	synchronized void removeRepaintCallback(Runnable repaintCallback) {
+		if(repaintCallback == null)
+			return;
+		removeRepaintCallback(pendingImageCallbacks, repaintCallback);
+		removeRepaintCallback(pendingSizeCallbacks, repaintCallback);
+		pendingRepaintCallbacks.remove(repaintCallback);
+	}
+
+	private <K> void removeRepaintCallback(Map<K, Set<Runnable>> callbacks, Runnable repaintCallback) {
+		for(Set<Runnable> repaintCallbacks : callbacks.values())
+			repaintCallbacks.remove(repaintCallback);
+	}
+
 	private void loadImage(URL source, ImageKey key) {
 		final Set<Runnable> repaintCallbacks;
 		synchronized(this) {

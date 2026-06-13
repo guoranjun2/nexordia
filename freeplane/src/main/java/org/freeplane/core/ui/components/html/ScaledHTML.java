@@ -125,7 +125,7 @@ public class ScaledHTML extends BasicHTML{
     	}
     	if (value != oldValue && oldValue != null) {
     		for (int i = 0; i < oldValue.getViewCount(); i++) {
-    			oldValue.getView(i).setParent(null);
+				detachView(oldValue.getView(i));
     		}
     	}
     	}
@@ -138,10 +138,17 @@ public class ScaledHTML extends BasicHTML{
         View oldValue = (View)c.getClientProperty(propertyKey);
         if (oldValue != null) {
             for (int i = 0; i < oldValue.getViewCount(); i++) {
-                oldValue.getView(i).setParent(null);
+                detachView(oldValue.getView(i));
             }
         }
         c.putClientProperty(BasicHTML.propertyKey, null);
+    }
+
+    private static void detachView(View view) {
+        for (int i = 0; i < view.getViewCount(); i++) {
+            detachView(view.getView(i));
+        }
+        view.setParent(null);
     }
 
 

@@ -1863,6 +1863,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             NodeView child = e.next();
             child.remove();
         }
+        releaseHtmlLabelsForMapClose();
         getModeController().onViewRemoved(this);
         removeFromMap();
         if (attributeView != null) {

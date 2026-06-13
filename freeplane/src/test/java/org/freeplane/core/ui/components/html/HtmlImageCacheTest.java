@@ -149,6 +149,26 @@ public class HtmlImageCacheTest {
 	}
 
 	@Test
+	public void removesRepaintCallbackFromPendingImageLoads() throws Exception {
+		final CountingImageLoader loader = new CountingImageLoader();
+		final QueuedExecutor executor = new QueuedExecutor();
+		final HtmlImageCache cache = new HtmlImageCache(loader, executor, 1_000_000, 1_000_000);
+		final URL source = source("image-a");
+		final String sourceKey = HtmlImageCache.sourceKey(source);
+		final AtomicInteger repaints = new AtomicInteger();
+		final Runnable repaintCallback = () -> repaints.incrementAndGet();
+
+		cache.getOrSchedule(source, sourceKey, 100, 100, repaintCallback);
+		cache.removeRepaintCallback(repaintCallback);
+		executor.runNext();
+		SwingUtilities.invokeAndWait(() -> {
+		});
+
+		assertThat(repaints.get()).isEqualTo(0);
+		assertThat(loader.loadCount).isEqualTo(1);
+	}
+
+	@Test
 	public void groupsNearbyTargetSizesIntoImageSizeLevels() {
 		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(12, 6))).isEqualTo(new Dimension(16, 8));
 		assertThat(HtmlImageCache.imageSizeLevel(new Dimension(24, 12))).isEqualTo(new Dimension(32, 16));
@@ -206,6 +226,26 @@ public class HtmlImageCacheTest {
 		assertThat(cache.getImageSizeOrSchedule(source, sourceKey, null)).isEqualTo(new Dimension(640, 480));
 		assertThat(loader.sizeReadCount).isEqualTo(1);
 		assertThat(repaints.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void removesRepaintCallbackFromPendingImageSizeReads() throws Exception {
+		final CountingImageLoader loader = new CountingImageLoader();
+		final QueuedExecutor executor = new QueuedExecutor();
+		final HtmlImageCache cache = new HtmlImageCache(loader, executor, 1_000_000, 1_000_000);
+		final URL source = source("image-a");
+		final String sourceKey = HtmlImageCache.sourceKey(source);
+		final AtomicInteger repaints = new AtomicInteger();
+		final Runnable repaintCallback = () -> repaints.incrementAndGet();
+
+		cache.getImageSizeOrSchedule(source, sourceKey, repaintCallback);
+		cache.removeRepaintCallback(repaintCallback);
+		executor.runNext();
+		SwingUtilities.invokeAndWait(() -> {
+		});
+
+		assertThat(repaints.get()).isEqualTo(0);
+		assertThat(loader.sizeReadCount).isEqualTo(1);
 	}
 
 	@Test

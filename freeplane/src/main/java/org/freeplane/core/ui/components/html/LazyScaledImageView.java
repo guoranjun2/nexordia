@@ -102,6 +102,13 @@ class LazyScaledImageView extends View {
 	}
 
 	@Override
+	public void setParent(View parent) {
+		if(parent == null)
+			HtmlImageCache.INSTANCE.removeRepaintCallback(repaintCallback);
+		super.setParent(parent);
+	}
+
+	@Override
 	public float getAlignment(int axis) {
 		if(axis == Y_AXIS)
 			return verticalAlignment();
