@@ -70,6 +70,7 @@ abstract public class CloudView {
 	protected CloudModel cloudModel;
 	protected NodeView source;
 	private final int iterativeLevel;
+	private Polygon coordinates;
 	private Random random;
 
 	CloudView(final CloudModel cloudModel, final NodeView source) {
@@ -340,13 +341,16 @@ abstract public class CloudView {
 	}
 
 	protected Polygon getCoordinates() {
+		if (coordinates != null) {
+			return coordinates;
+		}
         final Polygon p = new Polygon();
-        final LinkedList<Point> coordinates = new LinkedList<Point>();
-        source.getCoordinates(coordinates);
-        if(coordinates.isEmpty())
-            return p;
+        final LinkedList<Point> sourceCoordinates = new LinkedList<Point>();
+        source.getCoordinates(sourceCoordinates);
+        if(sourceCoordinates.isEmpty())
+            return this.coordinates = p;
         final ConvexHull hull = new ConvexHull();
-        final Vector<Point> res = hull.calculateHull(coordinates);
+        final Vector<Point> res = hull.calculateHull(sourceCoordinates);
         Point lastPt = null;
         for (int i = 0; i < res.size(); ++i) {
             final Point pt = res.get(i);
@@ -357,7 +361,7 @@ abstract public class CloudView {
         }
         final Point pt = res.get(0);
         p.addPoint(pt.x, pt.y);
-        return p;
+        return this.coordinates = p;
 	}
 
 	protected void paintDecoration(Graphics2D g, Graphics2D gstroke){
