@@ -139,13 +139,16 @@ class LazyScaledImageView extends View {
 
 	private Dimension naturalSize() {
 		if(naturalSizeKnown)
-			return naturalSize == null ? null : new Dimension(naturalSize);
-		naturalSizeKnown = true;
+			return new Dimension(naturalSize);
 		final URL imageSource = source();
 		if(imageSource == null)
 			return null;
-		naturalSize = HtmlImageCache.INSTANCE.getImageSize(imageSource, sourceKey());
-		return naturalSize == null ? null : new Dimension(naturalSize);
+		final Dimension size = HtmlImageCache.INSTANCE.getImageSizeOrSchedule(imageSource, sourceKey(), repaintCallback);
+		if(size == null)
+			return null;
+		naturalSize = size;
+		naturalSizeKnown = true;
+		return new Dimension(naturalSize);
 	}
 
 	private URL source() {
@@ -237,6 +240,7 @@ class LazyScaledImageView extends View {
 		final Container container = getContainer();
 		if(container instanceof JComponent) {
 			final JComponent component = (JComponent) container;
+			component.revalidate();
 			final Rectangle bounds = repaintBounds;
 			if(bounds != null)
 				component.repaint(0, bounds.x, bounds.y, bounds.width, bounds.height);

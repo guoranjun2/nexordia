@@ -5,8 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,9 +19,12 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
 import org.junit.Test;
+
+import com.sun.net.httpserver.HttpServer;
 
 public class HtmlImageCacheTest {
 	@Test
@@ -179,6 +187,72 @@ public class HtmlImageCacheTest {
 	}
 
 	@Test
+	public void readsImageSizesAsynchronously() throws Exception {
+		final CountingImageLoader loader = new CountingImageLoader();
+		final QueuedExecutor executor = new QueuedExecutor();
+		final HtmlImageCache cache = new HtmlImageCache(loader, executor, 1_000_000, 1_000_000);
+		final URL source = source("image-a");
+		final String sourceKey = HtmlImageCache.sourceKey(source);
+		final AtomicInteger repaints = new AtomicInteger();
+
+		assertThat(cache.getImageSizeOrSchedule(source, sourceKey, () -> repaints.incrementAndGet())).isNull();
+		assertThat(cache.getImageSizeOrSchedule(source, sourceKey, () -> repaints.incrementAndGet())).isNull();
+
+		assertThat(executor.taskCount()).isEqualTo(1);
+		executor.runNext();
+		SwingUtilities.invokeAndWait(() -> {
+		});
+
+		assertThat(cache.getImageSizeOrSchedule(source, sourceKey, null)).isEqualTo(new Dimension(640, 480));
+		assertThat(loader.sizeReadCount).isEqualTo(1);
+		assertThat(repaints.get()).isEqualTo(2);
+	}
+
+	@Test
+	public void loadsSvgImagesAtTargetSize() throws Exception {
+		final File svgFile = File.createTempFile("freeplane-html-image-cache", ".svg");
+		try {
+			writeSvg(svgFile, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"10\"><rect width=\"20\" height=\"10\" fill=\"red\"/></svg>");
+			final HtmlImageCache.ImageLoader loader = new HtmlImageCache.ImageLoader();
+
+			assertThat(loader.readSize(svgFile.toURI().toURL())).isEqualTo(new Dimension(20, 10));
+			final BufferedImage image = loader.load(svgFile.toURI().toURL(), 40, 20);
+
+			assertThat(image.getWidth()).isEqualTo(40);
+			assertThat(image.getHeight()).isEqualTo(20);
+		}
+		finally {
+			svgFile.delete();
+		}
+	}
+
+	@Test
+	public void sendsUserAgentWhenReadingHttpImages() throws Exception {
+		final BufferedImage sourceImage = new BufferedImage(2, 1, BufferedImage.TYPE_INT_ARGB);
+		final HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+		server.createContext("/image.png", exchange -> {
+			if(exchange.getRequestHeaders().containsKey("User-Agent")) {
+				exchange.getResponseHeaders().set("Content-Type", "image/png");
+				exchange.sendResponseHeaders(200, 0);
+				ImageIO.write(sourceImage, "png", exchange.getResponseBody());
+			}
+			else
+				exchange.sendResponseHeaders(403, -1);
+			exchange.close();
+		});
+		server.start();
+		try {
+			final URL source = new URL("http://localhost:" + server.getAddress().getPort() + "/image.png");
+			final HtmlImageCache.ImageLoader loader = new HtmlImageCache.ImageLoader();
+
+			assertThat(loader.readSize(source)).isEqualTo(new Dimension(2, 1));
+		}
+		finally {
+			server.stop(0);
+		}
+	}
+
+	@Test
 	public void limitsScaledImageSizeToSourcePixels() {
 		final Dimension targetSize = HtmlImageCache.ImageLoader.fitWithinSourceSize(640, 480, 8320, 6240);
 
@@ -198,6 +272,12 @@ public class HtmlImageCacheTest {
 
 	private URL url(String fileName) throws Exception {
 		return new URL("file:/" + fileName);
+	}
+
+	private void writeSvg(File file, String text) throws IOException {
+		try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+			writer.write(text);
+		}
 	}
 
 	private static class CountingImageLoader extends HtmlImageCache.ImageLoader {
