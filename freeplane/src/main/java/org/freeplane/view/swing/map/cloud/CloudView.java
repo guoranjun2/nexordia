@@ -57,7 +57,7 @@ abstract public class CloudView {
 	private static final String TITLE_ATTRIBUTE = "title";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
-	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = false;
+	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = true;
 	private static final boolean DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = false;
 	private static final boolean DEFAULT_PAINT_CLOUD_TEXT = true;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
