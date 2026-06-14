@@ -30,12 +30,13 @@ import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.Vector;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.util.HtmlUtils;
+import org.freeplane.core.ui.components.html.HtmlImageRenderer;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
@@ -54,7 +55,7 @@ abstract public class CloudView {
 	private static final String PAINT_CLOUD_FOR_INVISIBLE_NODE = "paint_cloud_for_invisible_node";
 	private static final String PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = "paint_cloud_title_for_invisible_node";
 	private static final String PAINT_CLOUD_TEXT = "paint_cloud_text";
-	private static final String TITLE_ATTRIBUTE = "title";
+	private static final String CLOUD_IMAGE_REPAINT_CALLBACK = "cloud_image_repaint_callback";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
 	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = true;
@@ -166,11 +167,12 @@ abstract public class CloudView {
 		/*
 		 * calculate the distances between two points on the convex hull
 		 * depending on the getIterativeLevel().
-		 */
-		/** get coordinates */
-		paintDecoration(g, gstroke);
-		g.dispose();
-	}
+			 */
+			/** get coordinates */
+			paintDecoration(g, gstroke);
+			paintSourceImageText(g);
+			g.dispose();
+		}
 
 	public void paintText(final Graphics graphics) {
 		final MainView mainView = source.getMainView();
@@ -244,10 +246,56 @@ abstract public class CloudView {
 	}
 
 	private void paintSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds) {
-		final String text = getCloudTitle(mainView);
-		if (text.isEmpty()) {
+		final CloudTitle cloudTitle = getCloudTitle(mainView);
+		if (cloudTitle.isImage()) {
 			return;
 		}
+		if (cloudTitle.getText().isEmpty()) {
+			return;
+		}
+		paintPlainSourceText(g, mainView, cloudBounds, cloudTitle.getText());
+	}
+
+	private void paintSourceImageText(Graphics2D g) {
+		final MainView mainView = source.getMainView();
+		if (!shouldPaintSourceText(mainView)) {
+			return;
+		}
+		final Rectangle paintingBounds = getPaintingBounds();
+		if (isCloudTooSmallForPainting(paintingBounds) || isCloudTooSmallForTextPainting(paintingBounds)) {
+			return;
+		}
+		final CloudTitle cloudTitle = getCloudTitle(mainView);
+		if (!cloudTitle.isImage()) {
+			return;
+		}
+		paintImageSourceText(g, paintingBounds, cloudTitle.getImageSource());
+	}
+
+	private void paintImageSourceText(Graphics2D g, Rectangle cloudBounds, String imageSource) {
+		final URL base = source.getMap().getMap().getURL();
+		final Shape clip = g.getClip();
+		try {
+			g.clip(cloudBounds);
+			HtmlImageRenderer.paintContained(g, cloudBounds, base, imageSource, cloudImageRepaintCallback());
+		}
+		finally {
+			g.setClip(clip);
+		}
+	}
+
+	private Runnable cloudImageRepaintCallback() {
+		final MapView map = source.getMap();
+		final Object callback = map.getClientProperty(CLOUD_IMAGE_REPAINT_CALLBACK);
+		if (callback instanceof Runnable) {
+			return (Runnable) callback;
+		}
+		final Runnable repaintCallback = map::repaint;
+		map.putClientProperty(CLOUD_IMAGE_REPAINT_CALLBACK, repaintCallback);
+		return repaintCallback;
+	}
+
+	private void paintPlainSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds, String text) {
 		final Font font = fitFontToBounds(mainView.getFont(), text, g, cloudBounds);
 		if (font == null) {
 			return;
@@ -321,37 +369,9 @@ abstract public class CloudView {
 		return begin == 0 ? ellipsis : text.substring(0, begin) + ellipsis;
 	}
 
-	private String getCloudTitle(MainView mainView) {
-		final String text = getSourceTitleText();
-		if (text != null) {
-			return toFirstPlainTextLine(text);
-		}
-		return getPlainMainViewText(mainView);
-	}
-
-	private String getSourceTitleText() {
+	private CloudTitle getCloudTitle(MainView mainView) {
 		final NodeAttributeTableModel attributes = NodeAttributeTableModel.getModel(source.getNode());
-		final int titleIndex = attributes.getAttributeIndex(TITLE_ATTRIBUTE);
-		if (titleIndex < 0) {
-			return null;
-		}
-		final Object value = attributes.getValue(titleIndex);
-		final String title = value == null ? "" : value.toString();
-		return title.isEmpty() ? null : title;
-	}
-
-	private String getPlainMainViewText(MainView mainView) {
-		final String text = mainView.getText();
-		if (text == null) {
-			return "";
-		}
-		return toFirstPlainTextLine(text);
-	}
-
-	private String toFirstPlainTextLine(String text) {
-		final String plainText = HtmlUtils.isHtml(text) ? HtmlUtils.htmlToPlain(text) : text;
-		final int firstLineEnd = plainText.indexOf('\n');
-		return firstLineEnd >= 0 ? plainText.substring(0, firstLineEnd) : plainText;
+		return CloudTitle.from(attributes, mainView.getText());
 	}
 
 	protected Polygon getCoordinates() {
