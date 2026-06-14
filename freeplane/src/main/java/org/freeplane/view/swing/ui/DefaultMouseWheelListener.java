@@ -9,7 +9,6 @@ import java.util.Set;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
-import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.IMouseWheelEventHandler;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.Compat;
@@ -21,7 +20,6 @@ import org.freeplane.view.swing.map.MapView;
  * @author foltin
  */
 public class DefaultMouseWheelListener implements MouseWheelListener {
-	private static final String ZOOM_AROUND_SELECTED_NODE_PROPERTY = "zoomAroundSelectedNode";
 	private static final int ZOOM_MASK = InputEvent.CTRL_MASK;
 // // 	final private Controller controller;
 
@@ -55,8 +53,7 @@ public class DefaultMouseWheelListener implements MouseWheelListener {
 		if ((e.getModifiers() & DefaultMouseWheelListener.ZOOM_MASK) != 0) {
 			float newZoom = mapView.calculateNewZoom(e);
 			if (newZoom != ((MapView) e.getComponent()).getZoom()) {
-			    if(! ResourceController.getResourceController().getBooleanProperty(ZOOM_AROUND_SELECTED_NODE_PROPERTY))
-			        mapView.setZoom(newZoom, e.getPoint());
+				mapView.setZoom(newZoom, e.getPoint());
 				Controller.getCurrentController().getMapViewManager().setZoom(newZoom);
 			}
 		}

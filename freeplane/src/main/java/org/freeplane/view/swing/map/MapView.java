@@ -34,7 +34,9 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
+import java.awt.MouseInfo;
 import java.awt.Point;
+import java.awt.PointerInfo;
 import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.dnd.Autoscroll;
@@ -47,6 +49,9 @@ import java.awt.print.Printable;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.AbstractList;
 import java.util.AbstractSet;
@@ -140,7 +145,7 @@ import org.freeplane.view.swing.map.link.ILinkView;
  */
 public class MapView extends JPanel implements Printable, Autoscroll, IMapChangeListener, IFreeplanePropertyListener, Configurable {
 
-    private static final String MAP_VIEW_ZOOM_STEP_PROPERTY = "map_view_zoom_step";
+    private static final String MAP_VIEW_ZOOM_SHIFT_PROPERTY = "map_view_zoom_shift";
     private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
 
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
@@ -849,6 +854,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         addMouseListener(userInputListenerFactory.getMapMouseListener());
         addMouseMotionListener(userInputListenerFactory.getMapMouseListener());
         addMouseWheelListener(userInputListenerFactory.getMapMouseWheelListener());
+        addMagnificationListener();
         setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptyNodeViewSet());
         setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptyNodeViewSet());
         setFocusTraversalKeys(KeyboardFocusManager.UP_CYCLE_TRAVERSAL_KEYS, emptyNodeViewSet());
@@ -2943,7 +2949,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         if(this.zoom != zoom) {
             this.zoom = zoom;
             scrollsViewAfterLayout = true;
-            mapScroller.anchorToNode(getSelected(), CENTER_ALIGNMENT, CENTER_ALIGNMENT);
+            mapScroller.anchorToNodeForZoom(getSelected(), CENTER_ALIGNMENT, CENTER_ALIGNMENT);
             updateAllNodeViews(UpdateCause.ZOOM);
             adjustBackgroundComponentScale();
         }
@@ -2952,8 +2958,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     public void setZoom(final float zoom, Point keptPoint) {
         if(this.zoom != zoom) {
             this.zoom = zoom;
-            NodeView selected = getSelected();
-            MainView mainView = selected.getMainView();
+            NodeView anchor = getNearestNodeView(keptPoint);
+            MainView mainView = anchor.getMainView();
             float referenceWidth = mainView.getWidth();
             float referenceHeight = mainView.getHeight();
             Point mainViewLocation = new Point();
@@ -2961,11 +2967,63 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             float x = referenceWidth > 0 ? (keptPoint.x - mainViewLocation.x) / referenceWidth : 0;
             float y = referenceHeight > 0 ? (keptPoint.y - mainViewLocation.y) / referenceHeight : 0;
             scrollsViewAfterLayout = true;
-            mapScroller.anchorToNode(selected, x, y);
+            mapScroller.anchorToNodeForZoom(anchor, x, y);
             updateAllNodeViews(UpdateCause.ZOOM);
             adjustBackgroundComponentScale();
         }
     }
+
+	private NodeView getNearestNodeView(Point point) {
+		final NearestNodeView nearest = new NearestNodeView(point);
+		findNearestNodeView(this, nearest);
+		return nearest.nodeView != null ? nearest.nodeView : getSelected();
+	}
+
+	private void findNearestNodeView(Container container, NearestNodeView nearest) {
+		for (Component component : container.getComponents()) {
+			if (component instanceof NodeView) {
+				nearest.update((NodeView) component, this);
+			}
+			if (component instanceof Container) {
+				findNearestNodeView((Container) component, nearest);
+			}
+		}
+	}
+
+	private static class NearestNodeView {
+		private final Point point;
+		private NodeView nodeView;
+		private double distance = Double.MAX_VALUE;
+
+		private NearestNodeView(Point point) {
+			this.point = point;
+		}
+
+		private void update(NodeView candidate, MapView mapView) {
+			final MainView mainView = candidate.getMainView();
+			if (! candidate.isContentVisible() || mainView == null || mainView.getWidth() == 0 || mainView.getHeight() == 0)
+				return;
+			final Point mainViewLocation = new Point();
+			UITools.convertPointToAncestor(mainView, mainViewLocation, mapView);
+			final Rectangle mainViewBounds = new Rectangle(mainViewLocation.x, mainViewLocation.y,
+					mainView.getWidth(), mainView.getHeight());
+			final double candidateDistance = distanceTo(mainViewBounds);
+			if (candidateDistance < distance) {
+				distance = candidateDistance;
+				nodeView = candidate;
+			}
+		}
+
+		private double distanceTo(Rectangle rectangle) {
+			final int rectangleMaxX = rectangle.x + rectangle.width;
+			final int rectangleMaxY = rectangle.y + rectangle.height;
+			final double dx = point.x < rectangle.x ? rectangle.x - point.x
+					: point.x > rectangleMaxX ? point.x - rectangleMaxX : 0;
+			final double dy = point.y < rectangle.y ? rectangle.y - point.y
+					: point.y > rectangleMaxY ? point.y - rectangleMaxY : 0;
+			return dx * dx + dy * dy;
+		}
+	}
 
 	private void adjustBackgroundComponentScale() {
 		if (backgroundComponent != null) {
@@ -3501,13 +3559,66 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     }
 
     public float calculateNewZoom(MouseWheelEvent e) {
-        float oldZoom = getZoom();
-        float zoomFactor = 1f + ResourceController.getResourceController().getIntProperty(MAP_VIEW_ZOOM_STEP_PROPERTY) / 100f;
-        float zoom = e.getPreciseWheelRotation() > 0 ? (oldZoom / zoomFactor) : (oldZoom * zoomFactor);
-        double x = Math.round(Math.log(zoom) / Math.log(zoomFactor));
-        zoom = (float) Math.pow(zoomFactor, x);
-        zoom = Math.max(Math.min(zoom, 32f), 0.03f);
-    	return zoom;
+        return ZoomCalculator.calculate(getZoom(), e.getPreciseWheelRotation(), getZoomShift());
+    }
+
+    private float getZoomShift() {
+        return (float) ResourceController.getResourceController().getDoubleProperty(MAP_VIEW_ZOOM_SHIFT_PROPERTY, 0.04d);
+    }
+
+    private void magnify(double magnification) {
+        if (magnification == 0)
+            return;
+        if (! SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> magnify(magnification));
+            return;
+        }
+        final float newZoom = ZoomCalculator.calculate(getZoom(), -magnification, getZoomShift());
+        if (newZoom == getZoom())
+            return;
+        setZoom(newZoom, getCurrentMousePosition());
+        Controller.getCurrentController().getMapViewManager().setZoom(newZoom);
+    }
+
+    private Point getCurrentMousePosition() {
+        Point mousePosition = getMousePosition();
+        if (mousePosition != null)
+            return mousePosition;
+        final PointerInfo pointerInfo = MouseInfo.getPointerInfo();
+        if (pointerInfo != null) {
+            mousePosition = pointerInfo.getLocation();
+            SwingUtilities.convertPointFromScreen(mousePosition, this);
+            if (getVisibleRect().contains(mousePosition))
+                return mousePosition;
+        }
+        final Rectangle visibleRect = getVisibleRect();
+        return new Point(visibleRect.x + visibleRect.width / 2, visibleRect.y + visibleRect.height / 2);
+    }
+
+    private void addMagnificationListener() {
+        try {
+            final Class<?> magnificationListenerClass = Class.forName("com.apple.eawt.event.MagnificationListener");
+            final Class<?> gestureUtilitiesClass = Class.forName("com.apple.eawt.event.GestureUtilities");
+            final Object listener = Proxy.newProxyInstance(magnificationListenerClass.getClassLoader(),
+                    new Class[] { magnificationListenerClass }, magnificationInvocationHandler());
+            final Method addGestureListenerTo = gestureUtilitiesClass.getMethod("addGestureListenerTo",
+                    JComponent.class, Class.forName("com.apple.eawt.event.GestureListener"));
+            addGestureListenerTo.invoke(null, this, listener);
+        }
+        catch (Exception ignored) {
+        }
+    }
+
+    private InvocationHandler magnificationInvocationHandler() {
+        return (proxy, method, args) -> {
+            if (method.getDeclaringClass() == Object.class)
+                return method.invoke(this, args);
+            if ("magnify".equals(method.getName()) && args != null && args.length == 1) {
+                final Method getMagnification = args[0].getClass().getMethod("getMagnification");
+                magnify(((Number) getMagnification.invoke(args[0])).doubleValue());
+            }
+            return null;
+        };
     }
 
     public void selectNodeViewBySelectionRectangle(boolean replace) {

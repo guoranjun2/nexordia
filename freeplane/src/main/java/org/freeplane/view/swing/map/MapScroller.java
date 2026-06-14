@@ -65,8 +65,17 @@ class MapScroller {
 	}
 
 	void anchorToNode(final NodeView view, final float horizontalPoint, final float verticalPoint) {
+		anchorToNode(view, horizontalPoint, verticalPoint, false);
+	}
+
+	void anchorToNodeForZoom(final NodeView view, final float horizontalPoint, final float verticalPoint) {
+		anchorToNode(view, horizontalPoint, verticalPoint, true);
+	}
+
+	private void anchorToNode(final NodeView view, final float horizontalPoint, final float verticalPoint,
+			final boolean replacesAnchor) {
 		if (view != null && view.getMainView() != null) {
-			if(scrollingDirective == ScrollingDirective.DONE || view.isRoot() || anchor == null) {
+			if(replacesAnchor || scrollingDirective == ScrollingDirective.DONE || view.isRoot() || anchor == null) {
 				anchor = view;
 			}
 			else if (! (anchor.isRoot() || anchor == view || anchor.isAncestorOf(view))){
@@ -430,4 +439,3 @@ class MapScroller {
 	}
 
 }
-

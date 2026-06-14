@@ -11,15 +11,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.event.MouseInputAdapter;
 
-import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 
 class MapOverviewImageMouseHandler extends MouseInputAdapter {
-    private static final String ZOOM_AROUND_SELECTED_NODE_PROPERTY = "zoomAroundSelectedNode";
-
     private final MapView mapView;
 
     private final JScrollPane mapViewScrollPane;
@@ -54,17 +51,14 @@ class MapOverviewImageMouseHandler extends MouseInputAdapter {
         double zoom = mapView.calculateNewZoom(e);
         IMapViewManager viewManager = Controller.getCurrentController().getMapViewManager();
         viewManager.changeToMapView(mapView);
-        final ResourceController resourceController = ResourceController.getResourceController();
-        if (! resourceController.getBooleanProperty(ZOOM_AROUND_SELECTED_NODE_PROPERTY)) {
-            MapOverviewImage image = (MapOverviewImage) e.getComponent();
-            scrollTo(image, e.getPoint());
-            Dimension viewportSize = mapViewScrollPane.getViewport().getExtentSize();
-            Point mapViewLocation = mapView.getLocation();
-            Point keptPoint = new Point(-mapViewLocation.x + viewportSize.width / 2,
-                    -mapViewLocation.y + viewportSize.height / 2);
-            mapView.setZoom((float) zoom, keptPoint);
-            mapView.setShowsSelectedAfterScroll(false);
-        }
+        MapOverviewImage image = (MapOverviewImage) e.getComponent();
+        scrollTo(image, e.getPoint());
+        Dimension viewportSize = mapViewScrollPane.getViewport().getExtentSize();
+        Point mapViewLocation = mapView.getLocation();
+        Point keptPoint = new Point(-mapViewLocation.x + viewportSize.width / 2,
+                -mapViewLocation.y + viewportSize.height / 2);
+        mapView.setZoom((float) zoom, keptPoint);
+        mapView.setShowsSelectedAfterScroll(false);
         viewManager.setZoom((float) zoom);
     }
 
