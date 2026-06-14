@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -2360,7 +2361,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			return;
 		final Rectangle visibleRect = getVisibleRect();
 		final Point origin = getRootCenterPoint();
-		final int gridStep = coordinateAxisGridStep();
+		final double mapGridStep = CoordinateAxisGridCalculator.mapStep(zoom);
 		final Graphics2D axisGraphics = (Graphics2D) g.create();
 		try {
 			axisGraphics.setFont(axisGraphics.getFont().deriveFont(Font.PLAIN, Math.max(9f, axisGraphics.getFont().getSize2D() - 1f)));
@@ -2368,8 +2369,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final int xLabelY = clamp(origin.y - 3, visibleRect.y + fontMetrics.getAscent() + 2,
 					visibleRect.y + visibleRect.height - 4);
 			final int yLabelX = clamp(origin.x + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
-			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, gridStep, xLabelY);
-			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, gridStep, yLabelX, fontMetrics);
+			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, xLabelY);
+			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, yLabelX, fontMetrics);
 			axisGraphics.setColor(COORDINATE_AXIS_COLOR);
 			axisGraphics.drawLine(origin.x, visibleRect.y, origin.x, visibleRect.y + visibleRect.height);
 			axisGraphics.drawLine(visibleRect.x, origin.y, visibleRect.x + visibleRect.width, origin.y);
@@ -2379,39 +2380,38 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 	}
 
-	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, int gridStep, int labelY) {
-		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / (double) gridStep);
-		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / (double) gridStep);
+	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep, int labelY) {
+		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
+		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / screenGridStep);
+		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
-			final int x = origin.x + index * gridStep;
+			final int x = origin.x + (int) Math.round(index * screenGridStep);
 			g.setColor(COORDINATE_AXIS_GRID_COLOR);
 			g.drawLine(x, visibleRect.y, x, visibleRect.y + visibleRect.height);
 			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
-			g.drawString(String.valueOf(index * gridStep), x + 3, labelY);
+			g.drawString(formatCoordinate(index * mapGridStep), x + 3, labelY);
 		}
 	}
 
-	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, int gridStep,
+	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
 			int labelX, FontMetrics fontMetrics) {
-		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / (double) gridStep);
-		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / (double) gridStep);
+		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
+		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / screenGridStep);
+		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
-			final int y = origin.y + index * gridStep;
+			final int y = origin.y + (int) Math.round(index * screenGridStep);
 			g.setColor(COORDINATE_AXIS_GRID_COLOR);
 			g.drawLine(visibleRect.x, y, visibleRect.x + visibleRect.width, y);
 			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
-			g.drawString(String.valueOf(-index * gridStep), labelX, y + fontMetrics.getAscent() + 2);
+			g.drawString(formatCoordinate(-index * mapGridStep), labelX, y + fontMetrics.getAscent() + 2);
 		}
 	}
 
-	private int coordinateAxisGridStep() {
-		int step = 50;
-		final float effectiveZoom = Math.max(zoom, 0.01f);
-		while(step * effectiveZoom < 60)
-			step *= 2;
-		while(step * effectiveZoom > 160 && step > 10)
-			step /= 2;
-		return step;
+	private String formatCoordinate(double coordinate) {
+		final double roundedCoordinate = Math.rint(coordinate);
+		if(Math.abs(coordinate - roundedCoordinate) < 0.001d)
+			return String.valueOf((long) roundedCoordinate);
+		return String.format(Locale.ROOT, "%.2f", coordinate);
 	}
 
 	private int clamp(int value, int min, int max) {
