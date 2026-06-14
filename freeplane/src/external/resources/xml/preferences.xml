@@ -188,6 +188,7 @@
 		</tab>
 		<tab name="Painting">
 			<separator name="low_zoom_painting">
+				<boolean name="showCoordinateAxis" />
 				<number name="simplified_painting_max_zoom" min="0.01" max="1.0" step="0.01" />
 				<number name="simplified_painting_max_width" min="1" max="200" />
 				<number name="simplified_painting_max_height" min="1" max="200" />

@@ -28,6 +28,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -140,6 +141,7 @@ import org.freeplane.view.swing.map.link.ILinkView;
 public class MapView extends JPanel implements Printable, Autoscroll, IMapChangeListener, IFreeplanePropertyListener, Configurable {
 
     private static final String MAP_VIEW_ZOOM_STEP_PROPERTY = "map_view_zoom_step";
+    private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
 
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
 
@@ -728,6 +730,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     public static final String SPOTLIGHT_ENABLED = "spotlight";
     public static final String FOLDING_FOLLOWS_SELECTION = "folding_follows_selection";
 
+	private static final Color COORDINATE_AXIS_GRID_COLOR = new Color(120, 120, 120, 55);
+	private static final Color COORDINATE_AXIS_LABEL_COLOR = new Color(90, 90, 90, 175);
+	private static final Color COORDINATE_AXIS_COLOR = new Color(60, 100, 180, 160);
+
 	static private final PropertyChangeListener repaintOnClientPropertyChangeListener = new PropertyChangeListener() {
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
@@ -1087,6 +1093,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 					}
 					if (propertyName.equals(BookmarksController.SHOW_BOOKMARK_ICONS)) {
 						mapView.updateIconsRecursively();
+						mapView.repaint();
+						continue;
+					}
+					if (propertyName.equals(SHOW_COORDINATE_AXIS_PROPERTY)) {
 						mapView.repaint();
 						continue;
 					}
@@ -2334,7 +2344,72 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		paintSelecteds(g2);
 		highlightEditor(g2);
 		paintSelectionRectangle(g);
+		paintCoordinateAxis(g2);
     }
+
+	private void paintCoordinateAxis(Graphics2D g) {
+		if (paintingPurpose != PaintingPurpose.PAINTING
+				|| ! ResourceController.getResourceController().getBooleanProperty(SHOW_COORDINATE_AXIS_PROPERTY))
+			return;
+		final Rectangle visibleRect = getVisibleRect();
+		final Point origin = getRootCenterPoint();
+		final int gridStep = coordinateAxisGridStep();
+		final Graphics2D axisGraphics = (Graphics2D) g.create();
+		try {
+			axisGraphics.setFont(axisGraphics.getFont().deriveFont(Font.PLAIN, Math.max(9f, axisGraphics.getFont().getSize2D() - 1f)));
+			final FontMetrics fontMetrics = axisGraphics.getFontMetrics();
+			final int xLabelY = clamp(origin.y - 3, visibleRect.y + fontMetrics.getAscent() + 2,
+					visibleRect.y + visibleRect.height - 4);
+			final int yLabelX = clamp(origin.x + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
+			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, gridStep, xLabelY);
+			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, gridStep, yLabelX, fontMetrics);
+			axisGraphics.setColor(COORDINATE_AXIS_COLOR);
+			axisGraphics.drawLine(origin.x, visibleRect.y, origin.x, visibleRect.y + visibleRect.height);
+			axisGraphics.drawLine(visibleRect.x, origin.y, visibleRect.x + visibleRect.width, origin.y);
+		}
+		finally {
+			axisGraphics.dispose();
+		}
+	}
+
+	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, int gridStep, int labelY) {
+		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / (double) gridStep);
+		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / (double) gridStep);
+		for (int index = firstIndex; index <= lastIndex; index++) {
+			final int x = origin.x + index * gridStep;
+			g.setColor(COORDINATE_AXIS_GRID_COLOR);
+			g.drawLine(x, visibleRect.y, x, visibleRect.y + visibleRect.height);
+			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
+			g.drawString(String.valueOf(index * gridStep), x + 3, labelY);
+		}
+	}
+
+	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, int gridStep,
+			int labelX, FontMetrics fontMetrics) {
+		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / (double) gridStep);
+		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / (double) gridStep);
+		for (int index = firstIndex; index <= lastIndex; index++) {
+			final int y = origin.y + index * gridStep;
+			g.setColor(COORDINATE_AXIS_GRID_COLOR);
+			g.drawLine(visibleRect.x, y, visibleRect.x + visibleRect.width, y);
+			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
+			g.drawString(String.valueOf(-index * gridStep), labelX, y + fontMetrics.getAscent() + 2);
+		}
+	}
+
+	private int coordinateAxisGridStep() {
+		int step = 50;
+		final float effectiveZoom = Math.max(zoom, 0.01f);
+		while(step * effectiveZoom < 60)
+			step *= 2;
+		while(step * effectiveZoom > 160 && step > 10)
+			step /= 2;
+		return step;
+	}
+
+	private int clamp(int value, int min, int max) {
+		return max < min ? min : Math.max(min, Math.min(value, max));
+	}
 
     private void paintSelectionRectangle(Graphics g) {
         if (selectionRectangle == null)
