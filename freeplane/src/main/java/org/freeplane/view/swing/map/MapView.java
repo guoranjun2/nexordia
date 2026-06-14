@@ -146,6 +146,7 @@ import org.freeplane.view.swing.map.link.ILinkView;
 public class MapView extends JPanel implements Printable, Autoscroll, IMapChangeListener, IFreeplanePropertyListener, Configurable {
 
     private static final String MAP_VIEW_ZOOM_SHIFT_PROPERTY = "map_view_zoom_shift";
+    private static final String MAP_VIEW_MIN_ZOOM_PROPERTY = "map_view_min_zoom";
     private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
 
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
@@ -3559,11 +3560,15 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     }
 
     public float calculateNewZoom(MouseWheelEvent e) {
-        return ZoomCalculator.calculate(getZoom(), e.getPreciseWheelRotation(), getZoomShift());
+        return ZoomCalculator.calculate(getZoom(), e.getPreciseWheelRotation(), getZoomShift(), getMinimumZoom());
     }
 
     private float getZoomShift() {
         return (float) ResourceController.getResourceController().getDoubleProperty(MAP_VIEW_ZOOM_SHIFT_PROPERTY, 0.04d);
+    }
+
+    private float getMinimumZoom() {
+        return (float) ResourceController.getResourceController().getDoubleProperty(MAP_VIEW_MIN_ZOOM_PROPERTY, 0.001d);
     }
 
     private void magnify(double magnification) {
@@ -3573,7 +3578,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             SwingUtilities.invokeLater(() -> magnify(magnification));
             return;
         }
-        final float newZoom = ZoomCalculator.calculate(getZoom(), -magnification, getZoomShift());
+        final float newZoom = ZoomCalculator.calculate(getZoom(), -magnification, getZoomShift(), getMinimumZoom());
         if (newZoom == getZoom())
             return;
         setZoom(newZoom, getCurrentMousePosition());
