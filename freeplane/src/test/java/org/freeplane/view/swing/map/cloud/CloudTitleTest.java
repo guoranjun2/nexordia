@@ -12,7 +12,8 @@ public class CloudTitleTest {
 		final CloudTitle title = CloudTitle.from(attributesWithTitle("abc"), "<html><body><img src='image.png'></body></html>");
 
 		assertThat(title.getText()).isEqualTo("abc");
-		assertThat(title.isImage()).isFalse();
+		assertThat(title.isImage()).isTrue();
+		assertThat(title.getImageSource()).isEqualTo("image.png");
 	}
 
 	@Test
@@ -20,7 +21,8 @@ public class CloudTitleTest {
 		final CloudTitle title = CloudTitle.from(attributesWithTitle(""), "<html><body><img src='image.png'></body></html>");
 
 		assertThat(title.getText()).isEmpty();
-		assertThat(title.isImage()).isFalse();
+		assertThat(title.isImage()).isTrue();
+		assertThat(title.getImageSource()).isEqualTo("image.png");
 	}
 
 	@Test
@@ -45,6 +47,7 @@ public class CloudTitleTest {
 
 		assertThat(title.isImage()).isTrue();
 		assertThat(title.getImageSource()).isEqualTo("image.png");
+		assertThat(title.getText()).isEqualTo("caption");
 	}
 
 	@Test

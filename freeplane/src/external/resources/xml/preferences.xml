@@ -193,6 +193,9 @@
 				<number name="simplified_painting_max_height" min="1" max="200" />
 				<number name="cloud_painting_min_width" min="0" max="1000" />
 				<number name="cloud_text_painting_min_width" min="0" max="1000" />
+				<boolean name="paint_cloud_image" />
+				<string name="cloud_image_fixed_icon" />
+				<number name="cloud_image_opacity" min="0.05" max="1.0" step="0.05" />
 				<boolean name="paint_cloud_text" />
 				<boolean name="paint_cloud_for_invisible_node" />
 				<boolean name="paint_cloud_title_for_invisible_node" />

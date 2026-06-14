@@ -20,7 +20,9 @@
 package org.freeplane.view.swing.map.cloud;
 
 import java.awt.BasicStroke;
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -40,6 +42,7 @@ import org.freeplane.core.ui.components.html.HtmlImageRenderer;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
+import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
@@ -54,13 +57,21 @@ abstract public class CloudView {
 	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
 	private static final String PAINT_CLOUD_FOR_INVISIBLE_NODE = "paint_cloud_for_invisible_node";
 	private static final String PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = "paint_cloud_title_for_invisible_node";
+	private static final String PAINT_CLOUD_IMAGE = "paint_cloud_image";
 	private static final String PAINT_CLOUD_TEXT = "paint_cloud_text";
+	private static final String CLOUD_IMAGE_FIXED_ICON = "cloud_image_fixed_icon";
+	private static final String CLOUD_IMAGE_OPACITY = "cloud_image_opacity";
 	private static final String CLOUD_IMAGE_REPAINT_CALLBACK = "cloud_image_repaint_callback";
 	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
 	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
 	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = true;
+	private static final boolean DEFAULT_PAINT_CLOUD_IMAGE = true;
 	private static final boolean DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = false;
 	private static final boolean DEFAULT_PAINT_CLOUD_TEXT = true;
+	private static final String DEFAULT_CLOUD_IMAGE_FIXED_ICON = "info";
+	private static final double DEFAULT_CLOUD_IMAGE_OPACITY = 1d;
+	private static final double MINIMUM_CLOUD_IMAGE_OPACITY = 0.05d;
+	private static final double MAXIMUM_CLOUD_IMAGE_OPACITY = 1d;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
 	/** the layout functions can get the additional height of the clouded node .
@@ -147,7 +158,7 @@ abstract public class CloudView {
 
 	public void paint(final Graphics graphics) {
 		final MainView mainView = source.getMainView();
-		if(!isSourceVisibleForPainting(mainView)) {
+		if(!shouldPaintCloud(mainView)) {
 			return;
 		}
 		final Rectangle paintingBounds = getPaintingBounds();
@@ -194,8 +205,24 @@ abstract public class CloudView {
 
 	private boolean shouldPaintSourceText(MainView mainView) {
 		return isCloudTextPaintingEnabled()
-				&& isSourceVisibleForTextPainting(mainView)
-				&& mainView.isPaintingSimplified();
+				&& mainView != null
+				&& ((isSourceVisibleForTextPainting(mainView) && mainView.isPaintingSimplified())
+						|| isFixedImageCloud(mainView));
+	}
+
+	private boolean shouldPaintSourceImage(MainView mainView) {
+		return mainView != null
+				&& CloudImagePainting.shouldPaint(isCloudImagePaintingEnabled(), isSourceVisibleForTextPainting(mainView),
+						mainView.isPaintingSimplified(), isFixedImageCloud(mainView));
+	}
+
+	private boolean isFixedImageCloud(MainView mainView) {
+		return CloudImagePainting.shouldKeepTextWithFixedImage(isCloudImagePaintingEnabled(), hasCloudImageFixedIcon(),
+				getCloudTitle(mainView).isImage());
+	}
+
+	private boolean shouldPaintCloud(MainView mainView) {
+		return isSourceVisibleForPainting(mainView) || mainView != null && isFixedImageCloud(mainView);
 	}
 
 	private boolean isSourceVisibleForPainting(MainView mainView) {
@@ -241,15 +268,28 @@ abstract public class CloudView {
 				DEFAULT_PAINT_CLOUD_TEXT);
 	}
 
+	private static boolean isCloudImagePaintingEnabled() {
+		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_IMAGE,
+				DEFAULT_PAINT_CLOUD_IMAGE);
+	}
+
+	private static String getCloudImageFixedIcon() {
+		return ResourceController.getResourceController().getProperty(CLOUD_IMAGE_FIXED_ICON,
+				DEFAULT_CLOUD_IMAGE_FIXED_ICON);
+	}
+
+	private static double getCloudImageOpacity() {
+		final double opacity = ResourceController.getResourceController().getDoubleProperty(CLOUD_IMAGE_OPACITY,
+				DEFAULT_CLOUD_IMAGE_OPACITY);
+		return CloudImagePainting.opacityInRange(opacity, MINIMUM_CLOUD_IMAGE_OPACITY, MAXIMUM_CLOUD_IMAGE_OPACITY);
+	}
+
 	protected Rectangle getPaintingBounds() {
 		return getCoordinates().getBounds();
 	}
 
 	private void paintSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds) {
 		final CloudTitle cloudTitle = getCloudTitle(mainView);
-		if (cloudTitle.isImage()) {
-			return;
-		}
 		if (cloudTitle.getText().isEmpty()) {
 			return;
 		}
@@ -258,7 +298,7 @@ abstract public class CloudView {
 
 	private void paintSourceImageText(Graphics2D g) {
 		final MainView mainView = source.getMainView();
-		if (!shouldPaintSourceText(mainView)) {
+		if (!shouldPaintSourceImage(mainView)) {
 			return;
 		}
 		final Rectangle paintingBounds = getPaintingBounds();
@@ -272,15 +312,35 @@ abstract public class CloudView {
 		paintImageSourceText(g, paintingBounds, cloudTitle.getImageSource());
 	}
 
+	private boolean hasCloudImageFixedIcon() {
+		final String cloudImageFixedIcon = getCloudImageFixedIcon();
+		for (NamedIcon icon : source.getNode().getIcons()) {
+			if (cloudImageFixedIcon.equals(icon.getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void paintImageSourceText(Graphics2D g, Rectangle cloudBounds, String imageSource) {
 		final URL base = source.getMap().getMap().getURL();
 		final Shape clip = g.getClip();
+		final Composite composite = g.getComposite();
 		try {
 			g.clip(cloudBounds);
+			setCloudImageOpacity(g);
 			HtmlImageRenderer.paintContained(g, cloudBounds, base, imageSource, cloudImageRepaintCallback());
 		}
 		finally {
+			g.setComposite(composite);
 			g.setClip(clip);
+		}
+	}
+
+	private void setCloudImageOpacity(Graphics2D g) {
+		final double opacity = getCloudImageOpacity();
+		if (opacity < MAXIMUM_CLOUD_IMAGE_OPACITY) {
+			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacity));
 		}
 	}
 
