@@ -46,6 +46,9 @@ public interface ScalableComponent {
 	default void setCropsToViewerSize(boolean cropsToViewerSize) {
 	}
 
+	default void stopAnimation() {
+	}
+
 	void paintComponent(Graphics g);
 
     int getWidth();

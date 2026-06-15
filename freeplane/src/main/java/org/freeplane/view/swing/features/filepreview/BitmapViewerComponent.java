@@ -37,6 +37,7 @@ import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,8 +47,10 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.LogUtils;
@@ -97,6 +100,8 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	private AtomicInteger targetWidth = new AtomicInteger();
 	private WeakReference<BufferedImage> cachedImageWeakRef;
 	private final URL url;
+	private final ImageIcon animatedImage;
+	private final Timer animatedImageTimer;
 	private final Dimension originalSize;
 	private boolean scaleEnabled;
 	private boolean cropsToViewerSize;
@@ -107,9 +112,16 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	public BitmapViewerComponent(final URI uri) throws MalformedURLException, IOException {
 		url = uri.toURL();
 		originalSize = readImageSize(url);
+		animatedImage = isGif(uri) ? new ImageIcon(url) : null;
+		animatedImageTimer = animatedImage != null ? new Timer(100, e -> repaintAnimatedImage()) : null;
 		hint = Image.SCALE_SMOOTH;
 		scaleEnabled = true;
 		cachedImage = new AtomicReference<>();
+	}
+
+	private static boolean isGif(final URI uri) {
+		String path = uri.isOpaque() ? uri.getSchemeSpecificPart() : uri.getRawPath();
+		return path != null && path.toLowerCase(Locale.ROOT).endsWith(".gif");
 	}
 
 	static private Dimension readImageSize(URL url) throws IOException {
@@ -167,6 +179,9 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
             paintOriginalImage(g);
             return null;
         }
+		if (paintAnimatedImage(g)) {
+			return null;
+		}
 		final Graphics2D g2 = (Graphics2D) g;
 		final AffineTransform transform = g2.getTransform();
 		final double scaleX = transform.getScaleX();
@@ -235,6 +250,25 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 		flushImage();
 		return null;
     }
+
+	private boolean paintAnimatedImage(final Graphics g) {
+		if(animatedImage == null)
+			return false;
+		if(animatedImageTimer != null && ! animatedImageTimer.isRunning())
+			animatedImageTimer.start();
+		final Dimension imageSize = cropsToViewerSize ? requiredImageSize(1, 1) : originalSize;
+		final Rectangle imageCoordinates = calculateImageCoordinates(getWidth(), getHeight(), imageSize.width, imageSize.height);
+		g.drawImage(animatedImage.getImage(), imageCoordinates.x, imageCoordinates.y,
+				imageCoordinates.width, imageCoordinates.height, this);
+		return true;
+	}
+
+	private void repaintAnimatedImage() {
+		if(rendererListener != null)
+			rendererListener.run();
+		else
+			repaint();
+	}
 
 	private Rectangle calculateImageCoordinates(int requiredImageWidth, int requiredImageHeight, final int imageWidth,
 			final int imageHeight) {
@@ -410,7 +444,15 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	}
 
 	@Override
+	public void addNotify() {
+		super.addNotify();
+		if(animatedImageTimer != null)
+			animatedImageTimer.start();
+	}
+
+	@Override
 	public void removeNotify() {
+		stopAnimation();
 		super.removeNotify();
 		if (cacheFile != null) {
 	        AccessController.doPrivileged(new PrivilegedAction<Void>() {
@@ -422,6 +464,12 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	        });
 			cacheFile = null;
 		}
+	}
+
+	@Override
+	public void stopAnimation() {
+		if(animatedImageTimer != null)
+			animatedImageTimer.stop();
 	}
 
 	@Override

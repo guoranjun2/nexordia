@@ -284,7 +284,14 @@ public class MapViewScrollPane extends JScrollPane implements IFreeplaneProperty
             if(backgroundComponent != null) {
                 g.setColor(getBackground());
                 g.fillRect(0, 0, getWidth(), getHeight());
-                backgroundComponent.paintComponent(g);
+                final Graphics backgroundGraphics = g.create();
+                try {
+                    MapView.setBackgroundImageComposite(backgroundGraphics);
+                    backgroundComponent.paintComponent(backgroundGraphics);
+                }
+                finally {
+                    backgroundGraphics.dispose();
+                }
             }
         }
 

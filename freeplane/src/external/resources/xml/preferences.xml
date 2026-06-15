@@ -187,6 +187,9 @@
 			</separator>
 		</tab>
 		<tab name="Painting">
+			<separator name="background_image">
+				<number name="background_image_opacity" min="0" max="100" />
+			</separator>
 			<separator name="coordinate_axis">
 				<boolean name="showCoordinateAxis" />
 				<boolean name="showCoordinateAxisYInverted" />

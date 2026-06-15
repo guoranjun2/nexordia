@@ -20,9 +20,11 @@
 package org.freeplane.view.swing.map;
 
 import java.awt.AWTKeyStroke;
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Composite;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -49,11 +51,20 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.AbstractList;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -149,6 +160,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     private static final String MAP_VIEW_ZOOM_SHIFT_PROPERTY = "map_view_zoom_shift";
     private static final String MAP_VIEW_MIN_ZOOM_PROPERTY = "map_view_min_zoom";
+    static final String BACKGROUND_IMAGE_OPACITY_PROPERTY = "background_image_opacity";
     private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
     private static final String SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY = "showCoordinateAxisYInverted";
     private static final String COORDINATE_AXIS_COLOR_PROPERTY = "coordinate_axis_color";
@@ -1113,8 +1125,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 					if (propertyName.equals(SHOW_COORDINATE_AXIS_PROPERTY)
 							|| propertyName.equals(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)
 							|| propertyName.equals(COORDINATE_AXIS_COLOR_PROPERTY)
-							|| propertyName.equals(COORDINATE_AXIS_LABEL_COLOR_PROPERTY)) {
+							|| propertyName.equals(COORDINATE_AXIS_LABEL_COLOR_PROPERTY)
+							|| propertyName.equals(BACKGROUND_IMAGE_OPACITY_PROPERTY)) {
 						mapView.repaint();
+						if(mapView.getParent() != null)
+							mapView.getParent().repaint();
 						continue;
 					}
 					if (propertyName.equals(SHOW_CONNECTORS_PROPERTY)) {
@@ -1659,7 +1674,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			if(backgroundImageEnabled)
 				loadBackgroundImage();
 			else {
-				backgroundComponent = null;
+				clearBackgroundComponent();
 				updateBackground();
 				repaint();
 			}
@@ -1682,7 +1697,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     private void loadBackgroundImage() {
  		final MapStyle mapStyle = getModeController().getExtension(MapStyle.class);
-		backgroundComponent = null;
+		clearBackgroundComponent();
 		updateBackground();
 		if(! backgroundImageEnabled) {
 			repaint();
@@ -1693,11 +1708,80 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final ViewerController vc = getModeController().getExtension(ViewerController.class);
 			if(vc != null) {
 				final IViewerFactory factory = vc.getViewerFactory();
-				assignViewerToBackgroundComponent(factory, uri);
+				assignViewerToBackgroundComponent(factory, cacheBackgroundImage(uri));
 			}
 		}
 		repaint();
     }
+
+	private URI cacheBackgroundImage(final URI uri) {
+		if(! isRemoteUri(uri))
+			return uri;
+		final File cacheFile = backgroundImageCacheFile(uri);
+		if(cacheFile == null)
+			return uri;
+		if(cacheFile.isFile())
+			return cacheFile.toURI();
+		try {
+			cacheFile.getParentFile().mkdirs();
+			final File tempFile = File.createTempFile(cacheFile.getName(), ".download", cacheFile.getParentFile());
+			try {
+				final URLConnection connection = uri.toURL().openConnection();
+				connection.setConnectTimeout(10000);
+				connection.setReadTimeout(30000);
+				try(InputStream inputStream = connection.getInputStream()) {
+					Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				}
+				Files.move(tempFile.toPath(), cacheFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
+			finally {
+				if(tempFile.isFile())
+					tempFile.delete();
+			}
+			return cacheFile.toURI();
+		}
+		catch (final IOException e) {
+			LogUtils.warn(e);
+			return uri;
+		}
+	}
+
+	private boolean isRemoteUri(final URI uri) {
+		final String scheme = uri.getScheme();
+		return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+	}
+
+	private File backgroundImageCacheFile(final URI uri) {
+		final String userDirectory = ResourceController.getResourceController().getFreeplaneUserDirectory();
+		if(userDirectory == null)
+			return null;
+		return new File(new File(new File(userDirectory, "resources"), "background"),
+				sha256(uri.toString()) + backgroundImageExtension(uri));
+	}
+
+	private String backgroundImageExtension(final URI uri) {
+		final String path = uri.getPath();
+		if(path == null)
+			return ".image";
+		final int suffixStart = path.lastIndexOf('.');
+		if(suffixStart == -1 || suffixStart == path.length() - 1)
+			return ".image";
+		return path.substring(suffixStart).toLowerCase(Locale.ROOT);
+	}
+
+	private String sha256(final String value) {
+		try {
+			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			final byte[] digest = messageDigest.digest(value.getBytes(StandardCharsets.UTF_8));
+			final StringBuilder builder = new StringBuilder();
+			for (byte b : digest)
+				builder.append(String.format("%02x", b & 0xff));
+			return builder.toString();
+		}
+		catch (final NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 
     private void assignViewerToBackgroundComponent(final IViewerFactory factory, final URI uri) {
     	try {
@@ -1725,12 +1809,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		catch (final Exception e1) {
 			LogUtils.severe(e1);
 		}
-	}
+    }
 
     private void setBackgroundComponent(ScalableComponent viewer) {
-        this.backgroundComponent = viewer;
+        clearBackgroundComponent();
+		this.backgroundComponent = viewer;
         updateBackground();
     }
+
+	private void clearBackgroundComponent() {
+		if(backgroundComponent != null)
+			backgroundComponent.stopAnimation();
+		backgroundComponent = null;
+	}
 
    private void updateBackground() {
         MapViewPort viewport = (MapViewPort) getParent();
@@ -2342,6 +2433,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private void paintBackgroundComponent(final Graphics g) {
 	    final Graphics backgroundGraphics = g.create();
 	    try {
+			setBackgroundImageComposite(backgroundGraphics);
 	    	final Point centerPoint = getRootCenterPoint();
             final Point backgroundImageTopLeft = getBackgroundImageTopLeft(centerPoint);
             backgroundGraphics.translate(backgroundImageTopLeft.x, backgroundImageTopLeft.y);
@@ -2349,7 +2441,29 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    }
 	    finally {
 	    	backgroundGraphics.dispose();
-	    }
+		}
+	}
+
+	static void setBackgroundImageComposite(final Graphics g) {
+		if(! (g instanceof Graphics2D))
+			return;
+		final float alpha = backgroundImageAlpha();
+		if(alpha >= 1f)
+			return;
+		final Graphics2D g2 = (Graphics2D) g;
+		final Composite composite = g2.getComposite();
+		if(composite instanceof AlphaComposite) {
+			final AlphaComposite alphaComposite = (AlphaComposite) composite;
+			g2.setComposite(AlphaComposite.getInstance(alphaComposite.getRule(), alphaComposite.getAlpha() * alpha));
+		}
+		else {
+			g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+		}
+	}
+
+	private static float backgroundImageAlpha() {
+		final int opacity = ResourceController.getResourceController().getIntProperty(BACKGROUND_IMAGE_OPACITY_PROPERTY, 100);
+		return Math.max(0, Math.min(opacity, 100)) / 100f;
 	}
 
 	private Point getRootCenterPoint() {
