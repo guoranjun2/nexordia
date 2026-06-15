@@ -44,7 +44,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -2323,16 +2322,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	}
 
 	private Point getRootCenterPoint() {
-		final Point2D.Double preciseRootCenterPoint = getPreciseRootCenterPoint();
-		return new Point((int) Math.round(preciseRootCenterPoint.x), (int) Math.round(preciseRootCenterPoint.y));
-	}
-
-	private Point2D.Double getPreciseRootCenterPoint() {
-		final MainView rootMainView = getRoot().getMainView();
-		final Point centerPoint = new Point();
-		UITools.convertPointToAncestor(rootMainView, centerPoint, this);
-		return new Point2D.Double(centerPoint.x + rootMainView.getWidth() / 2d,
-				centerPoint.y + rootMainView.getHeight() / 2d);
+	    final Point centerPoint = new Point(getRoot().getMainView().getWidth() / 2,
+		    getRoot().getMainView().getHeight() / 2);
+		UITools.convertPointToAncestor(getRoot().getMainView(), centerPoint, this);
+		return centerPoint;
 	}
 
 	private Point getBackgroundImageTopLeft(final Point centerPoint) {
@@ -2371,7 +2364,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 				|| ! ResourceController.getResourceController().getBooleanProperty(SHOW_COORDINATE_AXIS_PROPERTY))
 			return;
 		final Rectangle visibleRect = getVisibleRect();
-		final Point2D.Double origin = getPreciseRootCenterPoint();
+		final Point origin = getRootCenterPoint();
 		final double mapGridStep = CoordinateAxisGridCalculator.mapStep(zoom);
 		final boolean yAxisInverted = ResourceController.getResourceController()
 				.getBooleanProperty(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY);
@@ -2379,9 +2372,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		try {
 			axisGraphics.setFont(axisGraphics.getFont().deriveFont(Font.PLAIN, Math.max(9f, axisGraphics.getFont().getSize2D() - 1f)));
 			final FontMetrics fontMetrics = axisGraphics.getFontMetrics();
-			final int xLabelY = clamp((int) Math.round(origin.y) - 3, visibleRect.y + fontMetrics.getAscent() + 2,
+			final int xLabelY = clamp(origin.y - 3, visibleRect.y + fontMetrics.getAscent() + 2,
 					visibleRect.y + visibleRect.height - 4);
-			final int yLabelX = clamp((int) Math.round(origin.x) + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
+			final int yLabelX = clamp(origin.x + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
 			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, xLabelY);
 			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, yLabelX, fontMetrics, yAxisInverted);
 			axisGraphics.setColor(COORDINATE_AXIS_COLOR);
@@ -2393,41 +2386,35 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 	}
 
-	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point2D.Double origin, double mapGridStep, int labelY) {
+	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep, int labelY) {
 		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
 		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / screenGridStep);
 		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
-			final double coordinate = index * mapGridStep;
-			final double x = origin.x + getSignedZoomedCoordinate(coordinate);
+			final double x = origin.x + index * screenGridStep;
 			g.setColor(COORDINATE_AXIS_GRID_COLOR);
 			g.draw(new Line2D.Double(x, visibleRect.y, x, visibleRect.y + visibleRect.height));
 			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
-			g.drawString(formatCoordinate(coordinate), (int) Math.round(x) + 3, labelY);
+			g.drawString(formatCoordinate(index * mapGridStep), (int) Math.round(x) + 3, labelY);
 		}
 	}
 
-	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point2D.Double origin, double mapGridStep,
+	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
 			int labelX, FontMetrics fontMetrics, boolean yAxisInverted) {
 		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
 		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / screenGridStep);
 		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
-			final double coordinate = index * mapGridStep;
-			final double y = origin.y + getSignedZoomedCoordinate(coordinate);
+			final double y = origin.y + index * screenGridStep;
 			g.setColor(COORDINATE_AXIS_GRID_COLOR);
 			g.draw(new Line2D.Double(visibleRect.x, y, visibleRect.x + visibleRect.width, y));
 			if(index != 0) {
 				g.setColor(COORDINATE_AXIS_LABEL_COLOR);
-				final double yCoordinate = yAxisInverted ? coordinate : -coordinate;
-				g.drawString(formatCoordinate(yCoordinate), labelX,
+				final double coordinate = (yAxisInverted ? index : -index) * mapGridStep;
+				g.drawString(formatCoordinate(coordinate), labelX,
 						(int) Math.round(y) + fontMetrics.getAscent() + 2);
 			}
 		}
-	}
-
-	private double getSignedZoomedCoordinate(double coordinate) {
-		return coordinate < 0 ? -getZoomed(-coordinate) : getZoomed(coordinate);
 	}
 
 	private String formatCoordinate(double coordinate) {
