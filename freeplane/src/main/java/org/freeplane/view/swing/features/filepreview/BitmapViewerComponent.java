@@ -99,6 +99,7 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	private final URL url;
 	private final Dimension originalSize;
 	private boolean scaleEnabled;
+	private boolean cropsToViewerSize;
 	private Dimension maximumSize = null;
 	private Runnable rendererListener = null;
 	private static boolean disabledDueToJavaBug = false;
@@ -171,8 +172,9 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 		final double scaleX = transform.getScaleX();
 		final double scaleY = transform.getScaleY();
 		final int targetWidth = getWidth();
-		int requiredImageWidth = (int) (targetWidth * scaleX);
-		int requiredImageHeight = (int) (getHeight() * scaleY);
+		final Dimension requiredImageSize = requiredImageSize(scaleX, scaleY);
+		int requiredImageWidth = requiredImageSize.width;
+		int requiredImageHeight = requiredImageSize.height;
 		BufferedImage cachedImage = loadImageFromCacheFile();
 
 		if (!isCachedImageValid(requiredImageWidth, requiredImageHeight)) {
@@ -233,6 +235,8 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 
 	private Rectangle calculateImageCoordinates(int requiredImageWidth, int requiredImageHeight, final int imageWidth,
 			final int imageHeight) {
+		if(cropsToViewerSize)
+			return new Rectangle((requiredImageWidth - imageWidth) / 2, (requiredImageHeight - imageHeight) / 2, imageWidth, imageHeight);
 		final Rectangle imageCoordinates = new Rectangle(0, 0, requiredImageWidth, requiredImageHeight);
 		final long k = ((long)requiredImageWidth) * imageHeight - ((long)imageWidth) * requiredImageHeight;
 		if(k > 0) {
@@ -299,10 +303,26 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	}
 
 	private boolean isCachedImageValid(int width, int height) {
+		if(cropsToViewerSize)
+			return getCachedImage() != null && componentHasSameWidthAsCachedImage(width)
+					&& componentHasSameHeightAsCachedImage(height);
 		return getCachedImage() != null
 		        && (!scaleEnabled || componentHasSameWidthAsCachedImage(width)
 		                && cachedImageHeightFitsComponentHeight(height) || cachedImageWidthFitsComponentWidth(width)
 		                && componentHasSameHeightAsCachedImage(height));
+	}
+
+	private Dimension requiredImageSize(double scaleX, double scaleY) {
+		int requiredImageWidth = (int) (getWidth() * scaleX);
+		int requiredImageHeight = (int) (getHeight() * scaleY);
+		if(! cropsToViewerSize)
+			return new Dimension(requiredImageWidth, requiredImageHeight);
+		final long widthForHeight = (long) requiredImageHeight * originalSize.width / originalSize.height;
+		if(widthForHeight >= requiredImageWidth)
+			requiredImageWidth = (int) widthForHeight;
+		else
+			requiredImageHeight = (int) ((long) requiredImageWidth * originalSize.height / originalSize.width);
+		return new Dimension(requiredImageWidth, requiredImageHeight);
 	}
 
 	private boolean componentHasSameHeightAsCachedImage(int height) {
@@ -426,6 +446,14 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 	@Override
 	public void setMaximumComponentSize(final Dimension size) {
 		maximumSize = size;
+	}
+
+	@Override
+	public void setCropsToViewerSize(boolean cropsToViewerSize) {
+		if(this.cropsToViewerSize == cropsToViewerSize)
+			return;
+		this.cropsToViewerSize = cropsToViewerSize;
+		setCachedImage(null);
 	}
 
 	private Dimension fitToMaximumSize(final Dimension size) {

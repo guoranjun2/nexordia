@@ -48,11 +48,12 @@ public class MapBackgroundImageAction extends AFreeplaneAction {
 			return;
 		}
 		final MapStyle mapStyle = controller.getModeController().getExtension(MapStyle.class);
-		final URI uri = vc.createURI(selectedNode);
+		final URI uri = vc.createBackgroundURI(selectedNode);
 		if (uri == null) {
 			return;
 		}
 		final MapModel model = controller.getMap();
 		mapStyle.setProperty(model, MapStyle.RESOURCES_BACKGROUND_IMAGE, uri.toString());
+		mapStyle.setProperty(model, MapStyle.BACKGROUND_IMAGE_ENABLED, Boolean.TRUE.toString());
 	}
 }

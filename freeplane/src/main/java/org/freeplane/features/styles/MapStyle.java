@@ -114,6 +114,7 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 	public static final String RESOURCES_BACKGROUND_IMAGE = "backgroundImageURI";
 	public static final String MAP_STYLES = "MAP_STYLES";
 	public static final String MAP_LAYOUT = "MAP_LAYOUT";
+	public static final String BACKGROUND_IMAGE_ENABLED = "background_image_enabled";
 	public static final String FIT_TO_VIEWPORT = "fit_to_viewport";
 
 	private static final ThreadLocal<Boolean> followedStyleUpdateActive = ThreadLocal.withInitial(() -> Boolean.FALSE);

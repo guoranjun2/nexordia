@@ -541,6 +541,19 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 	}
 
 	protected URI createURI(final NodeModel node) {
+		return createURI(node, null);
+	}
+
+	URI createBackgroundURI(final NodeModel node) {
+		return createURI(node, userResourcesDirectory());
+	}
+
+	private File userResourcesDirectory() {
+		final String freeplaneUserDirectory = ResourceController.getResourceController().getFreeplaneUserDirectory();
+		return freeplaneUserDirectory != null ? new File(freeplaneUserDirectory, "resources") : null;
+	}
+
+	private URI createURI(final NodeModel node, final File currentDirectory) {
 		final Controller controller = Controller.getCurrentController();
 		final ViewController viewController = controller.getViewController();
 		final MapModel map = node.getMap();
@@ -554,6 +567,8 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 		}
 		final UrlManager urlManager = controller.getModeController().getExtension(UrlManager.class);
 		final JFileChooser chooser = urlManager.getFileChooser();
+		if(currentDirectory != null)
+			chooser.setCurrentDirectory(currentDirectory);
 		chooser.setAcceptAllFileFilterUsed(false);
 		final FileFilter fileFilter;
 		if (factories.size() > 1) {

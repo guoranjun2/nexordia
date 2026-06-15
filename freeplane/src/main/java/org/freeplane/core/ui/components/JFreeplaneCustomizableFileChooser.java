@@ -2,13 +2,18 @@ package org.freeplane.core.ui.components;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Frame;
 import java.awt.HeadlessException;
 import java.awt.LayoutManager;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -18,6 +23,7 @@ import java.util.function.Consumer;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.Box;
+import javax.swing.JCheckBox;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -25,6 +31,7 @@ import org.freeplane.api.swing.JFileChooser;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileSystemView;
 
 import org.freeplane.core.resources.ResourceController;
@@ -49,6 +56,7 @@ public class JFreeplaneCustomizableFileChooser extends JFileChooser{
     public JFreeplaneCustomizableFileChooser() {
         super();
         initializeSpecialFolderShownFlag();
+        showHiddenFilesOnMac();
     }
 
 	private void initializeSpecialFolderShownFlag() {
@@ -60,7 +68,13 @@ public class JFreeplaneCustomizableFileChooser extends JFileChooser{
     public JFreeplaneCustomizableFileChooser(File currentDirectory) {
         super(currentDirectory);
         initializeSpecialFolderShownFlag();
+        showHiddenFilesOnMac();
     }
+
+	private void showHiddenFilesOnMac() {
+		if(Compat.isMacOsX())
+			setFileHidingEnabled(false);
+	}
 
     @Override
 	protected void setup(FileSystemView view) {
@@ -74,7 +88,112 @@ public class JFreeplaneCustomizableFileChooser extends JFileChooser{
 		return fixAquaFileChooserUIPreferredSize();
 	}
 
+	@Override
+	public int showOpenDialog(Component parent) throws HeadlessException {
+		setDialogType(OPEN_DIALOG);
+		if(usesNativeFileDialog())
+			return showNativeFileDialog(parent, FileDialog.LOAD);
+		return super.showOpenDialog(parent);
+	}
 
+	@Override
+	public int showSaveDialog(Component parent) throws HeadlessException {
+		setDialogType(SAVE_DIALOG);
+		if(usesNativeFileDialog())
+			return showNativeFileDialog(parent, FileDialog.SAVE);
+		return super.showSaveDialog(parent);
+	}
+
+	private boolean usesNativeFileDialog() {
+		return Compat.isMacOsX() && getFileSelectionMode() != FILES_AND_DIRECTORIES
+				&& optionComponents.isEmpty() && ! accessoryContainsOptions();
+	}
+
+	private boolean accessoryContainsOptions() {
+		return containsCheckBox(getAccessory());
+	}
+
+	private boolean containsCheckBox(Component component) {
+		if(component == null)
+			return false;
+		if(component instanceof JCheckBox)
+			return true;
+		if(component instanceof java.awt.Container) {
+			for(Component child : ((java.awt.Container) component).getComponents()) {
+				if(containsCheckBox(child))
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private int showNativeFileDialog(Component parent, int mode) {
+		final FileDialog dialog = createNativeFileDialog(parent, mode);
+		final File selectedFile = getSelectedFile();
+		final File currentDirectory = selectedFile != null && selectedFile.getParentFile() != null
+				? selectedFile.getParentFile() : getCurrentDirectory();
+		if(currentDirectory != null)
+			dialog.setDirectory(currentDirectory.getPath());
+		if(selectedFile != null)
+			dialog.setFile(selectedFile.getName());
+		dialog.setMultipleMode(isMultiSelectionEnabled());
+		dialog.setFilenameFilter(createNativeFileFilter());
+		final String oldDirectorySelectionProperty = System.getProperty("apple.awt.fileDialogForDirectories");
+		final String oldHiddenFilesProperty = System.getProperty("apple.awt.fileDialogShowHiddenFiles");
+		try {
+			if(getFileSelectionMode() == DIRECTORIES_ONLY)
+				System.setProperty("apple.awt.fileDialogForDirectories", "true");
+			System.setProperty("apple.awt.fileDialogShowHiddenFiles", "true");
+			dialog.setVisible(true);
+		}
+		finally {
+			restoreProperty("apple.awt.fileDialogForDirectories", oldDirectorySelectionProperty);
+			restoreProperty("apple.awt.fileDialogShowHiddenFiles", oldHiddenFilesProperty);
+		}
+		File[] files = dialog.getFiles();
+		if(files == null || files.length == 0)
+			files = selectedFiles(dialog);
+		if(files.length == 0)
+			return CANCEL_OPTION;
+		setSelectedFiles(files);
+		setSelectedFile(files[0]);
+		final File parentFile = files[0].getParentFile();
+		if(parentFile != null)
+			setCurrentDirectory(parentFile);
+		return APPROVE_OPTION;
+	}
+
+	private void restoreProperty(String property, String oldValue) {
+		if(oldValue != null)
+			System.setProperty(property, oldValue);
+		else
+			System.clearProperty(property);
+	}
+
+	private File[] selectedFiles(FileDialog dialog) {
+		final String file = dialog.getFile();
+		final String directory = dialog.getDirectory();
+		if(file == null || directory == null)
+			return new File[0];
+		return new File[] { new File(directory, file) };
+	}
+
+	private FileDialog createNativeFileDialog(Component parent, int mode) {
+		final Window window = parent != null ? SwingUtilities.getWindowAncestor(parent) : null;
+		final String title = getDialogTitle();
+		if(window instanceof Frame)
+			return new FileDialog((Frame) window, title, mode);
+		if(window instanceof Dialog)
+			return new FileDialog((Dialog) window, title, mode);
+		return new FileDialog((Frame) null, title, mode);
+	}
+
+	private FilenameFilter createNativeFileFilter() {
+		final FileFilter fileFilter = getFileFilter();
+		if(fileFilter == null || isAcceptAllFileFilterUsed() && fileFilter == getAcceptAllFileFilter())
+			return null;
+		return (dir, name) -> fileFilter.accept(new File(dir, name));
+	}
 
 	@Override
 	public boolean isFileHidingEnabled() {

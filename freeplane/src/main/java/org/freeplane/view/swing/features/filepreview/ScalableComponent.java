@@ -43,6 +43,9 @@ public interface ScalableComponent {
 
 	void setMaximumComponentSize(Dimension size);
 
+	default void setCropsToViewerSize(boolean cropsToViewerSize) {
+	}
+
 	void paintComponent(Graphics g);
 
     int getWidth();
