@@ -172,6 +172,8 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 		final double scaleX = transform.getScaleX();
 		final double scaleY = transform.getScaleY();
 		final int targetWidth = getWidth();
+		final int viewportWidth = (int) (getWidth() * scaleX);
+		final int viewportHeight = (int) (getHeight() * scaleY);
 		final Dimension requiredImageSize = requiredImageSize(scaleX, scaleY);
 		int requiredImageWidth = requiredImageSize.width;
 		int requiredImageHeight = requiredImageSize.height;
@@ -213,7 +215,8 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 			}
 			final int cachedImageWidth = cachedImage.getWidth();
 			final int cachedImageHeight = cachedImage.getHeight();
-			final Rectangle imageCoordinates = calculateImageCoordinates(requiredImageWidth, requiredImageHeight,
+			final Rectangle imageCoordinates = calculateImageCoordinates(cropsToViewerSize ? viewportWidth : requiredImageWidth,
+					cropsToViewerSize ? viewportHeight : requiredImageHeight,
 					cachedImageWidth, cachedImageHeight);
 
 			if(scaleX != 1 || scaleY != 1) {
