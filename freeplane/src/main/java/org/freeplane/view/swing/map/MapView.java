@@ -151,6 +151,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private static final String MAP_VIEW_MIN_ZOOM_PROPERTY = "map_view_min_zoom";
     private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
     private static final String SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY = "showCoordinateAxisYInverted";
+    private static final String COORDINATE_AXIS_COLOR_PROPERTY = "coordinate_axis_color";
+    private static final String COORDINATE_AXIS_LABEL_COLOR_PROPERTY = "coordinate_axis_label_color";
+    private static final Color DEFAULT_COORDINATE_AXIS_COLOR = new Color(60, 100, 180, 50);
+    private static final Color DEFAULT_COORDINATE_AXIS_LABEL_COLOR = new Color(90, 90, 90);
     private static final double COORDINATE_AXIS_LABEL_SCALE = 10d;
 
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
@@ -740,10 +744,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     public static final String SPOTLIGHT_ENABLED = "spotlight";
     public static final String FOLDING_FOLLOWS_SELECTION = "folding_follows_selection";
 
-	private static final Color COORDINATE_AXIS_GRID_COLOR = new Color(120, 120, 120, 55);
-	private static final Color COORDINATE_AXIS_LABEL_COLOR = new Color(90, 90, 90, 175);
-	private static final Color COORDINATE_AXIS_COLOR = new Color(60, 100, 180, 160);
-
 	static private final PropertyChangeListener repaintOnClientPropertyChangeListener = new PropertyChangeListener() {
 		@Override
 		public void propertyChange(final PropertyChangeEvent evt) {
@@ -1111,7 +1111,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 						continue;
 					}
 					if (propertyName.equals(SHOW_COORDINATE_AXIS_PROPERTY)
-							|| propertyName.equals(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)) {
+							|| propertyName.equals(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)
+							|| propertyName.equals(COORDINATE_AXIS_COLOR_PROPERTY)
+							|| propertyName.equals(COORDINATE_AXIS_LABEL_COLOR_PROPERTY)) {
 						mapView.repaint();
 						continue;
 					}
@@ -2395,8 +2397,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		final Rectangle visibleRect = getVisibleRect();
 		final Point origin = getRootCenterPoint();
 		final double mapGridStep = CoordinateAxisGridCalculator.mapStep(zoom);
-		final boolean yAxisInverted = ResourceController.getResourceController()
-				.getBooleanProperty(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY);
+		final ResourceController resourceController = ResourceController.getResourceController();
+		final boolean yAxisInverted = resourceController.getBooleanProperty(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY);
+		final Color axisColor = coordinateAxisColor(resourceController);
+		final Color labelColor = coordinateAxisLabelColor(resourceController);
 		final Graphics2D axisGraphics = (Graphics2D) g.create();
 		try {
 			axisGraphics.setFont(axisGraphics.getFont().deriveFont(Font.PLAIN, Math.max(9f, axisGraphics.getFont().getSize2D() - 1f)));
@@ -2404,9 +2408,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final int xLabelY = clamp(origin.y - 3, visibleRect.y + fontMetrics.getAscent() + 2,
 					visibleRect.y + visibleRect.height - 4);
 			final int yLabelX = clamp(origin.x + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
-			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, xLabelY);
-			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, yLabelX, fontMetrics, yAxisInverted);
-			axisGraphics.setColor(COORDINATE_AXIS_COLOR);
+			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, xLabelY, axisColor, labelColor);
+			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, yLabelX, fontMetrics, yAxisInverted,
+					axisColor, labelColor);
+			axisGraphics.setColor(axisColor);
 			axisGraphics.draw(new Line2D.Double(origin.x, visibleRect.y, origin.x, visibleRect.y + visibleRect.height));
 			axisGraphics.draw(new Line2D.Double(visibleRect.x, origin.y, visibleRect.x + visibleRect.width, origin.y));
 		}
@@ -2415,30 +2420,41 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 	}
 
-	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep, int labelY) {
+	private Color coordinateAxisColor(final ResourceController resourceController) {
+		final Color color = resourceController.getColorProperty(COORDINATE_AXIS_COLOR_PROPERTY);
+		return color != null ? color : DEFAULT_COORDINATE_AXIS_COLOR;
+	}
+
+	private Color coordinateAxisLabelColor(final ResourceController resourceController) {
+		final Color color = resourceController.getColorProperty(COORDINATE_AXIS_LABEL_COLOR_PROPERTY);
+		return color != null ? color : DEFAULT_COORDINATE_AXIS_LABEL_COLOR;
+	}
+
+	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
+			int labelY, Color axisColor, Color labelColor) {
 		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
 		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / screenGridStep);
 		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
 			final double x = origin.x + index * screenGridStep;
-			g.setColor(COORDINATE_AXIS_GRID_COLOR);
+			g.setColor(axisColor);
 			g.draw(new Line2D.Double(x, visibleRect.y, x, visibleRect.y + visibleRect.height));
-			g.setColor(COORDINATE_AXIS_LABEL_COLOR);
+			g.setColor(labelColor);
 			g.drawString(formatCoordinate(index * mapGridStep), (int) Math.round(x) + 3, labelY);
 		}
 	}
 
 	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
-			int labelX, FontMetrics fontMetrics, boolean yAxisInverted) {
+			int labelX, FontMetrics fontMetrics, boolean yAxisInverted, Color axisColor, Color labelColor) {
 		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
 		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / screenGridStep);
 		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / screenGridStep);
 		for (int index = firstIndex; index <= lastIndex; index++) {
 			final double y = origin.y + index * screenGridStep;
-			g.setColor(COORDINATE_AXIS_GRID_COLOR);
+			g.setColor(axisColor);
 			g.draw(new Line2D.Double(visibleRect.x, y, visibleRect.x + visibleRect.width, y));
 			if(index != 0) {
-				g.setColor(COORDINATE_AXIS_LABEL_COLOR);
+				g.setColor(labelColor);
 				final double coordinate = (yAxisInverted ? index : -index) * mapGridStep;
 				g.drawString(formatCoordinate(coordinate), labelX,
 						(int) Math.round(y) + fontMetrics.getAscent() + 2);

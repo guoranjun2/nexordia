@@ -47,6 +47,7 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.NodeHookDescriptor;
 import org.freeplane.features.mode.PersistentNodeHook;
+import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.core.util.URIUtils;
@@ -545,12 +546,30 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 	}
 
 	URI createBackgroundURI(final NodeModel node) {
-		return createURI(node, userResourcesDirectory());
+		final File currentBackgroundDirectory = currentBackgroundDirectory(node);
+		return createURI(node, currentBackgroundDirectory != null ? currentBackgroundDirectory : systemPicturesDirectory());
 	}
 
-	private File userResourcesDirectory() {
-		final String freeplaneUserDirectory = ResourceController.getResourceController().getFreeplaneUserDirectory();
-		return freeplaneUserDirectory != null ? new File(freeplaneUserDirectory, "resources") : null;
+	private File systemPicturesDirectory() {
+		final String userHome = System.getProperty("user.home");
+		if(userHome == null)
+			return null;
+		final File picturesDirectory = new File(userHome, "Pictures");
+		return picturesDirectory.isDirectory() ? picturesDirectory : new File(userHome);
+	}
+
+	private File currentBackgroundDirectory(final NodeModel node) {
+		final URI backgroundImage = MapStyle.getController().getBackgroundImage(node.getMap());
+		if(backgroundImage == null || ! "file".equals(backgroundImage.getScheme()))
+			return null;
+		try {
+			final File parentFile = new File(backgroundImage).getParentFile();
+			return parentFile != null && parentFile.isDirectory() ? parentFile : null;
+		}
+		catch (final IllegalArgumentException e) {
+			LogUtils.warn(e);
+			return null;
+		}
 	}
 
 	private URI createURI(final NodeModel node, final File currentDirectory) {
