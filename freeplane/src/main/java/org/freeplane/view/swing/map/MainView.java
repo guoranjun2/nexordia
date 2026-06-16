@@ -1050,7 +1050,7 @@ public class MainView extends ZoomableLabel {
 //					getBorderColor(),
 //					getBackground()
 					new Color(0, 0, 0, 0),
-					new Color(0, 0, 0, 10)
+					new Color(0, 0, 0, 30)
 			);
 			return;
 		}

@@ -43,7 +43,7 @@ public class DetailsView extends ZoomableLabel {
         if(shouldPaintSimplified()) {
             paintSimplified(g,
 //                    getNodeView().getMainView().getBorderColor(),
-                    new Color(0, 0, 0, 10),
+                    new Color(0, 0, 0, 30),
                     new Color(0, 0, 0, 0)
             );
             return;

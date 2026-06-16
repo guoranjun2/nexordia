@@ -30,7 +30,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -45,26 +44,16 @@ import java.awt.dnd.Autoscroll;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.AbstractList;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -75,7 +64,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -161,14 +149,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private static final String MAP_VIEW_ZOOM_SHIFT_PROPERTY = "map_view_zoom_shift";
     private static final String MAP_VIEW_MIN_ZOOM_PROPERTY = "map_view_min_zoom";
     static final String BACKGROUND_IMAGE_OPACITY_PROPERTY = "background_image_opacity";
-    private static final String SHOW_COORDINATE_AXIS_PROPERTY = "showCoordinateAxis";
-    private static final String SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY = "showCoordinateAxisYInverted";
-    private static final String COORDINATE_AXIS_COLOR_PROPERTY = "coordinate_axis_color";
-    private static final String COORDINATE_AXIS_LABEL_COLOR_PROPERTY = "coordinate_axis_label_color";
-    private static final Color DEFAULT_COORDINATE_AXIS_COLOR = new Color(60, 100, 180, 50);
-    private static final Color DEFAULT_COORDINATE_AXIS_LABEL_COLOR = new Color(90, 90, 90);
-    private static final double COORDINATE_AXIS_LABEL_SCALE = 10d;
-
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
 
         boolean isHorizontal() {
@@ -781,6 +761,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	/** Used to identify a right click onto a link curve. */
 	private Vector<ILinkView> arrowLinkViews;
 	private ScalableComponent backgroundComponent;
+	private final MapBackgroundImageLoader backgroundImageLoader = new MapBackgroundImageLoader(
+	        this::assignViewerToBackgroundComponent, this::clearBackgroundComponent, this::updateBackground, this::repaint);
+	private final MapCoordinateAxisPainter coordinateAxisPainter = new MapCoordinateAxisPainter();
+	private final MapCloudPainter cloudPainter = new MapCloudPainter();
 	private Rectangle boundingRectangle = null;
 	private FitMap fitMap = FitMap.USER_DEFINED;
 	private boolean isPreparedForPrinting = false;
@@ -1122,10 +1106,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 						mapView.repaint();
 						continue;
 					}
-					if (propertyName.equals(SHOW_COORDINATE_AXIS_PROPERTY)
-							|| propertyName.equals(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)
-							|| propertyName.equals(COORDINATE_AXIS_COLOR_PROPERTY)
-							|| propertyName.equals(COORDINATE_AXIS_LABEL_COLOR_PROPERTY)
+					if (propertyName.equals(MapCoordinateAxisPainter.SHOW_COORDINATE_AXIS_PROPERTY)
+							|| propertyName.equals(MapCoordinateAxisPainter.SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)
+							|| propertyName.equals(MapCoordinateAxisPainter.COORDINATE_AXIS_COLOR_PROPERTY)
+							|| propertyName.equals(MapCoordinateAxisPainter.COORDINATE_AXIS_LABEL_COLOR_PROPERTY)
+							|| propertyName.equals(MapCloudPainter.CLOUD_IMAGE_OPACITY_PROPERTY)
 							|| propertyName.equals(BACKGROUND_IMAGE_OPACITY_PROPERTY)) {
 						mapView.repaint();
 						if(mapView.getParent() != null)
@@ -1671,13 +1656,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final String backgroundImageEnabledAsString = MapStyle.getController(modeController).getPropertySetDefault(viewedMap,
 				    MapStyle.BACKGROUND_IMAGE_ENABLED);
 			setBackgroundImageEnabled(Boolean.parseBoolean(backgroundImageEnabledAsString));
-			if(backgroundImageEnabled)
-				loadBackgroundImage();
-			else {
-				clearBackgroundComponent();
-				updateBackground();
-				repaint();
-			}
+			loadBackgroundImage();
 		}
 		if(property.equals(EdgeColorsConfigurationFactory.EDGE_COLOR_CONFIGURATION_PROPERTY)){
 			updateAllNodeViews();
@@ -1697,112 +1676,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     private void loadBackgroundImage() {
  		final MapStyle mapStyle = getModeController().getExtension(MapStyle.class);
-		clearBackgroundComponent();
-		updateBackground();
-		if(! backgroundImageEnabled) {
-			repaint();
-			return;
-		}
 		final URI uri = mapStyle.getBackgroundImage(viewedMap);
-		if (uri != null) {
-			final ViewerController vc = getModeController().getExtension(ViewerController.class);
-			if(vc != null) {
-				final IViewerFactory factory = vc.getViewerFactory();
-				final URI backgroundImageUri = cacheBackgroundImage(uri);
-				if(backgroundImageUri != null)
-					assignViewerToBackgroundComponent(factory, backgroundImageUri);
-			}
-		}
-		repaint();
+		final ViewerController vc = getModeController().getExtension(ViewerController.class);
+		final IViewerFactory factory = vc != null ? vc.getViewerFactory() : null;
+		backgroundImageLoader.loadBackgroundImage(factory, uri, backgroundImageEnabled);
     }
-
-	private URI cacheBackgroundImage(final URI uri) {
-		if(! isRemoteUri(uri))
-			return uri;
-		final File cacheFile = backgroundImageCacheFile(uri);
-		if(cacheFile == null)
-			return uri;
-		if(cacheFile.isFile())
-			return cacheFile.toURI();
-		try {
-			cacheFile.getParentFile().mkdirs();
-			final File tempFile = File.createTempFile(cacheFile.getName(), ".download", cacheFile.getParentFile());
-			try {
-				final URLConnection connection = uri.toURL().openConnection();
-				configureBackgroundImageConnection(connection, uri);
-				try(InputStream inputStream = connection.getInputStream()) {
-					Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				}
-				Files.move(tempFile.toPath(), cacheFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			}
-			finally {
-				if(tempFile.isFile())
-					tempFile.delete();
-			}
-			return cacheFile.toURI();
-		}
-		catch (final IOException e) {
-			LogUtils.warn(e);
-			return null;
-		}
-	}
-
-	private void configureBackgroundImageConnection(final URLConnection connection, final URI uri) {
-		connection.setConnectTimeout(10000);
-		connection.setReadTimeout(30000);
-		connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36 Freeplane/1.13.3");
-		connection.setRequestProperty("Accept", "image/png,image/jpeg,image/gif,image/*;q=0.8,*/*;q=0.5");
-		connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
-		final String referer = backgroundImageReferer(uri);
-		if(referer != null)
-			connection.setRequestProperty("Referer", referer);
-	}
-
-	private String backgroundImageReferer(final URI uri) {
-		final String host = uri.getHost();
-		if(host == null)
-			return null;
-		if(host.endsWith("pexels.com"))
-			return "https://www.pexels.com/";
-		return null;
-	}
-
-	private boolean isRemoteUri(final URI uri) {
-		final String scheme = uri.getScheme();
-		return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
-	}
-
-	private File backgroundImageCacheFile(final URI uri) {
-		final String userDirectory = ResourceController.getResourceController().getFreeplaneUserDirectory();
-		if(userDirectory == null)
-			return null;
-		return new File(new File(new File(userDirectory, "resources"), "background"),
-				sha256(uri.toString()) + backgroundImageExtension(uri));
-	}
-
-	private String backgroundImageExtension(final URI uri) {
-		final String path = uri.getPath();
-		if(path == null)
-			return ".image";
-		final int suffixStart = path.lastIndexOf('.');
-		if(suffixStart == -1 || suffixStart == path.length() - 1)
-			return ".image";
-		return path.substring(suffixStart).toLowerCase(Locale.ROOT);
-	}
-
-	private String sha256(final String value) {
-		try {
-			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			final byte[] digest = messageDigest.digest(value.getBytes(StandardCharsets.UTF_8));
-			final StringBuilder builder = new StringBuilder();
-			for (byte b : digest)
-				builder.append(String.format("%02x", b & 0xff));
-			return builder.toString();
-		}
-		catch (final NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
-		}
-	}
 
     private void assignViewerToBackgroundComponent(final IViewerFactory factory, final URI uri) {
     	try {
@@ -2522,92 +2400,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		paintSelecteds(g2);
 		highlightEditor(g2);
 		paintSelectionRectangle(g);
-		paintCoordinateAxis(g2);
+		if(paintingPurpose == PaintingPurpose.PAINTING)
+			coordinateAxisPainter.paint(g2, getVisibleRect(), getRootCenterPoint(), zoom);
     }
-
-	private void paintCoordinateAxis(Graphics2D g) {
-		if (paintingPurpose != PaintingPurpose.PAINTING
-				|| ! ResourceController.getResourceController().getBooleanProperty(SHOW_COORDINATE_AXIS_PROPERTY))
-			return;
-		final Rectangle visibleRect = getVisibleRect();
-		final Point origin = getRootCenterPoint();
-		final double mapGridStep = CoordinateAxisGridCalculator.mapStep(zoom);
-		final ResourceController resourceController = ResourceController.getResourceController();
-		final boolean yAxisInverted = resourceController.getBooleanProperty(SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY);
-		final Color axisColor = coordinateAxisColor(resourceController);
-		final Color labelColor = coordinateAxisLabelColor(resourceController);
-		final Graphics2D axisGraphics = (Graphics2D) g.create();
-		try {
-			axisGraphics.setFont(axisGraphics.getFont().deriveFont(Font.PLAIN, Math.max(9f, axisGraphics.getFont().getSize2D() - 1f)));
-			final FontMetrics fontMetrics = axisGraphics.getFontMetrics();
-			final int xLabelY = clamp(origin.y - 3, visibleRect.y + fontMetrics.getAscent() + 2,
-					visibleRect.y + visibleRect.height - 4);
-			final int yLabelX = clamp(origin.x + 3, visibleRect.x + 3, visibleRect.x + visibleRect.width - 80);
-			paintVerticalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, xLabelY, axisColor, labelColor);
-			paintHorizontalCoordinateLines(axisGraphics, visibleRect, origin, mapGridStep, yLabelX, fontMetrics, yAxisInverted,
-					axisColor, labelColor);
-			axisGraphics.setColor(axisColor);
-			axisGraphics.draw(new Line2D.Double(origin.x, visibleRect.y, origin.x, visibleRect.y + visibleRect.height));
-			axisGraphics.draw(new Line2D.Double(visibleRect.x, origin.y, visibleRect.x + visibleRect.width, origin.y));
-		}
-		finally {
-			axisGraphics.dispose();
-		}
-	}
-
-	private Color coordinateAxisColor(final ResourceController resourceController) {
-		final Color color = resourceController.getColorProperty(COORDINATE_AXIS_COLOR_PROPERTY);
-		return color != null ? color : DEFAULT_COORDINATE_AXIS_COLOR;
-	}
-
-	private Color coordinateAxisLabelColor(final ResourceController resourceController) {
-		final Color color = resourceController.getColorProperty(COORDINATE_AXIS_LABEL_COLOR_PROPERTY);
-		return color != null ? color : DEFAULT_COORDINATE_AXIS_LABEL_COLOR;
-	}
-
-	private void paintVerticalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
-			int labelY, Color axisColor, Color labelColor) {
-		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
-		final int firstIndex = (int) Math.floor((visibleRect.x - origin.x) / screenGridStep);
-		final int lastIndex = (int) Math.ceil((visibleRect.x + visibleRect.width - origin.x) / screenGridStep);
-		for (int index = firstIndex; index <= lastIndex; index++) {
-			final double x = origin.x + index * screenGridStep;
-			g.setColor(axisColor);
-			g.draw(new Line2D.Double(x, visibleRect.y, x, visibleRect.y + visibleRect.height));
-			g.setColor(labelColor);
-			g.drawString(formatCoordinate(index * mapGridStep), (int) Math.round(x) + 3, labelY);
-		}
-	}
-
-	private void paintHorizontalCoordinateLines(Graphics2D g, Rectangle visibleRect, Point origin, double mapGridStep,
-			int labelX, FontMetrics fontMetrics, boolean yAxisInverted, Color axisColor, Color labelColor) {
-		final double screenGridStep = CoordinateAxisGridCalculator.screenStep(mapGridStep, zoom);
-		final int firstIndex = (int) Math.floor((visibleRect.y - origin.y) / screenGridStep);
-		final int lastIndex = (int) Math.ceil((visibleRect.y + visibleRect.height - origin.y) / screenGridStep);
-		for (int index = firstIndex; index <= lastIndex; index++) {
-			final double y = origin.y + index * screenGridStep;
-			g.setColor(axisColor);
-			g.draw(new Line2D.Double(visibleRect.x, y, visibleRect.x + visibleRect.width, y));
-			if(index != 0) {
-				g.setColor(labelColor);
-				final double coordinate = (yAxisInverted ? index : -index) * mapGridStep;
-				g.drawString(formatCoordinate(coordinate), labelX,
-						(int) Math.round(y) + fontMetrics.getAscent() + 2);
-			}
-		}
-	}
-
-	private String formatCoordinate(double coordinate) {
-		final double scaledCoordinate = coordinate / COORDINATE_AXIS_LABEL_SCALE;
-		final double roundedCoordinate = Math.rint(scaledCoordinate);
-		if(Math.abs(scaledCoordinate - roundedCoordinate) < 0.001d)
-			return String.valueOf((long) roundedCoordinate);
-		return String.format(Locale.ROOT, "%.2f", scaledCoordinate);
-	}
-
-	private int clamp(int value, int min, int max) {
-		return max < min ? min : Math.max(min, Math.min(value, max));
-	}
 
     private void paintSelectionRectangle(Graphics g) {
         if (selectionRectangle == null)
@@ -2643,10 +2438,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    	this.paintingMode = paintingMode;
 			switch(paintingMode){
 			case CLOUDS:
-				paintClouds(g2);
+				cloudPainter.paintClouds(g2, getRoot());
 				break;
 			case CLOUD_TEXTS:
-				paintCloudTexts(g2);
+				cloudPainter.paintCloudTexts(g2, getRoot());
 				break;
 	    		case LINKS:
 	    			if(HIDE_CONNECTORS != showConnectors && paintingPurpose != PaintingPurpose.OVERVIEW)
@@ -2656,30 +2451,6 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 					super.paintChildren(g2);
 			}
 	    }
-    }
-
-    private void paintClouds(final Graphics2D g2) {
-        final NodeView root = getRoot();
-        final Graphics2D g = (Graphics2D) g2.create();
-        try {
-            g.translate(root.getX(), root.getY());
-            root.paintCloudTree(g);
-        }
-        finally {
-            g.dispose();
-        }
-    }
-
-    private void paintCloudTexts(final Graphics2D g2) {
-        final NodeView root = getRoot();
-        final Graphics2D g = (Graphics2D) g2.create();
-        try {
-            g.translate(root.getX(), root.getY());
-            root.paintCloudTextTree(g);
-        }
-        finally {
-            g.dispose();
-        }
     }
 
 
