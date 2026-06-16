@@ -1049,8 +1049,8 @@ public class MainView extends ZoomableLabel {
 			paintSimplified(graphics,
 //					getBorderColor(),
 //					getBackground()
-					getBackground(),
-					new Color(0, 0, 0, 0)
+					new Color(0, 0, 0, 0),
+					new Color(0, 0, 0, 10)
 			);
 			return;
 		}

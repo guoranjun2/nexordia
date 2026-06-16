@@ -1708,7 +1708,9 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final ViewerController vc = getModeController().getExtension(ViewerController.class);
 			if(vc != null) {
 				final IViewerFactory factory = vc.getViewerFactory();
-				assignViewerToBackgroundComponent(factory, cacheBackgroundImage(uri));
+				final URI backgroundImageUri = cacheBackgroundImage(uri);
+				if(backgroundImageUri != null)
+					assignViewerToBackgroundComponent(factory, backgroundImageUri);
 			}
 		}
 		repaint();
@@ -1727,8 +1729,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			final File tempFile = File.createTempFile(cacheFile.getName(), ".download", cacheFile.getParentFile());
 			try {
 				final URLConnection connection = uri.toURL().openConnection();
-				connection.setConnectTimeout(10000);
-				connection.setReadTimeout(30000);
+				configureBackgroundImageConnection(connection, uri);
 				try(InputStream inputStream = connection.getInputStream()) {
 					Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				}
@@ -1742,8 +1743,28 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 		catch (final IOException e) {
 			LogUtils.warn(e);
-			return uri;
+			return null;
 		}
+	}
+
+	private void configureBackgroundImageConnection(final URLConnection connection, final URI uri) {
+		connection.setConnectTimeout(10000);
+		connection.setReadTimeout(30000);
+		connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36 Freeplane/1.13.3");
+		connection.setRequestProperty("Accept", "image/png,image/jpeg,image/gif,image/*;q=0.8,*/*;q=0.5");
+		connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+		final String referer = backgroundImageReferer(uri);
+		if(referer != null)
+			connection.setRequestProperty("Referer", referer);
+	}
+
+	private String backgroundImageReferer(final URI uri) {
+		final String host = uri.getHost();
+		if(host == null)
+			return null;
+		if(host.endsWith("pexels.com"))
+			return "https://www.pexels.com/";
+		return null;
 	}
 
 	private boolean isRemoteUri(final URI uri) {

@@ -285,7 +285,7 @@ class LazyScaledImageView extends View {
 
 	private void paintPlaceholder(Graphics graphics, Rectangle bounds) {
 		final Color oldColor = graphics.getColor();
-		graphics.setColor(Color.LIGHT_GRAY);
+		graphics.setColor(new Color(0, 0, 0, 10));
 		graphics.drawRect(bounds.x, bounds.y, Math.max(0, bounds.width - 1), Math.max(0, bounds.height - 1));
 		graphics.setColor(oldColor);
 	}
