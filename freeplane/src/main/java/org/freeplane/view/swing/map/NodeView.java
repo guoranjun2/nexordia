@@ -150,11 +150,18 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     private Integer edgeWidth = 1;
     private ObjectRule<Color, Rules> edgeColor = null;
     private Color modelBackgroundColor;
+    private CloudShape cloudShape;
+    private Color cloudColor;
+    private CloudModel cachedCloudModel;
+    private CloudShape cachedCloudShape;
+    private Color cachedCloudColor;
+    private CloudView cachedCloudView;
 
     private boolean isFolded;
     private Dash edgeDash = Dash.DEFAULT;
     private final NodeViewLayoutHelper layoutHelper;
     private ChildNodeViewLayout childNodeViewLayout;
+
     static class ChildNodeViewLayout {
         private final NodeModel viewedNode;
         private final NodeView view;
@@ -568,9 +575,13 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             inList
                 .addLast(new Point(additionalDistanceForConvexHull + x + width, -additionalDistanceForConvexHull + y));
         }
-        for (final NodeView child : getChildrenViews()) {
-            child.getCoordinates(inList, additionalDistanceForConvexHull, true, transX + child.getX(),
-                transY + child.getY());
+        for (int i = 0; i < getComponentCount(); i++) {
+            final Component component = getComponent(i);
+            if (component instanceof NodeView) {
+                final NodeView child = (NodeView) component;
+                child.getCoordinates(inList, additionalDistanceForConvexHull, true, transX + child.getX(),
+                    transY + child.getY());
+            }
         }
     }
 
@@ -1650,8 +1661,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         if (cloudModel == null) {
             return;
         }
-        final CloudView cloud = new CloudViewFactory().createCloudView(cloudModel, this);
-        cloud.paint(g);
+        getCloudView(cloudModel).paint(g);
     }
 
     private void paintCloudText(final Graphics g) {
@@ -1662,8 +1672,22 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         if (cloudModel == null) {
             return;
         }
-        final CloudView cloud = new CloudViewFactory().createCloudView(cloudModel, this);
-        cloud.paintText(g);
+        getCloudView(cloudModel).paintText(g);
+    }
+
+    private CloudView getCloudView(final CloudModel cloudModel) {
+        final CloudShape shape = cloudModel.getShape();
+        final Color color = cloudModel.getColor();
+        if(cachedCloudView == null
+                || cachedCloudModel != cloudModel
+                || cachedCloudShape != shape
+                || !Objects.equals(cachedCloudColor, color)) {
+            cachedCloudModel = cloudModel;
+            cachedCloudShape = shape;
+            cachedCloudColor = color;
+            cachedCloudView = new CloudViewFactory().createCloudView(cloudModel, this);
+        }
+        return cachedCloudView;
     }
 
     void paintCloudTree(final Graphics2D g) {
@@ -1688,6 +1712,9 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             }
             final NodeView nodeView = (NodeView) component;
             final Rectangle bounds = nodeView.getBounds();
+            if(! intersectsClip(g, bounds)) {
+                continue;
+            }
             final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             nodeView.paintCloudTree(g);
@@ -1703,6 +1730,9 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             }
             final NodeView nodeView = (NodeView) component;
             final Rectangle bounds = nodeView.getBounds();
+            if(! intersectsClip(g, bounds)) {
+                continue;
+            }
             final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             nodeView.paintCloudTextTree(g);
@@ -1718,6 +1748,9 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             }
             final NodeView nodeView = (NodeView) component;
             final Rectangle bounds = nodeView.getBounds();
+            if(! intersectsClip(g, bounds)) {
+                continue;
+            }
             final Point p = bounds.getLocation();
             g.translate(p.x, p.y);
             if (nodeView.isSubtreeVisible()) {
@@ -1728,6 +1761,11 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             }
             g.translate(-p.x, -p.y);
         }
+    }
+
+    private boolean intersectsClip(final Graphics g, final Rectangle bounds) {
+        final Rectangle clip = g.getClipBounds();
+        return clip == null || clip.intersects(bounds);
     }
 
     private void paintEdges(final Graphics2D g, NodeView source) {
@@ -2329,12 +2367,53 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     }
 
     private void updateCloud() {
+        final CloudModel previousCloudModel = getCloudModel();
+        final CloudShape previousCloudShape = cloudShape;
+        final Color previousCloudColor = cloudColor;
         final CloudModel cloudModel = CloudController.getController(getModeController()).getCloud(viewedNode, getStyleOption());
+        final CloudShape shape = cloudModel != null ? cloudModel.getShape() : null;
+        final Color color = cloudModel != null ? cloudModel.getColor() : null;
+        if(previousCloudModel == cloudModel && previousCloudShape == shape && Objects.equals(previousCloudColor, color))
+            return;
         putClientProperty(CloudModel.class, cloudModel);
+        cloudShape = shape;
+        cloudColor = color;
+        invalidateCloudView();
+        if((previousCloudModel == null) != (cloudModel == null))
+            invalidateDescendantCloudViews();
+        invalidateAncestorCloudViews();
     }
 
     public CloudModel getCloudModel() {
         return (CloudModel) getClientProperty(CloudModel.class);
+    }
+
+    private void invalidateCloudView() {
+        cachedCloudModel = null;
+        cachedCloudShape = null;
+        cachedCloudColor = null;
+        cachedCloudView = null;
+    }
+
+    private void invalidateDescendantCloudViews() {
+        for(final NodeView child : getChildrenViews())
+            child.invalidateCloudViewSubtree();
+    }
+
+    private void invalidateCloudViewSubtree() {
+        invalidateCloudView();
+        invalidateDescendantCloudViews();
+    }
+
+    private void invalidateCloudViewsUpToRoot() {
+        invalidateCloudView();
+        invalidateAncestorCloudViews();
+    }
+
+    private void invalidateAncestorCloudViews() {
+        final NodeView parentView = getParentView();
+        if(parentView != null)
+            parentView.invalidateCloudViewsUpToRoot();
     }
 
     private void updateShortener(boolean textShortened) {
@@ -2491,6 +2570,7 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             Rules rule = edgeColor.getRule();
             if(EdgeController.Rules.BY_PARENT != rule)
                 edgeColor.resetCache();
+            invalidateCloudViewsUpToRoot();
             repaintEdge();
         }
         super.setBounds(x, y, width, height);

@@ -54,6 +54,7 @@ import javax.swing.Timer;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.view.swing.map.MapView;
 
 import com.thebuzzmedia.imgscalr.AsyncScalr;
@@ -167,8 +168,14 @@ public class BitmapViewerComponent extends JComponent implements ScalableCompone
 
 	@Override
 	public void paintComponent(final Graphics g) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 	    AccessController.doPrivileged(//
 	            (PrivilegedAction<Void>)() -> paintComponentPrivileged(g));
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.BITMAP_IMAGE, start);
+		}
 	}
 
     private Void paintComponentPrivileged(final Graphics g) {

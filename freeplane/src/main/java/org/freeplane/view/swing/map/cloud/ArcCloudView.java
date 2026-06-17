@@ -4,10 +4,13 @@ import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.geom.Path2D;
 
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.cloud.CloudModel;
 import org.freeplane.view.swing.map.NodeView;
 
 public class ArcCloudView extends CloudView {
+
+	private Path2D.Float path;
 
 	ArcCloudView(CloudModel cloudModel, NodeView source) {
 	    super(cloudModel, source);
@@ -21,9 +24,26 @@ public class ArcCloudView extends CloudView {
 			fillPolygon(p, g);
 			return;
 		}
-		final Path2D.Float path = createSmoothPath(p, pointCount);
-		g.fill(path);
-		gstroke.draw(path);
+		final Path2D.Float smoothPath = getSmoothPath(p, pointCount);
+		final long fillStart = PaintPerformanceMonitor.start();
+		g.fill(smoothPath);
+		PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_FILL, fillStart);
+		final long drawStart = PaintPerformanceMonitor.start();
+		gstroke.draw(smoothPath);
+		PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_DRAW, drawStart);
+	}
+
+	private Path2D.Float getSmoothPath(Polygon p, int pointCount) {
+		if(path == null) {
+			final long start = PaintPerformanceMonitor.start();
+			try {
+				path = createSmoothPath(p, pointCount);
+			}
+			finally {
+				PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_PATH, start);
+			}
+		}
+		return path;
 	}
 
 	private Path2D.Float createSmoothPath(Polygon p, int pointCount) {

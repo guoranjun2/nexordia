@@ -34,11 +34,13 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.net.URL;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Vector;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.html.HtmlImageRenderer;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
 import org.freeplane.features.cloud.CloudModel;
@@ -85,7 +87,9 @@ abstract public class CloudView {
 	protected NodeView source;
 	private final int iterativeLevel;
 	private Polygon coordinates;
+	private Rectangle approximatePaintingBounds;
 	private Random random;
+	private TextLayout cachedTextLayout;
 
 	CloudView(final CloudModel cloudModel, final NodeView source) {
 		this.cloudModel = cloudModel;
@@ -157,41 +161,62 @@ abstract public class CloudView {
 	}
 
 	public void paint(final Graphics graphics) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		final MainView mainView = source.getMainView();
 		if(!shouldPaintCloud(mainView)) {
 			return;
 		}
+		if (!intersectsClip(graphics, getApproximatePaintingBounds())) {
+			return;
+		}
 		final Rectangle paintingBounds = getPaintingBounds();
-		if (isCloudTooSmallForPainting(paintingBounds)) {
+		if (!intersectsClip(graphics, paintingBounds) || isCloudTooSmallForPainting(paintingBounds)) {
 			return;
 		}
 		random = new Random(0);
 		final Graphics2D g = (Graphics2D) graphics.create();
 		final Graphics2D gstroke = (Graphics2D) g.create();
-		final Color color = getColor();
-		g.setColor(color);
-		/* set a bigger stroke to prevent not filled areas. */
-		g.setStroke(getStroke());
-		/* now bold */
-		gstroke.setColor(getExteriorColor(color));
-		gstroke.setStroke(getStroke());
-		/*
-		 * calculate the distances between two points on the convex hull
-		 * depending on the getIterativeLevel().
+		try {
+			final Color color = getColor();
+			g.setColor(color);
+			/* set a bigger stroke to prevent not filled areas. */
+			g.setStroke(getStroke());
+			/* now bold */
+			gstroke.setColor(getExteriorColor(color));
+			gstroke.setStroke(getStroke());
+			/*
+			 * calculate the distances between two points on the convex hull
+			 * depending on the getIterativeLevel().
 			 */
 			/** get coordinates */
-			paintDecoration(g, gstroke);
+			paintCloudDecoration(g, gstroke);
 			paintSourceImageText(g);
+		}
+		finally {
+			gstroke.dispose();
 			g.dispose();
 		}
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD, start);
+		}
+	}
 
 	public void paintText(final Graphics graphics) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		final MainView mainView = source.getMainView();
 		if (!shouldPaintSourceText(mainView)) {
 			return;
 		}
+		if (!intersectsClip(graphics, getApproximatePaintingBounds())) {
+			return;
+		}
 		final Rectangle paintingBounds = getPaintingBounds();
-		if (isCloudTooSmallForPainting(paintingBounds) || isCloudTooSmallForTextPainting(paintingBounds)) {
+		if (!intersectsClip(graphics, paintingBounds)
+				|| isCloudTooSmallForPainting(paintingBounds)
+				|| isCloudTooSmallForTextPainting(paintingBounds)) {
 			return;
 		}
 		final Graphics2D g = (Graphics2D) graphics.create();
@@ -201,6 +226,15 @@ abstract public class CloudView {
 		finally {
 			g.dispose();
 		}
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_TEXT, start);
+		}
+	}
+
+	private boolean intersectsClip(final Graphics graphics, final Rectangle bounds) {
+		final Rectangle clip = graphics.getClipBounds();
+		return clip == null || clip.intersects(bounds);
 	}
 
 	private boolean shouldPaintSourceText(MainView mainView) {
@@ -288,6 +322,22 @@ abstract public class CloudView {
 		return getCoordinates().getBounds();
 	}
 
+	private Rectangle getApproximatePaintingBounds() {
+		if (approximatePaintingBounds != null) {
+			return approximatePaintingBounds;
+		}
+		final long start = PaintPerformanceMonitor.start();
+		try {
+			approximatePaintingBounds = new Rectangle(0, 0, source.getWidth(), source.getHeight());
+			final int margin = (int) Math.ceil(getDistanceToConvexHull() * 4 + getRealWidth() + 4);
+			approximatePaintingBounds.grow(margin, margin);
+			return approximatePaintingBounds;
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_APPROXIMATE_BOUNDS, start);
+		}
+	}
+
 	private void paintSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds) {
 		final CloudTitle cloudTitle = getCloudTitle(mainView);
 		if (cloudTitle.getText().isEmpty()) {
@@ -297,6 +347,8 @@ abstract public class CloudView {
 	}
 
 	private void paintSourceImageText(Graphics2D g) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		final MainView mainView = source.getMainView();
 		if (!shouldPaintSourceImage(mainView)) {
 			return;
@@ -310,6 +362,10 @@ abstract public class CloudView {
 			return;
 		}
 		paintImageSourceText(g, paintingBounds, cloudTitle.getImageSource());
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_IMAGE_TEXT, start);
+		}
 	}
 
 	private boolean hasCloudImageFixedIcon() {
@@ -323,6 +379,7 @@ abstract public class CloudView {
 	}
 
 	private void paintImageSourceText(Graphics2D g, Rectangle cloudBounds, String imageSource) {
+		final long start = PaintPerformanceMonitor.start();
 		final URL base = source.getMap().getMap().getURL();
 		final Shape clip = g.getClip();
 		final Composite composite = g.getComposite();
@@ -334,6 +391,7 @@ abstract public class CloudView {
 		finally {
 			g.setComposite(composite);
 			g.setClip(clip);
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_IMAGE, start);
 		}
 	}
 
@@ -356,30 +414,41 @@ abstract public class CloudView {
 	}
 
 	private void paintPlainSourceText(Graphics2D g, MainView mainView, Rectangle cloudBounds, String text) {
-		final Font font = fitFontToBounds(mainView.getFont(), text, g, cloudBounds);
-		if (font == null) {
+		final TextLayout textLayout = getTextLayout(mainView.getFont(), text, g, cloudBounds);
+		if (textLayout == null)
 			return;
-		}
-		g.setFont(font);
+		g.setFont(textLayout.font);
 		g.setColor(mainView.getForeground());
-		final FontMetrics metrics = g.getFontMetrics(font);
-		if (metrics.getHeight() > cloudBounds.height) {
-			return;
-		}
-		final String fittedText = fitTextToWidth(text, metrics, cloudBounds.width);
-		if (fittedText.isEmpty()) {
-			return;
-		}
-		final int x = cloudBounds.x + (cloudBounds.width - metrics.stringWidth(fittedText)) / 2;
-		final int y = cloudBounds.y + (cloudBounds.height - metrics.getHeight()) / 2 + metrics.getAscent();
 		final Shape clip = g.getClip();
 		try {
 			g.clip(cloudBounds);
-			g.drawString(fittedText, x, y);
+			g.drawString(textLayout.text, textLayout.x, textLayout.y);
 		}
 		finally {
 			g.setClip(clip);
 		}
+	}
+
+	private TextLayout getTextLayout(Font baseFont, String text, Graphics2D g, Rectangle cloudBounds) {
+		if(cachedTextLayout != null && cachedTextLayout.matches(baseFont, text, cloudBounds))
+			return cachedTextLayout;
+		cachedTextLayout = createTextLayout(baseFont, text, g, cloudBounds);
+		return cachedTextLayout;
+	}
+
+	private TextLayout createTextLayout(Font baseFont, String text, Graphics2D g, Rectangle cloudBounds) {
+		final Font font = fitFontToBounds(baseFont, text, g, cloudBounds);
+		if (font == null)
+			return null;
+		final FontMetrics metrics = g.getFontMetrics(font);
+		if (metrics.getHeight() > cloudBounds.height)
+			return null;
+		final String fittedText = fitTextToWidth(text, metrics, cloudBounds.width);
+		if (fittedText.isEmpty())
+			return null;
+		final int x = cloudBounds.x + (cloudBounds.width - metrics.stringWidth(fittedText)) / 2;
+		final int y = cloudBounds.y + (cloudBounds.height - metrics.getHeight()) / 2 + metrics.getAscent();
+		return new TextLayout(baseFont, text, new Rectangle(cloudBounds), font, fittedText, x, y);
 	}
 
 	private Font fitFontToBounds(Font baseFont, String text, Graphics2D g, Rectangle cloudBounds) {
@@ -438,6 +507,8 @@ abstract public class CloudView {
 		if (coordinates != null) {
 			return coordinates;
 		}
+		final long start = PaintPerformanceMonitor.start();
+		try {
         final Polygon p = new Polygon();
         final LinkedList<Point> sourceCoordinates = new LinkedList<Point>();
         source.getCoordinates(sourceCoordinates);
@@ -456,6 +527,20 @@ abstract public class CloudView {
         final Point pt = res.get(0);
         p.addPoint(pt.x, pt.y);
         return this.coordinates = p;
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_COORDINATES, start);
+		}
+	}
+
+	private void paintCloudDecoration(Graphics2D g, Graphics2D gstroke) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
+			paintDecoration(g, gstroke);
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_DECORATION, start);
+		}
 	}
 
 	protected void paintDecoration(Graphics2D g, Graphics2D gstroke){
@@ -509,8 +594,12 @@ abstract public class CloudView {
 	}
 
 	protected void fillPolygon(final Polygon p, Graphics2D g) {
+		final long fillStart = PaintPerformanceMonitor.start();
 	    g.fillPolygon(p);
+		PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_FILL, fillStart);
+		final long drawStart = PaintPerformanceMonitor.start();
 		g.drawPolygon(p);
+		PaintPerformanceMonitor.record(PaintPerformanceMonitor.CLOUD_DRAW, drawStart);
     }
 
 	protected void paintDecoration(Graphics2D g, Graphics2D gstroke, double x0, double y0, double x1, double y1) {
@@ -535,4 +624,30 @@ abstract public class CloudView {
 	protected double random(double min) {
 	    return (min + (1-min) * random.nextDouble());
     }
+
+	private static class TextLayout {
+		private final Font baseFont;
+		private final String sourceText;
+		private final Rectangle bounds;
+		private final Font font;
+		private final String text;
+		private final int x;
+		private final int y;
+
+		TextLayout(Font baseFont, String sourceText, Rectangle bounds, Font font, String text, int x, int y) {
+			this.baseFont = baseFont;
+			this.sourceText = sourceText;
+			this.bounds = bounds;
+			this.font = font;
+			this.text = text;
+			this.x = x;
+			this.y = y;
+		}
+
+		boolean matches(Font baseFont, String sourceText, Rectangle bounds) {
+			return Objects.equals(this.baseFont, baseFont)
+					&& Objects.equals(this.sourceText, sourceText)
+					&& this.bounds.equals(bounds);
+		}
+	}
 }

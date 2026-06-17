@@ -89,6 +89,7 @@ import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.core.util.SupplierRule;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.ModelessAttributeController;
@@ -1554,6 +1555,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		return paintingPurpose != PaintingPurpose.PAINTING;
 	}
 
+	boolean paintsOnlyVisibleMapArea() {
+		return paintingPurpose == PaintingPurpose.PAINTING;
+	}
+
 	public boolean isSelected(final NodeView n) {
 		if(isPrinting() || (! selectedsValid &&
 				(selection.selectedNode == null || ! SwingUtilities.isDescendingFrom(selection.selectedNode, this)  || ! selection.selectedNode.getContent().isVisible())))
@@ -2270,6 +2275,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			return;
 		}
 
+		PaintPerformanceMonitor.beginFrame();
 		final Graphics2D g2 = (Graphics2D) g.create();
 		try {
 			antiAliasingConfigurator.withAntialias(g2, () -> {
@@ -2293,6 +2299,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		finally {
 			paintingMode = null;
 			g2.dispose();
+			PaintPerformanceMonitor.endFrame();
 		}
 	}
 
@@ -2309,26 +2316,35 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	@Override
 	protected void paintComponent(final Graphics g) {
-	    boolean usesTransparentBackgroundForPrinting = paintingPurpose == PaintingPurpose.PRINTING && printOnWhiteBackground;
-	    boolean backgroundIsPaintedByViewport = paintingPurpose == PaintingPurpose.PAINTING && backgroundComponent != null && fitToViewport;
-        if(!usesTransparentBackgroundForPrinting && !backgroundIsPaintedByViewport) {
-	        g.setColor(getBackground() );
-	        Rectangle clip = g.getClipBounds();
-	        if (clip != null) {
-	            int x = Math.max(0, clip.x);
-	            int y = Math.max(0, clip.y);
-	            int w = Math.min(getWidth() - x, clip.width - (x - clip.x));
-	            int h = Math.min(getHeight() - y, clip.height - (y - clip.y));
-	            g.fillRect(x, y, w, h);
-	        } else {
-	            g.fillRect(0, 0, getWidth(), getHeight());
-	        }	    }
-        if (backgroundComponent != null && paintingPurpose != PaintingPurpose.OVERVIEW && ! fitToViewport) {
-			paintBackgroundComponent(g);
+		final long start = PaintPerformanceMonitor.start();
+		try {
+			boolean usesTransparentBackgroundForPrinting = paintingPurpose == PaintingPurpose.PRINTING && printOnWhiteBackground;
+			boolean backgroundIsPaintedByViewport = paintingPurpose == PaintingPurpose.PAINTING && backgroundComponent != null && fitToViewport;
+			if(!usesTransparentBackgroundForPrinting && !backgroundIsPaintedByViewport) {
+				g.setColor(getBackground() );
+				Rectangle clip = g.getClipBounds();
+				if (clip != null) {
+					int x = Math.max(0, clip.x);
+					int y = Math.max(0, clip.y);
+					int w = Math.min(getWidth() - x, clip.width - (x - clip.x));
+					int h = Math.min(getHeight() - y, clip.height - (y - clip.y));
+					g.fillRect(x, y, w, h);
+				}
+				else {
+					g.fillRect(0, 0, getWidth(), getHeight());
+				}
+			}
+			if (backgroundComponent != null && paintingPurpose != PaintingPurpose.OVERVIEW && ! fitToViewport) {
+				paintBackgroundComponent(g);
+			}
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAP_COMPONENT, start);
 		}
 	}
 
     private void paintBackgroundComponent(final Graphics g) {
+		final long start = PaintPerformanceMonitor.start();
 	    final Graphics backgroundGraphics = g.create();
 	    try {
 			setBackgroundImageComposite(backgroundGraphics);
@@ -2339,6 +2355,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	    }
 	    finally {
 	    	backgroundGraphics.dispose();
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.BACKGROUND, start);
 		}
 	}
 
@@ -2379,29 +2396,45 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 	@Override
 	protected void paintChildren(final Graphics g) {
-	    final PaintingMode paintModes[];
-	    if(paintConnectorsBehind)
-			paintModes = new PaintingMode[]{
-				PaintingMode.CLOUDS,
-				PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES,
-				PaintingMode.CLOUD_TEXTS
-				};
-	    else
-			paintModes = new PaintingMode[]{
-				PaintingMode.CLOUDS,
-				PaintingMode.NODES, PaintingMode.SELECTED_NODES, PaintingMode.LINKS,
-				PaintingMode.CLOUD_TEXTS
-				};
-	    final Graphics2D g2 = (Graphics2D) g;
-	    paintChildren(g2, paintModes);
-	    if(isSpotlightEnabled())
-	    	paintDimmer(g2, paintModes);
-		paintSelecteds(g2);
-		highlightEditor(g2);
-		paintSelectionRectangle(g);
-		if(paintingPurpose == PaintingPurpose.PAINTING)
-			coordinateAxisPainter.paint(g2, getVisibleRect(), getRootCenterPoint(), zoom);
+		final long start = PaintPerformanceMonitor.start();
+		try {
+			final PaintingMode paintModes[];
+			if(paintConnectorsBehind)
+				paintModes = new PaintingMode[]{
+					PaintingMode.CLOUDS,
+					PaintingMode.LINKS, PaintingMode.NODES, PaintingMode.SELECTED_NODES,
+					PaintingMode.CLOUD_TEXTS
+					};
+			else
+				paintModes = new PaintingMode[]{
+					PaintingMode.CLOUDS,
+					PaintingMode.NODES, PaintingMode.SELECTED_NODES, PaintingMode.LINKS,
+					PaintingMode.CLOUD_TEXTS
+					};
+			final Graphics2D g2 = (Graphics2D) g;
+			paintChildren(g2, paintModes);
+			if(isSpotlightEnabled())
+				paintDimmer(g2, paintModes);
+			paintSelecteds(g2);
+			highlightEditor(g2);
+			paintSelectionRectangle(g);
+			if(paintingPurpose == PaintingPurpose.PAINTING)
+				paintCoordinateAxis(g2);
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAP_CHILDREN, start);
+		}
     }
+
+	private void paintCoordinateAxis(final Graphics2D g2) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
+			coordinateAxisPainter.paint(g2, getVisibleRect(), getRootCenterPoint(), zoom);
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.COORDINATE_AXIS, start);
+		}
+	}
 
     private void paintSelectionRectangle(Graphics g) {
         if (selectionRectangle == null)
@@ -2435,19 +2468,42 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	private void paintChildren(final Graphics2D g2, final PaintingMode[] paintModes) {
 	    for(final PaintingMode paintingMode : paintModes){
 	    	this.paintingMode = paintingMode;
+			final long start = PaintPerformanceMonitor.start();
 			switch(paintingMode){
 			case CLOUDS:
-				cloudPainter.paintClouds(g2, getRoot());
+				try {
+					cloudPainter.paintClouds(g2, getRoot());
+				}
+				finally {
+					PaintPerformanceMonitor.record(PaintPerformanceMonitor.MODE_CLOUDS, start);
+				}
 				break;
 			case CLOUD_TEXTS:
-				cloudPainter.paintCloudTexts(g2, getRoot());
+				try {
+					cloudPainter.paintCloudTexts(g2, getRoot());
+				}
+				finally {
+					PaintPerformanceMonitor.record(PaintPerformanceMonitor.MODE_CLOUD_TEXTS, start);
+				}
 				break;
-	    		case LINKS:
-	    			if(HIDE_CONNECTORS != showConnectors && paintingPurpose != PaintingPurpose.OVERVIEW)
-	    				paintConnectors(g2);
-	    			break;
-				default:
-					super.paintChildren(g2);
+			case LINKS:
+				try {
+					if(HIDE_CONNECTORS != showConnectors && paintingPurpose != PaintingPurpose.OVERVIEW)
+						paintConnectors(g2);
+				}
+				finally {
+					PaintPerformanceMonitor.record(PaintPerformanceMonitor.MODE_LINKS, start);
+				}
+				break;
+			default:
+					try {
+						super.paintChildren(g2);
+					}
+					finally {
+						PaintPerformanceMonitor.record(paintingMode == PaintingMode.NODES
+								? PaintPerformanceMonitor.MODE_NODES
+								: PaintPerformanceMonitor.MODE_SELECTED_NODES, start);
+					}
 			}
 	    }
     }
@@ -2563,9 +2619,15 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	}
 
     private void paintConnectors(final Graphics2D graphics) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		arrowLinkViews = new Vector<ILinkView>();
 		if(hasNodeLinks())
 			paintConnectors(currentRootView, graphics, new HashSet<ConnectorModel>(), connectorSearchRect());
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.LINKS, start);
+		}
 	}
 
 	private Rectangle connectorSearchRect() {

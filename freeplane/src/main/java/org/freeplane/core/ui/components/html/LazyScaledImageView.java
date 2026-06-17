@@ -25,6 +25,7 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 
 import org.freeplane.features.mode.Controller;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 
 class LazyScaledImageView extends View {
 	private static final int DEFAULT_WIDTH = 64;
@@ -56,6 +57,8 @@ class LazyScaledImageView extends View {
 
 	@Override
 	public void paint(Graphics graphics, Shape allocation) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		final Rectangle bounds = allocation instanceof Rectangle ? (Rectangle) allocation : allocation.getBounds();
 		final Rectangle imageBounds = imageBounds(bounds);
 		repaintBounds = scaledBounds(imageBounds, zoom());
@@ -76,6 +79,10 @@ class LazyScaledImageView extends View {
 			return;
 		}
 		graphics.drawImage(image, imageBounds.x, imageBounds.y, imageBounds.width, imageBounds.height, null);
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.LAZY_IMAGE, start);
+		}
 	}
 
 	@Override

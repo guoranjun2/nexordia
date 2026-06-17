@@ -18,6 +18,7 @@
 package org.freeplane.view.swing.map;
 
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 class MapCloudPainter {
     static final String CLOUD_IMAGE_OPACITY_PROPERTY = "cloud_image_opacity";
@@ -25,6 +26,7 @@ class MapCloudPainter {
     void paintClouds(final Graphics2D g2, final NodeView root) {
         final Graphics2D g = (Graphics2D) g2.create();
         try {
+            clipToVisibleMapArea(g, root);
             g.translate(root.getX(), root.getY());
             root.paintCloudTree(g);
         }
@@ -36,11 +38,20 @@ class MapCloudPainter {
     void paintCloudTexts(final Graphics2D g2, final NodeView root) {
         final Graphics2D g = (Graphics2D) g2.create();
         try {
+            clipToVisibleMapArea(g, root);
             g.translate(root.getX(), root.getY());
             root.paintCloudTextTree(g);
         }
         finally {
             g.dispose();
         }
+    }
+
+    private void clipToVisibleMapArea(final Graphics2D g, final NodeView root) {
+        final MapView map = root.getMap();
+        if(! map.paintsOnlyVisibleMapArea())
+            return;
+        final Rectangle visibleRect = map.getVisibleRect();
+        g.clipRect(visibleRect.x, visibleRect.y, visibleRect.width, visibleRect.height);
     }
 }

@@ -68,6 +68,7 @@ import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.HtmlUtils;
 import org.freeplane.core.util.Hyperlink;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.filter.Filter;
@@ -1043,6 +1044,8 @@ public class MainView extends ZoomableLabel {
 
 	@Override
 	public void paintComponent(Graphics graphics) {
+		final long start = PaintPerformanceMonitor.start();
+		try {
 		Graphics2D g2 = (Graphics2D) graphics;
 
 		if(shouldPaintSimplified()) {
@@ -1067,6 +1070,10 @@ public class MainView extends ZoomableLabel {
 		}
 		else
 			painter.paintComponent(graphics);
+		}
+		finally {
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAIN_VIEW, start);
+		}
 	}
 
 	public boolean isPaintingSimplified() {

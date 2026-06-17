@@ -32,6 +32,7 @@ import org.freeplane.api.ChildrenSides;
 import org.freeplane.api.Dash;
 import org.freeplane.api.LayoutOrientation;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.map.FreeNode;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.view.swing.map.MainView;
@@ -90,6 +91,7 @@ public abstract class EdgeView {
             final Component paintedComponent,
             boolean highlightsAscendantEdge
     ) {
+        final long startNanos = PaintPerformanceMonitor.start();
         this.source = source;
         this.target = target;
         this.highlightsAscendantEdge = highlightsAscendantEdge;
@@ -121,6 +123,7 @@ public abstract class EdgeView {
         if (start != null && end != null) {
             align(start, end);
         }
+        PaintPerformanceMonitor.record(PaintPerformanceMonitor.EDGE_CREATE, startNanos);
     }
 
     public void setShapeStart(Point shapeStart) {
@@ -544,16 +547,19 @@ public abstract class EdgeView {
     abstract protected void draw(Graphics2D g);
 
     public void paint(final Graphics2D g) {
+        final long start = PaintPerformanceMonitor.start();
         final Stroke stroke = g.getStroke();
         final Color color = g.getColor();
-
-        g.setColor(getColor(g));
-        g.setStroke(getStroke());
-
-        draw(g);
-
-        g.setStroke(stroke);
-        g.setColor(color);
+        try {
+            g.setColor(getColor(g));
+            g.setStroke(getStroke());
+            draw(g);
+        }
+        finally {
+            g.setStroke(stroke);
+            g.setColor(color);
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.EDGE, start);
+        }
     }
 
     abstract public boolean detectCollision(Point p);
