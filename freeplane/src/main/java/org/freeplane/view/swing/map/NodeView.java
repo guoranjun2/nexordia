@@ -151,6 +151,8 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     private Integer edgeWidth = 1;
     private ObjectRule<Color, Rules> edgeColor = null;
     private Color modelBackgroundColor;
+    private double minNodeWidthBaseUnits = -1;
+    private double maxNodeWidthBaseUnits = -1;
     private CloudShape cloudShape;
     private Color cloudColor;
     private CloudModel cachedCloudModel;
@@ -2126,61 +2128,100 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
             return;
         final long start = PaintPerformanceMonitor.start();
         try {
-        invalidate();
-        updateShape();
-        updateEdge();
-        updateCloud();
-
-        mainView.updateTextColor(this);
-        mainView.updateCss(this);
-        mainView.updateFont(this);
-        mainView.updateHorizontalTextAlignment(this);
-        mainView.updateTextWritingDirection(this);
-        mainView.updateBorder(this);
-        final ModeController modeController = getModeController();
-        final NodeStyleController nsc = NodeStyleController.getController(modeController);
-        StyleOption styleOption = getStyleOption();
-        final int minNodeWidth = map.getZoomed(nsc.getMinWidth(getNode(), styleOption).toBaseUnits());
-        final int maxNodeWidth = Math.max(map.getLayoutSpecificMaxNodeWidth(), map.getZoomed(nsc.getMaxWidth(getNode(), styleOption).toBaseUnits()));
-        mainView.setMinimumWidth(minNodeWidth);
-        mainView.setMaximumWidth(maxNodeWidth);
-
-        createAttributeView();
-        if (attributeView != null) {
-            attributeView.update();
-        }
-        final boolean textShortened = isShortened();
-
-        if(! textShortened){
-            final long detailsStart = PaintPerformanceMonitor.start();
-            final NodeViewFactory nodeViewFactory = NodeViewFactory.getInstance();
-            nodeViewFactory.updateDetails(this, minNodeWidth, maxNodeWidth, cause);
-            nodeViewFactory.updateNoteViewer(this, minNodeWidth, maxNodeWidth, cause);
-            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_DETAILS, detailsStart);
-        }
-        if(cause.updatesContent()) {
-            final long contentStart = PaintPerformanceMonitor.start();
-            updateShortener(textShortened);
-            updateIcons();
-            mainView.updateText(getNode());
-            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_CONTENT, contentStart);
-        }
-        if(cause == UpdateCause.ZOOM) {
-            final long viewerStart = PaintPerformanceMonitor.start();
-            final JComponent viewer = getContent(NodeView.IMAGE_VIEWER_POSITION);
-            if(viewer != null)
-                viewer.invalidate();
-            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_VIEWER, viewerStart);
-        }
-        modelBackgroundColor = styleController().getBackgroundColor(viewedNode, getStyleOption());
-        if (isContentVisible()) {
-            revalidate();
-            repaint();
-        }
+            if(cause == UpdateCause.ZOOM) {
+                if(isFree())
+                    updateForZoom();
+                else
+                    updateFully(cause);
+                return;
+            }
+            updateFully(cause);
         }
         finally {
             PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE, start);
         }
+    }
+
+    private void updateFully(UpdateCause cause) {
+            invalidate();
+            updateShape();
+            updateEdge();
+            updateCloud();
+
+            mainView.updateTextColor(this);
+            mainView.updateCss(this);
+            mainView.updateFont(this);
+            mainView.updateHorizontalTextAlignment(this);
+            mainView.updateTextWritingDirection(this);
+            mainView.updateBorder(this);
+            updateZoomDependentWidthCache();
+            updateZoomDependentWidths();
+
+            createAttributeView();
+            if (attributeView != null) {
+                attributeView.update();
+            }
+            final boolean textShortened = isShortened();
+
+            if(! textShortened){
+                final long detailsStart = PaintPerformanceMonitor.start();
+                final NodeViewFactory nodeViewFactory = NodeViewFactory.getInstance();
+                nodeViewFactory.updateDetails(this, mainView.getMinimumWidth(), mainView.getMaximumWidth(), cause);
+                nodeViewFactory.updateNoteViewer(this, mainView.getMinimumWidth(), mainView.getMaximumWidth(), cause);
+                PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_DETAILS, detailsStart);
+            }
+            if(cause.updatesContent()) {
+                final long contentStart = PaintPerformanceMonitor.start();
+                updateShortener(textShortened);
+                updateIcons();
+                mainView.updateText(getNode());
+                PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_CONTENT, contentStart);
+            }
+            modelBackgroundColor = styleController().getBackgroundColor(viewedNode, getStyleOption());
+            if (isContentVisible()) {
+                revalidate();
+                repaint();
+            }
+    }
+
+    private void updateForZoom() {
+        childNodeViewLayout = null;
+        invalidate();
+        mainView.invalidate();
+        updateZoomDependentWidths();
+        updateViewersForZoom();
+        if (isContentVisible()) {
+            revalidate();
+            repaint();
+        }
+    }
+
+    private void updateViewersForZoom() {
+        final long viewerStart = PaintPerformanceMonitor.start();
+        final NodeViewFactory nodeViewFactory = NodeViewFactory.getInstance();
+        nodeViewFactory.updateDetails(this, mainView.getMinimumWidth(), mainView.getMaximumWidth(), UpdateCause.ZOOM);
+        nodeViewFactory.updateNoteViewer(this, mainView.getMinimumWidth(), mainView.getMaximumWidth(), UpdateCause.ZOOM);
+        final JComponent viewer = getContent(NodeView.IMAGE_VIEWER_POSITION);
+        if(viewer != null)
+            viewer.invalidate();
+        PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_VIEWER, viewerStart);
+    }
+
+    private void updateZoomDependentWidths() {
+        if(minNodeWidthBaseUnits < 0 || maxNodeWidthBaseUnits < 0)
+            updateZoomDependentWidthCache();
+        final int minNodeWidth = map.getZoomed(minNodeWidthBaseUnits);
+        final int maxNodeWidth = Math.max(map.getLayoutSpecificMaxNodeWidth(), map.getZoomed(maxNodeWidthBaseUnits));
+        mainView.setMinimumWidth(minNodeWidth);
+        mainView.setMaximumWidth(maxNodeWidth);
+    }
+
+    private void updateZoomDependentWidthCache() {
+        final ModeController modeController = getModeController();
+        final NodeStyleController nsc = NodeStyleController.getController(modeController);
+        final StyleOption styleOption = getStyleOption();
+        minNodeWidthBaseUnits = nsc.getMinWidth(getNode(), styleOption).toBaseUnits();
+        maxNodeWidthBaseUnits = nsc.getMaxWidth(getNode(), styleOption).toBaseUnits();
     }
 
 

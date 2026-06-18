@@ -2989,6 +2989,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             scrollsViewAfterLayout = true;
             mapScroller.anchorToNodeForZoom(getSelected(), CENTER_ALIGNMENT, CENTER_ALIGNMENT);
             updateAllNodeViews(UpdateCause.ZOOM);
+            revalidate();
+            repaint();
             adjustBackgroundComponentScale();
             }
             finally {
@@ -3017,6 +3019,8 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             mapScroller.anchorToNodeForZoom(anchor, x, y);
             PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_ANCHOR, anchorStart);
             updateAllNodeViews(UpdateCause.ZOOM);
+            revalidate();
+            repaint();
             final long backgroundStart = PaintPerformanceMonitor.start();
             adjustBackgroundComponentScale();
             PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_BACKGROUND, backgroundStart);
