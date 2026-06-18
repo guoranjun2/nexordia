@@ -137,6 +137,7 @@ import org.freeplane.view.swing.features.filepreview.ScalableComponent;
 import org.freeplane.view.swing.features.filepreview.ViewerController;
 import org.freeplane.view.swing.map.MapViewScrollPane.MapViewPort;
 import org.freeplane.view.swing.map.NodeView.PreferredChild;
+import org.freeplane.view.swing.map.cloud.CloudPaintingOptions;
 import org.freeplane.view.swing.map.link.ConnectorView;
 import org.freeplane.view.swing.map.link.EdgeLinkView;
 import org.freeplane.view.swing.map.link.ILinkView;
@@ -210,13 +211,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 	}
 
-	private void updateAllNodeViews() {
+    private void updateAllNodeViews() {
 		updateAllNodeViews(UpdateCause.UNKNOWN);
 	}
     private void updateAllNodeViews(UpdateCause cause) {
-        getRoot().updateAll(cause);
-        if(mapRootView != currentRootView)
-            mapRootView.updateAll(cause);
+        final long start = PaintPerformanceMonitor.start();
+        try {
+            getRoot().updateAll(cause);
+            if(mapRootView != currentRootView)
+                mapRootView.updateAll(cause);
+        }
+        finally {
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.UPDATE_ALL_NODES, start);
+        }
     }
 
 	private boolean showNotes;
@@ -1110,7 +1117,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 							|| propertyName.equals(MapCoordinateAxisPainter.SHOW_COORDINATE_AXIS_Y_INVERTED_PROPERTY)
 							|| propertyName.equals(MapCoordinateAxisPainter.COORDINATE_AXIS_COLOR_PROPERTY)
 							|| propertyName.equals(MapCoordinateAxisPainter.COORDINATE_AXIS_LABEL_COLOR_PROPERTY)
-							|| propertyName.equals(MapCloudPainter.CLOUD_IMAGE_OPACITY_PROPERTY)
+							|| CloudPaintingOptions.isCloudPaintingProperty(propertyName)
 							|| propertyName.equals(BACKGROUND_IMAGE_OPACITY_PROPERTY)) {
 						mapView.repaint();
 						if(mapView.getParent() != null)
@@ -2570,6 +2577,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 					boolean b = sourceView != null && sourceView.isSelected() || targetView != null && targetView.isSelected();
                     final boolean showsConnectorLinesOrArrows = showsConnectorLinesOrArrows(b);
 					if(showsConnectorLinesOrArrows) {
+						final long createStart = PaintPerformanceMonitor.start();
 						LinkController linkController = LinkController.getController(getModeController());
                         if (areBothNodesVisible
                                 && (
@@ -2580,7 +2588,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 							arrowLink = new ConnectorView(ref, sourceView, targetView, getBackground());
 						else
 							break;
+						PaintPerformanceMonitor.record(PaintPerformanceMonitor.LINK_CREATE, createStart);
+						final long drawStart = PaintPerformanceMonitor.start();
 						arrowLink.paint(graphics);
+						PaintPerformanceMonitor.record(PaintPerformanceMonitor.LINK_DRAW, drawStart);
 						arrowLinkViews.add(arrowLink);
 					}
 				}
@@ -2971,17 +2982,29 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
     public void setZoom(final float zoom) {
         if(this.zoom != zoom) {
+            PaintPerformanceMonitor.beginTask("zoom performance");
+            final long start = PaintPerformanceMonitor.start();
+            try {
             this.zoom = zoom;
             scrollsViewAfterLayout = true;
             mapScroller.anchorToNodeForZoom(getSelected(), CENTER_ALIGNMENT, CENTER_ALIGNMENT);
             updateAllNodeViews(UpdateCause.ZOOM);
             adjustBackgroundComponentScale();
+            }
+            finally {
+                PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_UPDATE, start);
+                PaintPerformanceMonitor.endTask();
+            }
         }
     }
 
     public void setZoom(final float zoom, Point keptPoint) {
         if(this.zoom != zoom) {
+            PaintPerformanceMonitor.beginTask("zoom performance");
+            final long start = PaintPerformanceMonitor.start();
+            try {
             this.zoom = zoom;
+            final long anchorStart = PaintPerformanceMonitor.start();
             NodeView anchor = getNearestNodeView(keptPoint);
             MainView mainView = anchor.getMainView();
             float referenceWidth = mainView.getWidth();
@@ -2992,8 +3015,16 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             float y = referenceHeight > 0 ? (keptPoint.y - mainViewLocation.y) / referenceHeight : 0;
             scrollsViewAfterLayout = true;
             mapScroller.anchorToNodeForZoom(anchor, x, y);
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_ANCHOR, anchorStart);
             updateAllNodeViews(UpdateCause.ZOOM);
+            final long backgroundStart = PaintPerformanceMonitor.start();
             adjustBackgroundComponentScale();
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_BACKGROUND, backgroundStart);
+            }
+            finally {
+                PaintPerformanceMonitor.record(PaintPerformanceMonitor.ZOOM_UPDATE, start);
+                PaintPerformanceMonitor.endTask();
+            }
         }
     }
 

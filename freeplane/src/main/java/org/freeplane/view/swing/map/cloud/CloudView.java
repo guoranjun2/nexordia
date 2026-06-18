@@ -38,7 +38,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Vector;
 
-import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.html.HtmlImageRenderer;
 import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
@@ -55,25 +54,7 @@ import org.freeplane.view.swing.map.NodeView;
  */
 abstract public class CloudView {
 	static final Stroke DEF_STROKE = new BasicStroke(1);
-	private static final String CLOUD_PAINTING_MIN_WIDTH = "cloud_painting_min_width";
-	private static final String CLOUD_TEXT_PAINTING_MIN_WIDTH = "cloud_text_painting_min_width";
-	private static final String PAINT_CLOUD_FOR_INVISIBLE_NODE = "paint_cloud_for_invisible_node";
-	private static final String PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = "paint_cloud_title_for_invisible_node";
-	private static final String PAINT_CLOUD_IMAGE = "paint_cloud_image";
-	private static final String PAINT_CLOUD_TEXT = "paint_cloud_text";
-	private static final String CLOUD_IMAGE_FIXED_ICON = "cloud_image_fixed_icon";
-	private static final String CLOUD_IMAGE_OPACITY = "cloud_image_opacity";
 	private static final String CLOUD_IMAGE_REPAINT_CALLBACK = "cloud_image_repaint_callback";
-	private static final int DEFAULT_CLOUD_PAINTING_MIN_WIDTH = 10;
-	private static final int DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH = 10;
-	private static final boolean DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE = true;
-	private static final boolean DEFAULT_PAINT_CLOUD_IMAGE = true;
-	private static final boolean DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE = false;
-	private static final boolean DEFAULT_PAINT_CLOUD_TEXT = true;
-	private static final String DEFAULT_CLOUD_IMAGE_FIXED_ICON = "info";
-	private static final double DEFAULT_CLOUD_IMAGE_OPACITY = 1d;
-	private static final double MINIMUM_CLOUD_IMAGE_OPACITY = 0.05d;
-	private static final double MAXIMUM_CLOUD_IMAGE_OPACITY = 1d;
 	private static final double MINIMUM_DISTANCE_BETWEEN_CLOUD_POINTS = 1d;
 
 	/** the layout functions can get the additional height of the clouded node .
@@ -238,7 +219,7 @@ abstract public class CloudView {
 	}
 
 	private boolean shouldPaintSourceText(MainView mainView) {
-		return isCloudTextPaintingEnabled()
+		return CloudPaintingOptions.isCloudTextPaintingEnabled()
 				&& mainView != null
 				&& ((isSourceVisibleForTextPainting(mainView) && mainView.isPaintingSimplified())
 						|| isFixedImageCloud(mainView));
@@ -246,12 +227,12 @@ abstract public class CloudView {
 
 	private boolean shouldPaintSourceImage(MainView mainView) {
 		return mainView != null
-				&& CloudImagePainting.shouldPaint(isCloudImagePaintingEnabled(), isSourceVisibleForTextPainting(mainView),
+				&& CloudImagePainting.shouldPaint(CloudPaintingOptions.isCloudImagePaintingEnabled(), isSourceVisibleForTextPainting(mainView),
 						mainView.isPaintingSimplified(), isFixedImageCloud(mainView));
 	}
 
 	private boolean isFixedImageCloud(MainView mainView) {
-		return CloudImagePainting.shouldKeepTextWithFixedImage(isCloudImagePaintingEnabled(), hasCloudImageFixedIcon(),
+		return CloudImagePainting.shouldKeepTextWithFixedImage(CloudPaintingOptions.isCloudImagePaintingEnabled(), hasCloudImageFixedIcon(),
 				getCloudTitle(mainView).isImage());
 	}
 
@@ -261,61 +242,20 @@ abstract public class CloudView {
 
 	private boolean isSourceVisibleForPainting(MainView mainView) {
 		return mainView != null
-				&& (isCloudPaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
+				&& (CloudPaintingOptions.isCloudPaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
 	}
 
 	private boolean isSourceVisibleForTextPainting(MainView mainView) {
 		return mainView != null
-				&& (isCloudTitlePaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
+				&& (CloudPaintingOptions.isCloudTitlePaintingForInvisibleNodeEnabled() || mainView.hasVisiblePaintAnchor(source.getMap()));
 	}
 
 	static boolean isCloudTooSmallForPainting(Rectangle bounds) {
-		return bounds.width < getCloudPaintingMinWidth();
+		return bounds.width < CloudPaintingOptions.getCloudPaintingMinWidth();
 	}
 
 	private static boolean isCloudTooSmallForTextPainting(Rectangle bounds) {
-		return bounds.width < getCloudTextPaintingMinWidth();
-	}
-
-	private static int getCloudPaintingMinWidth() {
-		return ResourceController.getResourceController().getIntProperty(CLOUD_PAINTING_MIN_WIDTH,
-				DEFAULT_CLOUD_PAINTING_MIN_WIDTH);
-	}
-
-	private static int getCloudTextPaintingMinWidth() {
-		return ResourceController.getResourceController().getIntProperty(CLOUD_TEXT_PAINTING_MIN_WIDTH,
-				DEFAULT_CLOUD_TEXT_PAINTING_MIN_WIDTH);
-	}
-
-	private static boolean isCloudPaintingForInvisibleNodeEnabled() {
-		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_FOR_INVISIBLE_NODE,
-				DEFAULT_PAINT_CLOUD_FOR_INVISIBLE_NODE);
-	}
-
-	private static boolean isCloudTitlePaintingForInvisibleNodeEnabled() {
-		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE,
-				DEFAULT_PAINT_CLOUD_TITLE_FOR_INVISIBLE_NODE);
-	}
-
-	private static boolean isCloudTextPaintingEnabled() {
-		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_TEXT,
-				DEFAULT_PAINT_CLOUD_TEXT);
-	}
-
-	private static boolean isCloudImagePaintingEnabled() {
-		return ResourceController.getResourceController().getBooleanProperty(PAINT_CLOUD_IMAGE,
-				DEFAULT_PAINT_CLOUD_IMAGE);
-	}
-
-	private static String getCloudImageFixedIcon() {
-		return ResourceController.getResourceController().getProperty(CLOUD_IMAGE_FIXED_ICON,
-				DEFAULT_CLOUD_IMAGE_FIXED_ICON);
-	}
-
-	private static double getCloudImageOpacity() {
-		final double opacity = ResourceController.getResourceController().getDoubleProperty(CLOUD_IMAGE_OPACITY,
-				DEFAULT_CLOUD_IMAGE_OPACITY);
-		return CloudImagePainting.opacityInRange(opacity, MINIMUM_CLOUD_IMAGE_OPACITY, MAXIMUM_CLOUD_IMAGE_OPACITY);
+		return bounds.width < CloudPaintingOptions.getCloudTextPaintingMinWidth();
 	}
 
 	protected Rectangle getPaintingBounds() {
@@ -369,7 +309,7 @@ abstract public class CloudView {
 	}
 
 	private boolean hasCloudImageFixedIcon() {
-		final String cloudImageFixedIcon = getCloudImageFixedIcon();
+		final String cloudImageFixedIcon = CloudPaintingOptions.getCloudImageFixedIcon();
 		for (NamedIcon icon : source.getNode().getIcons()) {
 			if (cloudImageFixedIcon.equals(icon.getName())) {
 				return true;
@@ -396,8 +336,8 @@ abstract public class CloudView {
 	}
 
 	private void setCloudImageOpacity(Graphics2D g) {
-		final double opacity = getCloudImageOpacity();
-		if (opacity < MAXIMUM_CLOUD_IMAGE_OPACITY) {
+		final double opacity = CloudPaintingOptions.getCloudImageOpacity();
+		if (opacity < 1d) {
 			g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacity));
 		}
 	}

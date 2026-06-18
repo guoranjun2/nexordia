@@ -1049,12 +1049,14 @@ public class MainView extends ZoomableLabel {
 		Graphics2D g2 = (Graphics2D) graphics;
 
 		if(shouldPaintSimplified()) {
+			final long simplifiedStart = PaintPerformanceMonitor.start();
 			paintSimplified(graphics,
 //					getBorderColor(),
 //					getBackground()
 					new Color(0, 0, 0, 0),
 					new Color(0, 0, 0, 30)
 			);
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAIN_VIEW_SIMPLIFIED, simplifiedStart);
 			return;
 		}
 
@@ -1065,11 +1067,16 @@ public class MainView extends ZoomableLabel {
 		double approxScaleY = Math.abs(t.getShearX()) + Math.abs(t.getScaleY());
 
 		if (height * approxScaleY <= 2 || width * approxScaleX <= 2) {
+			final long tinyStart = PaintPerformanceMonitor.start();
 			g2.setColor(getBorderColor());
 			g2.fillRect(0, 0, width, height);
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAIN_VIEW_TINY, tinyStart);
 		}
-		else
+		else {
+			final long fullStart = PaintPerformanceMonitor.start();
 			painter.paintComponent(graphics);
+			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAIN_VIEW_FULL, fullStart);
+		}
 		}
 		finally {
 			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAIN_VIEW, start);

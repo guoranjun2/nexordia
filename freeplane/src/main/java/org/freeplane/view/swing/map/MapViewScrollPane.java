@@ -46,6 +46,7 @@ import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.ActionAcceleratorManager;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.features.filepreview.ScalableComponent;
@@ -88,13 +89,21 @@ public class MapViewScrollPane extends JScrollPane implements IFreeplaneProperty
 
 		@Override
 		protected void validateTree() {
-		    super.validateTree();
-		    final Component view = getView();
-		    if(view != null) {
-                ((MapView) view).scrollViewAfterLayout();
-                if(! isValid())
-                    super.validateTree();
-            }
+		    PaintPerformanceMonitor.beginTask("layout performance");
+		    final long start = PaintPerformanceMonitor.start();
+		    try {
+			    super.validateTree();
+			    final Component view = getView();
+			    if(view != null) {
+	                ((MapView) view).scrollViewAfterLayout();
+	                if(! isValid())
+	                    super.validateTree();
+	            }
+		    }
+		    finally {
+			    PaintPerformanceMonitor.record(PaintPerformanceMonitor.LAYOUT_VALIDATE, start);
+			    PaintPerformanceMonitor.endTask();
+		    }
 		}
 
 

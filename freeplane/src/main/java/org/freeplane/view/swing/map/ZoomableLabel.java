@@ -35,10 +35,8 @@ public class ZoomableLabel extends JLabel {
 	public static final String CUSTOM_CSS = "customCss";
 
 	private static final String TEXT_RENDERING_ICON = "TextRenderingIcon";
-	private static final String SIMPLIFIED_PAINTING_MAX_ZOOM = "simplified_painting_max_zoom";
 	private static final String SIMPLIFIED_PAINTING_MAX_WIDTH = "simplified_painting_max_width";
 	private static final String SIMPLIFIED_PAINTING_MAX_HEIGHT = "simplified_painting_max_height";
-	private static final double DEFAULT_SIMPLIFIED_PAINTING_MAX_ZOOM = 0.2;
 	private static final int DEFAULT_SIMPLIFIED_PAINTING_MAX_WIDTH = 10;
 	private static final int DEFAULT_SIMPLIFIED_PAINTING_MAX_HEIGHT = 3;
 
@@ -97,13 +95,11 @@ public class ZoomableLabel extends JLabel {
 
 	protected boolean isSmallView() {
 		final ResourceController resourceController = ResourceController.getResourceController();
-		final double maxZoom = resourceController.getDoubleProperty(SIMPLIFIED_PAINTING_MAX_ZOOM,
-				DEFAULT_SIMPLIFIED_PAINTING_MAX_ZOOM);
 		final int maxWidth = resourceController.getIntProperty(SIMPLIFIED_PAINTING_MAX_WIDTH,
 				DEFAULT_SIMPLIFIED_PAINTING_MAX_WIDTH);
 		final int maxHeight = resourceController.getIntProperty(SIMPLIFIED_PAINTING_MAX_HEIGHT,
 				DEFAULT_SIMPLIFIED_PAINTING_MAX_HEIGHT);
-		return getMap().getZoom() <= maxZoom && (getWidth() <= maxWidth || getHeight() <= maxHeight);
+		return getWidth() <= maxWidth || getHeight() <= maxHeight;
 	}
 	public boolean hasVisiblePaintAnchor(MapView map) {
 		final Rectangle bounds = SwingUtilities.convertRectangle(this,

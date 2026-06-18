@@ -61,6 +61,7 @@ import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.ColorUtils;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.ObjectRule;
+import org.freeplane.core.util.PaintPerformanceMonitor;
 import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.cloud.CloudController;
@@ -2123,6 +2124,8 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
     void update(UpdateCause cause) {
         if(! map.isDisplayable())
             return;
+        final long start = PaintPerformanceMonitor.start();
+        try {
         invalidate();
         updateShape();
         updateEdge();
@@ -2149,24 +2152,34 @@ public class NodeView extends JComponent implements INodeView, EdgeColorContext 
         final boolean textShortened = isShortened();
 
         if(! textShortened){
+            final long detailsStart = PaintPerformanceMonitor.start();
             final NodeViewFactory nodeViewFactory = NodeViewFactory.getInstance();
             nodeViewFactory.updateDetails(this, minNodeWidth, maxNodeWidth, cause);
             nodeViewFactory.updateNoteViewer(this, minNodeWidth, maxNodeWidth, cause);
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_DETAILS, detailsStart);
         }
         if(cause.updatesContent()) {
+            final long contentStart = PaintPerformanceMonitor.start();
             updateShortener(textShortened);
             updateIcons();
             mainView.updateText(getNode());
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_CONTENT, contentStart);
         }
         if(cause == UpdateCause.ZOOM) {
+            final long viewerStart = PaintPerformanceMonitor.start();
             final JComponent viewer = getContent(NodeView.IMAGE_VIEWER_POSITION);
             if(viewer != null)
                 viewer.invalidate();
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE_VIEWER, viewerStart);
         }
         modelBackgroundColor = styleController().getBackgroundColor(viewedNode, getStyleOption());
         if (isContentVisible()) {
             revalidate();
             repaint();
+        }
+        }
+        finally {
+            PaintPerformanceMonitor.record(PaintPerformanceMonitor.NODE_UPDATE, start);
         }
     }
 
