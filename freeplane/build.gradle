@@ -2,6 +2,9 @@ import groovy.io.FileType
 import org.gradle.util.GradleVersion
 import org.gradle.plugins.ide.eclipse.model.AccessRule
 
+def javafxVersion = '21.0.5'
+def javafxPlatform = javafxPlatform()
+
 configurations{
 	emoji
 	lib.extendsFrom emoji
@@ -17,6 +20,14 @@ sourceSets {
     external {}
 }
 
+private String javafxPlatform() {
+    final String osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+    final String os = osName.contains('mac') ? 'mac' : osName.contains('win') ? 'win' : 'linux'
+    final String arch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
+    final String javafxArch = arch == 'aarch64' || arch == 'arm64' ? 'aarch64' : 'x64'
+    return "${os}-${javafxArch}"
+}
+
 dependencies {
 	mergedViewerDependencies 'org.freeplane.dpolivaev.mnemonicsetter:mnemonicsetter:0.6'
 	lib 'com.formdev:svgSalamander:1.1.4'
@@ -24,6 +35,10 @@ dependencies {
 	lib 'com.formdev:flatlaf:3.6'
 	lib 'com.twelvemonkeys.imageio:imageio-jpeg:3.12.0'
 	lib 'com.twelvemonkeys.imageio:imageio-webp:3.12.0'
+	lib "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+	lib "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+	lib "org.openjfx:javafx-media:${javafxVersion}:${javafxPlatform}"
+	lib "org.openjfx:javafx-swing:${javafxVersion}:${javafxPlatform}"
 
     lib project(':JOrtho_0.4_freeplane')
     api project(':freeplane_api')
@@ -42,6 +57,7 @@ dependencies {
     lib ':idw-gpl-1.6.1'
 
     maclib 'org.violetlib:vaqua:13'
+    maclib 'net.java.dev.jna:jna:5.17.0'
 
     runtimeOnly files("${project.buildDir}/emoji/xml")
     emoji 'org.freeplane.emoji:twemoji:12.1.4'
@@ -280,6 +296,9 @@ task copyOSGiJars(type: Copy) {
         exclude('freeplane-*.jar')
     }
     from (configurations.lib) {
+        include("*.jar")
+    }
+    from (configurations.maclib) {
         include("*.jar")
     }
     from (project(':freeplane_mac').jar.outputs.files)

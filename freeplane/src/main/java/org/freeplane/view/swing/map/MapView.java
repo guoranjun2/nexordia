@@ -806,6 +806,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	private boolean hideSingleEndConnectors;
 	private boolean backgroundImageEnabled;
 	private boolean fitToViewport;
+	private boolean externalBackgroundPainted;
 	private static Color spotlightBackgroundColor;
 	private static int outlineHGap;
 	private static boolean outlineViewFitsWindowWidth;
@@ -1688,6 +1689,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
     private void loadBackgroundImage() {
  		final MapStyle mapStyle = getModeController().getExtension(MapStyle.class);
 		final URI uri = mapStyle.getBackgroundImage(viewedMap);
+		if(MapBackgroundVideo.isSupportedVideoUri(uri)) {
+			backgroundImageLoader.loadBackgroundImage(null, null, false);
+			return;
+		}
 		final ViewerController vc = getModeController().getExtension(ViewerController.class);
 		final IViewerFactory factory = vc != null ? vc.getViewerFactory() : null;
 		backgroundImageLoader.loadBackgroundImage(factory, uri, backgroundImageEnabled);
@@ -1746,7 +1751,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
             }
 
         }
-        setOpaque(! (fitToViewport && backgroundComponent != null) && background.getAlpha() == 255);
+        setOpaque(! externalBackgroundPainted && ! (fitToViewport && backgroundComponent != null) && background.getAlpha() == 255);
     }
 
 
@@ -1756,6 +1761,25 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
        super.setBackground(background);
        updateBackground();
    }
+
+	public void setExternalBackgroundPainted(final boolean externalBackgroundPainted) {
+		if(this.externalBackgroundPainted == externalBackgroundPainted)
+			return;
+		this.externalBackgroundPainted = externalBackgroundPainted;
+		updateBackground();
+		repaint();
+	}
+
+	public void paintWithoutBackground(final Graphics g) {
+		final boolean previousExternalBackgroundPainted = externalBackgroundPainted;
+		externalBackgroundPainted = true;
+		try {
+			paint(g);
+		}
+		finally {
+			externalBackgroundPainted = previousExternalBackgroundPainted;
+		}
+	}
 
     private void updateIconsRecursively(final NodeView node) {
     	final MainView mainView = node.getMainView();
@@ -2327,7 +2351,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		try {
 			boolean usesTransparentBackgroundForPrinting = paintingPurpose == PaintingPurpose.PRINTING && printOnWhiteBackground;
 			boolean backgroundIsPaintedByViewport = paintingPurpose == PaintingPurpose.PAINTING && backgroundComponent != null && fitToViewport;
-			if(!usesTransparentBackgroundForPrinting && !backgroundIsPaintedByViewport) {
+			boolean backgroundIsPaintedExternally = paintingPurpose == PaintingPurpose.PAINTING && externalBackgroundPainted;
+			if(backgroundIsPaintedExternally) {
+				clearExternalBackground(g);
+			}
+			else if(!usesTransparentBackgroundForPrinting && !backgroundIsPaintedByViewport) {
 				g.setColor(getBackground() );
 				Rectangle clip = g.getClipBounds();
 				if (clip != null) {
@@ -2347,6 +2375,25 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 		finally {
 			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAP_COMPONENT, start);
+		}
+	}
+
+	private void clearExternalBackground(final Graphics g) {
+		if(! (g instanceof Graphics2D))
+			return;
+		final Rectangle clip = g.getClipBounds();
+		final Graphics2D g2 = (Graphics2D) g.create();
+		try {
+			g2.setComposite(AlphaComposite.Clear);
+			if (clip != null) {
+				g2.fillRect(clip.x, clip.y, clip.width, clip.height);
+			}
+			else {
+				g2.fillRect(0, 0, getWidth(), getHeight());
+			}
+		}
+		finally {
+			g2.dispose();
 		}
 	}
 

@@ -24,6 +24,8 @@ public class ImagePreview extends BitmapImagePreview {
 			return;
 		final FactoryFileFilter factoryFileFilter = (FactoryFileFilter) fileFilter;
 		final IViewerFactory factory = factoryFileFilter.getFactory();
+		if(! factory.accept(file.getAbsoluteFile().toURI()))
+			return;
 		new ImageRendererFactory().configureRenderer(factory, file.getAbsoluteFile().toURI(), getSize(), this);
 	}
 }

@@ -55,6 +55,7 @@ import org.freeplane.features.url.UrlManager;
 import org.freeplane.n3.nanoxml.XMLElement;
 import org.freeplane.view.swing.features.progress.mindmapmode.ProgressIcons;
 import org.freeplane.view.swing.map.MainView;
+import org.freeplane.view.swing.map.MapBackgroundVideo;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
 
@@ -155,6 +156,24 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 		@Override
 		public String getDescription() {
 			return factory.getDescription();
+		}
+	}
+
+	private static final class BackgroundFileFilter extends FileFilter {
+		private final FileFilter imageFileFilter;
+
+		private BackgroundFileFilter(final FileFilter imageFileFilter) {
+			this.imageFileFilter = imageFileFilter;
+		}
+
+		@Override
+		public boolean accept(final File f) {
+			return imageFileFilter.accept(f) || MapBackgroundVideo.isSupportedVideoUri(f.toURI());
+		}
+
+		@Override
+		public String getDescription() {
+			return imageFileFilter.getDescription() + ", *.mp4, *.m4v, *.mov";
 		}
 	}
 
@@ -542,12 +561,12 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 	}
 
 	protected URI createURI(final NodeModel node) {
-		return createURI(node, null);
+		return createURI(node, null, false);
 	}
 
 	URI createBackgroundURI(final NodeModel node) {
 		final File currentBackgroundDirectory = currentBackgroundDirectory(node);
-		return createURI(node, currentBackgroundDirectory != null ? currentBackgroundDirectory : systemPicturesDirectory());
+		return createURI(node, currentBackgroundDirectory != null ? currentBackgroundDirectory : systemPicturesDirectory(), true);
 	}
 
 	private File systemPicturesDirectory() {
@@ -572,7 +591,7 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 		}
 	}
 
-	private URI createURI(final NodeModel node, final File currentDirectory) {
+	private URI createURI(final NodeModel node, final File currentDirectory, final boolean acceptsBackgroundVideo) {
 		final Controller controller = Controller.getCurrentController();
 		final ViewController viewController = controller.getViewController();
 		final MapModel map = node.getMap();
@@ -600,7 +619,14 @@ public class ViewerController extends PersistentNodeHook implements INodeViewLif
 		else {
 			fileFilter = new FactoryFileFilter(factories.iterator().next());
 		}
-		chooser.setFileFilter(fileFilter);
+		if(acceptsBackgroundVideo) {
+			final FileFilter backgroundFileFilter = new BackgroundFileFilter(fileFilter);
+			chooser.addChoosableFileFilter(backgroundFileFilter);
+			chooser.setFileFilter(backgroundFileFilter);
+		}
+		else {
+			chooser.setFileFilter(fileFilter);
+		}
 		chooser.putClientProperty(FactoryFileFilter.class, fileFilter);
 		chooser.setAccessory(new ImagePreview(chooser));
 		final int returnVal = chooser.showOpenDialog(Controller.getCurrentController().getViewController()

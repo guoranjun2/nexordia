@@ -189,6 +189,7 @@
 		<tab name="Painting">
 			<separator name="background_image">
 				<number name="background_image_opacity" min="0" max="100" />
+				<number name="background_video_foreground_opacity" min="0" max="100" />
 			</separator>
 			<separator name="cloud">
 				<boolean name="paint_cloud" />
