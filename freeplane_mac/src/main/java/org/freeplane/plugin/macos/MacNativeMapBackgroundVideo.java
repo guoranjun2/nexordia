@@ -54,11 +54,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         loadFramework("QuartzCore");
     }
 
-    private static final String NATIVE_WINDOW_ENABLED_PROPERTY = "org.freeplane.backgroundVideo.nativeMac.window";
-    private static final String NATIVE_WINDOW_FRONT_PROPERTY = "org.freeplane.backgroundVideo.nativeMac.windowFront";
-    private static final String NATIVE_WINDOW_FRONT_TEST_PROPERTY = "org.freeplane.backgroundVideo.nativeMac.windowFrontTest";
-    private static final String NATIVE_WINDOW_OPACITY_PROPERTY = "org.freeplane.backgroundVideo.nativeMac.opacity";
-
     private static final Pointer NS_AUTORELEASE_POOL = Foundation.cls("NSAutoreleasePool");
     private static final Pointer NS_STRING = Foundation.cls("NSString");
     private static final Pointer NS_URL = Foundation.cls("NSURL");
@@ -75,7 +70,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
     private static final Pointer DRAIN = Foundation.sel("drain");
     private static final Pointer RETAIN = Foundation.sel("retain");
     private static final Pointer RELEASE = Foundation.sel("release");
-    private static final Pointer SUPERVIEW = Foundation.sel("superview");
     private static final Pointer WINDOW = Foundation.sel("window");
     private static final Pointer CONTENT_VIEW = Foundation.sel("contentView");
     private static final Pointer LAYER = Foundation.sel("layer");
@@ -93,13 +87,10 @@ public class MacNativeMapBackgroundVideo extends JPanel {
     private static final Pointer SET_ALPHA_VALUE = Foundation.sel("setAlphaValue:");
     private static final Pointer SET_VIDEO_GRAVITY = Foundation.sel("setVideoGravity:");
     private static final Pointer INIT_WITH_CONTENT_RECT = Foundation.sel("initWithContentRect:styleMask:backing:defer:");
-    private static final Pointer INSERT_SUBLAYER_BELOW = Foundation.sel("insertSublayer:below:");
     private static final Pointer ADD_SUBLAYER = Foundation.sel("addSublayer:");
     private static final Pointer ADD_CHILD_WINDOW_ORDERED = Foundation.sel("addChildWindow:ordered:");
     private static final Pointer REMOVE_CHILD_WINDOW = Foundation.sel("removeChildWindow:");
     private static final Pointer ORDER_FRONT = Foundation.sel("orderFront:");
-    private static final Pointer ORDER_FRONT_REGARDLESS = Foundation.sel("orderFrontRegardless");
-    private static final Pointer ORDER_BACK = Foundation.sel("orderBack:");
     private static final Pointer ORDER_OUT = Foundation.sel("orderOut:");
     private static final Pointer CLOSE = Foundation.sel("close");
     private static final Pointer REMOVE_FROM_SUPERLAYER = Foundation.sel("removeFromSuperlayer");
@@ -112,7 +103,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
     private static final Pointer URL_WITH_STRING = Foundation.sel("URLWithString:");
     private static final Pointer ARRAY_WITH_OBJECT = Foundation.sel("arrayWithObject:");
     private static final Pointer CLEAR_COLOR = Foundation.sel("clearColor");
-    private static final Pointer CG_COLOR = Foundation.sel("CGColor");
     private static final Pointer PLAYER_ITEM_WITH_URL = Foundation.sel("playerItemWithURL:");
     private static final Pointer QUEUE_PLAYER_WITH_ITEMS = Foundation.sel("queuePlayerWithItems:");
     private static final Pointer PLAYER_LOOPER_WITH_PLAYER_TEMPLATE_ITEM = Foundation.sel("playerLooperWithPlayer:templateItem:");
@@ -120,18 +110,13 @@ public class MacNativeMapBackgroundVideo extends JPanel {
 
     private static final int NS_BORDERLESS_WINDOW_MASK = 0;
     private static final int NS_BACKING_STORE_BUFFERED = 2;
-    private static final int NS_WINDOW_BELOW = -1;
     private static final int NS_WINDOW_ABOVE = 1;
     private static final int NS_NORMAL_WINDOW_LEVEL = 0;
-    private static final int NS_FLOATING_WINDOW_LEVEL = 3;
 
     private final JComponent host;
     private final URI uri;
     private final Runnable readyHandler;
     private final Runnable errorHandler;
-    private final boolean nativeWindowMode;
-    private final boolean nativeWindowFront;
-    private final boolean nativeWindowFrontTest;
 
     private volatile boolean ready;
     private volatile boolean disposed;
@@ -140,13 +125,9 @@ public class MacNativeMapBackgroundVideo extends JPanel {
     private Pointer item;
     private Pointer looper;
     private Pointer layer;
-    private Pointer parentLayer;
     private Pointer videoWindow;
     private Pointer parentWindow;
     private Pointer videoContentLayer;
-    private Object windowPeer;
-    private Object platformWindow;
-    private Object contentView;
     private ComponentListener componentListener;
     private ComponentListener windowComponentListener;
     private HierarchyBoundsListener hierarchyBoundsListener;
@@ -161,10 +142,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         this.uri = uri;
         this.readyHandler = readyHandler;
         this.errorHandler = errorHandler;
-        nativeWindowMode = Boolean.parseBoolean(System.getProperty(NATIVE_WINDOW_ENABLED_PROPERTY, "true"));
-        nativeWindowFrontTest = Boolean.getBoolean(NATIVE_WINDOW_FRONT_TEST_PROPERTY);
-        nativeWindowFront = nativeWindowFrontTest
-                || Boolean.parseBoolean(System.getProperty(NATIVE_WINDOW_FRONT_PROPERTY, "true"));
         setOpaque(false);
         installBoundsListeners();
         SwingUtilities.invokeLater(this::install);
@@ -197,12 +174,8 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         runOnAppKitLaterIfAvailable(this::disposeOnAppKit);
     }
 
-    public boolean requiresHostWindowTransparency() {
-        return ! isPaintedInFront();
-    }
-
     public boolean isPaintedInFront() {
-        return nativeWindowMode && nativeWindowFront;
+        return true;
     }
 
     public void updateForegroundOpacity() {
@@ -215,8 +188,8 @@ public class MacNativeMapBackgroundVideo extends JPanel {
     private void install() {
         if(disposed || player != null)
             return;
-        final CGRect frame = nativeWindowMode ? currentScreenFrame() : currentFrame();
-        if(nativeWindowMode && frame == null) {
+        final CGRect frame = currentScreenFrame();
+        if(frame == null) {
             if(installAttempts++ < 40)
                 installLater();
             else
@@ -231,14 +204,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
                     final AwtView awtView = awtView();
                     if(awtView == null)
                         throw new IllegalStateException("no AWT NSView");
-                    Foundation.msg(awtView.pointer, SET_WANTS_LAYER, (byte) 1);
-                    final Pointer awtLayer = Foundation.msg(awtView.pointer, LAYER);
-                    if(awtLayer == null)
-                        throw new IllegalStateException("no AWT backing layer");
-                    windowPeer = awtView.peer;
-                    platformWindow = awtView.platformWindow;
-                    contentView = awtView.contentView;
-                    makeAwtLayerTransparent(awtView, awtLayer);
                     final Pointer url = nsUrl();
                     item = retain(Foundation.msg(AV_PLAYER_ITEM, PLAYER_ITEM_WITH_URL, url));
                     final Pointer items = Foundation.msg(NS_ARRAY, ARRAY_WITH_OBJECT, item);
@@ -248,10 +213,7 @@ public class MacNativeMapBackgroundVideo extends JPanel {
                     looper = retain(Foundation.msg(AV_PLAYER_LOOPER, PLAYER_LOOPER_WITH_PLAYER_TEMPLATE_ITEM, player, item));
                     layer = retain(Foundation.msg(AV_PLAYER_LAYER, PLAYER_LAYER_WITH_PLAYER, player));
                     Foundation.msg(layer, SET_VIDEO_GRAVITY, nsString("AVLayerVideoGravityResizeAspectFill"));
-                    if(nativeWindowMode)
-                        installWindowLayer(awtView, frame);
-                    else
-                        installAwtSiblingLayer(awtView, awtLayer, frame);
+                    installWindowLayer(awtView, frame);
                     ready = true;
                     LogUtils.info("macOS native background video ready: " + uri);
                     SwingUtilities.invokeLater(readyHandler);
@@ -280,20 +242,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         timer.start();
     }
 
-    private void installAwtSiblingLayer(final AwtView awtView, final Pointer awtLayer, final CGRect frame) {
-        final Pointer superview = Foundation.msg(awtView.pointer, SUPERVIEW);
-        if(superview == null)
-            throw new IllegalStateException("no AWT superview");
-        Foundation.msg(superview, SET_WANTS_LAYER, (byte) 1);
-        parentLayer = Foundation.msg(superview, LAYER);
-        if(parentLayer == null)
-            throw new IllegalStateException("no AWT superview backing layer");
-        makeLayerTransparent(parentLayer);
-        Foundation.msg(parentLayer, SET_MASKS_TO_BOUNDS, (byte) 1);
-        setFrameOnAppKit(frame);
-        Foundation.msg(parentLayer, INSERT_SUBLAYER_BELOW, layer, awtLayer);
-    }
-
     private void installWindowLayer(final AwtView awtView, final CGRect frame) {
         if(frame == null)
             throw new IllegalStateException("no video frame");
@@ -310,7 +258,7 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         Foundation.msg(videoWindow, SET_ALPHA_VALUE, nativeWindowOpacity());
         Foundation.msg(videoWindow, SET_IGNORES_MOUSE_EVENTS, (byte) 1);
         Foundation.msg(videoWindow, SET_HAS_SHADOW, (byte) 0);
-        Foundation.msg(videoWindow, SET_LEVEL, nativeWindowFrontTest ? NS_FLOATING_WINDOW_LEVEL : NS_NORMAL_WINDOW_LEVEL);
+        Foundation.msg(videoWindow, SET_LEVEL, NS_NORMAL_WINDOW_LEVEL);
         final Pointer contentView = Foundation.msg(videoWindow, CONTENT_VIEW);
         Foundation.msg(contentView, SET_WANTS_LAYER, (byte) 1);
         videoContentLayer = Foundation.msg(contentView, LAYER);
@@ -319,22 +267,12 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         Foundation.msg(videoContentLayer, SET_MASKS_TO_BOUNDS, (byte) 1);
         Foundation.msg(videoContentLayer, ADD_SUBLAYER, layer);
         setFrameOnAppKit(frame);
-        if(nativeWindowFront) {
-            Foundation.msg(parentWindow, ADD_CHILD_WINDOW_ORDERED, videoWindow, NS_WINDOW_ABOVE);
-            Foundation.msg(videoWindow, ORDER_FRONT, (Pointer) null);
-            if(nativeWindowFrontTest)
-                Foundation.msg(videoWindow, ORDER_FRONT_REGARDLESS);
-        }
-        else {
-            Foundation.msg(parentWindow, ADD_CHILD_WINDOW_ORDERED, videoWindow, NS_WINDOW_BELOW);
-            Foundation.msg(videoWindow, ORDER_BACK, (Pointer) null);
-        }
+        Foundation.msg(parentWindow, ADD_CHILD_WINDOW_ORDERED, videoWindow, NS_WINDOW_ABOVE);
+        Foundation.msg(videoWindow, ORDER_FRONT, (Pointer) null);
     }
 
     private double nativeWindowOpacity() {
-        final String systemOpacity = System.getProperty(NATIVE_WINDOW_OPACITY_PROPERTY);
-        return systemOpacity != null ? MapBackgroundVideo.foregroundOpacity(systemOpacity)
-                : MapBackgroundVideo.foregroundOpacity();
+        return MapBackgroundVideo.foregroundOpacity();
     }
 
     private AwtView awtView() throws Exception {
@@ -350,21 +288,7 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         final Object platformWindow = invoke(peer.getClass(), peer, "getPlatformWindow");
         final Object contentView = invoke(platformWindow.getClass(), platformWindow, "getContentView");
         final long awtView = (Long) invoke(contentView.getClass(), contentView, "getAWTView");
-        return awtView == 0 ? null : new AwtView(new Pointer(awtView), peer, platformWindow, contentView);
-    }
-
-    private void makeAwtLayerTransparent(final AwtView awtView, final Pointer awtLayer) throws Exception {
-        invoke(awtView.peer.getClass(), awtView.peer, "setOpaque", boolean.class, false);
-        invoke(awtView.peer.getClass(), awtView.peer, "setBackground", java.awt.Color.class,
-                new java.awt.Color(0, 0, 0, 0));
-        invoke(awtView.platformWindow.getClass(), awtView.platformWindow, "setOpaque", boolean.class, false);
-        invoke(awtView.contentView.getClass(), awtView.contentView, "setWindowLayerOpaque", boolean.class, false);
-        makeLayerTransparent(awtLayer);
-    }
-
-    private void makeLayerTransparent(final Pointer layer) {
-        Foundation.msg(layer, SET_OPAQUE, (byte) 0);
-        Foundation.msg(layer, SET_BACKGROUND_COLOR, Foundation.msg(Foundation.msg(NS_COLOR, CLEAR_COLOR), CG_COLOR));
+        return awtView == 0 ? null : new AwtView(new Pointer(awtView));
     }
 
     private Object invoke(final Class<?> type, final Object target, final String name) throws Exception {
@@ -382,15 +306,9 @@ public class MacNativeMapBackgroundVideo extends JPanel {
 
     private static class AwtView {
         private final Pointer pointer;
-        private final Object peer;
-        private final Object platformWindow;
-        private final Object contentView;
 
-        AwtView(final Pointer pointer, final Object peer, final Object platformWindow, final Object contentView) {
+        AwtView(final Pointer pointer) {
             this.pointer = pointer;
-            this.peer = peer;
-            this.platformWindow = platformWindow;
-            this.contentView = contentView;
         }
     }
 
@@ -421,20 +339,9 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         SwingUtilities.invokeLater(() -> {
             boundsSyncQueued = false;
             updateObservedWindow();
-            final CGRect frame = nativeWindowMode ? currentScreenFrame() : currentFrame();
+            final CGRect frame = currentScreenFrame();
             runOnAppKitLaterIfAvailable(() -> setFrameOnAppKit(frame));
         });
-    }
-
-    private CGRect currentFrame() {
-        if(host.getWidth() <= 0 || host.getHeight() <= 0)
-            return null;
-        final Window window = SwingUtilities.getWindowAncestor(host);
-        if(window == null)
-            return null;
-        final Rectangle bounds = SwingUtilities.convertRectangle(host, new Rectangle(0, 0, host.getWidth(), host.getHeight()), window);
-        final double parentHeight = window.getHeight();
-        return new CGRect(bounds.x, parentHeight - bounds.y - bounds.height, bounds.width, bounds.height);
     }
 
     private CGRect currentScreenFrame() {
@@ -463,8 +370,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
             Foundation.msg(videoWindow, SET_FRAME_DISPLAY, frame, (byte) 1);
             Foundation.msg(layer, SET_FRAME, new CGRect(0, 0, frame.size.width, frame.size.height));
         }
-        else if(parentLayer != null)
-            Foundation.msg(layer, SET_FRAME, frame);
     }
 
     private void disposeOnAppKit() {
@@ -492,32 +397,7 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         looper = null;
         player = null;
         item = null;
-        parentLayer = null;
         ready = false;
-        restoreAwtOpacity();
-    }
-
-    private void restoreAwtOpacity() {
-        try {
-            if(contentView != null)
-                invoke(contentView.getClass(), contentView, "setWindowLayerOpaque", boolean.class, true);
-            if(platformWindow != null)
-                invoke(platformWindow.getClass(), platformWindow, "setOpaque", boolean.class, true);
-            if(windowPeer != null) {
-                final Window window = SwingUtilities.getWindowAncestor(host);
-                if(window != null)
-                    invoke(windowPeer.getClass(), windowPeer, "setBackground", java.awt.Color.class, window.getBackground());
-                invoke(windowPeer.getClass(), windowPeer, "setOpaque", boolean.class, true);
-            }
-        }
-        catch (final Exception e) {
-            LogUtils.warn(e);
-        }
-        finally {
-            windowPeer = null;
-            contentView = null;
-            platformWindow = null;
-        }
     }
 
     private void release(final Pointer pointer) {
@@ -624,15 +504,6 @@ public class MacNativeMapBackgroundVideo extends JPanel {
         }
         catch (final Exception e) {
             throw new IllegalStateException(e);
-        }
-    }
-
-    private void runOnAppKitIfAvailable(final Runnable runnable) {
-        try {
-            runOnAppKit(runnable);
-        }
-        catch (final RuntimeException e) {
-            LogUtils.warn(e);
         }
     }
 

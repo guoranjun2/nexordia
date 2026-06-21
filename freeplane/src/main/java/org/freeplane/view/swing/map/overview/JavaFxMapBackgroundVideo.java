@@ -22,7 +22,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.image.BufferedImage;
 import java.net.URI;
 
 import javax.swing.JComponent;
@@ -33,10 +32,8 @@ import org.freeplane.core.util.LogUtils;
 
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.image.ImageView;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
@@ -60,7 +57,6 @@ class JavaFxMapBackgroundVideo extends JPanel implements MapBackgroundVideoPlaye
 
     private MediaPlayer mediaPlayer;
     private MediaView mediaView;
-    private ImageView overlayView;
     private Rectangle clip;
     private double mediaWidth = 1d;
     private double mediaHeight = 1d;
@@ -130,19 +126,9 @@ class JavaFxMapBackgroundVideo extends JPanel implements MapBackgroundVideoPlaye
                 mediaPlayer.dispose();
                 mediaPlayer = null;
                 mediaView = null;
-                overlayView = null;
                 clip = null;
             }
             fxPanel.setScene(null);
-        });
-    }
-
-    @Override
-    public void setOverlay(final BufferedImage overlay) {
-        Platform.runLater(() -> {
-            if(disposed || overlayView == null)
-                return;
-            overlayView.setImage(overlay != null ? SwingFXUtils.toFXImage(overlay, null) : null);
         });
     }
 
@@ -155,20 +141,16 @@ class JavaFxMapBackgroundVideo extends JPanel implements MapBackgroundVideoPlaye
                 final Media media = new Media(uri.toASCIIString());
                 final MediaPlayer player = new MediaPlayer(media);
                 final MediaView view = new MediaView(player);
-                final ImageView overlay = new ImageView();
-                final Group root = new Group(view, overlay);
+                final Group root = new Group(view);
                 final Rectangle rootClip = new Rectangle();
                 view.setPreserveRatio(false);
                 view.setSmooth(false);
-                overlay.setPreserveRatio(false);
-                overlay.setSmooth(false);
                 root.setClip(rootClip);
                 player.setMute(true);
                 player.setVolume(0d);
                 player.setCycleCount(MediaPlayer.INDEFINITE);
                 mediaPlayer = player;
                 mediaView = view;
-                overlayView = overlay;
                 clip = rootClip;
                 media.setOnError(() -> reportError(media.getError()));
                 player.setOnError(() -> reportError(player.getError()));
@@ -203,10 +185,6 @@ class JavaFxMapBackgroundVideo extends JPanel implements MapBackgroundVideoPlaye
             }
             if(mediaView != null)
                 updateMediaViewSize(width, height);
-            if(overlayView != null) {
-                overlayView.setFitWidth(width);
-                overlayView.setFitHeight(height);
-            }
         });
     }
 

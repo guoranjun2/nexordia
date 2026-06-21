@@ -17,8 +17,6 @@
  */
 package org.freeplane.view.swing.map.overview;
 
-import java.awt.image.BufferedImage;
-
 import javax.swing.JComponent;
 
 interface MapBackgroundVideoPlayer {
@@ -27,14 +25,9 @@ interface MapBackgroundVideoPlayer {
     void play();
     void pause();
     void dispose();
-    default boolean requiresHostWindowTransparency() {
-        return false;
-    }
     default boolean isPaintedInFront() {
         return false;
     }
     default void updateForegroundOpacity() {
-    }
-    default void setOverlay(final BufferedImage overlay) {
     }
 }

@@ -28,8 +28,6 @@ import org.freeplane.core.util.LogUtils;
 class MapBackgroundVideoPlayers {
     private static final String MAC_NATIVE_PLAYER = "org.freeplane.plugin.macos.MacNativeMapBackgroundVideo";
     private static final String MAC_NATIVE_ENABLED_PROPERTY = "org.freeplane.backgroundVideo.nativeMac";
-    private static final String JAVAFX_STAGE_TEST_PROPERTY = "org.freeplane.backgroundVideo.stageTest";
-    private static final String JAVAFX_STAGE_BEHIND_TEST_PROPERTY = "org.freeplane.backgroundVideo.stageBehindTest";
 
     private MapBackgroundVideoPlayers() {
     }
@@ -37,11 +35,6 @@ class MapBackgroundVideoPlayers {
     static MapBackgroundVideoPlayer create(final JComponent host, final URI uri,
                                            final Runnable readyHandler, final Runnable nativeErrorHandler,
                                            final Runnable javaFxErrorHandler) {
-        final boolean stageTest = Boolean.getBoolean(JAVAFX_STAGE_TEST_PROPERTY);
-        final boolean stageBehindTest = Boolean.getBoolean(JAVAFX_STAGE_BEHIND_TEST_PROPERTY);
-        if(stageTest || stageBehindTest) {
-            LogUtils.warn("JavaFX Stage background video is disabled because it can steal focus and flicker");
-        }
         final MapBackgroundVideoPlayer nativePlayer = createNativePlayer(host, uri, readyHandler, nativeErrorHandler);
         if(nativePlayer != null)
             return nativePlayer;
@@ -78,7 +71,6 @@ class MapBackgroundVideoPlayers {
         private final Method play;
         private final Method pause;
         private final Method dispose;
-        private final Method requiresHostWindowTransparency;
         private final Method isPaintedInFront;
         private final Method updateForegroundOpacity;
 
@@ -90,7 +82,6 @@ class MapBackgroundVideoPlayers {
             play = type.getMethod("play");
             pause = type.getMethod("pause");
             dispose = type.getMethod("dispose");
-            requiresHostWindowTransparency = optionalMethod(type, "requiresHostWindowTransparency");
             isPaintedInFront = optionalMethod(type, "isPaintedInFront");
             updateForegroundOpacity = optionalMethod(type, "updateForegroundOpacity");
         }
@@ -124,19 +115,6 @@ class MapBackgroundVideoPlayers {
         @Override
         public void dispose() {
             invoke(dispose);
-        }
-
-        @Override
-        public boolean requiresHostWindowTransparency() {
-            if(requiresHostWindowTransparency == null)
-                return false;
-            try {
-                return (Boolean) requiresHostWindowTransparency.invoke(delegate);
-            }
-            catch (final Exception e) {
-                LogUtils.warn(e);
-                return false;
-            }
         }
 
         @Override

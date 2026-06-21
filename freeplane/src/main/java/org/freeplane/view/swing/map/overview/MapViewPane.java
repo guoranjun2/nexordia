@@ -4,23 +4,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Dialog;
-import java.awt.Frame;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Window;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyEvent;
-import java.awt.image.BufferedImage;
-import java.lang.reflect.Method;
 import java.net.URI;
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 import javax.swing.JPanel;
-import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
@@ -31,7 +22,6 @@ import org.freeplane.api.Quantity;
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.UITools;
-import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.bookmarks.mindmapmode.FocusBookmarkToolbarAction;
 
 import org.freeplane.features.map.IMapChangeListener;
@@ -55,8 +45,6 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
 
     private final static String BOOKMARKS_TOOLBAR_VISIBLE_PROPERTY = "bookmarksToolbarVisible";
     private final static String BOOKMARKS_TOOLBAR_VISIBLE_FS_PROPERTY = "bookmarksToolbarVisible.fullscreen";
-    private final static String BACKGROUND_VIDEO_FRONT_TEST_PROPERTY = "org.freeplane.backgroundVideo.frontTest";
-    private final static String BACKGROUND_VIDEO_SNAPSHOT_TEST_PROPERTY = "org.freeplane.backgroundVideo.snapshotTest";
 
     private final static String MAP_OVERVIEW_PROPERTY_PREFIX = "map_overview_";
     private final static String MAP_OVERVIEW_ATTACH_POINT_PROPERTY = MAP_OVERVIEW_PROPERTY_PREFIX + "attach_point";
@@ -74,26 +62,16 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
     private final JScrollPane mapViewScrollPane;
     private final JPanel backgroundVideoPanel;
     private final JPanel mapOverviewPanel;
-    private final boolean backgroundVideoFrontTest;
-    private final boolean backgroundVideoSnapshotTest;
-    private final Map<JComponent, Boolean> backgroundVideoAncestorOpacity = new IdentityHashMap<>();
     private boolean isMapOverviewVisible;
     private final MapOverviewImage mapOverviewImage;
     private MapBackgroundVideoPlayer backgroundVideo;
     private URI backgroundVideoUri;
-    private Window backgroundVideoTransparentWindow;
-    private Color backgroundVideoWindowBackground;
-    private Object backgroundVideoWindowPeer;
-    private Object backgroundVideoPlatformWindow;
-    private Object backgroundVideoContentView;
 
 	private final MapView mapView;
 
     public MapViewPane(JScrollPane mapViewScrollPane) {
         this.mapViewScrollPane = mapViewScrollPane;
         this.mapView = (MapView) mapViewScrollPane.getViewport().getView();
-        backgroundVideoFrontTest = Boolean.getBoolean(BACKGROUND_VIDEO_FRONT_TEST_PROPERTY);
-        backgroundVideoSnapshotTest = Boolean.getBoolean(BACKGROUND_VIDEO_SNAPSHOT_TEST_PROPERTY);
         setLayout(new BorderLayout(0, 0) {
             private static final long serialVersionUID = 3702408082745761647L;
 
@@ -134,13 +112,14 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
         add(backgroundVideoPanel);
         add(mapOverviewPanel);
         add(mapViewScrollPane, BorderLayout.CENTER);
-        setBackgroundVideoZOrder();
+        setComponentZOrder(mapOverviewPanel, 0);
+        setComponentZOrder(mapViewScrollPane, 1);
+        setComponentZOrder(backgroundVideoPanel, 2);
 
         mapView.addComponentListener(new ComponentAdapter() {
             @Override
 			public void componentResized(ComponentEvent e) {
                 updateMapOverview();
-                updateBackgroundSnapshot();
             }
         });
         addHierarchyListener(e -> {
@@ -405,19 +384,13 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
 
 	private void updateBackgroundVideoVisibility() {
 		final boolean visible = backgroundVideo != null && backgroundVideo.isReady() && isBackgroundVideoActive();
-		final boolean videoInFront = visible && (backgroundVideoFrontTest || backgroundVideo.isPaintedInFront());
-		final boolean snapshotVisible = visible && ! videoInFront && backgroundVideoSnapshotTest;
-		updateStageBehindTransparency(visible && backgroundVideo.requiresHostWindowTransparency());
+		final boolean videoInFront = visible && backgroundVideo.isPaintedInFront();
 		setOpaque(! visible || videoInFront);
-		backgroundVideoPanel.setOpaque(videoInFront || snapshotVisible);
+		backgroundVideoPanel.setOpaque(videoInFront);
 		backgroundVideoPanel.setVisible(visible);
-		mapViewScrollPane.setOpaque(! visible || videoInFront || snapshotVisible);
-		mapViewScrollPane.getViewport().setOpaque(! visible || videoInFront || snapshotVisible);
-		mapView.setExternalBackgroundPainted(visible && ! videoInFront && ! snapshotVisible);
-		if(snapshotVisible)
-			updateBackgroundSnapshot();
-		else if(backgroundVideo != null)
-			backgroundVideo.setOverlay(null);
+		mapViewScrollPane.setOpaque(! visible || videoInFront);
+		mapViewScrollPane.getViewport().setOpaque(! visible || videoInFront);
+		mapView.setExternalBackgroundPainted(visible && ! videoInFront);
 		if(backgroundVideo != null) {
 			if(visible)
 				backgroundVideo.play();
@@ -427,170 +400,9 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
 		repaint();
 	}
 
-    private void setBackgroundVideoZOrder() {
-        setComponentZOrder(mapOverviewPanel, 0);
-        if(backgroundVideoFrontTest || backgroundVideoSnapshotTest) {
-            setComponentZOrder(backgroundVideoPanel, 1);
-            setComponentZOrder(mapViewScrollPane, 2);
-        }
-        else {
-            setComponentZOrder(mapViewScrollPane, 1);
-            setComponentZOrder(backgroundVideoPanel, 2);
-        }
-    }
-
 	private void clearBackgroundVideo(final URI uri) {
 		if(uri.equals(backgroundVideoUri))
 			clearBackgroundVideo();
-	}
-
-	private void updateStageBehindTransparency(final boolean transparent) {
-		if(transparent)
-			installStageBehindTransparency();
-		else
-			restoreStageBehindTransparency();
-	}
-
-	private void installStageBehindTransparency() {
-		final Window window = SwingUtilities.getWindowAncestor(this);
-		if(window == null)
-			return;
-		if(backgroundVideoTransparentWindow != window) {
-			restoreStageBehindTransparency();
-			backgroundVideoTransparentWindow = window;
-			backgroundVideoWindowBackground = window.getBackground();
-		}
-		if(! makeWindowTransparent(window))
-			return;
-		Component component = this;
-		while((component = component.getParent()) != null && ! (component instanceof Window)) {
-			if(component instanceof JComponent) {
-				final JComponent parent = (JComponent) component;
-				if(! backgroundVideoAncestorOpacity.containsKey(parent))
-					backgroundVideoAncestorOpacity.put(parent, parent.isOpaque());
-				parent.setOpaque(false);
-			}
-		}
-		window.repaint();
-	}
-
-	private void restoreStageBehindTransparency() {
-		for(final Map.Entry<JComponent, Boolean> entry : backgroundVideoAncestorOpacity.entrySet())
-			entry.getKey().setOpaque(entry.getValue());
-		backgroundVideoAncestorOpacity.clear();
-		restoreMacWindowOpacity();
-		if(backgroundVideoTransparentWindow != null && backgroundVideoWindowBackground != null) {
-			try {
-				backgroundVideoTransparentWindow.setBackground(backgroundVideoWindowBackground);
-			}
-			catch (final RuntimeException e) {
-				LogUtils.warn(e);
-			}
-			backgroundVideoTransparentWindow.repaint();
-		}
-		backgroundVideoTransparentWindow = null;
-		backgroundVideoWindowBackground = null;
-	}
-
-	private boolean makeWindowTransparent(final Window window) {
-		if(System.getProperty("os.name", "").startsWith("Mac") && makeMacWindowTransparent(window))
-			return true;
-		try {
-			window.setBackground(new Color(0, 0, 0, 0));
-			return true;
-		}
-		catch (final RuntimeException e) {
-			LogUtils.warn(e);
-			return false;
-		}
-	}
-
-	private boolean makeMacWindowTransparent(final Window window) {
-		try {
-			final Object[] macWindow = macWindow(window);
-			backgroundVideoWindowPeer = macWindow[0];
-			backgroundVideoPlatformWindow = macWindow[1];
-			backgroundVideoContentView = macWindow[2];
-			invoke(backgroundVideoWindowPeer.getClass(), backgroundVideoWindowPeer, "setOpaque",
-					boolean.class, false);
-			invoke(backgroundVideoWindowPeer.getClass(), backgroundVideoWindowPeer, "setBackground",
-					Color.class, new Color(0, 0, 0, 0));
-			invoke(backgroundVideoPlatformWindow.getClass(), backgroundVideoPlatformWindow, "setOpaque",
-					boolean.class, false);
-			invoke(backgroundVideoContentView.getClass(), backgroundVideoContentView, "setWindowLayerOpaque",
-					boolean.class, false);
-			setTransparentWindowBackground(window);
-			return true;
-		}
-		catch (final Exception e) {
-			LogUtils.warn(e);
-			return false;
-		}
-	}
-
-	private void setTransparentWindowBackground(final Window window) {
-		if(window instanceof Frame && ! ((Frame) window).isUndecorated())
-			return;
-		if(window instanceof Dialog && ! ((Dialog) window).isUndecorated())
-			return;
-		try {
-			window.setBackground(new Color(0, 0, 0, 0));
-		}
-		catch (final RuntimeException e) {
-			LogUtils.warn(e);
-		}
-	}
-
-	private void restoreMacWindowOpacity() {
-		try {
-			if(backgroundVideoContentView != null)
-				invoke(backgroundVideoContentView.getClass(), backgroundVideoContentView, "setWindowLayerOpaque",
-						boolean.class, true);
-			if(backgroundVideoPlatformWindow != null)
-				invoke(backgroundVideoPlatformWindow.getClass(), backgroundVideoPlatformWindow, "setOpaque",
-						boolean.class, true);
-			if(backgroundVideoWindowPeer != null) {
-				if(backgroundVideoWindowBackground != null)
-					invoke(backgroundVideoWindowPeer.getClass(), backgroundVideoWindowPeer, "setBackground",
-							Color.class, backgroundVideoWindowBackground);
-				invoke(backgroundVideoWindowPeer.getClass(), backgroundVideoWindowPeer, "setOpaque",
-						boolean.class, true);
-			}
-		}
-		catch (final Exception e) {
-			LogUtils.warn(e);
-		}
-		finally {
-			backgroundVideoWindowPeer = null;
-			backgroundVideoContentView = null;
-			backgroundVideoPlatformWindow = null;
-		}
-	}
-
-	private Object[] macWindow(final Window window) throws Exception {
-		final Class<?> awtAccessor = Class.forName("sun.awt.AWTAccessor");
-		final Object componentAccessor = invoke(awtAccessor, null, "getComponentAccessor");
-		final Class<?> componentAccessorInterface = Class.forName("sun.awt.AWTAccessor$ComponentAccessor");
-		final Object peer = invoke(componentAccessorInterface, componentAccessor, "getPeer",
-				java.awt.Component.class, window);
-		if(peer == null)
-			throw new IllegalStateException("no AWT peer");
-		final Object platformWindow = invoke(peer.getClass(), peer, "getPlatformWindow");
-		final Object contentView = invoke(platformWindow.getClass(), platformWindow, "getContentView");
-		return new Object[] { peer, platformWindow, contentView };
-	}
-
-	private Object invoke(final Class<?> type, final Object target, final String name) throws Exception {
-		final Method method = type.getMethod(name);
-		method.setAccessible(true);
-		return method.invoke(target);
-	}
-
-	private Object invoke(final Class<?> type, final Object target, final String name,
-						  final Class<?> argumentType, final Object argument) throws Exception {
-		final Method method = type.getMethod(name, argumentType);
-		method.setAccessible(true);
-		return method.invoke(target, argument);
 	}
 
 	private void useJavaFxBackgroundVideo(final URI uri) {
@@ -624,27 +436,6 @@ public class MapViewPane extends JPanel implements IFreeplanePropertyListener, I
 				mapViewScrollPane.getViewportBorderBounds(), this);
 		backgroundVideoPanel.setBounds(bounds);
 		backgroundVideoPanel.doLayout();
-		updateBackgroundSnapshot();
-	}
-
-	private void updateBackgroundSnapshot() {
-		if(backgroundVideo == null || ! backgroundVideo.isReady() || ! isShowing()
-				|| backgroundVideoFrontTest || ! backgroundVideoSnapshotTest)
-			return;
-		final JViewport viewport = mapViewScrollPane.getViewport();
-		final Rectangle viewRect = viewport.getViewRect();
-		if(viewRect.width <= 0 || viewRect.height <= 0)
-			return;
-		final BufferedImage snapshot = new BufferedImage(viewRect.width, viewRect.height, BufferedImage.TYPE_INT_ARGB);
-		final Graphics2D graphics = snapshot.createGraphics();
-		try {
-			graphics.translate(-viewRect.x, -viewRect.y);
-			mapView.paintWithoutBackground(graphics);
-		}
-		finally {
-			graphics.dispose();
-		}
-		backgroundVideo.setOverlay(snapshot);
 	}
 
 }
