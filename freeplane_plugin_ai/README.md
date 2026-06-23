@@ -1,8 +1,8 @@
-# Freeplane AI Plugin
+# Nexordia AI Plugin
 
 Overview
 - Provides tool method stubs and configuration helpers for large language model integration using LangChain4j.
-- Focuses on structured tool calls and a chat workflow that can be wired to Freeplane actions later.
+- Focuses on structured tool calls and a chat workflow that can be wired to Nexordia actions later.
 
 OpenRouter key setup
 - Set `ai_openrouter_key=<openrouter-api-key>`
@@ -21,5 +21,5 @@ MCP server authentication
 - Configure token in `ai_mcp_token`.
 - MCP clients can authenticate with either:
   - `Authorization: Bearer <token>` (recommended)
-  - `X-Freeplane-MCP-Token: <token>` (legacy compatibility)
+  - `X-Nexordia-MCP-Token: <token>`
 - If both headers are sent, token values must match.

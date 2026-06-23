@@ -3,7 +3,7 @@
   <dontWrapJar>true</dontWrapJar>
   <headerType>console</headerType>
   <jar>freeplanelauncher.jar</jar>
-  <outfile>freeplaneConsole.exe</outfile>
+  <outfile>nexordiaConsole.exe</outfile>
   <errTitle></errTitle>
   <cmdLine></cmdLine>
   <chdir></chdir>
@@ -15,10 +15,10 @@
   <manifest></manifest>
   <icon></icon>
   <jre>
-    <path>runtime;%FREEPLANE_JAVA_HOME%;%JAVA_HOME%</path>
+    <path>runtime;%NEXORDIA_JAVA_HOME%;%FREEPLANE_JAVA_HOME%;%JAVA_HOME%</path>
     <minVersion>1.8.0</minVersion>
     <maxVersion>23.999</maxVersion>
-    <opt>-Dorg.freeplane.userfpdir=&quot;%APPDATA%\\Freeplane&quot;</opt>
+    <opt>-Dorg.freeplane.userfpdir=&quot;%APPDATA%\\Nexordia&quot;</opt>
     <opt>-Djava.security.manager=allow</opt>
     <opt>-XX:+IgnoreUnrecognizedVMOptions</opt>
     <opt>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</opt>

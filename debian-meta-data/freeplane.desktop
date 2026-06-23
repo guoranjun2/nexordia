@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=Freeplane
-Exec=/usr/bin/freeplane %F
+Name=Nexordia
+Exec=/usr/bin/nexordia %F
 Terminal=false
-Icon=freeplane
+Icon=nexordia
 Type=Application
 MimeType=application/x-freeplane;
 Categories=Office;
-GenericName=Freeplane
+GenericName=Nexordia
 Comment=A free tool to structure and organise your information with mind mapping
 Keywords=Mindmaps; Knowledge management; Organize information; Brainstorming; ...;
 StartupWMClass=org-knopflerfish-framework-BundleThread

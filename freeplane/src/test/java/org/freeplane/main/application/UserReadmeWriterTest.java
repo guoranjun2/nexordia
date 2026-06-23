@@ -19,10 +19,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class UserReadmeWriterTest {
-	private static final String USER_README_RESOURCE = "/userReadme_1.13.txt";
+	private static final String USER_README_RESOURCE = "/userReadme.txt";
 	private static final String USER_README_FILENAME = "README.txt";
-	private static final String USER_README_DIRECTORY = "1.13.x";
-	private static final String CURRENT_VERSION_DIRECTORY = "1.12.x";
 
 	private Path tempDirectory;
 	private String previousUserDirProperty;
@@ -30,7 +28,7 @@ public class UserReadmeWriterTest {
 	@Before
 	public void setup() throws Exception {
 		previousUserDirProperty = System.getProperty(Compat.FREEPLANE_USERDIR_PROPERTY);
-		tempDirectory = Files.createTempDirectory("freeplane-userdir-");
+		tempDirectory = Files.createTempDirectory("nexordia-userdir-");
 		System.setProperty(Compat.FREEPLANE_USERDIR_PROPERTY, tempDirectory.toString());
 		resetUserDirCache();
 	}
@@ -53,7 +51,7 @@ public class UserReadmeWriterTest {
 
 		uut.ensureReadmeExists();
 
-		Path readmeDirectory = tempDirectory.resolve(USER_README_DIRECTORY);
+		Path readmeDirectory = tempDirectory;
 		Path readmeFile = readmeDirectory.resolve(USER_README_FILENAME);
 		assertTrue(Files.isDirectory(readmeDirectory));
 		assertTrue(Files.isRegularFile(readmeFile));
@@ -64,7 +62,7 @@ public class UserReadmeWriterTest {
 
 	@Test
 	public void doesNotOverwriteExistingReadme() throws Exception {
-		Path readmeDirectory = tempDirectory.resolve(USER_README_DIRECTORY);
+		Path readmeDirectory = tempDirectory;
 		Path readmeFile = readmeDirectory.resolve(USER_README_FILENAME);
 		Files.createDirectories(readmeDirectory);
 		Files.write(readmeFile, "custom".getBytes(StandardCharsets.US_ASCII));
@@ -83,7 +81,7 @@ public class UserReadmeWriterTest {
 
 		uut.ensureReadmeExists();
 
-		Path readmeFile = tempDirectory.resolve(USER_README_DIRECTORY).resolve(USER_README_FILENAME);
+		Path readmeFile = tempDirectory.resolve(USER_README_FILENAME);
 		byte[] fileContent = Files.readAllBytes(readmeFile);
 		byte[] resourceContent = readResourceContent();
 		assertArrayEquals(resourceContent, fileContent);
@@ -91,7 +89,7 @@ public class UserReadmeWriterTest {
 
 	@Test
 	public void usesCurrentVersionDirectoryForPreferences() throws Exception {
-		Path expected = tempDirectory.toRealPath().resolve(CURRENT_VERSION_DIRECTORY).resolve("auto.properties");
+		Path expected = tempDirectory.toRealPath().resolve("auto.properties");
 		assertEquals(expected.toFile().getCanonicalPath(),
 				ApplicationResourceController.getUserPreferencesFile().getCanonicalPath());
 	}

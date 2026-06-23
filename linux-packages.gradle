@@ -1,7 +1,7 @@
 task freeplaneDeb(type: Deb) {
     destinationDirectory = new File(globalDist)
 
-    packageName = 'freeplane'
+    packageName = 'nexordia'
     version = distVersion + "~upstream"
     release = 1
     
@@ -10,45 +10,48 @@ task freeplaneDeb(type: Deb) {
     from(rootDir.path + "/freeplane_framework/script/") {
       include("freeplane.svg")
       into("/usr/share/icons/hicolor/scalable/apps")
+      rename('freeplane.svg', 'nexordia.svg')
     }
 
     from(rootDir.path + "/freeplane_framework/script/") {
       include("freeplane.png")
       into("/usr/share/icons/hicolor/32x32/apps")
+      rename('freeplane.png', 'nexordia.png')
     }
 
     from(rootDir.path + "/debian-meta-data") {
       include('freeplane.desktop')
       into('/usr/share/applications')
+      rename('freeplane.desktop', 'io.github.guoranjun2.nexordia.desktop')
     }
 
     from(rootDir.path + "/debian-meta-data/") {
       include("freeplane.sharedmimeinfo")
       into('/usr/share/mime/packages')
-      rename('freeplane.sharedmimeinfo', 'freeplane.xml')
+      rename('freeplane.sharedmimeinfo', 'nexordia.xml')
     }
 
     from(rootDir.path + "/debian-meta-data/") {
       include("freeplane.mime")
       into('/usr/lib/mime/packages')
-      rename("freeplane.mime", "freeplane")
+      rename("freeplane.mime", "nexordia")
     }
 
     from(globalBin) {
         include('**')
-        exclude('freeplane.sh')
-        into('/usr/share/freeplane')
+        exclude('nexordia.sh')
+        into('/usr/share/nexordia')
     }
 
     from(globalBin) {
-        include('freeplane.sh')
+        include('nexordia.sh')
         filePermissions {
             unix(0755)
         }
-     	into('/usr/share/freeplane')
+        into('/usr/share/nexordia')
     }
 
-    link('/usr/bin/freeplane', '/usr/share/freeplane/freeplane.sh')
+    link('/usr/bin/nexordia', '/usr/share/nexordia/nexordia.sh')
 
     for (p in subprojects) {
         dependsOn p.tasks.getByPath("build")

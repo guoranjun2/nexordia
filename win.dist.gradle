@@ -39,7 +39,7 @@ def defineWinDistTasks =  { javaRuntime, distName ->
         onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) }
 
         commandLine jpackage,
-                '--name' , 'freeplane',
+                '--name' , 'nexordia',
         '--type', 'app-image',
         '--icon', 'freeplane_framework/launch4j/Freeplane_app.ico',
         '--app-version', majorVersion,
@@ -47,7 +47,7 @@ def defineWinDistTasks =  { javaRuntime, distName ->
         '--java-options', "-XX:MaxRAM=20g",
         '--java-options', "-XX:MaxRAMPercentage=15.0",
         '--java-options', '-Djava.security.manager=allow',
-        '--java-options', '-Dorg.freeplane.userfpdir=%APPDATA%\\Freeplane',
+        '--java-options', '-Dorg.freeplane.userfpdir=%APPDATA%\\Nexordia',
         '--java-options', '--add-exports', 
         '--java-options', 'java.desktop/sun.awt=ALL-UNNAMED',
         '--java-options', '--add-exports', 
@@ -61,9 +61,9 @@ def defineWinDistTasks =  { javaRuntime, distName ->
         '--input', "build/winapp/${javaRuntime}/input",
         '--main-class', 'org.freeplane.launcher.Launcher',
         '--main-jar', '../freeplanelauncher.jar',
-        '--add-launcher', 'freeplaneConsole=freeplane_framework/launch4j/freeplaneConsole.properties',
+        '--add-launcher', 'nexordiaConsole=freeplane_framework/launch4j/freeplaneConsole.properties',
         '--runtime-image', "java-runtime-${javaRuntime}",
-        '--copyright', "Freeplane ${distVersion}",
+        '--copyright', "Nexordia ${distVersion}",
         '--dest', "${appImageDir}"
         dependsOn winapp_deleteAppImage, winapp_input
 
@@ -82,7 +82,7 @@ def defineWinDistTasks =  { javaRuntime, distName ->
             exclude '/*.l4j.ini'
         }
         
-        into "${appImageDir}/Freeplane/"
+        into "${appImageDir}/nexordia/"
     }
 
 
@@ -94,7 +94,7 @@ def defineWinDistTasks =  { javaRuntime, distName ->
 
         commandLine 'cmd.exe', '/c', "ISCC.exe /DAppImage=${appImageDir} /Q Freeplane.iss "
         doLast {
-            new File(workingDir, 'Freeplane-Setup.exe').renameTo(new File(globalDist, "Freeplane-Setup${distName}-${distVersion}.exe"))
+            new File(workingDir, 'Nexordia-Setup.exe').renameTo(new File(globalDist, "Nexordia-Setup${distName}-${distVersion}.exe"))
         }
 
         dependsOn winapp_makeapp
@@ -112,7 +112,7 @@ if ( Os.isFamily(Os.FAMILY_WINDOWS)) {
 }
 
 
-def portableInstallerDir = new File(globalDist, 'FreeplanePortable').path
+def portableInstallerDir = new File(globalDist, 'NexordiaPortable').path
 
 task copyWindowsPortableInstallerBasicFiles(type: Copy) {
     onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) }
@@ -151,20 +151,20 @@ task copyWindowsPortableInstallerFiles(type: Copy) {
     // copy INI I
     from(rootDir.path + '/freeplane_framework/portableApps') {
         include('portable.ini')
-        rename('portable.ini', 'freeplane.l4j.ini')
+        rename('portable.ini', 'nexordia.l4j.ini')
     }
 
     // copy INI II
     from(rootDir.path + '/freeplane_framework/portableApps') {
         include('portable.ini')
-        rename('portable.ini', 'freeplaneConsole.l4j.ini')
+        rename('portable.ini', 'nexordiaConsole.l4j.ini')
     }
 
     // copy all other files
     from (globalBin) {
         exclude('*.bat', '*.ini', '*.sh')
     }
-    into(portableInstallerDir + '/App/Freeplane/')
+    into(portableInstallerDir + '/App/Nexordia/')
 
     for (p in subprojects) {
         dependsOn p.tasks.getByPath("build")
@@ -188,9 +188,9 @@ task windowsPortableInstaller(type: Exec) {
 
     doLast {
          new File(portableInstallerDir).deleteDir() 
-         new File(globalDist).eachFileMatch(FileType.FILES, ~/FreeplanePortable_.*\.paf\.exe/) {
+         new File(globalDist).eachFileMatch(FileType.FILES, ~/NexordiaPortable_.*\.paf\.exe/) {
 			 f -> 
-			 f.renameTo(new File(globalDist, "FreeplanePortable-${distVersion}.paf.exe"))
+			 f.renameTo(new File(globalDist, "NexordiaPortable-${distVersion}.paf.exe"))
 		 }
     }
 }

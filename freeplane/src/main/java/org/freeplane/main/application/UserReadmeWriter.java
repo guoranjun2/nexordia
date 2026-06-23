@@ -9,13 +9,11 @@ import java.io.OutputStream;
 import org.freeplane.core.util.Compat;
 
 public class UserReadmeWriter {
-	private static final String USER_README_RESOURCE = "/userReadme_1.13.txt";
+	private static final String USER_README_RESOURCE = "/userReadme.txt";
 	private static final String USER_README_FILENAME = "README.txt";
-	private static final String USER_README_DIRECTORY = "1.13.x";
 
 	public void ensureReadmeExists() {
-		File baseDirectory = new File(Compat.getApplicationUserDirectoryExcludingVersion());
-		File readmeDirectory = new File(baseDirectory, USER_README_DIRECTORY);
+		File readmeDirectory = new File(Compat.getApplicationUserDirectory());
 		File readmeFile = new File(readmeDirectory, USER_README_FILENAME);
 		if (readmeFile.exists()) {
 			return;

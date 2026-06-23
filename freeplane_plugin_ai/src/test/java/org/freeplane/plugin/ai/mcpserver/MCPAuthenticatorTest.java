@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class MCPAuthenticatorTest {
     private static final String API_KEY_PROPERTY = "ai_mcp_token";
-    private static final String API_KEY_HEADER = "X-Freeplane-MCP-Token";
+    private static final String API_KEY_HEADER = "X-Nexordia-MCP-Token";
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
     @Test

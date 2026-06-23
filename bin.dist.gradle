@@ -1,14 +1,14 @@
 task binZip(type: Zip) {
     destinationDirectory = new File(globalDist)
-    archiveFileName = 'freeplane_bin-' + distVersion + '.zip'
+    archiveFileName = 'nexordia_bin-' + distVersion + '.zip'
 
     from(globalBin) {
         include('**')
-        exclude('freeplane.sh')
+        exclude('nexordia.sh')
     }
 
     from(globalBin) {
-        include('freeplane.sh')
+        include('nexordia.sh')
         filePermissions {
             unix(0755)
         }
@@ -18,7 +18,7 @@ task binZip(type: Zip) {
         include('license.txt')
     }
 
-    into('freeplane-' + distVersion)
+    into('nexordia-' + distVersion)
 
     for (p in subprojects) {
         dependsOn p.tasks.getByPath("build")

@@ -37,10 +37,10 @@
 	<array>
 	    <dict>
 	        <key>CFBundleURLName</key>
-	        <string>Freeplane Mind Map</string>
+	        <string>Nexordia Mind Map</string>
 	        <key>CFBundleURLSchemes</key>
 	        <array>
-	            <string>freeplane</string>
+	            <string>nexordia</string>
 	        </array>
 	    </dict>
 	</array>    

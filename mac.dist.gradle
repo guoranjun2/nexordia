@@ -48,7 +48,7 @@ task macosapp_input {
     from file ('freeplane_framework/mac-appbundler/freeplane.icns')
     into file('build/macosapp/dmg-resource-dir')
     rename { String fileName ->
-      'Freeplane-volume.icns'
+      'Nexordia-volume.icns'
     }
   }
 
@@ -87,7 +87,7 @@ task macUnsignedRuntime(type: Exec) {
 
 task macUnsignedInput {
     group = 'distribution'
-    description = 'Extracts the Freeplane binary zip for unsigned macOS packaging.'
+    description = 'Extracts the Nexordia binary zip for unsigned macOS packaging.'
     dependsOn binZip
     mustRunAfter macUnsignedRuntime
 
@@ -119,7 +119,7 @@ task macUnsignedInput {
             from file('freeplane_framework/mac-appbundler/freeplane.icns')
             into unsignedMacDmgResourceDir
             rename { String fileName ->
-                'Freeplane-volume.icns'
+                'Nexordia-volume.icns'
             }
         }
     }
@@ -139,7 +139,7 @@ task macUnsignedAppImage(type: Exec) {
     }
 
     commandLine currentJpackage,
-        '--name', 'Freeplane',
+        '--name', 'Nexordia',
         '--type', 'app-image',
         '--icon', 'freeplane_framework/mac-appbundler/freeplane.icns',
         '--app-version', majorVersion,
@@ -148,7 +148,7 @@ task macUnsignedAppImage(type: Exec) {
         '--java-options', "-XX:MaxRAMPercentage=15.0",
         '--java-options', '-Djava.security.manager=allow',
         '--java-options', '-Dapple.laf.useScreenMenuBar=false',
-        '--java-options', '-Xdock:name=Freeplane',
+        '--java-options', '-Xdock:name=Nexordia',
         '--java-options', '--add-exports',
         '--java-options', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
         '--java-options', '--add-exports',
@@ -165,13 +165,13 @@ task macUnsignedAppImage(type: Exec) {
         '--main-class', 'org.freeplane.launcher.Launcher',
         '--main-jar', 'freeplanelauncher.jar',
         '--runtime-image', unsignedMacRuntimeDir,
-        '--copyright', "Freeplane ${distVersion}",
+        '--copyright', "Nexordia ${distVersion}",
         '--dest', unsignedMacAppImageDir
 }
 
 task macUnsignedApp {
     group = 'distribution'
-    description = 'Copies Freeplane resources into the unsigned macOS .app image.'
+    description = 'Copies Nexordia resources into the unsigned macOS .app image.'
     dependsOn macUnsignedAppImage
 
     doFirst {
@@ -179,18 +179,18 @@ task macUnsignedApp {
             from(macosapp_unsigned_input_dir) {
                 include '*/**'
             }
-            into "${unsignedMacAppImageDir}/Freeplane.app/Contents/app"
+            into "${unsignedMacAppImageDir}/Nexordia.app/Contents/app"
         }
         copy {
             from project('freeplane').configurations.maclib
-            into("${unsignedMacAppImageDir}/Freeplane.app/Contents/app/core/org.freeplane.core/lib")
+            into("${unsignedMacAppImageDir}/Nexordia.app/Contents/app/core/org.freeplane.core/lib")
         }
         copy {
             from file('freeplane_framework/mac-appbundler/freeplanedoc.icns')
-            into "${unsignedMacAppImageDir}/Freeplane.app/Contents/Resources"
+            into "${unsignedMacAppImageDir}/Nexordia.app/Contents/Resources"
         }
 
-        def dist_macos_info = "${unsignedMacAppImageDir}/Freeplane.app/Contents/Info.plist"
+        def dist_macos_info = "${unsignedMacAppImageDir}/Nexordia.app/Contents/Info.plist"
         ant.move(file: dist_macos_info, tofile: dist_macos_info + '2')
         ant.xslt(in: new File(dist_macos_info + '2'),
             style: new File('freeplane_framework/mac-appbundler/mac_info_plist.xslt'),
@@ -207,23 +207,23 @@ task macUnsignedDmg(type: Exec) {
 
     doFirst {
         mkdir globalDist
-        file("$globalDist/Freeplane-${majorVersion}.dmg").delete()
-        file("$globalDist/Freeplane-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg").delete()
+        file("$globalDist/Nexordia-${majorVersion}.dmg").delete()
+        file("$globalDist/Nexordia-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg").delete()
     }
 
     commandLine currentJpackage,
-        '--name', 'Freeplane',
+        '--name', 'Nexordia',
         '--type', 'dmg',
         '--app-version', majorVersion,
-        '--app-image', "${unsignedMacAppImageDir}/Freeplane.app",
-        '--mac-package-identifier', 'org.freeplane.core',
-        '--mac-package-name', 'Freeplane',
+        '--app-image', "${unsignedMacAppImageDir}/Nexordia.app",
+        '--mac-package-identifier', 'io.github.guoranjun2.nexordia',
+        '--mac-package-name', 'Nexordia',
         '--resource-dir', unsignedMacDmgResourceDir,
         '--dest', globalDist
 
     doLast {
-        ant.move(file: "$globalDist/Freeplane-${majorVersion}.dmg",
-            tofile: "$globalDist/Freeplane-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg")
+        ant.move(file: "$globalDist/Nexordia-${majorVersion}.dmg",
+            tofile: "$globalDist/Nexordia-${distVersion}-${unsignedMacArchitecture}-unsigned.dmg")
     }
 }
 
@@ -240,7 +240,7 @@ def defineMacBuildTasks =  { architecture ->
    def jpackage_macosxapp = tasks.create ("jpackage_macosxapp_${architecture}", Exec) {
 
    	commandLine jpackage,
-        	 '--name' , 'Freeplane',
+         '--name' , 'Nexordia',
    	 '--type', 'app-image',
      '--icon', 'freeplane_framework/mac-appbundler/freeplane.icns',
      '--app-version', majorVersion,
@@ -249,7 +249,7 @@ def defineMacBuildTasks =  { architecture ->
      '--java-options', "-XX:MaxRAMPercentage=15.0",
      '--java-options', '-Djava.security.manager=allow',
      '--java-options', '-Dapple.laf.useScreenMenuBar=false',
-     '--java-options', '-Xdock:name=Freeplane',
+     '--java-options', '-Xdock:name=Nexordia',
      '--java-options', '--add-exports', 
      '--java-options', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
      '--java-options', '--add-exports', 
@@ -266,7 +266,7 @@ def defineMacBuildTasks =  { architecture ->
      '--main-class', 'org.freeplane.launcher.Launcher',
   	 '--main-jar', 'freeplanelauncher.jar',
      '--runtime-image', macAppProperties["macapp.${architecture}.jdk.runtime.image"],
-     '--copyright', "Freeplane ${distVersion}",
+     '--copyright', "Nexordia ${distVersion}",
    	 '--dest', "build/macosapp/app-image-${architecture}"
 
      dependsOn macosapp_input, macosapp_deleteAppImage
@@ -279,19 +279,19 @@ def defineMacBuildTasks =  { architecture ->
           from(macosapp_input_dir) {
                 include '*/**'
           }
-          into "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app"
+          into "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app"
         }
         copy {
             from project('freeplane').configurations.maclib
-            into("build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/core/org.freeplane.core/lib")
+            into("build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/core/org.freeplane.core/lib")
         }
 
         copy {
           from file ('freeplane_framework/mac-appbundler/freeplanedoc.icns')
-          into "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/Resources"
+          into "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/Resources"
         }
 
-        def dist_macos_info = "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/Info.plist"
+        def dist_macos_info = "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/Info.plist"
         ant.move(file:dist_macos_info, tofile:dist_macos_info + '2')
 
         ant.xslt(in: new File(dist_macos_info + '2'),
@@ -306,14 +306,14 @@ def defineMacBuildTasks =  { architecture ->
   def signFlatlaf= tasks.create ("signFlatlaf_${architecture}", Exec) {
         onlyIf { Os.isFamily(Os.FAMILY_MAC) && macAppProperties['macapp.codesign.identity'] != null}
     commandLine 'bash', 'codesign/sign-jars-on-mac.sh',
-                "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/core/org.freeplane.core/lib/flatlaf-*.jar",
+                "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/core/org.freeplane.core/lib/flatlaf-*.jar",
                 macAppProperties['macapp.codesign.identity']
     dependsOn macosapp_makeapp
   }
   def signJline= tasks.create ("signJline_${architecture}", Exec) {
         onlyIf { Os.isFamily(Os.FAMILY_MAC) && macAppProperties['macapp.codesign.identity'] != null}
     commandLine 'bash', 'codesign/sign-jars-on-mac.sh',
-                "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/plugins/org.freeplane.plugin.script/lib/jline-*.jar",
+                "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/plugins/org.freeplane.plugin.script/lib/jline-*.jar",
                 macAppProperties['macapp.codesign.identity']
     dependsOn macosapp_makeapp
 }
@@ -321,7 +321,7 @@ def defineMacBuildTasks =  { architecture ->
   def signJnr= tasks.create ("signJnr_${architecture}", Exec) {
         onlyIf { Os.isFamily(Os.FAMILY_MAC) && macAppProperties['macapp.codesign.identity'] != null}
     commandLine 'bash', 'codesign/sign-jars-on-mac.sh',
-                "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/core/org.freeplane.core/lib/jnr-*.jar",
+                "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/core/org.freeplane.core/lib/jnr-*.jar",
                 macAppProperties['macapp.codesign.identity']
     dependsOn macosapp_makeapp
 }
@@ -329,7 +329,7 @@ def defineMacBuildTasks =  { architecture ->
   def signVappearances= tasks.create ("signVappearances_${architecture}", Exec) {
         onlyIf { Os.isFamily(Os.FAMILY_MAC) && macAppProperties['macapp.codesign.identity'] != null}
     commandLine 'bash', 'codesign/sign-jars-on-mac.sh',
-                "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/core/org.freeplane.core/lib/vappearances-*.jar",
+                "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/core/org.freeplane.core/lib/vappearances-*.jar",
                 macAppProperties['macapp.codesign.identity']
     dependsOn macosapp_makeapp
 }
@@ -337,7 +337,7 @@ def defineMacBuildTasks =  { architecture ->
   def signVaqua= tasks.create ("signVaqua_${architecture}", Exec) {
         onlyIf { Os.isFamily(Os.FAMILY_MAC) && macAppProperties['macapp.codesign.identity'] != null}
     commandLine 'bash', 'codesign/sign-jars-on-mac.sh',
-                "build/macosapp/app-image-${architecture}/Freeplane.app/Contents/app/core/org.freeplane.core/lib/vaqua-*.jar",
+                "build/macosapp/app-image-${architecture}/Nexordia.app/Contents/app/core/org.freeplane.core/lib/vaqua-*.jar",
                 macAppProperties['macapp.codesign.identity']
     dependsOn macosapp_makeapp
 }
@@ -347,7 +347,7 @@ def defineMacBuildTasks =  { architecture ->
  
    	commandLine jpackage,
      '--type', 'app-image',
-     '--app-image', "build/macosapp/app-image-${architecture}/Freeplane.app",
+     '--app-image', "build/macosapp/app-image-${architecture}/Nexordia.app",
      '--mac-sign',
      '--mac-signing-key-user-name', macAppProperties['macapp.codesign.identity']
         dependsOn macosapp_makeapp, signFlatlaf, signJline, signJnr, signVappearances, signVaqua
@@ -356,36 +356,36 @@ def defineMacBuildTasks =  { architecture ->
   def dmg4mac = tasks.create ("dmg4mac_${architecture}", Exec) {
     doFirst { 
         mkdir globalDist 
-        file("$globalDist/freeplane-${majorVersion}.dmg").delete()
-        file("$globalDist/freeplane-$distVersion-${architecture}.dmg").delete()
+        file("$globalDist/Nexordia-${majorVersion}.dmg").delete()
+        file("$globalDist/Nexordia-$distVersion-${architecture}.dmg").delete()
     } 
 
    	commandLine jpackage,
-        '--name' , 'Freeplane',
+        '--name' , 'Nexordia',
         '--type', 'dmg',
         '--app-version', majorVersion,
-        '--app-image', "build/macosapp/app-image-${architecture}/Freeplane.app",
-        '--mac-package-identifier', 'org.freeplane.core',
-        '--mac-package-name', 'Freeplane',
+        '--app-image', "build/macosapp/app-image-${architecture}/Nexordia.app",
+        '--mac-package-identifier', 'io.github.guoranjun2.nexordia',
+        '--mac-package-name', 'Nexordia',
         '--resource-dir', 'build/macosapp/dmg-resource-dir',
         '--dest', globalDist
 
         dependsOn signMacApp, macosapp_copyvolumeicon
     
     doLast {
-      ant.move (file:"$globalDist/Freeplane-${majorVersion}.dmg", tofile:"$globalDist/Freeplane-${distVersion}-${architecture}.dmg")
+      ant.move (file:"$globalDist/Nexordia-${majorVersion}.dmg", tofile:"$globalDist/Nexordia-${distVersion}-${architecture}.dmg")
     }
   }
   def signDmg = tasks.create ("signDmg_${architecture}", Exec) {
     commandLine 'bash', '-e', '-c', """
-    set -x; codesign --sign "Developer ID Application: ${macAppProperties['macapp.codesign.identity']}" $globalDist/Freeplane-${distVersion}-${architecture}.dmg
+    set -x; codesign --sign "Developer ID Application: ${macAppProperties['macapp.codesign.identity']}" $globalDist/Nexordia-${distVersion}-${architecture}.dmg
     """
     dependsOn dmg4mac
   }
 
   def notarytool = tasks.create ("notarytool_${architecture}", Exec) {
     commandLine 'bash', '-e', '-c', """
-    set -x; xcrun notarytool submit $globalDist/Freeplane-${distVersion}-${architecture}.dmg --keychain-profile ${macAppProperties['macapp.notarytool.keychainprofile']}
+    set -x; xcrun notarytool submit $globalDist/Nexordia-${distVersion}-${architecture}.dmg --keychain-profile ${macAppProperties['macapp.notarytool.keychainprofile']}
     """
     dependsOn signDmg
   }

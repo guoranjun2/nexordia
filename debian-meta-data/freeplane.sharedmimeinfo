@@ -24,8 +24,8 @@
 	<comment xml:lang="sl">FreeMind Miselni vzorec</comment>
 	<comment xml:lang="zh_CN">FreeMind 思维导图</comment>
 	<comment xml:lang="zh">FreeMind 心智圖</comment>
-	<!--<icon name="/usr/share/icons/hicolor/scalable/apps/freeplane.svg" />-->
-  <icon name="freeplane"/>
+	<!--<icon name="/usr/share/icons/hicolor/scalable/apps/nexordia.svg" />-->
+  <icon name="nexordia"/>
 	<glob pattern="*.mm" />
 	<!-- freemind.xml uses prority 65, and we don't want to override it! -->
 	<magic priority="60">
@@ -38,7 +38,7 @@
 	<comment xml:lang="cs">Freeplane Mapa</comment>
 	<comment xml:lang="de">Freeplane Map</comment>
 	<comment xml:lang="dk">Freeplane Map</comment>
-	<comment xml:lang="en">Freeplane Map</comment>
+	<comment xml:lang="en">Nexordia Map</comment>
 	<comment xml:lang="es">Freeplane Mapa</comment>
 	<comment xml:lang="fr">Freeplane Carte Mentale</comment>
 	<comment xml:lang="hu">Freeplane Térkép</comment>
@@ -55,8 +55,8 @@
 	<comment xml:lang="sl">Freeplane Miselni vzorec</comment>
 	<comment xml:lang="zh_CN">Freeplane 思维导图</comment>
 	<comment xml:lang="zh">Freeplane 心智圖</comment>
-  <!--	<icon name="/usr/share/icons/hicolor/scalable/apps/freeplane.svg" /> -->
-  <icon name="freeplane"/>
+  <!--	<icon name="/usr/share/icons/hicolor/scalable/apps/nexordia.svg" /> -->
+  <icon name="nexordia"/>
 	<glob pattern="*.mm" />
 	<magic priority="66">
 		<match type="string" value="&lt;map version=&quot;freeplane" offset="0" />
@@ -64,4 +64,3 @@
 	<sub-class-of type="text/plain" />
     </mime-type>
 </mime-info>
-

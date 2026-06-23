@@ -364,7 +364,7 @@ public class LastOpenedList implements IMapViewChangeListener, IMapChangeListene
 			messageArea.setSize(messageArea.getPreferredSize());
 			final int remove = JOptionPane.showConfirmDialog(frame,
 					messageArea,
-					"Freeplane", JOptionPane.YES_NO_OPTION);
+					"Nexordia", JOptionPane.YES_NO_OPTION);
 			if (remove == JOptionPane.YES_OPTION) {
 				lastOpenedList.remove(recentFile);
 				updateMenus();

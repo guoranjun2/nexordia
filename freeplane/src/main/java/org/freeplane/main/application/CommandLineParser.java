@@ -9,13 +9,13 @@ import org.freeplane.core.util.Compat;
 public class CommandLineParser {
     private static class CommandLineParserOptions implements CommandLineOptions {
         private static final String HELP_MESSAGE = //
-                "\nUsage:\n\tfreeplane.bat [options] [file1 [file2 ...]]\n" //
+                "\nUsage:\n\tnexordia.bat [options] [file1 [file2 ...]]\n" //
                 + "\n -X<menukey>   : execute menu item with key <menukey> (ignored in non interactive mode)." //
                 + "\n                 hint: use devtools add-on to find appropriate menu keys" //
                 + "\n -R<file>      : execute script by path <file>." //
                 + "\n -S            : stop after executing menu items and scripts" //
                 + "\n -N            : set the 'nonInteractive' system property to 'true'" //
-                + "\n -U<userdir>   : set the freeplane user config directory (default: "
+                + "\n -U<userdir>   : set the Nexordia user config directory (default: "
                 + Compat.getDefaultFreeplaneUserDirectory() + ")" //
                 + "\n -h , --help   : print this help text";
         private List<String> filesToOpen = new ArrayList<String>();

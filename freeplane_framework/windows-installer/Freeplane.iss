@@ -11,20 +11,20 @@
 ; Predrag Cuklin 18/06/2009 - Universial Version
 ;****************************************************************************
 
-#define MyVersion "1.13.3"
+#define MyVersion "0.1.0"
 #define MyStatus ""
-#define MyAppName "Freeplane"
+#define MyAppName "Nexordia"
 #define MyAppPublisher "Open source"
-#define MyAppURL "http://sourceforge.net/projects/freeplane/"
-#define MyAppExeName "freeplane.exe"
-#define ConfigurationDirectory 'Freeplane\1.12.x'
+#define MyAppURL "https://github.com/guoranjun2/nexordia"
+#define MyAppExeName "nexordia.exe"
+#define ConfigurationDirectory 'Nexordia'
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{D3941722-C4DD-4509-88C4-0E87F675A859}
-AppCopyright=Copyright © 2000-2026 Freeplane team and others
+AppId={{8B3A9D63-6C83-4E16-9E1E-1F8C1E4F68A7}
+AppCopyright=Copyright © 2000-2026 Freeplane team, Nexordia contributors, and others
 AppName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
@@ -35,7 +35,7 @@ DefaultGroupName={#MyAppName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=.
-OutputBaseFilename=Freeplane-Setup
+OutputBaseFilename=Nexordia-Setup
 SetupIconFile=Setup.ico
 VersionInfoDescription=Free mind mapping software. Fast. Simple. Streamlined.
 ChangesAssociations=true
@@ -51,8 +51,8 @@ WizardImageStretch=false
 #else
   AppVersion={#MyVersion}{#MyStatus}
 #endif
-UninstallDisplayIcon={app}\freeplane.exe
-UninstallDisplayName=Freeplane
+UninstallDisplayIcon={app}\nexordia.exe
+UninstallDisplayName=Nexordia
 DiskSpanning=false
 MergeDuplicateFiles=true
 Compression=lzma
@@ -72,15 +72,15 @@ Name: Portuguese; MessagesFile: compiler:Languages\Portuguese.isl,messages_pt.is
 [Tasks]
 Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:AdditionalIcons}
 Name: quicklaunchicon; Description: {cm:CreateQuickLaunchIcon}; GroupDescription: {cm:AdditionalIcons}
-Name: associate; Description: {cm:AssocFileExtension,Freeplane,.mm}; GroupDescription: {cm:AssocingFileExtension,Freeplane,.mm}
+Name: associate; Description: {cm:AssocFileExtension,Nexordia,.mm}; GroupDescription: {cm:AssocingFileExtension,Nexordia,.mm}
 
 [Files]
-Source: "{#AppImage}\freeplane\*"; DestDir: "{app}"; Flags: ignoreversion createallsubdirs recursesubdirs; Excludes: "\app\*.cfg"
-Source: "{#AppImage}\freeplane\app\*.cfg"; DestDir: "{app}\app"; Flags: ignoreversion onlyifdoesntexist
+Source: "{#AppImage}\nexordia\*"; DestDir: "{app}"; Flags: ignoreversion createallsubdirs recursesubdirs; Excludes: "\app\*.cfg"
+Source: "{#AppImage}\nexordia\app\*.cfg"; DestDir: "{app}\app"; Flags: ignoreversion onlyifdoesntexist
 
 [Icons]
 Name: {group}\{#MyAppName}; Filename: {app}\{#MyAppExeName}
-Name: {group}\Uninstall Freeplane; Filename: {uninstallexe}
+Name: {group}\Uninstall Nexordia; Filename: {uninstallexe}
 Name: {code:GetDesktopDir}\{#MyAppName}; Filename: {app}\{#MyAppExeName}; Tasks: desktopicon
 Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}; Filename: {app}\{#MyAppExeName}; Tasks: quicklaunchicon
 
@@ -89,30 +89,30 @@ Filename: {app}\{#MyAppExeName}; Description: {cm:LaunchProgram,{#MyAppName}}; F
 
 [Registry]
 ; Non-admin installation registry entries (HKCU)
-Root: "HKCU"; Subkey: "Software\Classes\.mm"; ValueType: string; ValueData: "FreeplaneApplication"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\freeplane"; ValueType: string; ValueData: "URL:Freeplane protocol"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\freeplane"; ValueType: string; ValueName: "URL Protocol"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\freeplane\Shell\Open\Command"; ValueType: string; ValueData: """{app}\freeplane.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\freeplane\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\FreeplaneApplication"; ValueType: string; ValueData: "Freeplane mind map"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\FreeplaneApplication\Shell\Open\Command"; ValueType: string; ValueData: """{app}\freeplane.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\FreeplaneApplication\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\.mm"; ValueType: string; ValueData: "NexordiaApplication"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\nexordia"; ValueType: string; ValueData: "URL:Nexordia protocol"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\nexordia"; ValueType: string; ValueName: "URL Protocol"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\nexordia\Shell\Open\Command"; ValueType: string; ValueData: """{app}\nexordia.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\nexordia\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\NexordiaApplication"; ValueType: string; ValueData: "Nexordia mind map"; Flags: uninsdeletekey; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\NexordiaApplication\Shell\Open\Command"; ValueType: string; ValueData: """{app}\nexordia.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\NexordiaApplication\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: not IsAdminLoggedOn
 
 ; Admin installation registry entries (HKLM/HKCR)
 Root: "HKLM"; Subkey: "Software\JavaSoft\Prefs"; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "Applications\freeplane.exe"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "Applications\nexordia.exe"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
 Root: "HKCR"; Subkey: ".mm"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
 Root: "HKLM"; Subkey: "SOFTWARE\Classes\.mm"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCU"; Subkey: "Software\Classes\Applications\freeplane.exe"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCU"; Subkey: "Software\Classes\Applications\nexordia.exe"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
 Root: "HKCU"; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mm"; Flags: deletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: ".mm"; ValueType: string; ValueData: "FreeplaneApplication"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "freeplane"; ValueType: string; ValueData: "URL:Freeplane protocol"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "freeplane"; ValueType: string; ValueName: "URL Protocol"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "freeplane\Shell\Open\Command"; ValueType: string; ValueData: """{app}\freeplane.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "freeplane\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "FreeplaneApplication"; ValueType: string; ValueData: "Freeplane mind map"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "FreeplaneApplication\Shell\Open\Command"; ValueType: string; ValueData: """{app}\freeplane.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
-Root: "HKCR"; Subkey: "FreeplaneApplication\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: ".mm"; ValueType: string; ValueData: "NexordiaApplication"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "nexordia"; ValueType: string; ValueData: "URL:Nexordia protocol"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "nexordia"; ValueType: string; ValueName: "URL Protocol"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "nexordia\Shell\Open\Command"; ValueType: string; ValueData: """{app}\nexordia.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "nexordia\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "NexordiaApplication"; ValueType: string; ValueData: "Nexordia mind map"; Flags: uninsdeletekey; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "NexordiaApplication\Shell\Open\Command"; ValueType: string; ValueData: """{app}\nexordia.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
+Root: "HKCR"; Subkey: "NexordiaApplication\DefaultIcon"; ValueType: string; ValueData: "{app}\freeplaneIcons.dll,0"; Flags: uninsdeletevalue; Tasks: associate; Check: IsAdminLoggedOn
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\core"
@@ -123,7 +123,7 @@ Type: filesandordirs; Name: "{app}\runtime"
 Type: filesandordirs; Name: "{app}"
 
 [Dirs]
-Name: {userappdata}\Freeplane; Flags: uninsneveruninstall
+Name: {userappdata}\Nexordia; Flags: uninsneveruninstall
 
 [Code]
 function CmdLineParamExists(const Value: string): Boolean;

@@ -1,4 +1,4 @@
-rootProject.name='freeplane_root'
+rootProject.name='nexordia_root'
 include 'freeplane',
         'freeplane_api',
         'freeplane_ant',

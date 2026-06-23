@@ -29,13 +29,13 @@ public class ModelContextProtocolServer implements IFreeplanePropertyListener {
     public static final String MCP_SERVER_ENABLED_PROPERTY = "ai_mcp_server_enabled";
     public static final String MCP_SERVER_PORT_PROPERTY = "ai_mcp_server_port";
     public static final String MCP_TOKEN_PROPERTY = "ai_mcp_token";
-    public static final String MCP_TOKEN_HEADER = "X-Freeplane-MCP-Token";
+    public static final String MCP_TOKEN_HEADER = "X-Nexordia-MCP-Token";
     public static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String MCP_PROTOCOL_VERSION = "2024-11-05";
     private static final int DEFAULT_PORT = 6298;
     private static final int PORT_MINIMUM = 1024;
     private static final int PORT_MAXIMUM = 65535;
-    private static final String SERVER_NAME = "Freeplane AI MCP Server";
+    private static final String SERVER_NAME = "Nexordia AI MCP Server";
     private static final String TOOLS_RESOURCE_URI = "mcp://tools";
 
     private final ObjectMapper objectMapper;

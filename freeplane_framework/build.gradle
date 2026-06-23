@@ -47,6 +47,7 @@ task copyFreeplaneShellScript(type: Copy) {
         filePermissions {
             unix(0755)
         }
+        rename('freeplane.sh', 'nexordia.sh')
      }
 	 into(globalBin)
 	 filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
@@ -63,18 +64,18 @@ ext {launch4jDir = "$System.env.LAUNCH4J_DIR"}
 task createExeFiles {
 	onlyIf { Os.isFamily(Os.FAMILY_WINDOWS) && launch4jDir !=  null && file(launch4jDir).exists()}
 	inputs.dir('launch4j')
-	outputs.files("${globalBin}/freeplane.exe", "${globalBin}/freeplaneConsole.exe")
+	outputs.files("${globalBin}/nexordia.exe", "${globalBin}/nexordiaConsole.exe")
 	doLast {
         ant.taskdef(name: 'launch4j',
                     classname: 'net.sf.launch4j.ant.Launch4jTask',
                     classpath: "${launch4jDir}/launch4j.jar:${launch4jDir}/lib/xstream.jar")
         ant.launch4j (
         	configFile: 'launch4j/freeplaneGui.lj4.xml',
-        	outfile: "${globalBin}/freeplane.exe"
+            outfile: "${globalBin}/nexordia.exe"
         )
         ant.launch4j (
         	configFile: 'launch4j/freeplaneConsole.lj4.xml',
-        	outfile: "${globalBin}/freeplaneConsole.exe"
+            outfile: "${globalBin}/nexordiaConsole.exe"
         )
     }
 }
@@ -84,6 +85,9 @@ task copyLauncherStuff(type: Copy) {
      from('script/') {
          include('*')
          exclude('freeplane.sh')
+         rename('freeplane.bat', 'nexordia.bat')
+         rename('freeplane.l4j.ini', 'nexordia.l4j.ini')
+         rename('freeplaneConsole.l4j.ini', 'nexordiaConsole.l4j.ini')
      }
 
      def knopflerfishJarFile = project.configurations.runtimeClasspath.files.find {
@@ -123,4 +127,3 @@ eclipseJdt {
 }
 
 build.dependsOn (copyLauncherStuff, copyBundledRuntime)
-

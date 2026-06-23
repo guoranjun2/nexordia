@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# we only want to test the script, not Freeplane itself
+# we only want to test the script, not Nexordia itself
 if ( echo "${DEBUG}" | grep -qe "script" ); then
 	set -x
 fi
@@ -32,7 +32,10 @@ findjava() {
 
 	JAVA_SOURCE=
 
-	if [ -n "${FREEPLANE_JAVA_HOME}" ] && [ -x "${FREEPLANE_JAVA_HOME}/bin/java" ]; then
+	if [ -n "${NEXORDIA_JAVA_HOME}" ] && [ -x "${NEXORDIA_JAVA_HOME}/bin/java" ]; then
+		JAVACMD="${NEXORDIA_JAVA_HOME}/bin/java"
+		JAVA_SOURCE="\$NEXORDIA_JAVA_HOME"
+	elif [ -n "${FREEPLANE_JAVA_HOME}" ] && [ -x "${FREEPLANE_JAVA_HOME}/bin/java" ]; then
 		JAVACMD="${FREEPLANE_JAVA_HOME}/bin/java"
 		JAVA_SOURCE="\$FREEPLANE_JAVA_HOME"
 	elif [ -n "${JAVACMD}" ] && [ -x "${JAVACMD}" ]; then
@@ -52,7 +55,7 @@ findjava() {
 			JAVA_SOURCE="/usr/bin/java"
 		else
 			_error "Couldn't find a java virtual machine," \
-				"define JAVACMD, JAVA_BINDIR, JAVA_HOME, FREEPLANE_JAVA_HOME or PATH."
+				"define JAVACMD, JAVA_BINDIR, JAVA_HOME, NEXORDIA_JAVA_HOME, FREEPLANE_JAVA_HOME or PATH."
 			return 1
 		fi
 	fi
@@ -60,15 +63,15 @@ findjava() {
 	JAVA_VERSION=$(${JAVACMD} -version 2>&1 | grep -E "[[:alnum:]]+ version" | awk '{print $3}' | tr -d '"')
 	JAVA_MAJOR_VERSION=$(echo $JAVA_VERSION | sed -e 's/^1\.//' | awk -F. '{print $1}')
 	if [ $JAVA_MAJOR_VERSION -lt 8 ] || [ $JAVA_MAJOR_VERSION -gt 23 ] || [ $JAVA_MAJOR_VERSION -eq 10 ]; then
-		if [ -z "${FREEPLANE_USE_UNSUPPORTED_JAVA_VERSION}" ]; then
+		if [ -z "${NEXORDIA_USE_UNSUPPORTED_JAVA_VERSION}" ] && [ -z "${FREEPLANE_USE_UNSUPPORTED_JAVA_VERSION}" ]; then
 			_error "Found $JAVACMD in $JAVA_SOURCE."
 			_error "It has version $JAVA_VERSION"
-			_error "Currently, freeplane requires java version 8 or from 11 to 23"
+			_error "Currently, Nexordia requires java version 8 or from 11 to 23"
 			_error ""
 			_error "Select a supported java version"
-			_error "by setting FREEPLANE_JAVA_HOME to a valid java location"
+			_error "by setting NEXORDIA_JAVA_HOME to a valid java location"
 			_error "OR use an unsupported java version"
-			_error "by setting FREEPLANE_USE_UNSUPPORTED_JAVA_VERSION to 1"
+			_error "by setting NEXORDIA_USE_UNSUPPORTED_JAVA_VERSION to 1"
 			return 1
 		fi
 	fi
@@ -100,7 +103,7 @@ output_debug_info() {
 	if [ -z "${DEBUG}" ]; then
 		return 0
 	fi
-	_debug "Freeplane parameters are '${@}'."
+	_debug "Nexordia parameters are '${@}'."
 	_debug "$(uname -a)"
 	if [ -x "$(which lsb_release 2>/dev/null)" ]; then
 		_debug "$(lsb_release -a)"
@@ -109,10 +112,10 @@ output_debug_info() {
 	fi
 	if [ -x "$(which dpkg 2>/dev/null)" ]; then
 		_debug "The following DEB packages are installed:"
-		COLUMNS=132 dpkg -l | grep -i -e freeplane >&2
+		COLUMNS=132 dpkg -l | grep -i -e nexordia -e freeplane >&2
 	elif [ -x "$(which rpm 2>/dev/null)" ]; then
 		_debug "The following RPM packages are installed:"
-		rpm -qa | grep -i -e freeplane >&2
+		rpm -qa | grep -i -e nexordia -e freeplane >&2
 	else
 		_debug "Neither dpkg nor rpm is installed."
 	fi
@@ -131,20 +134,20 @@ __move_old_userfpdir_to_XDG_CONFIG_HOME() {
 
 old_userfpdir="${HOME}/.freeplane"
 if [ "$(uname)" = "Darwin" ]; then
-	userfpdir="${HOME}/.freeplane"
+	userfpdir="${HOME}/.nexordia"
 else
-	userfpdir="${XDG_CONFIG_HOME:-$HOME/.config}/freeplane"
+	userfpdir="${XDG_CONFIG_HOME:-$HOME/.config}/nexordia"
 	__move_old_userfpdir_to_XDG_CONFIG_HOME
 fi
-_source /etc/freeplane/freeplanerc
-_source "${userfpdir}/freeplanerc"
+_source /etc/nexordia/nexordiarc
+_source "${userfpdir}/nexordiarc"
 
-if [ "$(uname)" = "Darwin" ] && [ -z "${FREEPLANE_JAVA_HOME}" ]; then
+if [ "$(uname)" = "Darwin" ] && [ -z "${NEXORDIA_JAVA_HOME}" ] && [ -z "${FREEPLANE_JAVA_HOME}" ]; then
 	script_dir="$(cd "$(dirname "$0")" && pwd)"
 	for bundled_java_home in "${script_dir}/runtime/jbr" "${script_dir}/runtime" "${script_dir}/../runtime/jbr" "${script_dir}/../runtime"
 	do
 		if [ -x "${bundled_java_home}/bin/java" ]; then
-			FREEPLANE_JAVA_HOME="${bundled_java_home}"
+			NEXORDIA_JAVA_HOME="${bundled_java_home}"
 			break
 		fi
 	done
@@ -168,7 +171,7 @@ else
 fi
 
 if [ "$(uname)" = "Darwin" ]; then
-	xdockname='-Xdock:name=Freeplane'
+	xdockname='-Xdock:name=Nexordia'
 else
 	xdockname=""
 fi
@@ -176,22 +179,22 @@ fi
 freepath="$(dirname "${freefile}")"
 
 # we try different possibilities to find framework.jar
-for jar in "${FREEPLANE_BASE_DIR}" \
-	"${freepath}" "${freepath}/share/freeplane" "${freepath}/freeplane"
+for jar in "${NEXORDIA_BASE_DIR}" "${FREEPLANE_BASE_DIR}" \
+	"${freepath}" "${freepath}/share/nexordia" "${freepath}/nexordia" "${freepath}/share/freeplane" "${freepath}/freeplane"
 do
 	if [ -f "${jar}/framework.jar" ]; then
 		freedir="${jar}"
-		_debug "Freeplane Directory is '${jar}'."
+		_debug "Nexordia Directory is '${jar}'."
 		break
 	fi
 done
 
 if [ -z "${freedir}" ]; then
-	_error "Couldn't find Freeplane under '${freepath}'."
+	_error "Couldn't find Nexordia under '${freepath}'."
 	exit 1
 fi
 
-#--------- Call (at last) Freeplane -------------------------------------
+#--------- Call (at last) Nexordia -------------------------------------
 JAVA_OPTS="-XX:+IgnoreUnrecognizedVMOptions $JAVA_OPTS"
 
 if [ "${JAVA_TYPE}" != "sun" ]; then
@@ -232,7 +235,7 @@ fi
 
 if [ "$(uname)" = "Darwin" ]; then
 	JAVA_OPTS="-Xdock:icon=${freedir}/freeplane256.png $JAVA_OPTS"
-	JAVA_OPTS="-Xdock:name=Freeplane $JAVA_OPTS"
+	JAVA_OPTS="-Xdock:name=Nexordia $JAVA_OPTS"
 fi
 
 # enable this in order to turn off the splash screen:
@@ -253,9 +256,9 @@ _debug "Calling: "\
  $xdockname\
  -jar "${freedir}/freeplanelauncher.jar"\
  "$@"
-( echo "${DEBUG}" | grep -qe "exit" ) && exit 0 # do not start Freeplane
+( echo "${DEBUG}" | grep -qe "exit" ) && exit 0 # do not start Nexordia
 
-# now actually launch Freeplane
+# now actually launch Nexordia
 "${JAVACMD}" -XX:MaxRAM=20g -XX:MaxRAMPercentage=15.0\
  "-Dorg.freeplane.userfpdir=$userfpdir"\
  "-Dorg.freeplane.old_userfpdir=$old_userfpdir"\

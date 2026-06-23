@@ -202,7 +202,7 @@ configure(subprojects.findAll {it.name =~ /plugin/ || it.name =~ /^freeplane$/ }
         '-savemanifest': 'build/manifest/MANIFEST.MF',
         'Bundle-SymbolicName': pluginid,
         'Export-Package': bundleExports.replaceAll("\\s+", ""),
-        'Bundle-Vendor': 'Freeplane Project',
+        'Bundle-Vendor': 'Nexordia Project',
         'Import-Package': bundleImports.replaceAll("\\s+", ""),
         'Bundle-Activator': bundleActivator,
         'Bundle-ClassPath': '., ' + bundleDeps.join(', ')

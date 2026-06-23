@@ -4,5 +4,5 @@ java ^
 -XX:+IgnoreUnrecognizedVMOptions ^
 -XX:MaxRAM=20g -XX:MaxRAMPercentage=15.0 ^
 -Djava.security.manager=allow ^
--Dorg.freeplane.userfpdir="%APPDATA%\\Freeplane" ^
+-Dorg.freeplane.userfpdir="%APPDATA%\\Nexordia" ^
 -jar freeplanelauncher.jar %*

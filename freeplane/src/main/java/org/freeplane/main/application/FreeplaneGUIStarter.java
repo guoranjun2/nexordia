@@ -117,7 +117,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 			{
 				java.lang.reflect.Field awtAppClassNameField = xToolkit.getClass().getDeclaredField("awtAppClassName");
 				awtAppClassNameField.setAccessible(true);
-				awtAppClassNameField.set(xToolkit, "Freeplane");
+				awtAppClassNameField.set(xToolkit, "Nexordia");
 			}
 		} catch (NoSuchFieldException | SecurityException
 				| IllegalArgumentException | IllegalAccessException e) {
@@ -192,7 +192,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 				public void run() {
 					FrameController.setLookAndFeel(lookandfeel);
 					final JFrame frame;
-					frame = new JFrame("Freeplane");
+					frame = new JFrame("Nexordia");
 					frame.setContentPane(new JPanel(){
 
 						@Override
