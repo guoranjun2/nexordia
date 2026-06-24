@@ -36,7 +36,6 @@ import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -971,9 +970,6 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 	private void setFrameTitle() {
 		ModeController modeController = Controller.getCurrentModeController();
 		if (modeController != null) {
-			final Object[] messageArguments = { TextUtils.getText(("mode_" + modeController.getModeName())) };
-			final MessageFormat formatter = new MessageFormat(TextUtils.getText("mode_title"));
-			String modeName = formatter.format(messageArguments);
 			String viewName = "";
 			final MapModel model = getMap();
 			String frameTitle;
@@ -983,15 +979,10 @@ public class MapViewController implements IMapViewManager , IMapViewChangeListen
 				frameTitle = (workspaceTitle.isEmpty() ? "" : workspaceTitle + " - ")
 						+ viewName
 						+ ((model.isSaved() || model.isReadOnly()) ? "" : "*")
-						+ " - " + modeName
 						+ (modeController.isEditingLocked() ? format("OptionPanel.view_mode.true") :
 							model.isReadOnly() ? format("read_only") : "");
-				final File file = model.getFile();
-				if (file != null) {
-					frameTitle += " " + file.getAbsolutePath();
-				}
 			} else {
-				frameTitle = (workspaceTitle.isEmpty() ? "" : workspaceTitle + " - ") + modeName;
+				frameTitle = workspaceTitle;
 			}
 			controller.getViewController().setTitle(TextWritingDirection.LEFT_TO_RIGHT.isolatePathSeparators(frameTitle));
 		}

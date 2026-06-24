@@ -20,6 +20,7 @@
 package org.freeplane.main.application;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
@@ -28,6 +29,8 @@ import java.awt.Frame;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Window;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -38,12 +41,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
 import javax.swing.RootPaneContainer;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.Border;
 
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.components.FreeplaneMenuBar;
@@ -56,7 +66,11 @@ import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.overview.BookmarkToolbarPane;
 
+import com.formdev.flatlaf.FlatClientProperties;
+
 class ApplicationViewController extends FrameController {
+	private static final int TITLE_BAR_HEIGHT = 30;
+
 	private static Image frameIcon(String size) {
         return new ImageIcon(ResourceController.getResourceController().getResource(
                 "/images/Freeplane_frame_icon_"+ size + ".png")).getImage();
@@ -69,6 +83,9 @@ class ApplicationViewController extends FrameController {
 	private MapViewDockingWindows mapViewWindows;
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
 	private final FrameComponentMover frameComponentMover;
+	private final JPanel titleBarOverlay;
+	private final JLabel titleBarLabel;
+	private final Border contentPaneBorder;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame, FrameComponentMover frameComponentMover) {
 		super(controller, mapViewController, "");
@@ -81,6 +98,12 @@ class ApplicationViewController extends FrameController {
 		controller.addAction(new NavigationMapPreviousViewAction());
 		this.mainFrame = frame;
 		this.frameComponentMover = frameComponentMover;
+		contentPaneBorder = mainFrame.getContentPane() instanceof JComponent
+				? ((JComponent) mainFrame.getContentPane()).getBorder() : null;
+		titleBarOverlay = new JPanel(new BorderLayout());
+		titleBarLabel = new JLabel("", SwingConstants.CENTER);
+		installTitleBarOverlay();
+		applyTitleBarTheme();
 	}
 
 	/**
@@ -248,7 +271,69 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void setTitle(final String frameTitle) {
 		mainFrame.setTitle(frameTitle);
+		titleBarLabel.setText(frameTitle);
+		titleBarLabel.setToolTipText(frameTitle);
 		mapViewWindows.setTitle();
+	}
+
+	void applyTitleBarTheme() {
+		final Color background = color("TitlePane.background", color("Panel.background", mainFrame.getBackground()));
+		final Color foreground = UITools.getTextColorForBackground(background);
+		if(Compat.isMacOsX()) {
+			mainFrame.getRootPane().putClientProperty("apple.awt.transparentTitleBar", Boolean.TRUE);
+			mainFrame.getRootPane().putClientProperty("apple.awt.fullWindowContent", Boolean.TRUE);
+			mainFrame.getRootPane().putClientProperty("apple.awt.windowTitleVisible", Boolean.FALSE);
+			mainFrame.getRootPane().putClientProperty("apple.awt.draggableWindowBackground", Boolean.FALSE);
+		}
+		mainFrame.getRootPane().putClientProperty(FlatClientProperties.FULL_WINDOW_CONTENT, Boolean.TRUE);
+		mainFrame.getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, Boolean.FALSE);
+		mainFrame.getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_BACKGROUND, background);
+		mainFrame.getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, foreground);
+		mainFrame.setBackground(background);
+		mainFrame.getRootPane().setBackground(background);
+		mainFrame.getRootPane().setForeground(foreground);
+		mainFrame.getContentPane().setBackground(background);
+		titleBarOverlay.setBackground(background);
+		titleBarLabel.setForeground(foreground);
+		updateContentPaneTitleBarInset();
+		updateTitleBarOverlayBounds();
+		mainFrame.repaint();
+	}
+
+	private static Color color(String key, Color fallback) {
+		final Color color = UIManager.getColor(key);
+		return color != null ? color : fallback;
+	}
+
+	private void installTitleBarOverlay() {
+		titleBarOverlay.setOpaque(true);
+		titleBarOverlay.putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, Boolean.TRUE);
+		titleBarLabel.setOpaque(false);
+		titleBarLabel.putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, Boolean.TRUE);
+		titleBarOverlay.add(titleBarLabel, BorderLayout.CENTER);
+		mainFrame.getRootPane().getLayeredPane().add(titleBarOverlay, JLayeredPane.PALETTE_LAYER);
+		mainFrame.getRootPane().addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				updateTitleBarOverlayBounds();
+			}
+		});
+		updateTitleBarOverlayBounds();
+	}
+
+	private void updateContentPaneTitleBarInset() {
+		if(mainFrame.getContentPane() instanceof JComponent) {
+			final JComponent contentPane = (JComponent) mainFrame.getContentPane();
+			contentPane.setBorder(BorderFactory.createCompoundBorder(
+					BorderFactory.createEmptyBorder(TITLE_BAR_HEIGHT, 0, 0, 0), contentPaneBorder));
+		}
+	}
+
+	private void updateTitleBarOverlayBounds() {
+		final int leftInset = Compat.isMacOsX() ? 92 : 0;
+		final int rightInset = 92;
+		final int width = mainFrame.getRootPane().getWidth();
+		titleBarOverlay.setBounds(leftInset, 0, Math.max(0, width - leftInset - rightInset), TITLE_BAR_HEIGHT);
 	}
 
 	@Override

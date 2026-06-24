@@ -179,8 +179,15 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 				applicationResourceController.addPropertyChangeListener((propertyName, newValue, oldValue) -> {
 					if("lookandfeel".equals(propertyName)
 							&& ! FrameController.VAQUA_LAF_CLASS_NAME.equals(newValue)) {
+						if(Compat.isMacOsX())
+							System.setProperty("apple.laf.useScreenMenuBar", "true");
 						FrameController.setLookAndFeel(newValue);
 						SwingUtilities.updateComponentTreeUI(UITools.getFrame());
+						if(viewController != null) {
+							viewController.applyTitleBarTheme();
+							if(Compat.isMacOsX() && controller.getModeController() != null)
+								viewController.setFreeplaneMenuBar(controller.getModeController().getUserInputListenerFactory().getMenuBar());
+						}
 					}
 				});
 				lookandfeel =  applicationResourceController.getProperty("lookandfeel");

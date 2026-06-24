@@ -161,6 +161,8 @@ abstract public class FrameController implements ViewController {
 	final private JLabel status;
 	final private Map<String, Component> statusInfos;
 	final private JPanel statusPanel;
+	final private JPanel statusInfoPanel;
+	final private JPanel statusActionPanel;
 	final private JComponent toolbarPanel[];
 	final private String propertyKeyPrefix;
 	private static boolean uiResourcesInitialized = false;
@@ -189,11 +191,15 @@ abstract public class FrameController implements ViewController {
 		this.controller = controller;
 		this.mapViewManager = mapViewManager;
 		this.propertyKeyPrefix = propertyKeyPrefix;
-		statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+		statusPanel = new JPanel(new BorderLayout());
+		statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+		statusActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
+		statusPanel.add(statusInfoPanel, BorderLayout.CENTER);
+		statusPanel.add(statusActionPanel, BorderLayout.EAST);
 		UIComponentVisibilityDispatcher.install(statusPanel, propertyKeyPrefix + "statusVisible");
 		status = new JLabel();
 		status.setBorder(BorderFactory.createEtchedBorder());
-		statusPanel.add(status);
+		statusInfoPanel.add(status);
 		statusInfos = new HashMap<String, Component>();
 		statusInfos.put(STANDARD_STATUS_INFO_KEY, status);
 		statusTextCleaner = new Timer(10000, new ActionListener() {
@@ -216,6 +222,7 @@ abstract public class FrameController implements ViewController {
 		controller.addAction(new ToggleToolbarAction("ToggleToolbarAction", "/main_toolbar"));
 		controller.addAction(new ToggleToolbarAction("ToggleStatusAction", "/status"));
 		addStatusInfo(ResourceController.OBJECT_TYPE, null, null);
+		statusActionPanel.add(new ThemeStatusSwitcher());
 		toolbarPanel = new JComponent[4];
 		toolbarPanel[TOP] = new HorizontalToolbarPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		toolbarPanel[BOTTOM] = Box.createVerticalBox();
@@ -354,7 +361,7 @@ abstract public class FrameController implements ViewController {
 			label = new JLabel(info);
 			label.setBorder(BorderFactory.createEtchedBorder());
 			statusInfos.put(key, label);
-			statusPanel.add(label, statusPanel.getComponentCount() - 1);
+			statusInfoPanel.add(label, statusInfoPanel.getComponentCount() - 1);
 		}
 		else {
 			label.setText(info);
@@ -370,13 +377,13 @@ abstract public class FrameController implements ViewController {
 	public void addStatusComponent(final String key, Component component) {
 		Component oldComponent = statusInfos.put(key, component);
 		if (oldComponent == null) {
-			statusPanel.add(component, statusPanel.getComponentCount() - 1);
+			statusInfoPanel.add(component, statusInfoPanel.getComponentCount() - 1);
 		}
 		else {
 			final int index = UITools.getComponentIndex(oldComponent);
 			transferFocusFrom(oldComponent);
-			statusPanel.remove(index);
-			statusPanel.add(component, index);
+			statusInfoPanel.remove(index);
+			statusInfoPanel.add(component, index);
 		}
 		statusPanel.revalidate();
 		statusPanel.repaint();
@@ -397,7 +404,7 @@ abstract public class FrameController implements ViewController {
 			return;
 		}
 		transferFocusFrom(oldComponent);
-		statusPanel.remove(oldComponent);
+		statusInfoPanel.remove(oldComponent);
 		statusPanel.revalidate();
 		statusPanel.repaint();
 	}
