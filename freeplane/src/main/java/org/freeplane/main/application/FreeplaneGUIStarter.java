@@ -22,6 +22,7 @@ package org.freeplane.main.application;
 import java.awt.Container;
 import java.awt.EventQueue;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -148,6 +149,15 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 		return Arrays.asList("gnome-shell", "mate", "other...").contains(System.getenv("DESKTOP_SESSION"));
     }
 
+	private static void updateAllWindowComponentTrees() {
+		for(Window window : Window.getWindows()) {
+			SwingUtilities.updateComponentTreeUI(window);
+			window.invalidate();
+			window.validate();
+			window.repaint();
+		}
+	}
+
 	public FreeplaneGUIStarter(CommandLineOptions options) {
 		super();
 		this.options = options;
@@ -182,7 +192,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 						if(Compat.isMacOsX())
 							System.setProperty("apple.laf.useScreenMenuBar", "true");
 						FrameController.setLookAndFeel(newValue);
-						SwingUtilities.updateComponentTreeUI(UITools.getFrame());
+						updateAllWindowComponentTrees();
 						if(viewController != null) {
 							viewController.applyTitleBarTheme();
 							if(Compat.isMacOsX() && controller.getModeController() != null)
