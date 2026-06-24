@@ -193,6 +193,11 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 			private IconColorReplacer iconColorReplacer;
 
 			@Override
+			public void windowShown(DockingWindow window) {
+				selectShownMapView(window);
+			}
+
+			@Override
             public void viewFocusChanged(View previouslyFocusedView, View focusedView) {
                 if (focusedView != null) {
                     Component containedMapView = getContainedMapView(focusedView);
@@ -377,6 +382,28 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 
 		addTabsPopupMenu(rootWindow);
 
+	}
+
+	private void selectShownMapView(DockingWindow window) {
+		Component containedMapView = getContainedMapView(window);
+		if(! (containedMapView instanceof MapView)) {
+			return;
+		}
+		Window top = SwingUtilities.getWindowAncestor(containedMapView);
+		if (top instanceof RootPaneContainer) {
+			JRootPane root = ((RootPaneContainer) top).getRootPane();
+			root.putClientProperty(IMapViewManager.LAST_SELECTED_MAP_VIEW_PROPERTY, containedMapView);
+			IMapViewManager mgr = Controller.getCurrentController().getMapViewManager();
+			if (mgr instanceof MapViewController) {
+				((MapViewController) mgr).updateWindowLastSelectedMapView(top, (MapView) containedMapView);
+			}
+		}
+		final Component mapViewComponent = Controller.getCurrentController().getMapViewManager()
+				.getMapViewComponent();
+		if (containedMapView != mapViewComponent) {
+			viewSelectionChanged(containedMapView);
+		}
+		focusMapViewLater((MapView) containedMapView, () -> {/**/});
 	}
 
 	private void captureCenterComponentSize(DockingWindow removedFromWindow) {

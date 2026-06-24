@@ -23,7 +23,6 @@ import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.resources.components.BooleanProperty;
 import org.freeplane.core.resources.components.ColorProperty;
 import org.freeplane.core.resources.components.IPropertyControl;
 import org.freeplane.features.map.NodeModel;
@@ -41,12 +40,10 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
  */
 class NodeColorControlGroup implements ControlGroup {
 	static final String NODE_COLOR = "nodecolor";
-	static final String FOLLOW_THEME_TEXT_COLOR = "follow_theme_text_color";
 	private static final String NODE_TEXT_COLOR = "standardnodetextcolor";
 
 	private RevertingProperty mSetNodeColor;
 	private ColorProperty mNodeColor;
-	private BooleanProperty mFollowThemeTextColor;
 	private NodeColorChangeListener propertyChangeListener;
 
 	private class NodeColorChangeListener extends ControlGroupChangeListener {
@@ -59,10 +56,7 @@ class NodeColorControlGroup implements ControlGroup {
 			final MNodeStyleController styleController = (MNodeStyleController) Controller
 			.getCurrentModeController().getExtension(
 					NodeStyleController.class);
-			if(evt.getSource().equals(mFollowThemeTextColor)) {
-				styleController.setFollowThemeTextColor(node, mFollowThemeTextColor.getBooleanValue() ? Boolean.TRUE : null);
-			}
-			else if(enabled) {
+			if(enabled) {
 				styleController.setColor(node, mNodeColor.getColorValue());
 			}
 			else {
@@ -79,17 +73,12 @@ class NodeColorControlGroup implements ControlGroup {
 			final Color viewNodeColor = styleController.getColor(node, StyleOption.FOR_UNSELECTED_NODE);
 			mSetNodeColor.setValue(nodeColor != null || followThemeTextColor);
 			mNodeColor.setColorValue(viewNodeColor);
-			mFollowThemeTextColor.setValue(followThemeTextColor);
-			mNodeColor.setEnabled(! followThemeTextColor);
 		}
 
         @Override
         void adjustForStyle(NodeModel node) {
             StylePropertyAdjuster.adjustPropertyControl(node, mSetNodeColor);
             StylePropertyAdjuster.adjustPropertyControl(node, mNodeColor);
-            StylePropertyAdjuster.adjustPropertyControl(node, mFollowThemeTextColor);
-            if(mFollowThemeTextColor.getBooleanValue())
-            	mNodeColor.setEnabled(false);
         }
 	}
 	
@@ -97,14 +86,11 @@ class NodeColorControlGroup implements ControlGroup {
 		mSetNodeColor = new RevertingProperty();
 		mNodeColor = new ColorProperty(NODE_COLOR, ResourceController.getResourceController()
 		    .getDefaultProperty(NODE_TEXT_COLOR));
-		mFollowThemeTextColor = new BooleanProperty(FOLLOW_THEME_TEXT_COLOR);
-		propertyChangeListener = new NodeColorChangeListener(mSetNodeColor, mNodeColor, mFollowThemeTextColor);
+		propertyChangeListener = new NodeColorChangeListener(mSetNodeColor, mNodeColor);
 		mSetNodeColor.addPropertyChangeListener(propertyChangeListener);
 		mNodeColor.addPropertyChangeListener(propertyChangeListener);
-		mFollowThemeTextColor.addPropertyChangeListener(propertyChangeListener);
 		mNodeColor.appendToForm(formBuilder);
 		mSetNodeColor.appendToForm(formBuilder);
-		mFollowThemeTextColor.appendToForm(formBuilder);
 	}
 	
 	public void setStyle(NodeModel node, boolean canEdit) {

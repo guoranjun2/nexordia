@@ -7,6 +7,7 @@ import javax.swing.text.html.StyleSheet;
 
 import org.freeplane.api.HorizontalTextAlignment;
 import org.freeplane.core.ui.components.html.CssRuleBuilder;
+import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -15,7 +16,9 @@ import org.freeplane.features.nodestyle.NodeCss;
 import org.freeplane.features.nodestyle.NodeSizeModel;
 import org.freeplane.features.nodestyle.NodeStyleController;
 import org.freeplane.features.styles.LogicalStyleController.StyleOption;
+import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.styles.MapStyleModel;
+import org.freeplane.features.styles.ThemeColorResolver;
 
 public class NoteStyleAccessor {
 	final private String rule;
@@ -33,8 +36,15 @@ public class NoteStyleAccessor {
 			final NodeStyleController style = Controller.getCurrentModeController().getExtension(
 				NodeStyleController.class);
 			this.noteFont = style.getFont(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
-			this.noteBackground = style.getBackgroundColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
-			this.noteForeground = style.getColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
+			Color noteBackground = style.getBackgroundColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
+			Color noteForeground = style.getColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
+			if(MapStyle.getController(modeController).followsThemeMapColors(map)) {
+				final Color themeBackground = MapStyle.getThemeMapBackgroundColor();
+				noteBackground = ThemeColorResolver.resolveBackground(noteBackground, themeBackground);
+				noteForeground = ThemeColorResolver.resolveForeground(noteForeground, ColorUtils.isDark(themeBackground));
+			}
+			this.noteBackground = noteBackground;
+			this.noteForeground = noteForeground;
 			this.noteCss = style.getStyleSheet(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
 			this.horizontalAlignment = style.getHorizontalTextAlignment(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
 			final CssRuleBuilder cssRuleBuilder = new CssRuleBuilder();

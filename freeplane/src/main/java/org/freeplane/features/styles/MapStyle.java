@@ -45,6 +45,7 @@ import java.util.WeakHashMap;
 import org.freeplane.api.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import org.freeplane.core.extension.IExtension;
 import org.freeplane.core.io.IElementContentHandler;
@@ -79,6 +80,7 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.NodeHookDescriptor;
 import org.freeplane.features.mode.PersistentNodeHook;
+import org.freeplane.features.nodestyle.NodeStyleModel;
 import org.freeplane.features.styles.ConditionalStyleModel.Item;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
@@ -115,7 +117,9 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 	public static final String MAP_STYLES = "MAP_STYLES";
 	public static final String MAP_LAYOUT = "MAP_LAYOUT";
 	public static final String BACKGROUND_IMAGE_ENABLED = "background_image_enabled";
+	public static final String FOLLOW_THEME_MAP_COLORS = "follow_theme_map_colors";
 	public static final String FIT_TO_VIEWPORT = "fit_to_viewport";
+	private static final String LEGACY_FOLLOW_THEME_MAP_BACKGROUND = "follow_theme_map_background";
 
 	private static final ThreadLocal<Boolean> followedStyleUpdateActive = ThreadLocal.withInitial(() -> Boolean.FALSE);
 	private static final WeakHashMap<MapModel, String> updatedFollowedMaps = new WeakHashMap<MapModel, String>();
@@ -477,6 +481,9 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 
 	public Color getBackground(final MapModel map) {
 		MapStyleModel styleModel = MapStyleModel.getExtension(map);
+		if (followsThemeMapColors(styleModel)) {
+			return getThemeMapBackgroundColor();
+		}
 		final Color backgroundColor = styleModel != null ? styleModel.getBackgroundColor() : null;
 		if (backgroundColor != null) {
 			return backgroundColor;
@@ -485,6 +492,60 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 		    MapStyle.RESOURCES_BACKGROUND_COLOR);
 		final Color standardMapBackgroundColor = ColorUtils.stringToColor(stdcolor);
 		return standardMapBackgroundColor;
+	}
+
+	public static Color getThemeMapBackgroundColor() {
+		final Color background = UIManager.getColor("Panel.background");
+		if(background != null) {
+			return background;
+		}
+		final String stdcolor = ResourceController.getResourceController().getProperty(
+		    MapStyle.RESOURCES_BACKGROUND_COLOR);
+		return ColorUtils.stringToColor(stdcolor);
+	}
+
+	private boolean followsThemeMapColors(MapStyleModel styleModel) {
+		final String value = styleModel.getProperty(FOLLOW_THEME_MAP_COLORS);
+		if(value != null) {
+			return Boolean.parseBoolean(value);
+		}
+		final String legacyValue = styleModel.getProperty(LEGACY_FOLLOW_THEME_MAP_BACKGROUND);
+		if(legacyValue != null) {
+			return Boolean.parseBoolean(legacyValue);
+		}
+		return ResourceController.getResourceController().getBooleanProperty(FOLLOW_THEME_MAP_COLORS);
+	}
+
+	public boolean followsThemeMapColors(MapModel map) {
+		return followsThemeMapColors(MapStyleModel.getExtension(map));
+	}
+
+	public boolean applyThemeColors(MapModel map) {
+		final MapStyleModel styleModel = MapStyleModel.getExtension(map);
+		if(! followsThemeMapColors(styleModel)) {
+			return false;
+		}
+		return applyThemeTextColors(styleModel);
+	}
+
+	private boolean applyThemeTextColors(MapStyleModel mapStyleModel) {
+		final ThemeTextColorUpdater updater = new ThemeTextColorUpdater(ColorUtils.isDark(getThemeMapBackgroundColor()));
+		boolean changed = false;
+		for(IStyle style : mapStyleModel.getStyles()) {
+			final NodeModel styleNode = mapStyleModel.getStyleNode(style);
+			if(styleNode == null) {
+				continue;
+			}
+			final boolean defaultStyle = style.equals(MapStyleModel.DEFAULT_STYLE);
+			NodeStyleModel styleNodeModel = NodeStyleModel.getModel(styleNode);
+			if(styleNodeModel == null && defaultStyle) {
+				styleNodeModel = NodeStyleModel.createNodeStyleModel(styleNode);
+			}
+			if(styleNodeModel != null && updater.update(styleNodeModel, defaultStyle)) {
+				changed = true;
+			}
+		}
+		return changed;
 	}
 
 	public URI getBackgroundImage(MapModel map) {
@@ -547,6 +608,7 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 	    else {
 	        createDefaultStyleMap(map);
 	    }
+	    applyThemeColors(map);
 	}
 
 	private void createDefaultStyleMap(final MapModel map) {
@@ -822,6 +884,7 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
                     loadStyleMapContainer(source.toURL()).ifPresent(styleMapContainer ->
                     {
                         new StyleExchange(styleMapContainer, targetMap).copyMapStylesNoUndoNoRefresh(false);
+                        refreshUpdatedFollowedMapStyles(targetMap);
                         try {
 							Controller.getCurrentController().getViewController().invokeAndWait(
 							    () -> updatedFollowedMaps.put(targetMap, followedMapPath));
@@ -840,6 +903,12 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
             }
 
         }
+    }
+
+    private void refreshUpdatedFollowedMapStyles(MapModel targetMap) {
+        MapStyleModel.getExtension(targetMap).refreshStyles();
+        Controller.getCurrentModeController().getMapController().fireMapChanged(
+                new MapChangeEvent(this, targetMap, MapStyle.MAP_STYLES, null, null, false));
     }
 
 	private static boolean areDifferent(final File x, File y) {
@@ -1004,9 +1073,16 @@ public class MapStyle extends PersistentNodeHook implements IExtension, IMapLife
 
 			private void setPropertyWithoutUndo(final MapModel model, final String key, final String oldValue, final String newValue) {
 				styleModel.setProperty(key, newValue);
-	    		Controller.getCurrentModeController().getMapController().fireMapChanged(
-	    		    new MapChangeEvent(MapStyle.this, model, key, oldValue, newValue));
-            }
+				final boolean changedThemeColors = FOLLOW_THEME_MAP_COLORS.equals(key)
+				        && Boolean.parseBoolean(newValue)
+				        && applyThemeColors(model);
+				Controller.getCurrentModeController().getMapController().fireMapChanged(
+					new MapChangeEvent(MapStyle.this, model, key, oldValue, newValue));
+				if(changedThemeColors) {
+					Controller.getCurrentModeController().getMapController().fireMapChanged(
+						new MapChangeEvent(MapStyle.this, model, MAP_STYLES, null, null));
+				}
+			}
 		};
 		Controller.getCurrentModeController().execute(actor, model);
 	}

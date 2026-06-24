@@ -28,6 +28,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -318,6 +319,11 @@ class NotePanel extends JPanel {
 		iconViewerPanel.setOpaque(noteBackground != null);
 	}
 
+	void updateStyle(String ownRule, StyleSheet customStyleSheet, Color foreground, Color background) {
+		updateStyleSheet(ownRule, customStyleSheet);
+		updateColors(foreground, background);
+	}
+
 	private void setVisible(JComponent component) {
 		htmlEditorPanel.setVisible(component == htmlEditorPanel);
 		viewerScrollPanel.setVisible(component != htmlEditorPanel);
@@ -366,6 +372,16 @@ class NotePanel extends JPanel {
 	    editorPane.setCaretColor(caretColor);
 	    editorPane.setForeground(noteForeground);
 	    editorPane.setBackground(noteBackground);
+	    htmlEditorPanel.setBackground(noteBackground);
+	    viewerScrollPanel.setBackground(noteBackground);
+	    viewerScrollPanel.getViewport().setBackground(noteBackground);
+	    iconViewerPanel.setBackground(noteBackground);
+	    iconViewerPanel.setOpaque(noteBackground != null);
+	    setBackground(noteBackground);
+	    final Component parent = editorPane.getParent();
+	    if(parent instanceof JViewport) {
+	        parent.setBackground(noteBackground);
+	    }
 	}
 
 	private void updateStyleSheet(String ownRule, StyleSheet customStyleSheet) {

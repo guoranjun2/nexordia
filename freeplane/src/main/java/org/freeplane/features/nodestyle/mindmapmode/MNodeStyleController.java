@@ -184,6 +184,9 @@ public class MNodeStyleController extends NodeStyleController {
 			if (null != whichStyle.getColor()) {
 				fromStyle.setColor(null);
 			}
+			if (null != whichStyle.getFollowThemeTextColor()) {
+				fromStyle.setFollowThemeTextColor(null);
+			}
 			if (null != whichStyle.getBackgroundColor()) {
 				fromStyle.setBackgroundColor(null);
 			}

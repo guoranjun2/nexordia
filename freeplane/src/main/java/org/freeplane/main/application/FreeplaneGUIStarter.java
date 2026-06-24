@@ -71,6 +71,7 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.print.PrintController;
 import org.freeplane.features.styles.LogicalStyleController;
 import org.freeplane.features.styles.LogicalStyleFilterController;
+import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.styles.MapViewLayout;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.time.TimeController;
@@ -163,9 +164,12 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 	private static void refreshAllMapStyles() {
 		for(Component mapView : Controller.getCurrentController().getMapViewManager().getMapViews()) {
 			final MapModel map = Controller.getCurrentController().getMapViewManager().getMap(mapView);
-			if(map != null)
-				LogicalStyleController.getController(Controller.getCurrentController().getMapViewManager()
-				    .getModeController(mapView)).refreshMapLaterUndoable(map);
+			if(map != null) {
+				final ModeController modeController = Controller.getCurrentController().getMapViewManager()
+				    .getModeController(mapView);
+				MapStyle.getController(modeController).applyThemeColors(map);
+				LogicalStyleController.getController(modeController).refreshMapLaterUndoable(map);
+			}
 		}
 	}
 

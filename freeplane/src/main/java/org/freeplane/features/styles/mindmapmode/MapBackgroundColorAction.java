@@ -22,10 +22,8 @@ package org.freeplane.features.styles.mindmapmode;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 
-import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.ui.AFreeplaneAction;
 import org.freeplane.core.ui.ColorTracker;
-import org.freeplane.core.util.ColorUtils;
 import org.freeplane.core.util.TextUtils;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.styles.MapStyle;
@@ -52,19 +50,12 @@ class MapBackgroundColorAction extends AFreeplaneAction {
 		final Controller controller = Controller.getCurrentController();
 		MapStyle mapStyle = controller.getModeController().getExtension(MapStyle.class);
 		final MapStyleModel model = (MapStyleModel) mapStyle.getMapHook(controller.getMap());
-		final Color oldBackgroundColor;
-		final String colorPropertyString = ResourceController.getResourceController().getProperty(
-		    MapStyle.RESOURCES_BACKGROUND_COLOR);
-		final Color defaultBgColor = ColorUtils.stringToColor(colorPropertyString);
-		if (model != null) {
-			oldBackgroundColor = model.getBackgroundColor();
-		}
-		else {
-			oldBackgroundColor = defaultBgColor;
-		}
+		final Color oldBackgroundColor = mapStyle.getBackground(controller.getMap());
 		final Color actionColor = ColorTracker.showCommonJColorChooserDialog(controller.getSelection()
 		    .getSelected(), TextUtils.getText("choose_map_background_color"), oldBackgroundColor, null);
-		if(actionColor != null)
+		if(actionColor != null) {
+			mapStyle.setProperty(controller.getMap(), MapStyle.FOLLOW_THEME_MAP_COLORS, Boolean.FALSE.toString());
 			mapStyle.setBackgroundColor(model, actionColor);
+		}
 	}
 }

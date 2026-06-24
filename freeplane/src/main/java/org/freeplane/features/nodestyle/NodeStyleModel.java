@@ -313,10 +313,16 @@ public class NodeStyleModel implements IExtension, Cloneable {
 
 	public void setColor(final Color color) {
 		this.color = color;
+		if(color != null) {
+			followThemeTextColor = null;
+		}
 	}
 
 	public void setFollowThemeTextColor(final Boolean followThemeTextColor) {
 		this.followThemeTextColor = followThemeTextColor;
+		if(Boolean.TRUE.equals(followThemeTextColor)) {
+			color = null;
+		}
 	}
 
 	public void setFontFamilyName(final String fontFamilyName) {

@@ -514,9 +514,6 @@ public class NodeStyleController implements IExtension {
 			if (styleModel == null) {
 				continue;
 			}
-			if (Boolean.TRUE.equals(styleModel.getFollowThemeTextColor())) {
-				return getThemeNodeTextColor();
-			}
 			final Color styleColor = styleModel == null ? null : styleModel.getColor();
 			if (styleColor == null) {
 				continue;

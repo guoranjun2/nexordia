@@ -424,15 +424,16 @@
 								<Entry name="SetBooleanPropertyAction.simplyhtml.note.show_toolbars" />
 			</Entry>
 		</Entry>
-		<Entry name="format" >
-			<Entry usedBy = "EDITOR" >
-						<Entry name="map_background">
-							<Entry name="MapBackgroundImageAction" />
-							<Entry name="SetBooleanMapPropertyAction.background_image_enabled" />
-							<Entry name="SetBooleanMapPropertyAction.fit_to_viewport" />
-							<Entry name="MapBackgroundColorAction" />
-							<Entry name="MapBackgroundClearAction" />
-						</Entry>
+			<Entry name="format" >
+				<Entry usedBy = "EDITOR" >
+							<Entry name="SetBooleanMapPropertyAction.follow_theme_map_colors" />
+							<Entry name="map_background">
+								<Entry name="MapBackgroundImageAction" />
+								<Entry name="SetBooleanMapPropertyAction.background_image_enabled" />
+								<Entry name="SetBooleanMapPropertyAction.fit_to_viewport" />
+								<Entry name="MapBackgroundColorAction" />
+								<Entry name="MapBackgroundClearAction" />
+							</Entry>
 						<Entry name="menu_coreFormat">
 							<Entry name="BoldAction" accelerator="control B" />
 							<Entry name="ItalicAction" accelerator="control I" />

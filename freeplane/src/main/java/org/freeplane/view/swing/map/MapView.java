@@ -129,6 +129,7 @@ import org.freeplane.features.styles.LogicalStyleController.StyleOption;
 import org.freeplane.features.styles.MapStyle;
 import org.freeplane.features.styles.MapStyleModel;
 import org.freeplane.features.styles.MapViewLayout;
+import org.freeplane.features.styles.ThemeColorResolver;
 import org.freeplane.features.text.TextController;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.url.UrlManager;
@@ -1593,6 +1594,14 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			setBackground(requiredBackground());
 			return;
 		}
+		if (property.equals(MapStyle.FOLLOW_THEME_MAP_COLORS)) {
+			setBackground(requiredBackground());
+			updateContentStyle();
+			updateAllNodeViews();
+			revalidate();
+			repaint();
+			return;
+		}
 		if (property.equals(MapStyle.MAP_STYLES)){
 	        updateContentStyle();
 	        getRoot().resetLayoutPropertiesRecursively();
@@ -1854,6 +1863,11 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         noteFont = UITools.scale(style.getFont(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE));
         noteBackground = style.getBackgroundColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
         noteForeground = style.getColor(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
+        if(MapStyle.getController(modeController).followsThemeMapColors(map)) {
+            final Color themeBackground = MapStyle.getThemeMapBackgroundColor();
+            noteBackground = ThemeColorResolver.resolveBackground(noteBackground, themeBackground);
+            noteForeground = ThemeColorResolver.resolveForeground(noteForeground, ColorUtils.isDark(themeBackground));
+        }
         noteHorizontalAlignment = style.getHorizontalTextAlignment(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE).swingConstant;
         noteCss = style.getStyleSheet(noteStyleNode, StyleOption.FOR_UNSELECTED_NODE);
         updateSelectionColors();

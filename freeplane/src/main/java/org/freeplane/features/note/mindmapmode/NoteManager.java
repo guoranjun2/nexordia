@@ -89,17 +89,20 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
             }
         });
 
-		mapController.addMapChangeListener(new IMapChangeListener() {
-		    @Override
-			public void mapChanged(final MapChangeEvent event) {
-		    	final Object property = event.getProperty();
-		    	if (node != null
-		    			&& node.getMap() == event.getMap() && property.equals(MapStyle.MAP_STYLES)) {
-		    		final NotePanel notePanel = noteController.getNotePanel();
-		    		if(notePanel != null)
-		    			notePanel.setComponentOrientation(getNoteTextDirection().componentOrientation);
-		    	}
-		    }
+        mapController.addMapChangeListener(new IMapChangeListener() {
+            @Override
+            public void mapChanged(final MapChangeEvent event) {
+                final Object property = event.getProperty();
+                if (node != null
+                        && node.getMap() == event.getMap()
+                        && (property.equals(MapStyle.MAP_STYLES) || property.equals(MapStyle.FOLLOW_THEME_MAP_COLORS))) {
+                    final NotePanel notePanel = noteController.getNotePanel();
+                    if(notePanel != null) {
+                        notePanel.setComponentOrientation(getNoteTextDirection().componentOrientation);
+                        updateEditorStyle(notePanel);
+                    }
+                }
+            }
 
 		});
 	}
@@ -156,13 +159,7 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
         if(noteFont != null)
         	notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
         notePanel.setForeground(noteForeground);
-        StringBuilder bodyCssBuilder = new StringBuilder( "body {").append(noteCssRule).append("}\n");
-        if (ResourceController.getResourceController().getBooleanProperty(
-            MNoteController.RESOURCES_USE_MARGIN_TOP_ZERO_FOR_NOTES)) {
-            bodyCssBuilder.append("p {margin-top:0;}\n");
-        }
-
-        String bodyCssRule = bodyCssBuilder.toString();
+        String bodyCssRule = bodyCssRule(noteCssRule);
         StyleSheet noteStyleSheet = noteStyleAccessor.getNoteStyleSheet();
 		if(node == null) {
 		    notePanel.setViewedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
@@ -207,6 +204,28 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 				notePanel.setViewedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
 		}
         notePanel.updateBaseUrl(node.getMap().getURL());
+	}
+
+	private void updateEditorStyle(NotePanel notePanel) {
+        final ModeController modeController = Controller.getCurrentModeController();
+        final NoteStyleAccessor noteStyleAccessor = new NoteStyleAccessor(modeController, node, 1f, false);
+        Color noteForeground = noteStyleAccessor.getNoteForeground();
+        Color noteBackground = noteStyleAccessor.getNoteBackground();
+        final Font noteFont = noteStyleAccessor.getNoteFont();
+        if(noteFont != null)
+            notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
+        notePanel.setForeground(noteForeground);
+        notePanel.updateStyle(bodyCssRule(noteStyleAccessor.getNoteCSSStyle()),
+            noteStyleAccessor.getNoteStyleSheet(), noteForeground, noteBackground);
+	}
+
+	private String bodyCssRule(String noteCssRule) {
+        StringBuilder bodyCssBuilder = new StringBuilder( "body {").append(noteCssRule).append("}\n");
+        if (ResourceController.getResourceController().getBooleanProperty(
+            MNoteController.RESOURCES_USE_MARGIN_TOP_ZERO_FOR_NOTES)) {
+            bodyCssBuilder.append("p {margin-top:0;}\n");
+        }
+        return bodyCssBuilder.toString();
 	}
 
 	@Override

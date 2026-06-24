@@ -426,12 +426,8 @@ class NodeStyleBuilder implements IElementDOMHandler, IExtensionElementWriter, I
 
 	private void writeAttributes(final ITreeWriter writer, final NodeModel node, final NodeStyleModel style,
 	                             final boolean forceFormatting) {
-		final Boolean followThemeTextColor = forceFormatting ? NodeStyleModel.getFollowThemeTextColor(node) : style.getFollowThemeTextColor();
-		if (Boolean.TRUE.equals(followThemeTextColor)) {
-			writer.addAttribute("FOLLOW_THEME_TEXT_COLOR", "true");
-		}
 		final Color color = forceFormatting ? nsc.getColor(node, StyleOption.FOR_UNSELECTED_NODE) : style.getColor();
-		if (color != null && ! Boolean.TRUE.equals(followThemeTextColor)) {
+		if (color != null) {
 			ColorUtils.addColorAttributes(writer, "COLOR", "ALPHA", color);
 		}
 		final Color backgroundColor = forceFormatting ? nsc.getBackgroundColor(node, StyleOption.FOR_UNSELECTED_NODE) : style.getBackgroundColor();
