@@ -110,6 +110,14 @@ class NodeStyleBuilder implements IElementDOMHandler, IExtensionElementWriter, I
 		reader.addAttributeHandler(NodeBuilder.XML_NODE, "ALPHA", alphaHandler);
 		reader.addAttributeHandler(NodeBuilder.XML_STYLENODE, "COLOR", colorHandler);
 		reader.addAttributeHandler(NodeBuilder.XML_STYLENODE, "ALPHA", alphaHandler);
+		final IAttributeHandler followThemeTextColorHandler = new IAttributeHandler() {
+			public void setAttribute(final Object userObject, final String value) {
+				final NodeModel node = (NodeModel) userObject;
+				NodeStyleModel.setFollowThemeTextColor(node, Boolean.valueOf(value));
+			}
+		};
+		reader.addAttributeHandler(NodeBuilder.XML_NODE, "FOLLOW_THEME_TEXT_COLOR", followThemeTextColorHandler);
+		reader.addAttributeHandler(NodeBuilder.XML_STYLENODE, "FOLLOW_THEME_TEXT_COLOR", followThemeTextColorHandler);
 		final IAttributeHandler bgHandler = new IAttributeHandler() {
 			public void setAttribute(final Object userObject, final String value) {
 				final NodeModel node = (NodeModel) userObject;
@@ -418,8 +426,12 @@ class NodeStyleBuilder implements IElementDOMHandler, IExtensionElementWriter, I
 
 	private void writeAttributes(final ITreeWriter writer, final NodeModel node, final NodeStyleModel style,
 	                             final boolean forceFormatting) {
+		final Boolean followThemeTextColor = forceFormatting ? NodeStyleModel.getFollowThemeTextColor(node) : style.getFollowThemeTextColor();
+		if (Boolean.TRUE.equals(followThemeTextColor)) {
+			writer.addAttribute("FOLLOW_THEME_TEXT_COLOR", "true");
+		}
 		final Color color = forceFormatting ? nsc.getColor(node, StyleOption.FOR_UNSELECTED_NODE) : style.getColor();
-		if (color != null) {
+		if (color != null && ! Boolean.TRUE.equals(followThemeTextColor)) {
 			ColorUtils.addColorAttributes(writer, "COLOR", "ALPHA", color);
 		}
 		final Color backgroundColor = forceFormatting ? nsc.getBackgroundColor(node, StyleOption.FOR_UNSELECTED_NODE) : style.getBackgroundColor();

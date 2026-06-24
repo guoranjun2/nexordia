@@ -52,6 +52,11 @@ public class NodeStyleModel implements IExtension, Cloneable {
 		return styleModel == null ? null : styleModel.getColor();
 	}
 
+	public static Boolean getFollowThemeTextColor(final NodeModel node) {
+		final NodeStyleModel styleModel = node.getExtension(NodeStyleModel.class);
+		return styleModel == null ? null : styleModel.getFollowThemeTextColor();
+	}
+
 	public static String getFontFamilyName(final NodeModel node) {
 		final NodeStyleModel styleModel = node.getExtension(NodeStyleModel.class);
 		return styleModel == null ? null : styleModel.getFontFamilyName();
@@ -127,6 +132,11 @@ public class NodeStyleModel implements IExtension, Cloneable {
 		styleModel.setColor(color);
 	}
 
+	public static void setFollowThemeTextColor(final NodeModel node, final Boolean followThemeTextColor) {
+		final NodeStyleModel styleModel = NodeStyleModel.createNodeStyleModel(node);
+		styleModel.setFollowThemeTextColor(followThemeTextColor);
+	}
+
 	public static void setNodeNumbering(NodeModel node, Boolean enableNodeNumbering) {
 		final NodeStyleModel styleModel = NodeStyleModel.createNodeStyleModel(node);
 		styleModel.setNodeNumbering(enableNodeNumbering);
@@ -179,6 +189,7 @@ public class NodeStyleModel implements IExtension, Cloneable {
 
 	private Color backgroundColor;
 	private Color color;
+	private Boolean followThemeTextColor;
 	private String fontFamilyName = null;
 	private Integer fontSize = null;
 	private Boolean isBold = null;
@@ -199,6 +210,8 @@ public class NodeStyleModel implements IExtension, Cloneable {
 	public NodeStyleModel copyTo(final NodeStyleModel to) {
 	    if(color != null)
 	        to.setColor(color);
+	    if(followThemeTextColor != null)
+	        to.setFollowThemeTextColor(followThemeTextColor);
 	    if(backgroundColor != null)
 	        to.setBackgroundColor(backgroundColor);
 	    if(isBold != null)
@@ -232,6 +245,10 @@ public class NodeStyleModel implements IExtension, Cloneable {
 
 	public Color getColor() {
 		return color;
+	}
+
+	public Boolean getFollowThemeTextColor() {
+		return followThemeTextColor;
 	}
 
 	public String getFontFamilyName() {
@@ -296,6 +313,10 @@ public class NodeStyleModel implements IExtension, Cloneable {
 
 	public void setColor(final Color color) {
 		this.color = color;
+	}
+
+	public void setFollowThemeTextColor(final Boolean followThemeTextColor) {
+		this.followThemeTextColor = followThemeTextColor;
 	}
 
 	public void setFontFamilyName(final String fontFamilyName) {

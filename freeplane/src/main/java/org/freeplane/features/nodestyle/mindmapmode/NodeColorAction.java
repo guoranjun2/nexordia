@@ -47,7 +47,7 @@ class NodeColorAction extends AMultipleNodeAction {
 		    .getSelected(), 
 		    TextUtils.getText("choose_node_color"), 
 		    NodeStyleModel.getColor(Controller.getCurrentModeController().getMapController().getSelectedNode()), 
-		    NodeStyleController.standardNodeTextColor);
+		    NodeStyleController.getStandardNodeTextColor());
 		if(actionColor != null)
 			super.actionPerformed(e);
 	}

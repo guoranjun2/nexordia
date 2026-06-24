@@ -29,7 +29,9 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.SwingConstants;
 
+import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.TextUtils;
@@ -43,15 +45,18 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
-class ThemeStatusSwitcher extends JButton {
+class ThemeStatusSwitcher extends JButton implements IFreeplanePropertyListener {
 	private static final long serialVersionUID = 1L;
 	private static final String LOOKANDFEEL_PROPERTY = "lookandfeel";
 
 	ThemeStatusSwitcher() {
 		super(createIcon());
 		setFocusable(false);
-		setMargin(new Insets(1, 4, 1, 4));
-		setToolTipText("Theme");
+		setHorizontalTextPosition(SwingConstants.RIGHT);
+		setIconTextGap(5);
+		setMargin(new Insets(1, 6, 1, 6));
+		updateThemeName();
+		ResourceController.getResourceController().addPropertyChangeListener(this);
 		addActionListener(this::showThemeMenu);
 	}
 
@@ -66,12 +71,43 @@ class ThemeStatusSwitcher extends JButton {
 		for (ThemeChoice themeChoice : createThemeChoices()) {
 			final JRadioButtonMenuItem item = new JRadioButtonMenuItem(themeChoice.label);
 			item.setSelected(themeChoice.lookAndFeel.equals(currentLookAndFeel));
-			item.addActionListener(e -> ResourceController.getResourceController().setProperty(LOOKANDFEEL_PROPERTY,
-			    themeChoice.lookAndFeel));
+			item.addActionListener(e -> {
+				ResourceController.getResourceController().setProperty(LOOKANDFEEL_PROPERTY, themeChoice.lookAndFeel);
+				updateThemeName();
+			});
 			themeGroup.add(item);
 			menu.add(item);
 		}
 		menu.show(this, 0, getHeight());
+	}
+
+	@Override
+	public void propertyChanged(String propertyName, String newValue, String oldValue) {
+		if (LOOKANDFEEL_PROPERTY.equals(propertyName)) {
+			updateThemeName();
+		}
+	}
+
+	private void updateThemeName() {
+		setText(currentThemeLabel());
+	}
+
+	private String currentThemeLabel() {
+		final String currentLookAndFeel = ResourceController.getResourceController().getProperty(LOOKANDFEEL_PROPERTY);
+		for (ThemeChoice themeChoice : createThemeChoices()) {
+			if (themeChoice.lookAndFeel.equals(currentLookAndFeel)) {
+				return themeChoice.label;
+			}
+		}
+		return currentLookAndFeel == null ? TextUtils.getOptionalText("OptionPanel.default") : shortClassName(currentLookAndFeel);
+	}
+
+	private static String shortClassName(String lookAndFeel) {
+		final int classNameStart = lookAndFeel.lastIndexOf('.') + 1;
+		return lookAndFeel.substring(classNameStart)
+		    .replace("IJTheme", "")
+		    .replace("Theme", "")
+		    .replace("Laf", "");
 	}
 
 	private static List<ThemeChoice> createThemeChoices() {
@@ -86,7 +122,7 @@ class ThemeStatusSwitcher extends JButton {
 		choices.add(new ThemeChoice("Flat Solarized Light", FlatSolarizedLightIJTheme.class.getName()));
 		choices.add(new ThemeChoice("Flat Dark", FlatDarkLaf.class.getName()));
 		choices.add(new ThemeChoice("Flat Darcula", FlatDarculaLaf.class.getName()));
-		choices.add(new ThemeChoice("Atom One Dark Contrast (Material)", FlatAtomOneDarkContrastIJTheme.class.getName()));
+		choices.add(new ThemeChoice("Atom One Dark (Material)", FlatAtomOneDarkContrastIJTheme.class.getName()));
 		return choices;
 	}
 

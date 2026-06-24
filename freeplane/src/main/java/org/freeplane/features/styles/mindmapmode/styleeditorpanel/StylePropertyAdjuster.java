@@ -28,6 +28,7 @@ class StylePropertyAdjuster {
                     || style.equals(MapStyleModel.NOTE_STYLE)) {
                 enable = propertyName.equals(NodeBackgroundColorControlGroup.NODE_BACKGROUND_COLOR)
                         || propertyName.equals(NodeColorControlGroup.NODE_COLOR)
+                        || propertyName.equals(NodeColorControlGroup.FOLLOW_THEME_TEXT_COLOR)
                         || propertyName.equals(FontBoldControlGroup.NODE_FONT_BOLD)
                         || propertyName.equals(FontItalicControlGroup.NODE_FONT_ITALIC)
                         || propertyName.equals(FontUnderlineControlGroup.NODE_FONT_UNDERLINE)
@@ -41,6 +42,7 @@ class StylePropertyAdjuster {
             else if(style.equals(MapStyleModel.ATTRIBUTE_STYLE)) {
                 enable = propertyName.equals(NodeBackgroundColorControlGroup.NODE_BACKGROUND_COLOR)
                         || propertyName.equals(NodeColorControlGroup.NODE_COLOR)
+                        || propertyName.equals(NodeColorControlGroup.FOLLOW_THEME_TEXT_COLOR)
                         || propertyName.equals(FontBoldControlGroup.NODE_FONT_BOLD)
                         || propertyName.equals(FontItalicControlGroup.NODE_FONT_ITALIC)
                         || propertyName.equals(FontUnderlineControlGroup.NODE_FONT_UNDERLINE)
@@ -57,6 +59,7 @@ class StylePropertyAdjuster {
                         || propertyName.equals(FontNameControlGroup.NODE_FONT_NAME)
                         || propertyName.equals(FontSizeControlGroup.NODE_FONT_SIZE)
                         || propertyName.equals(NodeColorControlGroup.NODE_COLOR)
+                        || propertyName.equals(NodeColorControlGroup.FOLLOW_THEME_TEXT_COLOR)
                         || propertyName.equals(NodeBackgroundColorControlGroup.NODE_BACKGROUND_COLOR)
                         || propertyName.equals(NodeHorizontalTextAlignmentControlGroup.TEXT_ALIGNMENT);
             }

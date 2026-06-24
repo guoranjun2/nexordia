@@ -24,6 +24,8 @@ import java.awt.Font;
 import java.awt.font.TextAttribute;
 import java.util.Collection;
 
+import javax.swing.UIManager;
+
 import org.freeplane.api.Dash;
 import org.freeplane.api.HorizontalTextAlignment;
 import org.freeplane.api.LengthUnit;
@@ -33,6 +35,7 @@ import org.freeplane.core.extension.IExtension;
 import org.freeplane.core.io.ReadManager;
 import org.freeplane.core.io.WriteManager;
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.util.ColorUtils;
 import org.freeplane.features.edge.EdgeController;
 import org.freeplane.features.format.PatternFormat;
 import org.freeplane.features.map.MapController;
@@ -193,6 +196,15 @@ public class NodeStyleController implements IExtension {
 
 	public Color getColor(final NodeModel node, StyleOption option) {
 		return textColorHandlers.getProperty(node, option);
+	}
+
+	public static Color getStandardNodeTextColor() {
+		return standardNodeTextColor;
+	}
+
+	public static Color getThemeNodeTextColor() {
+		final Color background = UIManager.getColor("Panel.background");
+		return background != null && ColorUtils.isDark(background) ? Color.WHITE : standardNodeTextColor;
 	}
 
 	private Color getStyleBackgroundColor(final MapModel map, final Collection<IStyle> styleKeys) {
@@ -501,6 +513,9 @@ public class NodeStyleController implements IExtension {
 			final NodeStyleModel styleModel = NodeStyleModel.getModel(styleNode);
 			if (styleModel == null) {
 				continue;
+			}
+			if (Boolean.TRUE.equals(styleModel.getFollowThemeTextColor())) {
+				return getThemeNodeTextColor();
 			}
 			final Color styleColor = styleModel == null ? null : styleModel.getColor();
 			if (styleColor == null) {

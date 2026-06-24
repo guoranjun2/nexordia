@@ -493,13 +493,17 @@ public class MNodeStyleController extends NodeStyleController {
 	public void setColor(final NodeModel node, final Color color) {
 		final ModeController modeController = getModeController();
 		final Color oldColor = NodeStyleModel.getColor(node);
-		if (oldColor == color || oldColor != null && oldColor.equals(color)) {
+		final Boolean oldFollowThemeTextColor = NodeStyleModel.getFollowThemeTextColor(node);
+		if ((oldColor == color || oldColor != null && oldColor.equals(color))
+		        && ! Boolean.TRUE.equals(oldFollowThemeTextColor)) {
 			return;
 		}
 		final IActor actor = new IActor() {
 			@Override
 			public void act() {
 				NodeStyleModel.setColor(node, color);
+				if(color != null)
+					NodeStyleModel.setFollowThemeTextColor(node, null);
 				getModeController().getMapController().nodeChanged(node);
 			}
 
@@ -510,6 +514,40 @@ public class MNodeStyleController extends NodeStyleController {
 
 			@Override
 			public void undo() {
+				NodeStyleModel.setColor(node, oldColor);
+				NodeStyleModel.setFollowThemeTextColor(node, oldFollowThemeTextColor);
+				getModeController().getMapController().nodeChanged(node);
+			}
+		};
+		modeController.execute(actor, node.getMap());
+	}
+
+	public void setFollowThemeTextColor(final NodeModel node, final Boolean followThemeTextColor) {
+		final ModeController modeController = getModeController();
+		final Boolean oldFollowThemeTextColor = NodeStyleModel.getFollowThemeTextColor(node);
+		final Color oldColor = NodeStyleModel.getColor(node);
+		if ((oldFollowThemeTextColor == followThemeTextColor
+		        || oldFollowThemeTextColor != null && oldFollowThemeTextColor.equals(followThemeTextColor))
+		        && (! Boolean.TRUE.equals(followThemeTextColor) || oldColor == null)) {
+			return;
+		}
+		final IActor actor = new IActor() {
+			@Override
+			public void act() {
+				NodeStyleModel.setFollowThemeTextColor(node, followThemeTextColor);
+				if(Boolean.TRUE.equals(followThemeTextColor))
+					NodeStyleModel.setColor(node, null);
+				getModeController().getMapController().nodeChanged(node);
+			}
+
+			@Override
+			public String getDescription() {
+				return "setFollowThemeTextColor";
+			}
+
+			@Override
+			public void undo() {
+				NodeStyleModel.setFollowThemeTextColor(node, oldFollowThemeTextColor);
 				NodeStyleModel.setColor(node, oldColor);
 				getModeController().getMapController().nodeChanged(node);
 			}

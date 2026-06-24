@@ -19,6 +19,7 @@
  */
 package org.freeplane.main.application;
 
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.EventQueue;
 import java.awt.Toolkit;
@@ -68,6 +69,7 @@ import org.freeplane.features.mode.QuitAction;
 import org.freeplane.features.mode.filemode.FModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.print.PrintController;
+import org.freeplane.features.styles.LogicalStyleController;
 import org.freeplane.features.styles.LogicalStyleFilterController;
 import org.freeplane.features.styles.MapViewLayout;
 import org.freeplane.features.text.TextController;
@@ -158,6 +160,15 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 		}
 	}
 
+	private static void refreshAllMapStyles() {
+		for(Component mapView : Controller.getCurrentController().getMapViewManager().getMapViews()) {
+			final MapModel map = Controller.getCurrentController().getMapViewManager().getMap(mapView);
+			if(map != null)
+				LogicalStyleController.getController(Controller.getCurrentController().getMapViewManager()
+				    .getModeController(mapView)).refreshMapLaterUndoable(map);
+		}
+	}
+
 	public FreeplaneGUIStarter(CommandLineOptions options) {
 		super();
 		this.options = options;
@@ -195,6 +206,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 						updateAllWindowComponentTrees();
 						if(viewController != null) {
 							viewController.applyTitleBarTheme();
+							refreshAllMapStyles();
 							if(Compat.isMacOsX() && controller.getModeController() != null)
 								viewController.setFreeplaneMenuBar(controller.getModeController().getUserInputListenerFactory().getMenuBar());
 						}
