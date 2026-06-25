@@ -45,11 +45,9 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.RootPaneContainer;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
@@ -86,7 +84,7 @@ class ApplicationViewController extends FrameController {
 	private final java.util.Map<Window, BookmarkToolbarPane> bookmarkToolbarPanes = new java.util.HashMap<>();
 	private final FrameComponentMover frameComponentMover;
 	private final JPanel titleBarOverlay;
-	private final JLabel titleBarLabel;
+	private final TitleBarBreadcrumb titleBarBreadcrumb;
 	private final Border contentPaneBorder;
 	private JComponent noteToolWindow;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
@@ -104,7 +102,7 @@ class ApplicationViewController extends FrameController {
 		contentPaneBorder = mainFrame.getContentPane() instanceof JComponent
 				? ((JComponent) mainFrame.getContentPane()).getBorder() : null;
 		titleBarOverlay = new JPanel(new BorderLayout());
-		titleBarLabel = new JLabel("", SwingConstants.CENTER);
+		titleBarBreadcrumb = new TitleBarBreadcrumb();
 		installTitleBarOverlay();
 		applyTitleBarTheme();
 	}
@@ -281,9 +279,10 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void setTitle(final String frameTitle) {
 		mainFrame.setTitle(frameTitle);
-		titleBarLabel.setText(frameTitle);
-		titleBarLabel.setToolTipText(frameTitle);
-		mapViewWindows.setTitle();
+		titleBarBreadcrumb.setTitle(frameTitle);
+		if (mapViewWindows != null) {
+			mapViewWindows.setTitle();
+		}
 	}
 
 	void applyTitleBarTheme() {
@@ -304,7 +303,7 @@ class ApplicationViewController extends FrameController {
 		mainFrame.getRootPane().setForeground(foreground);
 		mainFrame.getContentPane().setBackground(background);
 		titleBarOverlay.setBackground(background);
-		titleBarLabel.setForeground(foreground);
+		titleBarBreadcrumb.setForeground(foreground);
 		updateContentPaneTitleBarInset();
 		updateTitleBarOverlayBounds();
 		mainFrame.repaint();
@@ -318,9 +317,7 @@ class ApplicationViewController extends FrameController {
 	private void installTitleBarOverlay() {
 		titleBarOverlay.setOpaque(true);
 		titleBarOverlay.putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, Boolean.TRUE);
-		titleBarLabel.setOpaque(false);
-		titleBarLabel.putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, Boolean.TRUE);
-		titleBarOverlay.add(titleBarLabel, BorderLayout.CENTER);
+		titleBarOverlay.add(titleBarBreadcrumb, BorderLayout.CENTER);
 		mainFrame.getRootPane().getLayeredPane().add(titleBarOverlay, JLayeredPane.PALETTE_LAYER);
 		mainFrame.getRootPane().addComponentListener(new ComponentAdapter() {
 			@Override

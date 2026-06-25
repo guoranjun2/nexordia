@@ -185,7 +185,7 @@ public class SModeControllerFactory {
 		final FreeplaneToolBar toolBar = new FreeplaneToolBar("main_toolbar", SwingConstants.HORIZONTAL);
 		UIComponentVisibilityDispatcher.install(toolBar, "dialog_toolbarVisible");
 		userInputListenerFactory.addToolBar("/main_toolbar", ViewController.TOP, toolBar);
-		userInputListenerFactory.addToolBar("/icon_toolbar", ViewController.LEFT, ((MIconController) IconController
+		userInputListenerFactory.addToolBar("/icon_toolbar", ViewController.RIGHT, ((MIconController) IconController
 		    .getController()).getIconToolBarScrollPane());
 		userInputListenerFactory.addToolBar("/status", ViewController.BOTTOM, controller.getViewController()
 		    .getStatusBar());

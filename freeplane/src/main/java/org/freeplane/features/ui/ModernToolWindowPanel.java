@@ -76,6 +76,7 @@ class ModernToolWindowPanel extends JPanel {
 	private final Map<String, ToolWindow> windowsById;
 	private final List<ModernToolWindowPanel> peers;
 	private boolean rebuilding;
+	private boolean collapsed;
 	private int placeholderRegion;
 	private int preferredPanelSize;
 
@@ -480,6 +481,7 @@ class ModernToolWindowPanel extends JPanel {
 	private void showWindow(ToolWindow window) {
 		dockComponentIntoPanel(window);
 		model.show(window.id);
+		setCollapsed(false);
 		saveStates();
 		applyStates();
 		rebuildTabs();
@@ -580,6 +582,7 @@ class ModernToolWindowPanel extends JPanel {
 	private void dockWindow(ToolWindow window) {
 		dockComponentIntoPanel(window);
 		model.dock(window.id, anchor);
+		setCollapsed(false);
 		saveStates();
 		applyStates();
 		rebuildTabs();
@@ -590,6 +593,7 @@ class ModernToolWindowPanel extends JPanel {
 		dockComponentIntoPanel(window);
 		makeRoomForDrop(window.id, region);
 		model.moveToRegion(window.id, region);
+		setCollapsed(false);
 		saveStates();
 		applyStates();
 		rebuildTabs();
@@ -622,6 +626,7 @@ class ModernToolWindowPanel extends JPanel {
 		windowsByComponent.put(received.component, received);
 		windowsById.put(received.id, received);
 		model.register(received.id, anchor, ToolWindowMode.DOCKED, region);
+		setCollapsed(false);
 		saveStates();
 		applyStates();
 		rebuildTabs();
@@ -940,7 +945,7 @@ class ModernToolWindowPanel extends JPanel {
 	}
 
 	private JPanel createResizeHandle() {
-		JPanel handle = new JPanel(new BorderLayout());
+		CollapseHandle handle = new CollapseHandle(anchor);
 		handle.setOpaque(false);
 		handle.setPreferredSize(anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, RESIZE_HANDLE_SIZE)
 				: new Dimension(RESIZE_HANDLE_SIZE, 1));
@@ -952,6 +957,9 @@ class ModernToolWindowPanel extends JPanel {
 
 			@Override
 			public void mousePressed(MouseEvent event) {
+				if (collapsed) {
+					return;
+				}
 				startSize = anchor == ToolWindowAnchor.BOTTOM ? getHeight() : getWidth();
 				Point location = event.getLocationOnScreen();
 				startCoordinate = anchor == ToolWindowAnchor.BOTTOM ? location.y : location.x;
@@ -959,11 +967,16 @@ class ModernToolWindowPanel extends JPanel {
 
 			@Override
 			public void mouseReleased(MouseEvent event) {
-				savePreferredSize();
+				if (!collapsed) {
+					savePreferredSize();
+				}
 			}
 
 			@Override
 			public void mouseDragged(MouseEvent event) {
+				if (collapsed) {
+					return;
+				}
 				Point location = event.getLocationOnScreen();
 				int coordinate = anchor == ToolWindowAnchor.BOTTOM ? location.y : location.x;
 				int delta = coordinate - startCoordinate;
@@ -977,9 +990,30 @@ class ModernToolWindowPanel extends JPanel {
 				applyPreferredSize(size);
 			}
 		};
+		handle.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent event) {
+				toggleCollapsed();
+			}
+		});
 		handle.addMouseListener(resizeHandler);
 		handle.addMouseMotionListener(resizeHandler);
 		return handle;
+	}
+
+	private void toggleCollapsed() {
+		setCollapsed(!collapsed);
+	}
+
+	private void setCollapsed(boolean collapsed) {
+		if (this.collapsed == collapsed) {
+			return;
+		}
+		this.collapsed = collapsed;
+		content.setVisible(!collapsed);
+		updatePreferredSize(hasDockedWindow(), layoutPlaceholder.isVisible());
+		revalidate();
+		repaint();
 	}
 
 	private int restoredPreferredSize() {
@@ -993,7 +1027,10 @@ class ModernToolWindowPanel extends JPanel {
 	}
 
 	private void updatePreferredSize(boolean hasDockedWindow, boolean hasPreview) {
-		if (hasDockedWindow) {
+		if (collapsed && shouldShowPanel(hasDockedWindow, hasPreview)) {
+			setPreferredSize(collapsedPreferredSize());
+		}
+		else if (hasDockedWindow) {
 			setPreferredSize(preferredSize(preferredPanelSize));
 		}
 		else if (hasPreview) {
@@ -1016,6 +1053,12 @@ class ModernToolWindowPanel extends JPanel {
 
 	private Dimension preferredSize(int size) {
 		return anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, size) : new Dimension(size, 1);
+	}
+
+	private Dimension collapsedPreferredSize() {
+		int size = STRIPE_BUTTON_SIZE.width + RESIZE_HANDLE_SIZE + 8;
+		return anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, STRIPE_BUTTON_SIZE.height + RESIZE_HANDLE_SIZE + 8)
+				: new Dimension(size, 1);
 	}
 
 	private int maximumPanelSize() {
@@ -1344,6 +1387,66 @@ class ModernToolWindowPanel extends JPanel {
 				else {
 					int y = getHeight() / 2;
 					g2.drawLine(6, y, Math.max(6, getWidth() - 6), y);
+				}
+			}
+			finally {
+				g2.dispose();
+			}
+		}
+	}
+
+	private static class CollapseHandle extends JPanel {
+		private static final long serialVersionUID = 1L;
+		private final ToolWindowAnchor anchor;
+		private boolean hovered;
+
+		CollapseHandle(ToolWindowAnchor anchor) {
+			this.anchor = anchor;
+			addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseEntered(MouseEvent event) {
+					hovered = true;
+					repaint();
+				}
+
+				@Override
+				public void mouseExited(MouseEvent event) {
+					hovered = false;
+					repaint();
+				}
+			});
+		}
+
+		@Override
+		protected void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			if (!hovered) {
+				return;
+			}
+			Graphics2D g2 = (Graphics2D) g.create();
+			try {
+				Color color = UIManager.getColor("Component.accentColor");
+				if (color == null) {
+					color = UIManager.getColor("Actions.Blue");
+				}
+				if (color == null) {
+					color = new Color(0x3574F0);
+				}
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setColor(color);
+				int centerX = getWidth() / 2;
+				int centerY = getHeight() / 2;
+				if (anchor == ToolWindowAnchor.LEFT) {
+					g2.drawLine(centerX - 1, centerY - 5, centerX + 2, centerY);
+					g2.drawLine(centerX + 2, centerY, centerX - 1, centerY + 5);
+				}
+				else if (anchor == ToolWindowAnchor.RIGHT) {
+					g2.drawLine(centerX + 1, centerY - 5, centerX - 2, centerY);
+					g2.drawLine(centerX - 2, centerY, centerX + 1, centerY + 5);
+				}
+				else {
+					g2.drawLine(centerX - 5, centerY + 1, centerX, centerY - 2);
+					g2.drawLine(centerX, centerY - 2, centerX + 5, centerY + 1);
 				}
 			}
 			finally {
