@@ -286,7 +286,7 @@ class ApplicationViewController extends FrameController {
 	}
 
 	void applyTitleBarTheme() {
-		final Color background = color("TitlePane.background", color("Panel.background", mainFrame.getBackground()));
+		final Color background = titleBarBackground(color("TitlePane.background", color("Panel.background", mainFrame.getBackground())));
 		final Color foreground = UITools.getTextColorForBackground(background);
 		if(Compat.isMacOsX()) {
 			mainFrame.getRootPane().putClientProperty("apple.awt.transparentTitleBar", Boolean.TRUE);
@@ -312,6 +312,21 @@ class ApplicationViewController extends FrameController {
 	private static Color color(String key, Color fallback) {
 		final Color color = UIManager.getColor(key);
 		return color != null ? color : fallback;
+	}
+
+	private static Color titleBarBackground(Color color) {
+		if (color == null) {
+			return new Color(0xF3F5F8);
+		}
+		final int max = Math.max(color.getRed(), Math.max(color.getGreen(), color.getBlue()));
+		final int min = Math.min(color.getRed(), Math.min(color.getGreen(), color.getBlue()));
+		if (min > 245) {
+			return new Color(0xF3F5F8);
+		}
+		if (max < 10) {
+			return new Color(0x20242B);
+		}
+		return color;
 	}
 
 	private void installTitleBarOverlay() {
@@ -369,6 +384,7 @@ class ApplicationViewController extends FrameController {
 		// --- Set Note Window Location ---
 		// disable all hotkeys for JSplitPane
 		mapViewWindows = new MapViewDockingWindows(this);
+		titleBarBreadcrumb.install(controller);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
 		AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(mainBookmarkToolbarPane, 1);
 		AuxillaryEditorSplitPane splitPane = splitPanes.getRootPane();

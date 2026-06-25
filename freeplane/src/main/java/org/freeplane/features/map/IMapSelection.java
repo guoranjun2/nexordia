@@ -81,6 +81,8 @@ public interface IMapSelection {
 
 	public void selectAsTheOnlyOneSelected(final NodeModel node);
 
+	public void selectAsTheOnlyOneSelectedWithoutScrolling(final NodeModel node);
+
 	public void selectBranch(final NodeModel node, final boolean extend);
 
 	public void selectContinuous(final NodeModel node);

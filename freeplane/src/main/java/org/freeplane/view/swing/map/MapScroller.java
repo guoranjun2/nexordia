@@ -160,12 +160,11 @@ class MapScroller {
 		final JComponent content = scrolledNode.getContent();
 		Point contentLocation = new Point();
 		UITools.convertPointToAncestor(content, contentLocation, map);
-		final Rectangle rect = new Rectangle(contentLocation.x + content.getWidth() / 2 - extentSize.width / 2,
-				contentLocation.y + content.getHeight() / 2 - extentSize.height
-				/ 2, extentSize.width, extentSize.height);
+		Dimension contentSize = content.getSize();
+		final Rectangle rect = centeredVisibleRectangle(contentLocation, contentSize, extentSize);
 
-		final int distanceToMargin = (extentSize.width - content.getWidth()) / 2 - 10;
-		final int distanceToMarginY = (extentSize.height - content.getHeight()) / 2 - 10;
+		final int distanceToMargin = distanceToMargin(extentSize.width, contentSize.width);
+		final int distanceToMarginY = distanceToMargin(extentSize.height, contentSize.height);
 
 		switch (scrollingDirective) {
 		case SCROLL_NODE_TO_TOP_LEFT_CORNER:
@@ -235,14 +234,43 @@ class MapScroller {
 		return rect;
 	}
 
+	static Rectangle centeredVisibleRectangle(Point contentLocation, Dimension contentSize, Dimension extentSize) {
+		return new Rectangle((int) Math.round(contentLocation.x + contentSize.width / 2d - extentSize.width / 2d),
+				(int) Math.round(contentLocation.y + contentSize.height / 2d - extentSize.height / 2d),
+				extentSize.width, extentSize.height);
+	}
+
+	static Point clampedViewPosition(Point targetPosition, Dimension viewSize, Dimension extentSize) {
+		return new Point(clamp(targetPosition.x, Math.max(0, viewSize.width - extentSize.width)),
+				clamp(targetPosition.y, Math.max(0, viewSize.height - extentSize.height)));
+	}
+
+	private static int clamp(int value, int maximum) {
+		return Math.max(0, Math.min(value, maximum));
+	}
+
+	private static int distanceToMargin(int extentSize, int contentSize) {
+		return (int) Math.round((extentSize - contentSize) / 2d - 10d);
+	}
+
 	private void scrollNodeNow() {
 		final Rectangle rect = calculateOptimalVisibleRectangle();
-		map.scrollRectToVisible(rect);
+		if (scrollingDirective == ScrollingDirective.SCROLL_NODE_TO_CENTER) {
+			scrollViewportTo(rect.getLocation());
+		}
+		else {
+			map.scrollRectToVisible(rect);
+		}
 		scrolledNode = null;
 		scrollingDirective = ScrollingDirective.DONE;
 		this.slowScroll = false;
 		this.anchor = null;
 		this.anchorContentLocation = getAnchorCenterPoint();
+	}
+
+	private void scrollViewportTo(Point targetPosition) {
+		final JViewport viewPort = (JViewport) map.getParent();
+		viewPort.setViewPosition(clampedViewPosition(targetPosition, map.getSize(), viewPort.getExtentSize()));
 	}
 
 	private void startSlowScrolling() {
