@@ -24,17 +24,29 @@ import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.MenuElement;
+import javax.swing.MenuSelectionManager;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.UIManager;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.IMapSelection;
+import org.freeplane.features.map.INodeChangeListener;
+import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapModel;
+import org.freeplane.features.map.NodeChangeEvent;
+import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.NodeMoveEvent;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.ui.IMapViewChangeListener;
@@ -42,21 +54,28 @@ import org.freeplane.view.swing.map.MainView;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
-class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INodeSelectionListener {
+class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INodeSelectionListener, INodeChangeListener,
+		IMapChangeListener {
 	private static final long serialVersionUID = 1L;
 	private static final int ICON_SIZE = 15;
-	private static final int NODE_PATH_COMPRESSION_LIMIT = 10;
+	private static final int MINIMUM_NODE_PATH_TAIL_BUTTONS = 3;
+	private static final int MAXIMUM_NODE_PATH_TAIL_BUTTONS = 10;
+	private static final int NODE_PATH_TARGET_TEXT_LENGTH = 80;
 	private static final int NODE_TEXT_MAXIMUM_LENGTH = 24;
-	private static final int COMPRESSED_NODE_PATH_BUTTONS = NODE_PATH_COMPRESSION_LIMIT + 2;
 	private static final int ELLIPSIS_NODE_PATH_INDEX = -1;
+	private static final int BREADCRUMB_REFRESH_DELAY = 500;
 
 	private String frameTitle;
-	private ModeController nodeSelectionModeController;
+	private ModeController listenerModeController;
+	private final Timer refreshTimer;
 
 	TitleBarBreadcrumb() {
 		super(new FlowLayout(FlowLayout.LEFT, 0, 2));
 		setOpaque(false);
 		putClientProperty(FlatClientProperties.COMPONENT_TITLE_BAR_CAPTION, Boolean.FALSE);
+		refreshTimer = new Timer(BREADCRUMB_REFRESH_DELAY, e -> refresh());
+		refreshTimer.setRepeats(false);
+		refreshTimer.setCoalesce(true);
 	}
 
 	void install(Controller controller) {
@@ -100,16 +119,87 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 
 	private void updateNodeSelectionListener() {
 		ModeController currentModeController = Controller.getCurrentModeController();
-		if (nodeSelectionModeController == currentModeController) {
+		if (listenerModeController == currentModeController) {
 			return;
 		}
-		if (nodeSelectionModeController != null) {
-			nodeSelectionModeController.getMapController().removeNodeSelectionListener(this);
+		if (listenerModeController != null) {
+			listenerModeController.getMapController().removeNodeSelectionListener(this);
+			listenerModeController.getMapController().removeNodeChangeListener(this);
+			listenerModeController.getMapController().removeMapChangeListener(this);
 		}
-		nodeSelectionModeController = currentModeController;
-		if (nodeSelectionModeController != null) {
-			nodeSelectionModeController.getMapController().addNodeSelectionListener(this);
+		listenerModeController = currentModeController;
+		if (listenerModeController != null) {
+			listenerModeController.getMapController().addNodeSelectionListener(this);
+			listenerModeController.getMapController().addUINodeChangeListener(this);
+			listenerModeController.getMapController().addUIMapChangeListener(this);
 		}
+	}
+
+	@Override
+	public void addNotify() {
+		super.addNotify();
+		updateNodeSelectionListener();
+	}
+
+	@Override
+	public void removeNotify() {
+		if (listenerModeController != null) {
+			listenerModeController.getMapController().removeNodeSelectionListener(this);
+			listenerModeController.getMapController().removeNodeChangeListener(this);
+			listenerModeController.getMapController().removeMapChangeListener(this);
+			listenerModeController = null;
+		}
+		refreshTimer.stop();
+		super.removeNotify();
+	}
+
+	@Override
+	public void nodeChanged(NodeChangeEvent event) {
+		if (isCurrentMap(event.getNode().getMap())) {
+			scheduleRefresh();
+		}
+	}
+
+	@Override
+	public void mapChanged(MapChangeEvent event) {
+		if (event.getMap() == null || isCurrentMap(event.getMap())) {
+			scheduleRefresh();
+		}
+	}
+
+	@Override
+	public void onNodeDeleted(NodeDeletionEvent nodeDeletionEvent) {
+		if (isCurrentMap(nodeDeletionEvent.parent.getMap())) {
+			scheduleRefresh();
+		}
+	}
+
+	@Override
+	public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
+		if (isCurrentMap(parent.getMap())) {
+			scheduleRefresh();
+		}
+	}
+
+	@Override
+	public void onNodeMoved(NodeMoveEvent nodeMoveEvent) {
+		if (isCurrentMap(nodeMoveEvent.newParent.getMap()) || isCurrentMap(nodeMoveEvent.oldParent.getMap())) {
+			scheduleRefresh();
+		}
+	}
+
+	private void scheduleRefresh() {
+		if (SwingUtilities.isEventDispatchThread()) {
+			refreshTimer.restart();
+		}
+		else {
+			SwingUtilities.invokeLater(() -> refreshTimer.restart());
+		}
+	}
+
+	private boolean isCurrentMap(MapModel map) {
+		Controller controller = Controller.getCurrentController();
+		return controller != null && map != null && controller.getMap() == map;
 	}
 
 	private void refresh() {
@@ -174,7 +264,8 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 
 	private void addNodePath(NodeModel node) {
 		NodeModel[] path = node.getPathToRoot();
-		int[] visibleIndexes = visibleNodePathIndexes(path.length);
+		String[] pathTexts = nodeTexts(path);
+		int[] visibleIndexes = visibleNodePathIndexes(pathTexts);
 		for (int i = 0; i < visibleIndexes.length; i++) {
 			if (i > 0) {
 				add(createPathSeparator());
@@ -185,7 +276,7 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 			}
 			else {
 				NodeModel pathNode = path[pathIndex];
-				add(new NodeSegmentButton(pathNode, nodeText(pathNode), pathIndex == path.length - 1));
+				add(new NodeSegmentButton(pathNode, pathTexts[pathIndex], pathIndex == path.length - 1));
 			}
 		}
 		NodeModel firstChild = firstChild(node);
@@ -195,21 +286,33 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 		}
 	}
 
-	static int[] visibleNodePathIndexes(int pathLength) {
+	static int[] visibleNodePathIndexes(String[] pathTexts) {
+		int pathLength = pathTexts.length;
 		if (pathLength <= 0) {
 			return new int[0];
 		}
-		int firstTailIndex = pathLength - NODE_PATH_COMPRESSION_LIMIT;
+		int tailButtonCount = nodePathTailButtonCount(pathTexts);
+		int firstTailIndex = pathLength - tailButtonCount;
 		if (firstTailIndex <= 1) {
 			return fullNodePathIndexes(pathLength);
 		}
-		int[] indexes = new int[COMPRESSED_NODE_PATH_BUTTONS];
+		int[] indexes = new int[tailButtonCount + 2];
 		indexes[0] = 0;
 		indexes[1] = ELLIPSIS_NODE_PATH_INDEX;
-		for (int i = 0; i < NODE_PATH_COMPRESSION_LIMIT; i++) {
+		for (int i = 0; i < tailButtonCount; i++) {
 			indexes[i + 2] = firstTailIndex + i;
 		}
 		return indexes;
+	}
+
+	private static int nodePathTailButtonCount(String[] pathTexts) {
+		int textLength = 0;
+		for (String text : pathTexts) {
+			textLength += text.length();
+		}
+		double averageTextLength = Math.max(1d, textLength / (double) pathTexts.length);
+		int buttonCount = (int) Math.round(NODE_PATH_TARGET_TEXT_LENGTH / averageTextLength);
+		return clamp(buttonCount, MINIMUM_NODE_PATH_TAIL_BUTTONS, MAXIMUM_NODE_PATH_TAIL_BUTTONS);
 	}
 
 	private static int[] fullNodePathIndexes(int pathLength) {
@@ -218,6 +321,10 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 			indexes[i] = i;
 		}
 		return indexes;
+	}
+
+	private static int clamp(int value, int minimum, int maximum) {
+		return Math.max(minimum, Math.min(maximum, value));
 	}
 
 	private String textFor(File file, boolean modified) {
@@ -230,7 +337,15 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 
 	private String nodeText(NodeModel node) {
 		String text = TextUtils.getShortText(node.toString(), NODE_TEXT_MAXIMUM_LENGTH, "...");
-		return text.length() > 0 ? text : TextUtils.getText("new_mindmap");
+		return text.trim().length() > 0 ? text : "  ";
+	}
+
+	private String[] nodeTexts(NodeModel[] nodes) {
+		String[] texts = new String[nodes.length];
+		for (int i = 0; i < nodes.length; i++) {
+			texts[i] = nodeText(nodes[i]);
+		}
+		return texts;
 	}
 
 	private NodeModel firstChild(NodeModel node) {
@@ -262,46 +377,102 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 	}
 
 	private void showSiblings(FileSegmentButton button, File file) {
-		File[] siblings = siblingsOf(file);
 		JPopupMenu popup = new JPopupMenu(file.getAbsolutePath());
-		if (siblings.length == 0) {
-			addEmptyItem(popup, "breadcrumb.no_items", "No items");
-		}
-		else {
-			for (int i = 0; i < siblings.length && i < 250; i++) {
-				File sibling = siblings[i];
-				JMenuItem item = new JMenuItem(sibling.getName().length() == 0 ? sibling.getPath() : sibling.getName(),
-						new FileKindIcon(sibling.isDirectory()));
-				item.addActionListener(e -> ApplicationFileActions.open(this, sibling));
-				popup.add(item);
-			}
-			if (siblings.length > 250) {
-				addEmptyItem(popup, "breadcrumb.too_many_items", "More items omitted");
-			}
-		}
+		addFileItems(popup, siblingsOf(file));
 		popup.show(button, 0, button.getHeight());
 	}
 
 	private void showSiblingNodes(NodeSegmentButton button, NodeModel node) {
-		List<NodeModel> nodes = siblingNodes(node);
 		JPopupMenu popup = new JPopupMenu(node.toString());
+		JMenuItem selectedItem = addNodeItems(popup, siblingNodes(node), node);
+		popup.show(button, 0, button.getHeight());
+		selectMenuItem(popup, selectedItem);
+	}
+
+	private void addFileItems(JPopupMenu popup, File[] files) {
+		if (files.length == 0) {
+			addEmptyItem(popup, "breadcrumb.no_items", "No items");
+			return;
+		}
+		for (int i = 0; i < files.length && i < 250; i++) {
+			popup.add(createFileMenuItem(files[i]));
+		}
+		if (files.length > 250) {
+			addEmptyItem(popup, "breadcrumb.too_many_items", "More items omitted");
+		}
+	}
+
+	private void addFileItems(JMenu menu, File[] files) {
+		if (files.length == 0) {
+			addEmptyItem(menu, "breadcrumb.no_items", "No items");
+			return;
+		}
+		for (int i = 0; i < files.length && i < 250; i++) {
+			menu.add(createFileMenuItem(files[i]));
+		}
+		if (files.length > 250) {
+			addEmptyItem(menu, "breadcrumb.too_many_items", "More items omitted");
+		}
+	}
+
+	private JMenuItem createFileMenuItem(File file) {
+		if (file.isDirectory()) {
+			return new LazyFileMenu(file);
+		}
+		JMenuItem item = new JMenuItem(fileName(file), new FileKindIcon(false));
+		item.addActionListener(e -> openFile(file));
+		return item;
+	}
+
+	private void addNodeItems(JPopupMenu popup, List<NodeModel> nodes) {
+		addNodeItems(popup, nodes, null);
+	}
+
+	private JMenuItem addNodeItems(JPopupMenu popup, List<NodeModel> nodes, NodeModel selectedNode) {
 		if (nodes.isEmpty()) {
 			addEmptyItem(popup, "breadcrumb.node.no_items", "No nodes");
+			return null;
 		}
-		else {
-			for (NodeModel sibling : nodes) {
-				JMenuItem item = new JMenuItem(nodeText(sibling), renderedNodeIcon(sibling));
-				item.addActionListener(e -> ApplicationNodeActions.jumpTo(sibling));
-				popup.add(item);
+		JMenuItem selectedItem = null;
+		for (NodeModel node : nodes) {
+			JMenuItem item = createNodeMenuItem(node);
+			popup.add(item);
+			if (node == selectedNode) {
+				selectedItem = item;
 			}
 		}
-		popup.show(button, 0, button.getHeight());
+		return selectedItem;
+	}
+
+	private void addNodeItems(JMenu menu, List<NodeModel> nodes) {
+		if (nodes.isEmpty()) {
+			addEmptyItem(menu, "breadcrumb.node.no_items", "No nodes");
+			return;
+		}
+		for (NodeModel node : nodes) {
+			menu.add(createNodeMenuItem(node));
+		}
+	}
+
+	private JMenuItem createNodeMenuItem(NodeModel node) {
+		if (node.getChildCount() > 0) {
+			return new LazyNodeMenu(node);
+		}
+		JMenuItem item = new JMenuItem(nodeText(node), renderedNodeIcon(node));
+		item.addActionListener(e -> jumpToNode(node));
+		return item;
 	}
 
 	private void addEmptyItem(JPopupMenu popup, String key, String fallback) {
-		JMenuItem empty = new JMenuItem(TextUtils.getText(key, fallback));
-		empty.setEnabled(false);
-		popup.add(empty);
+		JMenuItem item = new JMenuItem(TextUtils.getText(key, fallback));
+		item.setEnabled(false);
+		popup.add(item);
+	}
+
+	private void addEmptyItem(JMenu menu, String key, String fallback) {
+		JMenuItem item = new JMenuItem(TextUtils.getText(key, fallback));
+		item.setEnabled(false);
+		menu.add(item);
 	}
 
 	private List<NodeModel> siblingNodes(NodeModel node) {
@@ -315,6 +486,14 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 	private File[] siblingsOf(File file) {
 		File parent = file.getParentFile();
 		File[] files = parent != null ? parent.listFiles() : File.listRoots();
+		return sortedFiles(files);
+	}
+
+	private File[] childrenOf(File file) {
+		return sortedFiles(file.listFiles());
+	}
+
+	private File[] sortedFiles(File[] files) {
 		if (files == null) {
 			return new File[0];
 		}
@@ -328,6 +507,29 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 			}
 		});
 		return files;
+	}
+
+	private String fileName(File file) {
+		return file.getName().length() == 0 ? file.getPath() : file.getName();
+	}
+
+	private void openFile(File file) {
+		ApplicationFileActions.open(this, file);
+	}
+
+	private void jumpToNode(NodeModel node) {
+		ApplicationNodeActions.jumpTo(node);
+	}
+
+	private void selectMenuItem(JPopupMenu popup, JMenuItem item) {
+		if (item == null) {
+			return;
+		}
+		SwingUtilities.invokeLater(() -> {
+			if (popup.isVisible()) {
+				MenuSelectionManager.defaultManager().setSelectedPath(new MenuElement[] { popup, item });
+			}
+		});
 	}
 
 	private void showFileMenu(Component component, int x, int y, File file) {
@@ -491,6 +693,96 @@ class TitleBarBreadcrumb extends JPanel implements IMapViewChangeListener, INode
 					showNodeMenu(this, event.getX(), event.getY(), node);
 				}
 			}
+		}
+	}
+
+	private abstract class LazyBreadcrumbMenu extends JMenu {
+		private static final long serialVersionUID = 1L;
+		private boolean loaded;
+
+		LazyBreadcrumbMenu(String text, Icon icon) {
+			super(text);
+			setIcon(icon);
+			addEmptyItem(this, "breadcrumb.loading", "Loading...");
+			addMenuListener(new MenuListener() {
+				@Override
+				public void menuSelected(MenuEvent event) {
+					loadIfNeeded();
+				}
+
+				@Override
+				public void menuDeselected(MenuEvent event) {
+				}
+
+				@Override
+				public void menuCanceled(MenuEvent event) {
+				}
+			});
+		}
+
+		@Override
+		public void processMouseEvent(MouseEvent event, MenuElement[] path, MenuSelectionManager manager) {
+			if (event.getID() == MouseEvent.MOUSE_RELEASED && SwingUtilities.isLeftMouseButton(event)
+					&& contains(event.getPoint())) {
+				event.consume();
+				manager.clearSelectedPath();
+				runPrimaryAction();
+				return;
+			}
+			super.processMouseEvent(event, path, manager);
+		}
+
+		private void loadIfNeeded() {
+			if (loaded) {
+				return;
+			}
+			loaded = true;
+			removeAll();
+			loadChildren();
+		}
+
+		abstract void loadChildren();
+
+		abstract void runPrimaryAction();
+	}
+
+	private class LazyFileMenu extends LazyBreadcrumbMenu {
+		private static final long serialVersionUID = 1L;
+		private final File file;
+
+		LazyFileMenu(File file) {
+			super(fileName(file), new FileKindIcon(true));
+			this.file = file;
+		}
+
+		@Override
+		void loadChildren() {
+			addFileItems(this, childrenOf(file));
+		}
+
+		@Override
+		void runPrimaryAction() {
+			openFile(file);
+		}
+	}
+
+	private class LazyNodeMenu extends LazyBreadcrumbMenu {
+		private static final long serialVersionUID = 1L;
+		private final NodeModel node;
+
+		LazyNodeMenu(NodeModel node) {
+			super(nodeText(node), renderedNodeIcon(node));
+			this.node = node;
+		}
+
+		@Override
+		void loadChildren() {
+			addNodeItems(this, node.getChildren());
+		}
+
+		@Override
+		void runPrimaryAction() {
+			jumpToNode(node);
 		}
 	}
 
