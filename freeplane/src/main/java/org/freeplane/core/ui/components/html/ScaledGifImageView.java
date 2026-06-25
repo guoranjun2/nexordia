@@ -27,14 +27,22 @@ class ScaledGifImageView extends ImageView {
 
 	@Override
 	public float getPreferredSpan(int axis) {
-		final Dimension size = HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
-				new Dimension(Math.max(1, (int)super.getPreferredSpan(X_AXIS)),
-						Math.max(1, (int)super.getPreferredSpan(Y_AXIS))));
+		final Dimension displayedSize = new Dimension(Math.max(1, (int)super.getPreferredSpan(X_AXIS)),
+				Math.max(1, (int)super.getPreferredSpan(Y_AXIS)));
+		Dimension sourceSize = HtmlImageViewSettings.sourceSize(getElement());
+		if(sourceSize == null && HtmlImageViewSettings.hasMaximumImageWidth(getDocument()))
+			sourceSize = displayedSize;
+		final Dimension size = HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(), displayedSize, sourceSize);
 		if(axis == X_AXIS)
 			return size.width;
 		if(axis == Y_AXIS)
 			return size.height;
 		return super.getPreferredSpan(axis);
+	}
+
+	@Override
+	public float getMinimumSpan(int axis) {
+		return getPreferredSpan(axis);
 	}
 
 	@Override
