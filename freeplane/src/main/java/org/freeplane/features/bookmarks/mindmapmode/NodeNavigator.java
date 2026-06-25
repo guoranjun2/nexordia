@@ -66,13 +66,15 @@ public class NodeNavigator {
 
 	private void applyBookmarkViewport(IMapViewManager mapViewManager, IMapSelection mapSelection, NodeModel nodeToSelect) {
 		ResourceController resourceController = ResourceController.getResourceController();
-		if (resourceController.getBooleanProperty(BOOKMARK_SET_ZOOM_TO_100)) {
+		boolean setZoomTo100 = resourceController.getBooleanProperty(BOOKMARK_SET_ZOOM_TO_100);
+		boolean centerSelectedNode = resourceController.getBooleanProperty(BOOKMARK_CENTER_SELECTED_NODE);
+		if (setZoomTo100) {
 			mapViewManager.setZoom(1f);
 		}
-		if (resourceController.getBooleanProperty(BOOKMARK_CENTER_SELECTED_NODE)) {
-			mapSelection.scrollNodeToCenter(nodeToSelect);
+		if (centerSelectedNode) {
+			mapSelection.scrollNodeToCenter(nodeToSelect, false);
 		}
-		else if (resourceController.getBooleanProperty(BOOKMARK_SET_ZOOM_TO_100)) {
+		else if (setZoomTo100) {
 			mapSelection.scrollNodeToVisible(nodeToSelect);
 		}
 	}

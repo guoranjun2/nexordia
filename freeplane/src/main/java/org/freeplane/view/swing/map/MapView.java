@@ -265,7 +265,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 		}
 
 		private void moveNodeTo(final NodeModel node, final NodePosition position, final boolean slowScroll) {
-			final NodeView nodeView = getNodeView(node);
+			final NodeView nodeView = displayedNodeView(node);
 			if (nodeView != null) {
 				mapScroller.scrollNode(nodeView, position, slowScroll);
 			}
@@ -384,7 +384,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 
 		@Override
 		public void scrollNodeToCenter(final NodeModel node, boolean slow) {
-			mapScroller.scrollNodeToCenter(getNodeView(node), slow);
+			mapScroller.scrollNodeToCenter(displayedNodeView(node), slow);
 		}
 
 		@Override
@@ -395,6 +395,25 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			if (nodeView != null) {
 				MapView.this.selectAsTheOnlyOneSelected(nodeView);
 			}
+		}
+
+		@Override
+		public void selectAsTheOnlyOneSelectedWithoutScrolling(final NodeModel node) {
+			if(node.isVisible(filter) || currentRootView.getNode() == node)
+				display(node, true);
+			final NodeView nodeView = getNodeView(node);
+			if (nodeView != null) {
+				MapView.this.selectAsTheOnlyOneSelectedWithoutScrolling(nodeView, true);
+			}
+		}
+
+		private NodeView displayedNodeView(final NodeModel node) {
+			NodeView nodeView = getNodeView(node);
+			if (nodeView == null && (node.isVisible(filter) || currentRootView.getNode() == node)) {
+				display(node, true);
+				nodeView = getNodeView(node);
+			}
+			return nodeView;
 		}
 
 		@Override
@@ -2958,12 +2977,16 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	}
 
 	public void selectAsTheOnlyOneSelected(final NodeView newSelected, final boolean requestFocus) {
+		selectAsTheOnlyOneSelectedWithoutScrolling(newSelected, requestFocus);
+		mapScroller.scrollNodeToVisible(newSelected);
+	}
+
+	private void selectAsTheOnlyOneSelectedWithoutScrolling(final NodeView newSelected, final boolean requestFocus) {
 		newSelected.invalidate();
 		if (requestFocus && ! newSelected.focused() && isShowing()) {
 			newSelected.requestFocusInWindow();
 		}
 		selection.select(newSelected);
-		mapScroller.scrollNodeToVisible(newSelected);
 		Container selectionParent = newSelected.getParent();
 		if (selectionParent instanceof NodeView) {
 			((NodeView) selectionParent).setLastSelectedChild(newSelected);

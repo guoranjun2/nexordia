@@ -70,7 +70,7 @@ class ModernToolWindowPanel extends JPanel {
 	private final JPanel tabPlaceholder;
 	private final JPanel tabSeparator;
 	private final JPanel layoutPlaceholder;
-	private final JPanel resizeHandle;
+	private final CollapseHandle resizeHandle;
 	private final JToggleButton moreButton;
 	private final Map<Component, ToolWindow> windowsByComponent;
 	private final Map<String, ToolWindow> windowsById;
@@ -944,13 +944,12 @@ class ModernToolWindowPanel extends JPanel {
 		return PROPERTY_PREFIX + anchor.name().toLowerCase() + "." + sizeName;
 	}
 
-	private JPanel createResizeHandle() {
+	private CollapseHandle createResizeHandle() {
 		CollapseHandle handle = new CollapseHandle(anchor);
 		handle.setOpaque(false);
 		handle.setPreferredSize(anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, RESIZE_HANDLE_SIZE)
 				: new Dimension(RESIZE_HANDLE_SIZE, 1));
-		handle.setCursor(Cursor.getPredefinedCursor(anchor == ToolWindowAnchor.BOTTOM ? Cursor.N_RESIZE_CURSOR
-				: Cursor.E_RESIZE_CURSOR));
+		handle.setCursor(Cursor.getPredefinedCursor(resizeCursor()));
 		MouseAdapter resizeHandler = new MouseAdapter() {
 			private int startSize;
 			private int startCoordinate;
@@ -1007,13 +1006,23 @@ class ModernToolWindowPanel extends JPanel {
 
 	private void setCollapsed(boolean collapsed) {
 		if (this.collapsed == collapsed) {
+			resizeHandle.setCollapsed(collapsed);
 			return;
 		}
 		this.collapsed = collapsed;
+		resizeHandle.setCollapsed(collapsed);
+		stripe.setVisible(!collapsed);
 		content.setVisible(!collapsed);
 		updatePreferredSize(hasDockedWindow(), layoutPlaceholder.isVisible());
 		revalidate();
 		repaint();
+	}
+
+	private int resizeCursor() {
+		if (anchor == ToolWindowAnchor.BOTTOM) {
+			return Cursor.N_RESIZE_CURSOR;
+		}
+		return anchor == ToolWindowAnchor.RIGHT ? Cursor.W_RESIZE_CURSOR : Cursor.E_RESIZE_CURSOR;
 	}
 
 	private int restoredPreferredSize() {
@@ -1056,9 +1065,8 @@ class ModernToolWindowPanel extends JPanel {
 	}
 
 	private Dimension collapsedPreferredSize() {
-		int size = STRIPE_BUTTON_SIZE.width + RESIZE_HANDLE_SIZE + 8;
-		return anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, STRIPE_BUTTON_SIZE.height + RESIZE_HANDLE_SIZE + 8)
-				: new Dimension(size, 1);
+		return anchor == ToolWindowAnchor.BOTTOM ? new Dimension(1, RESIZE_HANDLE_SIZE)
+				: new Dimension(RESIZE_HANDLE_SIZE, 1);
 	}
 
 	private int maximumPanelSize() {
@@ -1399,6 +1407,7 @@ class ModernToolWindowPanel extends JPanel {
 		private static final long serialVersionUID = 1L;
 		private final ToolWindowAnchor anchor;
 		private boolean hovered;
+		private boolean collapsed;
 
 		CollapseHandle(ToolWindowAnchor anchor) {
 			this.anchor = anchor;
@@ -1417,6 +1426,14 @@ class ModernToolWindowPanel extends JPanel {
 			});
 		}
 
+		void setCollapsed(boolean collapsed) {
+			if (this.collapsed == collapsed) {
+				return;
+			}
+			this.collapsed = collapsed;
+			repaint();
+		}
+
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
@@ -1433,25 +1450,37 @@ class ModernToolWindowPanel extends JPanel {
 					color = new Color(0x3574F0);
 				}
 				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 				g2.setColor(color);
 				int centerX = getWidth() / 2;
 				int centerY = getHeight() / 2;
 				if (anchor == ToolWindowAnchor.LEFT) {
-					g2.drawLine(centerX - 1, centerY - 5, centerX + 2, centerY);
-					g2.drawLine(centerX + 2, centerY, centerX - 1, centerY + 5);
+					drawHorizontalChevron(g2, centerX, centerY, collapsed);
 				}
 				else if (anchor == ToolWindowAnchor.RIGHT) {
-					g2.drawLine(centerX + 1, centerY - 5, centerX - 2, centerY);
-					g2.drawLine(centerX - 2, centerY, centerX + 1, centerY + 5);
+					drawHorizontalChevron(g2, centerX, centerY, !collapsed);
 				}
 				else {
-					g2.drawLine(centerX - 5, centerY + 1, centerX, centerY - 2);
-					g2.drawLine(centerX, centerY - 2, centerX + 5, centerY + 1);
+					drawVerticalChevron(g2, centerX, centerY, !collapsed);
 				}
 			}
 			finally {
 				g2.dispose();
 			}
+		}
+
+		private void drawHorizontalChevron(Graphics2D g2, int centerX, int centerY, boolean pointsRight) {
+			int tipX = pointsRight ? centerX + 2 : centerX - 2;
+			int tailX = pointsRight ? centerX - 2 : centerX + 2;
+			g2.drawLine(tailX, centerY - 5, tipX, centerY);
+			g2.drawLine(tipX, centerY, tailX, centerY + 5);
+		}
+
+		private void drawVerticalChevron(Graphics2D g2, int centerX, int centerY, boolean pointsDown) {
+			int tipY = pointsDown ? centerY + 2 : centerY - 2;
+			int tailY = pointsDown ? centerY - 2 : centerY + 2;
+			g2.drawLine(centerX - 5, tailY, centerX, tipY);
+			g2.drawLine(centerX, tipY, centerX + 5, tailY);
 		}
 	}
 
