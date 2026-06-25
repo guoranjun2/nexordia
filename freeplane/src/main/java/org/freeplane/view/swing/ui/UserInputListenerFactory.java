@@ -88,6 +88,7 @@ import org.freeplane.features.map.MapModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.ui.IMapViewManager;
+import org.freeplane.features.ui.ToolWindowClientProperties;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.view.swing.map.MapView;
 
@@ -240,6 +241,7 @@ public class UserInputListenerFactory implements IUserInputListenerFactory {
 
 	@Override
 	public void addToolBar(final String name, final int position, final JComponent toolBar) {
+		toolBar.putClientProperty(ToolWindowClientProperties.TOOLBAR_ID, name);
 		toolBars.put(name, toolBar);
 		toolbarLists[position].add(toolBar);
 	}

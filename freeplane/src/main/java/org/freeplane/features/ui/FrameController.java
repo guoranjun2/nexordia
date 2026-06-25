@@ -94,6 +94,7 @@ import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.styles.StyleString;
 import org.freeplane.features.styles.StyleTranslatedObject;
 import org.freeplane.features.time.TimeComboBoxEditor;
+import org.freeplane.features.ui.toolwindow.ToolWindowAnchor;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatLaf;
@@ -164,6 +165,8 @@ abstract public class FrameController implements ViewController {
 	final private JPanel statusInfoPanel;
 	final private JPanel statusActionPanel;
 	final private JComponent toolbarPanel[];
+	final private ModernToolWindowPanel leftToolWindowPanel;
+	final private ModernToolWindowPanel rightToolWindowPanel;
 	final private String propertyKeyPrefix;
 	private static boolean uiResourcesInitialized = false;
 	private static Icon textIcon;
@@ -224,10 +227,14 @@ abstract public class FrameController implements ViewController {
 		addStatusInfo(ResourceController.OBJECT_TYPE, null, null);
 		statusActionPanel.add(new ThemeStatusSwitcher());
 		toolbarPanel = new JComponent[4];
+		leftToolWindowPanel = new ModernToolWindowPanel(ToolWindowAnchor.LEFT);
+		rightToolWindowPanel = new ModernToolWindowPanel(ToolWindowAnchor.RIGHT);
+		leftToolWindowPanel.setPeer(rightToolWindowPanel);
+		rightToolWindowPanel.setPeer(leftToolWindowPanel);
 		toolbarPanel[TOP] = new HorizontalToolbarPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		toolbarPanel[BOTTOM] = Box.createVerticalBox();
-		toolbarPanel[LEFT] = Box.createHorizontalBox();
-		toolbarPanel[RIGHT] = Box.createVerticalBox();
+		toolbarPanel[LEFT] = leftToolWindowPanel;
+		toolbarPanel[RIGHT] = rightToolWindowPanel;
 	}
 
 	@Override
@@ -424,7 +431,7 @@ abstract public class FrameController implements ViewController {
 				final Iterable<JComponent> modeToolBars = userInputListenerFactory.getToolBars(j);
 				if (modeToolBars != null) {
 					for (final Component toolBar : modeToolBars) {
-						toolbarPanel[j].remove(toolBar);
+						removeToolbar(j, toolBar);
 					}
 					toolbarPanel[j].revalidate();
 				}
@@ -440,7 +447,7 @@ abstract public class FrameController implements ViewController {
 					if (dispatcher != null) {
 						dispatcher.resetVisible();
 					}
-					toolbarPanel[j].add(toolBar, i++);
+					addToolbar(j, toolBar, i++);
 				}
 				toolbarPanel[j].revalidate();
 				toolbarPanel[j].repaint();
@@ -448,6 +455,69 @@ abstract public class FrameController implements ViewController {
 		}
 		setFreeplaneMenuBar(newUserInputListenerFactory.getMenuBar());
 		setUIComponentsVisible(newModeController.getController().getMapViewManager(), isMenubarVisible());
+	}
+
+	private void removeToolbar(int position, Component toolBar) {
+		if (toolBar instanceof JComponent && ModernToolWindowPanel.of((JComponent) toolBar) != null) {
+			ModernToolWindowPanel.of((JComponent) toolBar).removeToolWindow(toolBar);
+		}
+		else if (toolBar instanceof JComponent && managedPanel(position) != null
+				&& ModernToolWindowPanel.canManage((JComponent) toolBar)) {
+			managedPanel(position).removeToolWindow(toolBar);
+		}
+		else {
+			toolbarPanel[position].remove(toolBar);
+		}
+	}
+
+	private void addToolbar(int position, JComponent toolBar, int index) {
+		ModernToolWindowPanel panel = managedPanel(position);
+		if (panel != null && ModernToolWindowPanel.canManage(toolBar)) {
+			panel.addToolWindow(toolBar, index);
+		}
+		else {
+			toolbarPanel[position].add(toolBar, index);
+		}
+	}
+
+	private ModernToolWindowPanel managedPanel(int position) {
+		if (position == LEFT) {
+			return leftToolWindowPanel;
+		}
+		if (position == RIGHT) {
+			return rightToolWindowPanel;
+		}
+		return null;
+	}
+
+	protected void addManagedToolWindow(String id, JComponent component, ToolWindowAnchor anchor,
+			String visiblePropertyBaseName) {
+		ModernToolWindowPanel panel = panelForAnchor(anchor);
+		panel.addToolWindow(id, component, panel.getComponentCount(), visiblePropertyBaseName);
+	}
+
+	protected void setManagedToolWindowVisible(String id, boolean visible) {
+		leftToolWindowPanel.setToolWindowVisible(id, visible);
+		rightToolWindowPanel.setToolWindowVisible(id, visible);
+	}
+
+	protected boolean isManagedToolWindowVisible(String id) {
+		return leftToolWindowPanel.isToolWindowVisible(id) || rightToolWindowPanel.isToolWindowVisible(id);
+	}
+
+	protected void dockManagedToolWindow(String id, ToolWindowAnchor anchor) {
+		leftToolWindowPanel.dockToolWindow(id, anchor);
+		rightToolWindowPanel.dockToolWindow(id, anchor);
+	}
+
+	private ModernToolWindowPanel panelForAnchor(ToolWindowAnchor anchor) {
+		if (anchor == ToolWindowAnchor.LEFT) {
+			return leftToolWindowPanel;
+		}
+		if (anchor == ToolWindowAnchor.RIGHT) {
+			return rightToolWindowPanel;
+		}
+		return leftToolWindowPanel;
 	}
 
 	private void setUIComponentsVisible(IMapViewManager iMapViewManager, boolean visible) {

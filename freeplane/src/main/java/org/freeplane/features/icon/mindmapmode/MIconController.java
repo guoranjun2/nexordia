@@ -41,12 +41,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
-import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
 import javax.swing.RootPaneContainer;
 import javax.swing.SwingConstants;
@@ -65,8 +65,7 @@ import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.JAutoScrollBarPane;
 import org.freeplane.core.ui.components.TagIcon;
 import org.freeplane.core.ui.components.UITools;
-import org.freeplane.core.ui.components.resizer.CollapseableBoxBuilder;
-import org.freeplane.core.ui.components.resizer.JResizer.Direction;
+import org.freeplane.core.ui.components.resizer.UIComponentVisibilityDispatcher;
 import org.freeplane.core.ui.menubuilders.generic.Entry;
 import org.freeplane.core.ui.menubuilders.generic.EntryAccessor;
 import org.freeplane.core.ui.menubuilders.generic.EntryVisitor;
@@ -258,7 +257,7 @@ public class MIconController extends IconController {
 	private final Map<String, AFreeplaneAction> iconActions = new LinkedHashMap<>();
 	private final IconStore STORE = IconStoreFactory.ICON_STORE;
 	private final JToolBar iconToolBar;
-	private final Box iconBox;
+	private final JScrollPane iconToolBarScrollPane;
 	private final FastAccessableIcons recentlyUsedIcons;
     private final MModeController modeController;
 
@@ -270,10 +269,10 @@ public class MIconController extends IconController {
         this.modeController = modeController;
 		modeController.registerExtensionCopier(new ExtensionCopier());
 		iconToolBar = new FreeplaneToolBar("icon_toolbar", SwingConstants.VERTICAL);
-		JAutoScrollBarPane iconToolBarScrollPane = new JAutoScrollBarPane(iconToolBar);
+		iconToolBarScrollPane = new JAutoScrollBarPane(iconToolBar);
 		UITools.setScrollbarIncrement(iconToolBarScrollPane);
 		UITools.addScrollbarIncrementPropertyListener(iconToolBarScrollPane);
-		iconBox = new CollapseableBoxBuilder("leftToolbarVisible").createBox(iconToolBarScrollPane, Direction.LEFT);
+		UIComponentVisibilityDispatcher.install(iconToolBarScrollPane, "leftToolbarVisible");
 		createIconActions();
 		modeController.addUiBuilder(Phase.ACTIONS, "icon_actions", new IconMenuBuilder(modeController));
 		recentlyUsedIcons = new FastAccessableIcons(modeController);
@@ -406,7 +405,7 @@ public class MIconController extends IconController {
 	 * @return
 	 */
 	public JComponent getIconToolBarScrollPane() {
-		return iconBox;
+		return iconToolBarScrollPane;
 	}
 
 	final static private Icon SUBMENU_ICON = BasicIconFactory.getMenuArrowIcon();
