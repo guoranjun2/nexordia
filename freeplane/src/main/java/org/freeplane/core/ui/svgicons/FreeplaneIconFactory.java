@@ -10,6 +10,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.features.mode.Controller;
 
 /** utility methods to access Freeplane's (builtin and user) icons. */
 public class FreeplaneIconFactory {
@@ -34,13 +35,16 @@ public class FreeplaneIconFactory {
 	}
 
 	static boolean isSvgAntialiasEnabled() {
-		return ResourceController.getResourceController().getBooleanProperty(ANTIALIAS_SVG);
+		Controller controller = Controller.getCurrentController();
+		return controller != null && controller.getResourceController().getBooleanProperty(ANTIALIAS_SVG);
 	}
 
 	public static Icon createSVGIcon(final URL url, final int heightPixels) {
 		return AccessController.doPrivileged(new PrivilegedAction<Icon>() {
 			@Override
 			public Icon run() {
+				if(usesAccentColor(url))
+					return new ThemedSVGIcon(url, heightPixels, -1);
 				return new SVGIconCreator(url).setHeight(heightPixels).createIcon();
 			}
 		});
@@ -50,6 +54,8 @@ public class FreeplaneIconFactory {
 		return AccessController.doPrivileged(new PrivilegedAction<Icon>() {
 			@Override
 			public Icon run() {
+				if(usesAccentColor(url))
+					return new ThemedSVGIcon(url, -1, widthPixels);
 				return new SVGIconCreator(url).setWidth(widthPixels).createIcon();
 			}
 		});
@@ -59,9 +65,15 @@ public class FreeplaneIconFactory {
 		return AccessController.doPrivileged(new PrivilegedAction<Icon>() {
 			@Override
 			public Icon run() {
+				if(usesAccentColor(url))
+					return new ThemedSVGIcon(url, -1, -1);
 				return new SVGIconCreator(url).createIcon();
 			}
 		});
+	}
+
+	private static boolean usesAccentColor(URL url) {
+		return url.toString().endsWith(ResourceController.USE_ACCENT_COLOR_QUERY);
 	}
 
 	public static ImageIcon toImageIcon(Icon icon) {

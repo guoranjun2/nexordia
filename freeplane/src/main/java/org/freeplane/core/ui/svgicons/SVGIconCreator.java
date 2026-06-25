@@ -27,6 +27,7 @@ import org.freeplane.core.util.ColorUtils;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.icon.factory.IconFactory;
+import org.freeplane.features.mode.Controller;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.kitfox.svg.SVGCache;
@@ -47,34 +48,39 @@ class SVGIconCreator {
 	private static final String DARK_LOOK_AND_FEELS = "DarkLookAndFeels";
 	private static final String LIGHT_LOOK_AND_FEELS = "LightLookAndFeels";
 	private static final String FLAT_LOOK_AND_FEELS = "FlatLookAndFeels";
-	private static String uiColorReplacements = null;
-	private static void initializeAccentColorReplacements() {
-		if(uiColorReplacements == null) {
-			LookAndFeel lookAndFeel = UIManager.getLookAndFeel();
-			String lookAndFeelId = lookAndFeel.getName().replaceAll("\\W+", "");
-			String lafSpecificReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR + lookAndFeelId;
-			String lafSpecificReplacementPropertyValue = ResourceController.getResourceController().getProperty(lafSpecificReplacementPropertyName, null);
-			String uiColorReplacementsWithPlaceholder = null;
-			if(lafSpecificReplacementPropertyValue != null && ! lafSpecificReplacementPropertyValue.isEmpty())
-			{
-				uiColorReplacementsWithPlaceholder = lafSpecificReplacementPropertyValue;
-			}
-			else if(! Compat.isApplet() && lookAndFeel instanceof FlatLaf) {
-				String flatReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR + FLAT_LOOK_AND_FEELS;
-				String flatReplacementPropertyValue = ResourceController.getResourceController().getProperty(flatReplacementPropertyName, null);
-				if(flatReplacementPropertyValue != null && ! flatReplacementPropertyValue.isEmpty())
-				{
-					uiColorReplacementsWithPlaceholder = flatReplacementPropertyValue;
-				}
-			}
-			if(uiColorReplacementsWithPlaceholder == null) {
-				String defaultReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR +
-						(UITools.isLightLookAndFeelInstalled() ? LIGHT_LOOK_AND_FEELS : DARK_LOOK_AND_FEELS);
-				String defaultReplacementPropertyValue = ResourceController.getResourceController().getProperty(defaultReplacementPropertyName);
-				uiColorReplacementsWithPlaceholder = defaultReplacementPropertyValue;
-			}
-			uiColorReplacements = replacePropertyReferences(uiColorReplacementsWithPlaceholder);
+	private static String createAccentColorReplacements() {
+		ResourceController resourceController = getResourceController();
+		if(resourceController == null)
+			return "";
+		LookAndFeel lookAndFeel = UIManager.getLookAndFeel();
+		String lookAndFeelId = lookAndFeel.getName().replaceAll("\\W+", "");
+		String lafSpecificReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR + lookAndFeelId;
+		String lafSpecificReplacementPropertyValue = resourceController.getProperty(lafSpecificReplacementPropertyName, null);
+		String uiColorReplacementsWithPlaceholder = null;
+		if(lafSpecificReplacementPropertyValue != null && ! lafSpecificReplacementPropertyValue.isEmpty())
+		{
+			uiColorReplacementsWithPlaceholder = lafSpecificReplacementPropertyValue;
 		}
+		else if(! Compat.isApplet() && lookAndFeel instanceof FlatLaf) {
+			String flatReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR + FLAT_LOOK_AND_FEELS;
+			String flatReplacementPropertyValue = resourceController.getProperty(flatReplacementPropertyName, null);
+			if(flatReplacementPropertyValue != null && ! flatReplacementPropertyValue.isEmpty())
+			{
+				uiColorReplacementsWithPlaceholder = flatReplacementPropertyValue;
+			}
+		}
+		if(uiColorReplacementsWithPlaceholder == null) {
+			String defaultReplacementPropertyName = UI_COLOR_REPLACEMENTS_PROPERTY_FOR +
+					(UITools.isLightLookAndFeelInstalled() ? LIGHT_LOOK_AND_FEELS : DARK_LOOK_AND_FEELS);
+			String defaultReplacementPropertyValue = resourceController.getProperty(defaultReplacementPropertyName);
+			uiColorReplacementsWithPlaceholder = defaultReplacementPropertyValue;
+		}
+		return replacePropertyReferences(uiColorReplacementsWithPlaceholder);
+	}
+
+	private static ResourceController getResourceController() {
+		Controller controller = Controller.getCurrentController();
+		return controller != null ? controller.getResourceController() : null;
 	}
 
 	private static String replacePropertyReferences(String uiColorReplacementsWithPlaceholder) {
@@ -102,13 +108,19 @@ class SVGIconCreator {
 		return uiColorReplacementsWithPlaceholder;
 	}
 	private final URL url;
+	private final String colorReplacements;
     private int heightPixels = -1;
     private int widthPixels = -1;
     private URI svgUri;
     private boolean diagramWasAlreadyLoaded;
 
     SVGIconCreator(URL url) {
+		this(url, null);
+    }
+
+    SVGIconCreator(URL url, String colorReplacements) {
         this.url = url;
+        this.colorReplacements = colorReplacements;
     }
 
     Icon createIcon() {
@@ -149,7 +161,7 @@ class SVGIconCreator {
         return image;
     }
 
-    private SVGIcon createSvgIcon() {
+    SVGIcon createSvgIcon() {
         SVGUniverse svgUniverse = SVGCache.getSVGUniverse();
         SVGIcon icon = new SVGIcon();
         try {
@@ -172,9 +184,14 @@ class SVGIconCreator {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-        IconFactory.getInstance().registerIcon(icon, url);
+        registerIcon(icon);
         return icon;
     }
+
+	private void registerIcon(SVGIcon icon) {
+		if(Controller.getCurrentController() != null)
+			IconFactory.getInstance().registerIcon(icon, url);
+	}
 
     private void load(SVGUniverse svgUniverse) throws IOException {
     	boolean urlContainsAccentColorReplacementQuery = url.toString().endsWith(ResourceController.USE_ACCENT_COLOR_QUERY);
@@ -189,25 +206,32 @@ class SVGIconCreator {
     		catch (URISyntaxException ex) {
     		}
     	}
-    	String internalUri = getInternalUri();
+		String replacements = getColorReplacements();
+		String internalUri = getInternalUri(replacements);
 		svgUri = svgUniverse.getStreamBuiltURI(internalUri);
         diagramWasAlreadyLoaded = svgUniverse.getDiagram(svgUri, false) != null;
         if(! diagramWasAlreadyLoaded)
-            svgUniverse.loadSVG(openStream(urlContainsAccentColorReplacementQuery), internalUri);
+            svgUniverse.loadSVG(openStream(urlContainsAccentColorReplacementQuery, replacements), internalUri);
     }
 
-	private String getInternalUri() {
+	private String getInternalUri(String replacements) {
 		String query = url.getQuery();
-		return query == null ? url.getPath() :  url.getPath() + "?" + url.getQuery();
+		String internalUri = query == null ? url.getPath() :  url.getPath() + "?" + url.getQuery();
+		return replacements == null || replacements.isEmpty()
+				? internalUri
+				: internalUri + (query == null ? "?" : "&") + "colors=" + Integer.toHexString(replacements.hashCode());
 	}
 
-	private InputStream openStream(boolean urlContainsAccentColorReplacementQuery) throws IOException {
-		initializeAccentColorReplacements();
+	private InputStream openStream(boolean urlContainsAccentColorReplacementQuery, String replacements) throws IOException {
 		InputStream stream = (urlContainsAccentColorReplacementQuery ? urlWithoutQuery() : url).openStream();
-		if(!uiColorReplacements.isEmpty() && urlContainsAccentColorReplacementQuery)
-			return ReplacingInputStream.replace(stream, uiColorReplacements);
+		if(replacements != null && !replacements.isEmpty() && urlContainsAccentColorReplacementQuery)
+			return ReplacingInputStream.replace(stream, replacements);
 		else
 			return stream;
+	}
+
+	private String getColorReplacements() {
+		return colorReplacements != null ? colorReplacements : createAccentColorReplacements();
 	}
 
 	private URL urlWithoutQuery() throws MalformedURLException {
