@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JLabel;
 import javax.swing.text.Document;
 import javax.swing.text.View;
+import javax.swing.text.html.HTMLDocument;
 
 import org.junit.Test;
 
@@ -55,6 +56,78 @@ public class LazyScaledImageViewTest {
 
 		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(160f);
 		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(80f);
+	}
+
+	@Test
+	public void followsDocumentMaximumWidthChanges() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label,
+				"<html><body><img src=\"file:/missing-image.png\" width=\"240\" height=\"120\"></body></html>");
+		renderer.getPreferredSpan(View.X_AXIS);
+		final LazyScaledImageView imageView = findImageView(renderer);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 160);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(160f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(80f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 220);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(220f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(110f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 120);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(120f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(60f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 60);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(100f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(50f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 320);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(240f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(120f);
+	}
+
+	@Test
+	public void writesSourceSizeAttributesWhenMaximumWidthIsConfigured() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label,
+				"<html><body><img src=\"file:/missing-image.png\" width=\"240\" height=\"120\"></body></html>");
+		renderer.getPreferredSpan(View.X_AXIS);
+		final LazyScaledImageView imageView = findImageView(renderer);
+
+		HtmlImageViewSettings.writeSourceSizeAttributes((HTMLDocument)imageView.getDocument());
+
+		assertThat(imageView.getElement().getAttributes()
+				.getAttribute(HtmlImageViewSettings.SOURCE_WIDTH_ATTRIBUTE)).isEqualTo("240");
+		assertThat(imageView.getElement().getAttributes()
+				.getAttribute(HtmlImageViewSettings.SOURCE_HEIGHT_ATTRIBUTE)).isEqualTo("120");
+	}
+
+	@Test
+	public void usesSourceSizeAttributesAsResponsiveUpperBound() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label,
+				"<html><body><img src=\"file:/missing-image.png\" width=\"80\" height=\"40\" src-width=\"240\" src-height=\"120\"></body></html>");
+		renderer.getPreferredSpan(View.X_AXIS);
+		final LazyScaledImageView imageView = findImageView(renderer);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(80f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(40f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 220);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(220f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(110f);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 320);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(240f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(120f);
 	}
 
 	@Test

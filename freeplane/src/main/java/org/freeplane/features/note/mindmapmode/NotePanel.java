@@ -4,9 +4,10 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.ComponentOrientation;
-import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -36,9 +37,12 @@ import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.Document;
 import javax.swing.text.EditorKit;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.View;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
@@ -124,12 +128,8 @@ class NotePanel extends JPanel {
 		};
 		htmlViewerPanel.addMouseListener(editStarter);
 		iconViewerPanel.addMouseListener(editStarter);
-		addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				updateImageViewSettings();
-			}
-		});
+		installImageViewSizeListener(this);
+		installImageViewSizeListener(viewerScrollPanel.getViewport());
 
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "true");
 
@@ -156,6 +156,9 @@ class NotePanel extends JPanel {
 		final Document document = editorPane.getDocument();
 		editorPane.setEditorKit(new LazyImageSHTMLEditorKit());
 		editorPane.setDocument(document);
+		installImageViewSizeListener(editorPane);
+		if(editorPane.getParent() instanceof JViewport)
+			installImageViewSizeListener((JComponent)editorPane.getParent());
 
 		for (InputMap inputMap = editorPane.getInputMap(); inputMap != null; inputMap = inputMap.getParent()){
 			inputMap.remove(KeyStroke.getKeyStroke("ctrl pressed T"));
@@ -295,6 +298,7 @@ class NotePanel extends JPanel {
         HtmlProcessor.configureUnknownTags(htmlEditorPanel.getDocument());
 		updateImageViewSettings();
 		htmlEditorPanel.setCurrentDocumentContent(note);
+		HtmlImageViewSettings.writeSourceSizeAttributes(htmlEditorPanel.getDocument());
 		if(note.isEmpty()) {
 			final JEditorPane editorPane = htmlEditorPanel.getEditorPane();
 			editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, false);
@@ -325,6 +329,8 @@ class NotePanel extends JPanel {
 			htmlViewerPanel.setText("");
 		updateColors(foreground, background);
 		htmlViewerPanel.setText(note);
+		if(contentType == CONTENT_TYPE_TEXT_HTML)
+			HtmlImageViewSettings.writeSourceSizeAttributes((HTMLDocument)htmlViewerPanel.getDocument());
         if(note.isEmpty()) {
             htmlViewerPanel.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, false);
             htmlViewerPanel.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
@@ -456,6 +462,22 @@ class NotePanel extends JPanel {
 		}
 	}
 
+	private void installImageViewSizeListener(JComponent component) {
+		component.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				updateImageViewSettings();
+			}
+		});
+		if(component instanceof JViewport)
+			((JViewport) component).addChangeListener(new ChangeListener() {
+				@Override
+				public void stateChanged(ChangeEvent e) {
+					updateImageViewSettings();
+				}
+			});
+	}
+
 	private void updateImageViewSettings() {
 		if(htmlEditorPanel.isVisible())
 			updateImageViewSettings(htmlEditorPanel.getDocument(), htmlEditorPanel.getEditorPane());
@@ -465,18 +487,63 @@ class NotePanel extends JPanel {
 
 	private void updateImageViewSettings(HTMLDocument document, JEditorPane editorPane) {
 		HtmlImageViewSettings.setImageViewZoom(document, 1f);
-		HtmlImageViewSettings.setMaximumImageWidth(document, imageMaximumWidth(editorPane));
+		final int maximumWidth = imageMaximumWidth(editorPane);
+		HtmlImageViewSettings.setMaximumImageWidth(document, maximumWidth);
+		invalidateHtmlViewPreferences(editorPane);
+		resizeEditorPaneToImageWidth(editorPane, maximumWidth);
 		editorPane.revalidate();
 		editorPane.repaint();
+	}
+
+	private void invalidateHtmlViewPreferences(JEditorPane editorPane) {
+		if(editorPane.getUI() == null)
+			return;
+		final View rootView = editorPane.getUI().getRootView(editorPane);
+		if(rootView != null) {
+			invalidateImageViewPreferences(rootView);
+			rootView.preferenceChanged(null, true, true);
+		}
+	}
+
+	private void invalidateImageViewPreferences(View view) {
+		if(view.getElement() != null && "img".equals(view.getElement().getName()))
+			view.preferenceChanged(null, true, true);
+		for(int i = 0; i < view.getViewCount(); i++)
+			invalidateImageViewPreferences(view.getView(i));
 	}
 
 	private int imageMaximumWidth(JEditorPane editorPane) {
 		if(! isShowing())
 			return 0;
-		final Container parent = editorPane.getParent();
-		if(parent instanceof JViewport)
-			return ((JViewport) parent).getExtentSize().width;
-		return editorPane.getVisibleRect().width;
+		int maximumWidth = innerWidth();
+		for(Component component = editorPane; component != null && component != this; component = component.getParent()) {
+			final int width = visibleWidth(component);
+			if(width > 0)
+				maximumWidth = maximumWidth > 0 ? Math.min(maximumWidth, width) : width;
+		}
+		return maximumWidth;
+	}
+
+	private int innerWidth() {
+		final Insets insets = getInsets();
+		return Math.max(0, getWidth() - insets.left - insets.right);
+	}
+
+	private int visibleWidth(Component component) {
+		if(component instanceof JViewport)
+			return ((JViewport) component).getExtentSize().width;
+		if(component instanceof JComponent) {
+			final Rectangle visibleRect = ((JComponent) component).getVisibleRect();
+			if(visibleRect.width > 0)
+				return visibleRect.width;
+		}
+		return component.getWidth();
+	}
+
+	private void resizeEditorPaneToImageWidth(JEditorPane editorPane, int width) {
+		if(width <= 0 || editorPane.getWidth() == width)
+			return;
+		editorPane.setSize(width, Math.max(1, editorPane.getHeight()));
 	}
 
 	void editNote() {

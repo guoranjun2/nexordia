@@ -56,6 +56,11 @@ class LazyScaledImageView extends View {
 	}
 
 	@Override
+	public float getMinimumSpan(int axis) {
+		return getPreferredSpan(axis);
+	}
+
+	@Override
 	public void paint(Graphics graphics, Shape allocation) {
 		final long start = PaintPerformanceMonitor.start();
 		try {
@@ -123,12 +128,16 @@ class LazyScaledImageView extends View {
 	}
 
 	private Dimension preferredSize() {
+		final Dimension sourceSize = sourceSize();
+		return HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(), displayedSize(sourceSize), sourceSize);
+	}
+
+	private Dimension displayedSize(Dimension sourceSize) {
 		final int explicitWidth = intAttribute(HTML.Attribute.WIDTH, -1);
 		final int explicitHeight = intAttribute(HTML.Attribute.HEIGHT, -1);
 		if(explicitWidth > 0 && explicitHeight > 0)
-			return HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
-					new Dimension(explicitWidth, explicitHeight));
-		final Dimension size = naturalSize();
+			return new Dimension(explicitWidth, explicitHeight);
+		final Dimension size = sourceSize != null ? sourceSize : naturalSize();
 		int preferredWidth = explicitWidth;
 		int preferredHeight = explicitHeight;
 		if(size != null) {
@@ -141,8 +150,16 @@ class LazyScaledImageView extends View {
 			preferredWidth = DEFAULT_WIDTH;
 		if(preferredHeight <= 0)
 			preferredHeight = DEFAULT_HEIGHT;
-		return HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
-					new Dimension(preferredWidth, preferredHeight));
+		return new Dimension(preferredWidth, preferredHeight);
+	}
+
+	private Dimension sourceSize() {
+		final Dimension sourceSize = HtmlImageViewSettings.sourceSize(getElement());
+		if(sourceSize != null)
+			return sourceSize;
+		if(! HtmlImageViewSettings.hasMaximumImageWidth(getDocument()))
+			return null;
+		return naturalSize();
 	}
 
 	private int scaledWidth(Dimension size, int preferredHeight) {
