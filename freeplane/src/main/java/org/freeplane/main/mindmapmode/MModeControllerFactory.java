@@ -27,7 +27,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyEvent;
 
-import javax.swing.Box;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -47,8 +46,6 @@ import org.freeplane.core.ui.commandtonode.NewNodeLinkedToMenuItemOnNextClickAct
 import org.freeplane.core.ui.components.FButtonBar;
 import org.freeplane.core.ui.components.FreeplaneToolBar;
 import org.freeplane.core.ui.components.UITools;
-import org.freeplane.core.ui.components.resizer.CollapseableBoxBuilder;
-import org.freeplane.core.ui.components.resizer.JResizer.Direction;
 import org.freeplane.core.ui.components.resizer.UIComponentVisibilityDispatcher;
 import org.freeplane.core.ui.menubuilders.action.ComponentBuilder;
 import org.freeplane.core.ui.menubuilders.generic.Entry;
@@ -322,8 +319,8 @@ public class MModeControllerFactory {
 		userInputListenerFactory.addToolBar("/status", ViewController.BOTTOM, frameController
 		    .getStatusBar());
 		final JTabbedPane formattingPanel = UITools.getFreeplaneTabbedPanel();
-		Box resisableTabs = new CollapseableBoxBuilder("styleScrollPaneVisible").createBox(formattingPanel, Direction.RIGHT);
-		userInputListenerFactory.addToolBar("/format", ViewController.RIGHT, resisableTabs);
+		UIComponentVisibilityDispatcher.install(formattingPanel, "styleScrollPaneVisible");
+		userInputListenerFactory.addToolBar("/format", ViewController.RIGHT, formattingPanel);
 		final JRootPane rootPane = ((RootPaneContainer)frameController.getMenuComponent()).getRootPane();
 		final FButtonBar fButtonToolBar = new FButtonBar(rootPane);
 		UIComponentVisibilityDispatcher.install(fButtonToolBar, "fbarVisible");

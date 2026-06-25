@@ -63,8 +63,10 @@ import org.freeplane.core.util.Hyperlink;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.FrameController;
 import org.freeplane.features.ui.IMapViewManager;
+import org.freeplane.features.ui.toolwindow.ToolWindowAnchor;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.overview.BookmarkToolbarPane;
+import org.freeplane.view.swing.map.outline.MapAwareOutlinePane;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -86,6 +88,7 @@ class ApplicationViewController extends FrameController {
 	private final JPanel titleBarOverlay;
 	private final JLabel titleBarLabel;
 	private final Border contentPaneBorder;
+	private JComponent noteToolWindow;
     public ApplicationViewController( Controller controller, final IMapViewManager mapViewController,
 	                                 final JFrame frame, FrameComponentMover frameComponentMover) {
 		super(controller, mapViewController, "");
@@ -111,6 +114,11 @@ class ApplicationViewController extends FrameController {
 	 */
 	@Override
 	public void changeNoteWindowLocation(String location) {
+		ResourceController.getResourceController().setProperty("note_location", location);
+		if (noteToolWindow != null) {
+			dockManagedToolWindow("/note", noteLocationToAnchor(location));
+			return;
+		}
 		final AuxiliarySplitPanes splitPanes = getSplitPanes();
 		if (splitPanes != null) {
 			splitPanes.changeAuxComponentSide(0, location);
@@ -124,10 +132,11 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void insertComponentIntoSplitPane(final JComponent pMindMapComponent) {
-		final AuxiliarySplitPanes splitPanes = getSplitPanes();
-		if (splitPanes != null) {
-			splitPanes.insertComponentIntoSplitPane(0, pMindMapComponent, Controller.getCurrentModeController().getModeName());
-		}
+		noteToolWindow = pMindMapComponent;
+		addManagedToolWindow("/note", pMindMapComponent,
+				noteLocationToAnchor(ResourceController.getResourceController().getProperty("note_location", "right")),
+				"use_split_pane");
+		setManagedToolWindowVisible("/note", true);
 	}
 
 	private AuxillaryEditorSplitPane getSplitPane() {
@@ -165,7 +174,7 @@ class ApplicationViewController extends FrameController {
 			}
 
 			BookmarkToolbarPane bookmarkToolbarPane = new BookmarkToolbarPane(rootWindow);
-			AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(bookmarkToolbarPane);
+			AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(bookmarkToolbarPane, 1);
 			AuxillaryEditorSplitPane splitPane = splitPanes.getRootPane();
 			bookmarkToolbarPanes.put(frame, bookmarkToolbarPane);
 
@@ -223,6 +232,7 @@ class ApplicationViewController extends FrameController {
 
 	@Override
 	public void removeAuxiliaryComponent() {
+		setManagedToolWindowVisible("/note", false);
 		final AuxiliarySplitPanes splitPanes = getSplitPanes();
 		if (splitPanes != null) {
 			splitPanes.removeAuxiliaryComponent(0);
@@ -363,8 +373,9 @@ class ApplicationViewController extends FrameController {
 		// disable all hotkeys for JSplitPane
 		mapViewWindows = new MapViewDockingWindows(this);
 		final BookmarkToolbarPane mainBookmarkToolbarPane = new BookmarkToolbarPane(mapViewWindows.getRootWindow());
-		AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(mainBookmarkToolbarPane);
+		AuxiliarySplitPanes splitPanes = new AuxiliarySplitPanes(mainBookmarkToolbarPane, 1);
 		AuxillaryEditorSplitPane splitPane = splitPanes.getRootPane();
+		addManagedToolWindow("/outline", new MapAwareOutlinePane(splitPane), ToolWindowAnchor.LEFT, "outlineVisible");
 		splitPane.setResizeWeight(1.0d);
 		Container contentPane = mainFrame.getContentPane();
 		contentPane.setLayout(new BorderLayoutWithVisibleCenterComponent());
@@ -433,6 +444,21 @@ class ApplicationViewController extends FrameController {
 	@Override
 	public void nextMapView() {
 		mapViewWindows.selectNextMapView();
+	}
+
+	@Override
+	public void setOutlineVisible(final boolean visible) {
+		super.setOutlineVisible(visible);
+		setManagedToolWindowVisible("/outline", visible);
+	}
+
+	@Override
+	public boolean isOutlineVisible() {
+		return super.isOutlineVisible() && isManagedToolWindowVisible("/outline");
+	}
+
+	private ToolWindowAnchor noteLocationToAnchor(String location) {
+		return "left".equals(location) ? ToolWindowAnchor.LEFT : ToolWindowAnchor.RIGHT;
 	}
 
 	@Override
