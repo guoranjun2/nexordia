@@ -6,6 +6,8 @@ import java.awt.Rectangle;
 
 import javax.swing.JLabel;
 import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.Document;
+import javax.swing.text.Element;
 import javax.swing.text.View;
 
 import org.junit.Test;
@@ -38,6 +40,14 @@ public class SynchronousScaledEditorKitTest {
 	}
 
 	@Test
+	public void lazyImageSHTMLEditorKitUsesLazyScaledImageViewForNonGifImages() {
+		final View root = htmlView(new LazyImageSHTMLEditorKit(),
+				"<html><body><img src=\"file:/missing-image.png\" width=\"12\" height=\"34\"></body></html>");
+
+		assertThat(findView(root, LazyScaledImageView.class)).isNotNull();
+	}
+
+	@Test
 	public void scalesGifRepaintBoundsUsingViewZoom() {
 		final Rectangle scaledBounds = ScaledGifImageView.scaledBounds(new Rectangle(3, 5, 7, 11), 2.5f);
 
@@ -62,6 +72,28 @@ public class SynchronousScaledEditorKitTest {
 		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label, html);
 		renderer.getPreferredSpan(View.X_AXIS);
 		return renderer;
+	}
+
+	private View htmlView(LazyImageSHTMLEditorKit kit, String html) {
+		final Document document = kit.createDefaultDocument();
+		try {
+			kit.read(new java.io.StringReader(html), document, 0);
+		}
+		catch (Exception e) {
+			throw new AssertionError(e);
+		}
+		return kit.getViewFactory().create(findElement(document.getDefaultRootElement(), "img"));
+	}
+
+	private Element findElement(Element element, String name) {
+		if(name.equals(element.getName()))
+			return element;
+		for(int i = 0; i < element.getElementCount(); i++) {
+			final Element child = findElement(element.getElement(i), name);
+			if(child != null)
+				return child;
+		}
+		return null;
 	}
 
 	private <T> T findView(View view, Class<T> viewType) {
