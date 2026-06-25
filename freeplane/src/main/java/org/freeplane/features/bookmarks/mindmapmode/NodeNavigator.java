@@ -2,6 +2,7 @@ package org.freeplane.features.bookmarks.mindmapmode;
 
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.filter.hidden.NodeVisibility;
@@ -11,6 +12,8 @@ import org.freeplane.features.mode.Controller;
 import org.freeplane.features.ui.IMapViewManager;
 
 public class NodeNavigator {
+	private static final String BOOKMARK_CENTER_SELECTED_NODE = "bookmark_center_selected_node";
+	private static final String BOOKMARK_SET_ZOOM_TO_100 = "bookmark_set_zoom_to_100";
 	private final NodeModel node;
 
 	public NodeNavigator(NodeModel node) {
@@ -57,6 +60,20 @@ public class NodeNavigator {
 				mapSelection.selectAsTheOnlyOneSelected(nodeToSelect);
 				mapSelection.scrollNodeTreeToVisible(nodeToSelect, false);
 			}
+			applyBookmarkViewport(mapViewManager, mapSelection, nodeToSelect);
+		}
+	}
+
+	private void applyBookmarkViewport(IMapViewManager mapViewManager, IMapSelection mapSelection, NodeModel nodeToSelect) {
+		ResourceController resourceController = ResourceController.getResourceController();
+		if (resourceController.getBooleanProperty(BOOKMARK_SET_ZOOM_TO_100)) {
+			mapViewManager.setZoom(1f);
+		}
+		if (resourceController.getBooleanProperty(BOOKMARK_CENTER_SELECTED_NODE)) {
+			mapSelection.scrollNodeToCenter(nodeToSelect);
+		}
+		else if (resourceController.getBooleanProperty(BOOKMARK_SET_ZOOM_TO_100)) {
+			mapSelection.scrollNodeToVisible(nodeToSelect);
 		}
 	}
 

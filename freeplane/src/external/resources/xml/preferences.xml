@@ -369,6 +369,10 @@
 				<boolean name="scrollOnUnfold"/>
 				<boolean name="autoscroll_disabled_for_mouse_interaction" />
 			</separator>
+			<separator name="bookmark">
+				<boolean name="bookmark_center_selected_node" />
+				<boolean name="bookmark_set_zoom_to_100" />
+			</separator>
 			<separator name="tooltip">
 				<boolean name="show_node_tooltips" />
 				<number name="toolTipManager.initialDelay" min="0" />

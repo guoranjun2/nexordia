@@ -433,12 +433,25 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 				   return null;
 				}
 				JPopupMenu menu = new JPopupMenu(window.getTitle());
+				File mapFile = fileFor(window);
+				JMenuItem locateItem = new JMenuItem(TextUtils.getText("TabPopUpMenu.locate.text", "Locate"));
+				locateItem.setEnabled(mapFile != null);
+				locateItem.addActionListener(e -> ApplicationFileActions.reveal(menu, mapFile));
+				menu.add(locateItem);
+				menu.addSeparator();
                 JMenuItem closeItem = TranslatedElementFactory.createMenuItem("close_map");
                 closeItem.setIcon(new CloseIcon(tabIconSize()));
                 closeItem.addActionListener(e -> {
                     Controller.getCurrentController().getMapViewManager().close(getContainedMapView(window));
                 });
                 menu.add(closeItem);
+				menu.add(createCloseViewsItem(TextUtils.getText("TabPopUpMenu.close_left.text", "Close Maps to the Left"),
+						viewsOnSide(window, -1)));
+				menu.add(createCloseViewsItem(TextUtils.getText("TabPopUpMenu.close_right.text", "Close Maps to the Right"),
+						viewsOnSide(window, 1)));
+				menu.add(createCloseViewsItem(TextUtils.getText("TabPopUpMenu.close_other.text", "Close Other Maps"),
+						otherViews(window)));
+				menu.addSeparator();
                 JMenuItem renameItem = new JMenuItem(TextUtils.getText("TabPopUpMenu.rename.text","Rename"));
 				renameItem.setToolTipText(TextUtils.getText("TabPopUpMenu.rename.tooltip","Windows layout changes may reset the tab title."));
 				renameItem.addActionListener(e -> {
@@ -458,6 +471,73 @@ class MapViewDockingWindows implements IMapViewChangeListener {
 				return menu;
 			}
 		});
+	}
+
+	private JMenuItem createCloseViewsItem(String title, List<Component> views) {
+		JMenuItem item = new JMenuItem(title);
+		item.setEnabled(!views.isEmpty());
+		item.addActionListener(e -> closeViews(views));
+		return item;
+	}
+
+	private void closeViews(List<Component> views) {
+		IMapViewManager mapViewManager = Controller.getCurrentController().getMapViewManager();
+		for (Component view : views) {
+			if (!mapViewManager.close(view)) {
+				return;
+			}
+		}
+	}
+
+	private List<Component> viewsOnSide(DockingWindow window, int direction) {
+		List<Component> views = new ArrayList<Component>();
+		AbstractTabWindow tabWindow = tabWindowFor(window);
+		if (tabWindow == null) {
+			return views;
+		}
+		int selectedIndex = tabWindow.getChildWindowIndex(window);
+		if (direction < 0) {
+			for (int i = 0; i < selectedIndex; i++) {
+				addContainedMapView(views, tabWindow.getChildWindow(i));
+			}
+		}
+		else {
+			for (int i = selectedIndex + 1; i < tabWindow.getChildWindowCount(); i++) {
+				addContainedMapView(views, tabWindow.getChildWindow(i));
+			}
+		}
+		return views;
+	}
+
+	private List<Component> otherViews(DockingWindow window) {
+		List<Component> views = new ArrayList<Component>();
+		AbstractTabWindow tabWindow = tabWindowFor(window);
+		if (tabWindow == null) {
+			return views;
+		}
+		int selectedIndex = tabWindow.getChildWindowIndex(window);
+		for (int i = 0; i < tabWindow.getChildWindowCount(); i++) {
+			if (i != selectedIndex) {
+				addContainedMapView(views, tabWindow.getChildWindow(i));
+			}
+		}
+		return views;
+	}
+
+	private AbstractTabWindow tabWindowFor(DockingWindow window) {
+		return window.getWindowParent() instanceof AbstractTabWindow ? (AbstractTabWindow) window.getWindowParent() : null;
+	}
+
+	private void addContainedMapView(List<Component> views, DockingWindow window) {
+		Component mapView = getContainedMapView(window);
+		if (mapView != null) {
+			views.add(mapView);
+		}
+	}
+
+	private File fileFor(DockingWindow window) {
+		Component mapView = getContainedMapView(window);
+		return mapView instanceof MapView ? ((MapView) mapView).getMap().getFile() : null;
 	}
 
 	private void configureDefaultDockingWindowProperties() {
