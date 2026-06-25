@@ -2,6 +2,7 @@ package org.freeplane.core.ui.components.html;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -22,6 +23,18 @@ class ScaledGifImageView extends ImageView {
 
 	ScaledGifImageView(Element elem) {
 		super(elem);
+	}
+
+	@Override
+	public float getPreferredSpan(int axis) {
+		final Dimension size = HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
+				new Dimension(Math.max(1, (int)super.getPreferredSpan(X_AXIS)),
+						Math.max(1, (int)super.getPreferredSpan(Y_AXIS))));
+		if(axis == X_AXIS)
+			return size.width;
+		if(axis == Y_AXIS)
+			return size.height;
+		return super.getPreferredSpan(axis);
 	}
 
 	@Override
@@ -74,7 +87,8 @@ class ScaledGifImageView extends ImageView {
 	}
 
 	private float zoom() {
-		return Controller.getCurrentController().getMapViewManager().getZoom();
+		return HtmlImageViewSettings.imageViewZoom(getDocument(),
+				Controller.getCurrentController().getMapViewManager().getZoom());
 	}
 
 	static Rectangle scaledBounds(Rectangle bounds, float zoom) {

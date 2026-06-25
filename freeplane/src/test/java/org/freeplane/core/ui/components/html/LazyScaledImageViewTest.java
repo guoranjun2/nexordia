@@ -8,6 +8,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JLabel;
+import javax.swing.text.Document;
 import javax.swing.text.View;
 
 import org.junit.Test;
@@ -40,6 +41,45 @@ public class LazyScaledImageViewTest {
 		assertThat(imageView).isNotNull();
 		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(12f);
 		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(34f);
+	}
+
+	@Test
+	public void fitsWideImageToDocumentMaximumWidth() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label,
+				"<html><body><img src=\"file:/missing-image.png\" width=\"240\" height=\"120\"></body></html>");
+		renderer.getPreferredSpan(View.X_AXIS);
+		final LazyScaledImageView imageView = findImageView(renderer);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 160);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(160f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(80f);
+	}
+
+	@Test
+	public void keepsSmallImageWiderThanDocumentMaximumWidth() {
+		final JLabel label = new JLabel();
+		final ScaledHTML.Renderer renderer = ScaledHTML.createHTMLView(label,
+				"<html><body><img src=\"file:/missing-image.png\" width=\"90\" height=\"45\"></body></html>");
+		renderer.getPreferredSpan(View.X_AXIS);
+		final LazyScaledImageView imageView = findImageView(renderer);
+
+		HtmlImageViewSettings.setMaximumImageWidth(imageView.getDocument(), 60);
+
+		assertThat(imageView.getPreferredSpan(View.X_AXIS)).isEqualTo(90f);
+		assertThat(imageView.getPreferredSpan(View.Y_AXIS)).isEqualTo(45f);
+	}
+
+	@Test
+	public void usesConfiguredDocumentZoom() {
+		final Document document = ScaledHTML.createHTMLView(new JLabel(),
+				"<html><body><img src=\"file:/missing-image.png\" width=\"12\" height=\"34\"></body></html>")
+				.getDocument();
+
+		HtmlImageViewSettings.setImageViewZoom(document, 1.5f);
+
+		assertThat(HtmlImageViewSettings.imageViewZoom(document, 2.5f)).isEqualTo(1.5f);
 	}
 
 	@Test

@@ -147,31 +147,32 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 		if (notePanel == null) {
 			return;
 		}
-        // set default font for notes:
-        final ModeController modeController = Controller.getCurrentModeController();
-        final NoteStyleAccessor noteStyleAccessor = new NoteStyleAccessor(modeController, node, 1f, false);
-        String noteCssRule = noteStyleAccessor.getNoteCSSStyle();
-        Color noteForeground = noteStyleAccessor.getNoteForeground();
-        Color noteBackground = noteStyleAccessor.getNoteBackground();
-        final ComponentOrientation componentOrientation = getNoteTextDirection().componentOrientation;
-        notePanel.setComponentOrientation(componentOrientation);
-        final Font noteFont = noteStyleAccessor.getNoteFont();
-        if(noteFont != null)
-        	notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
-        notePanel.setForeground(noteForeground);
-        String bodyCssRule = bodyCssRule(noteCssRule);
-        StyleSheet noteStyleSheet = noteStyleAccessor.getNoteStyleSheet();
+		// set default font for notes:
+		final ModeController modeController = Controller.getCurrentModeController();
+		final NoteStyleAccessor noteStyleAccessor = new NoteStyleAccessor(modeController, node, 1f, false);
+		String noteCssRule = noteStyleAccessor.getNoteCSSStyle();
+		Color noteForeground = noteStyleAccessor.getNoteForeground();
+		Color noteBackground = noteStyleAccessor.getNoteBackground();
+		final ComponentOrientation componentOrientation = getNoteTextDirection().componentOrientation;
+		notePanel.setComponentOrientation(componentOrientation);
+		final Font noteFont = noteStyleAccessor.getNoteFont();
+		if(noteFont != null)
+			notePanel.setFont(noteFont.deriveFont(noteFont.getSize2D() * UITools.FONT_SCALE_FACTOR));
+		notePanel.setForeground(noteForeground);
+		String bodyCssRule = bodyCssRule(noteCssRule);
+		StyleSheet noteStyleSheet = noteStyleAccessor.getNoteStyleSheet();
 		if(node == null) {
-		    notePanel.setViewedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
+			notePanel.setViewedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
 			return;
 		}
-        if (ignoreEditorUpdate) {
-            return;
-        }
+		if (ignoreEditorUpdate) {
+			return;
+		}
+		notePanel.updateBaseUrl(node.getMap().getURL());
 		final String note = this.node != null ? NoteModel.getNoteText(this.node) : null;
 		if (note != null) {
 			try {
-			    TextController textController = TextController.getController();
+				TextController textController = TextController.getController();
 				final Object transformedContent = textController.getTransformedObject(node, NoteModel.getNote(node), note, notePanel);
 				Icon icon = textController.getIcon(transformedContent);
 				if(icon != null)
@@ -199,11 +200,10 @@ class NoteManager implements INodeSelectionListener, IMapSelectionListener, IMap
 		} else {
 			String noteContentType = noteController.getNoteContentType(node);
 			if (TextController.isHtmlContentType(noteContentType))
-					notePanel.setEditedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
+				notePanel.setEditedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
 			else
 				notePanel.setViewedContent("", bodyCssRule, noteStyleSheet, noteForeground, noteBackground);
 		}
-        notePanel.updateBaseUrl(node.getMap().getURL());
 	}
 
 	private void updateEditorStyle(NotePanel notePanel) {

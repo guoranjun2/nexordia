@@ -4,10 +4,13 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.ComponentOrientation;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
@@ -34,13 +37,16 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
+import javax.swing.text.EditorKit;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
 
 import org.freeplane.api.HorizontalTextAlignment;
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.components.html.ScaledEditorKit;
+import org.freeplane.core.ui.components.html.HtmlImageViewSettings;
+import org.freeplane.core.ui.components.html.LazyImageSHTMLEditorKit;
+import org.freeplane.core.ui.components.html.SynchronousScaledEditorKit;
 import org.freeplane.core.ui.components.html.StyleSheetConfigurer;
 import org.freeplane.core.util.HtmlProcessor;
 import org.freeplane.core.util.HtmlUtils;
@@ -74,8 +80,9 @@ class NotePanel extends JPanel {
 	private final Color defaultCaretColor;
 	private final NoteDocumentListener noteDocumentListener;
 
-    private final NoteManager noteManager;
-    private final StyleSheet ownStyleSheet;
+	private final NoteManager noteManager;
+	private final StyleSheet ownStyleSheet;
+	private URL baseUrl;
 
     private FocusListener textPanelFocusListener;
 
@@ -99,7 +106,7 @@ class NotePanel extends JPanel {
 		htmlViewerPanel.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		htmlViewerPanel.setOpaque(true);
 		htmlViewerPanel.setEditable(false);
-		htmlViewerPanel.setEditorKitForContentType(CONTENT_TYPE_TEXT_HTML, ScaledEditorKit.create());
+		htmlViewerPanel.setEditorKitForContentType(CONTENT_TYPE_TEXT_HTML, SynchronousScaledEditorKit.create());
 		final LinkOpener linkOpener = new LinkOpener(noteManager::getNode);
 		htmlViewerPanel.addMouseListener(linkOpener);
 		htmlViewerPanel.addMouseMotionListener(linkOpener);
@@ -117,6 +124,12 @@ class NotePanel extends JPanel {
 		};
 		htmlViewerPanel.addMouseListener(editStarter);
 		iconViewerPanel.addMouseListener(editStarter);
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				updateImageViewSettings();
+			}
+		});
 
 		ResourceController.getResourceController().setProperty(MNoteController.RESOURCES_USE_SPLIT_PANE, "true");
 
@@ -140,6 +153,9 @@ class NotePanel extends JPanel {
 
 		htmlEditorPanel.setMinimumSize(new Dimension(100, 100));
 		final SHTMLEditorPane editorPane = (SHTMLEditorPane) htmlEditorPanel.getEditorPane();
+		final Document document = editorPane.getDocument();
+		editorPane.setEditorKit(new LazyImageSHTMLEditorKit());
+		editorPane.setDocument(document);
 
 		for (InputMap inputMap = editorPane.getInputMap(); inputMap != null; inputMap = inputMap.getParent()){
 			inputMap.remove(KeyStroke.getKeyStroke("ctrl pressed T"));
@@ -275,8 +291,9 @@ class NotePanel extends JPanel {
 		setVisible(htmlEditorPanel);
 		htmlEditorPanel.setCurrentDocumentContent("");
         updateStyleSheet(ownRule, customStyleSheet);
-        updateColors(foreground, background);
+		updateColors(foreground, background);
         HtmlProcessor.configureUnknownTags(htmlEditorPanel.getDocument());
+		updateImageViewSettings();
 		htmlEditorPanel.setCurrentDocumentContent(note);
 		if(note.isEmpty()) {
 			final JEditorPane editorPane = htmlEditorPanel.getEditorPane();
@@ -289,20 +306,23 @@ class NotePanel extends JPanel {
     void removeViewedContent() {
         setVisible(htmlViewerPanel);
         String contentType = CONTENT_TYPE_TEXT_PLAIN;
-        htmlViewerPanel.setText("");
         if(! htmlViewerPanel.getContentType().equals(contentType))
             htmlViewerPanel.setContentType(contentType);
+        htmlViewerPanel.setText("");
     }
 	void setViewedContent(String note, String ownRule, StyleSheet customStyleSheet, Color foreground, Color background) {
 		setVisible(htmlViewerPanel);
 		String contentType = HtmlUtils.isHtml(note) ? CONTENT_TYPE_TEXT_HTML : CONTENT_TYPE_TEXT_PLAIN;
-		htmlViewerPanel.setText("");
 		if(! htmlViewerPanel.getContentType().equals(contentType))
 		    htmlViewerPanel.setContentType(contentType);
 		if(contentType == CONTENT_TYPE_TEXT_HTML) {
+			resetViewerHtmlDocument();
 		    HtmlProcessor.configureUnknownTags((HTMLDocument)htmlViewerPanel.getDocument());
+			updateImageViewSettings();
             updateStyleSheet(ownRule, customStyleSheet);
         }
+		else
+			htmlViewerPanel.setText("");
 		updateColors(foreground, background);
 		htmlViewerPanel.setText(note);
         if(note.isEmpty()) {
@@ -340,6 +360,12 @@ class NotePanel extends JPanel {
 		else
 			iconViewerPanel.setIcon(null);
 		revalidate();
+	}
+
+	private void resetViewerHtmlDocument() {
+		final EditorKit editorKit = htmlViewerPanel.getEditorKit();
+		htmlViewerPanel.setDocument(editorKit.createDefaultDocument());
+		applyBaseUrl((HTMLDocument)htmlViewerPanel.getDocument());
 	}
 
 	private String getDocumentText() {
@@ -414,17 +440,43 @@ class NotePanel extends JPanel {
 	}
 
 	void updateBaseUrl(URL url) {
+		baseUrl = url;
 		try {
-			final HTMLDocument document = getDocument();
-			if (url != null) {
-				document.setBase(url);
-			}
-			else {
-				document.setBase(new URL("file: "));
-			}
+			applyBaseUrl(getDocument());
 		}
 		catch (final Exception e) {
 		}
+	}
+
+	private void applyBaseUrl(HTMLDocument document) {
+		try {
+			document.setBase(baseUrl != null ? baseUrl : new URL("file: "));
+		}
+		catch (final Exception e) {
+		}
+	}
+
+	private void updateImageViewSettings() {
+		if(htmlEditorPanel.isVisible())
+			updateImageViewSettings(htmlEditorPanel.getDocument(), htmlEditorPanel.getEditorPane());
+		else if(htmlViewerPanel.isVisible() && htmlViewerPanel.getDocument() instanceof HTMLDocument)
+			updateImageViewSettings((HTMLDocument)htmlViewerPanel.getDocument(), htmlViewerPanel);
+	}
+
+	private void updateImageViewSettings(HTMLDocument document, JEditorPane editorPane) {
+		HtmlImageViewSettings.setImageViewZoom(document, 1f);
+		HtmlImageViewSettings.setMaximumImageWidth(document, imageMaximumWidth(editorPane));
+		editorPane.revalidate();
+		editorPane.repaint();
+	}
+
+	private int imageMaximumWidth(JEditorPane editorPane) {
+		if(! isShowing())
+			return 0;
+		final Container parent = editorPane.getParent();
+		if(parent instanceof JViewport)
+			return ((JViewport) parent).getExtentSize().width;
+		return editorPane.getVisibleRect().width;
 	}
 
 	void editNote() {

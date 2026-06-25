@@ -126,7 +126,8 @@ class LazyScaledImageView extends View {
 		final int explicitWidth = intAttribute(HTML.Attribute.WIDTH, -1);
 		final int explicitHeight = intAttribute(HTML.Attribute.HEIGHT, -1);
 		if(explicitWidth > 0 && explicitHeight > 0)
-			return new Dimension(explicitWidth, explicitHeight);
+			return HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
+					new Dimension(explicitWidth, explicitHeight));
 		final Dimension size = naturalSize();
 		int preferredWidth = explicitWidth;
 		int preferredHeight = explicitHeight;
@@ -140,7 +141,8 @@ class LazyScaledImageView extends View {
 			preferredWidth = DEFAULT_WIDTH;
 		if(preferredHeight <= 0)
 			preferredHeight = DEFAULT_HEIGHT;
-		return new Dimension(preferredWidth, preferredHeight);
+		return HtmlImageViewSettings.fitToMaximumImageWidth(getDocument(),
+					new Dimension(preferredWidth, preferredHeight));
 	}
 
 	private int scaledWidth(Dimension size, int preferredHeight) {
@@ -264,7 +266,8 @@ class LazyScaledImageView extends View {
 	}
 
 	private float zoom() {
-		return Controller.getCurrentController().getMapViewManager().getZoom();
+		return HtmlImageViewSettings.imageViewZoom(getDocument(),
+				Controller.getCurrentController().getMapViewManager().getZoom());
 	}
 
 	static Rectangle scaledBounds(Rectangle bounds, float zoom) {
