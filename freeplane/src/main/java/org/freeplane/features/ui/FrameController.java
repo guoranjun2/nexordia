@@ -225,6 +225,7 @@ abstract public class FrameController implements ViewController {
 		controller.addAction(new ToggleToolbarAction("ToggleToolbarAction", "/main_toolbar"));
 		controller.addAction(new ToggleToolbarAction("ToggleStatusAction", "/status"));
 		addStatusInfo(ResourceController.OBJECT_TYPE, null, null);
+		statusActionPanel.add(new ModeStatusSwitcher());
 		statusActionPanel.add(new ThemeStatusSwitcher());
 		toolbarPanel = new JComponent[4];
 		leftToolWindowPanel = new ModernToolWindowPanel(ToolWindowAnchor.LEFT);

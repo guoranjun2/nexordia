@@ -34,12 +34,14 @@ import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.ToolTipManager;
 
 import org.freeplane.core.resources.ResourceController;
+import org.freeplane.core.ui.IUserInputListenerFactory;
 import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.ui.menubuilders.generic.ChildActionEntryRemover;
 import org.freeplane.core.ui.menubuilders.generic.PhaseProcessor.Phase;
@@ -154,11 +156,35 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 
 	private static void updateAllWindowComponentTrees() {
 		for(Window window : Window.getWindows()) {
-			SwingUtilities.updateComponentTreeUI(window);
-			window.invalidate();
-			window.validate();
-			window.repaint();
+			updateComponentTreeUI(window);
 		}
+	}
+
+	private static void updateModePopupMenuComponentTrees(Controller controller) {
+		for(String mode : controller.getModes()) {
+			ModeController modeController = controller.getModeController(mode);
+			if(modeController != null)
+				updatePopupMenus(modeController.getUserInputListenerFactory());
+		}
+	}
+
+	private static void updatePopupMenus(IUserInputListenerFactory userInputListenerFactory) {
+		if(userInputListenerFactory != null) {
+			updatePopupMenu(userInputListenerFactory.getMapPopup());
+			updatePopupMenu(userInputListenerFactory.getNodePopupMenu());
+		}
+	}
+
+	private static void updatePopupMenu(JPopupMenu popupMenu) {
+		if(popupMenu != null)
+			updateComponentTreeUI(popupMenu);
+	}
+
+	private static void updateComponentTreeUI(Component component) {
+		SwingUtilities.updateComponentTreeUI(component);
+		component.invalidate();
+		component.validate();
+		component.repaint();
 	}
 
 	private static void refreshAllMapStyles() {
@@ -208,6 +234,7 @@ public class FreeplaneGUIStarter implements FreeplaneStarter {
 							System.setProperty("apple.laf.useScreenMenuBar", "true");
 						FrameController.setLookAndFeel(newValue);
 						updateAllWindowComponentTrees();
+						updateModePopupMenuComponentTrees(controller);
 						if(viewController != null) {
 							viewController.applyTitleBarTheme();
 							refreshAllMapStyles();
