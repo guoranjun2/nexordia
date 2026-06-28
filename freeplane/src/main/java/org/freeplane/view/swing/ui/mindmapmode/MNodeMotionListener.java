@@ -67,6 +67,7 @@ import org.freeplane.view.swing.ui.HtmlImagePopupMenu;
  * The MouseMotionListener which belongs to every NodeView
  */
 public class MNodeMotionListener extends DefaultNodeMouseMotionListener implements IMouseListener {
+	private final NodeCreationDragController nodeCreationDragController = new NodeCreationDragController();
 	private final NodeSizeDragController nodeSizeDragController = new NodeSizeDragController();
 	private final HtmlImagePopupMenu imagePopupMenu = new HtmlImagePopupMenu();
 	private Point dragStartingPoint = null;
@@ -121,6 +122,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
+		if (nodeCreationDragController.mouseClicked(e)) {
+			return;
+		}
 		boolean shouldEditOrResetPosition = e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2
 				&& doubleClickTimer.getDelay() > 0;
 		if (shouldEditOrResetPosition) {
@@ -183,6 +187,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
     public void mouseMoved(final MouseEvent e) {
+		if (nodeCreationDragController.mouseMoved(e)) {
+			return;
+		}
 		if (nodeSizeDragController.mouseMoved(e)) {
 			return;
 		}
@@ -204,8 +211,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
 	public void mouseExited(MouseEvent e) {
+		nodeCreationDragController.mouseExited(e);
 		nodeSizeDragController.mouseExited(e);
-		if (!isDragActive() && !nodeSizeDragController.isActive())
+		if (!isDragActive() && !nodeSizeDragController.isActive() && !nodeCreationDragController.isActive())
 			super.mouseExited(e);
 	}
 
@@ -218,9 +226,12 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 		ModeController modeController = mapView.getModeController();
 		if (modeController.canEdit(mapView.getMap()) && editsOnDoubleClick())
             doubleClickTimer.setDelay(DoubleClickTimer.MAX_TIME_BETWEEN_CLICKS);
-        else {
+		else {
         	doubleClickTimer.setDelay(0);
         }
+		if (nodeCreationDragController.mousePressed(e)) {
+			return;
+		}
 		if (nodeSizeDragController.mousePressed(e)) {
 			return;
 		}
@@ -283,6 +294,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
     public void mouseDragged(final MouseEvent e) {
+		if (nodeCreationDragController.mouseDragged(e)) {
+			return;
+		}
 		if (nodeSizeDragController.mouseDragged(e)) {
 			return;
 		}
@@ -426,6 +440,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 		final MainView v = (MainView) e.getSource();
 		if (!v.contains(e.getX(), e.getY())) {
 			v.setMouseArea(MouseArea.OUT);
+		}
+		if (nodeCreationDragController.mouseReleased(e, this::activateFoldingRegion)) {
+			return;
 		}
 		if (nodeSizeDragController.mouseReleased(e)) {
 			return;

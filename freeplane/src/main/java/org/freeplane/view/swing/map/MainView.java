@@ -801,15 +801,9 @@ public class MainView extends ZoomableLabel {
 
 	}
 
-	boolean hasChildren() {
-	    final NodeView nodeView = getNodeView();
-		final NodeModel node = nodeView.getNode();
-		return node.hasChildren();
-	}
-
 	public boolean isInFoldingRegion(Point p) {
 	    NodeView nodeView = getNodeView();
-	    if (!nodeView.getNode().hasChildren())
+	    if (nodeView.getNode().isRoot())
 	        return false;
 	    Rectangle foldingRectangleBounds = painter.getFoldingRectangleBounds(nodeView, true);
 	    if(nodeView.usesHorizontalLayout()) {

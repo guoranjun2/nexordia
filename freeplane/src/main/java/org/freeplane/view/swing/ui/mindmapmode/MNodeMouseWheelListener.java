@@ -27,6 +27,10 @@ public class MNodeMouseWheelListener extends DefaultNodeMouseWheelListener {
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
+		if (FoldingControlGestureAction.applyDefault(e)) {
+			e.consume();
+			return;
+		}
 		if(! e.isAltDown()){
 			super.mouseWheelMoved(e);
 			return;

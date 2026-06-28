@@ -101,11 +101,11 @@ abstract class MainViewPainter{
 	}
 
 	void paintFoldingMark(final NodeView nodeView, final Graphics2D g) {
-		if (! mainView.hasChildren())
-			return;
 		final MapView map = mainView.getMap();
 		final MapController mapController = map.getModeController().getMapController();
 		final FoldingMark markType = mainView.foldingMarkType(mapController, nodeView);
+		if(markType == FoldingMark.INVISIBLE)
+		    return;
 		boolean drawsControls = mainView.getMouseArea() != MouseArea.OUT && ! map.isPrinting();
 		if(markType == FoldingMark.FOLDING_CIRCLE_UNFOLDED && ! drawsControls)
 		    return;
