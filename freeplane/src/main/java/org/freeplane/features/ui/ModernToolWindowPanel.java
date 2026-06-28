@@ -110,6 +110,10 @@ class ModernToolWindowPanel extends JPanel {
 		}
 		add(content, BorderLayout.CENTER);
 		preferredPanelSize = restoredPreferredSize();
+		collapsed = restoredCollapsed();
+		resizeHandle.setCollapsed(collapsed);
+		stripe.setVisible(!collapsed);
+		content.setVisible(!collapsed);
 		updatePreferredSize(false, false);
 		rebuildTabs();
 	}
@@ -479,9 +483,12 @@ class ModernToolWindowPanel extends JPanel {
 	}
 
 	private void showWindow(ToolWindow window) {
+		final boolean wasDocked = model.state(window.id).mode() == ToolWindowMode.DOCKED;
 		dockComponentIntoPanel(window);
 		model.show(window.id);
-		setCollapsed(false);
+		if (!wasDocked) {
+			setCollapsed(false);
+		}
 		saveStates();
 		applyStates();
 		rebuildTabs();
@@ -1010,6 +1017,7 @@ class ModernToolWindowPanel extends JPanel {
 			return;
 		}
 		this.collapsed = collapsed;
+		saveCollapsed();
 		resizeHandle.setCollapsed(collapsed);
 		stripe.setVisible(!collapsed);
 		content.setVisible(!collapsed);
@@ -1028,6 +1036,10 @@ class ModernToolWindowPanel extends JPanel {
 	private int restoredPreferredSize() {
 		int fallback = anchor == ToolWindowAnchor.BOTTOM ? DEFAULT_PANEL_HEIGHT : DEFAULT_PANEL_WIDTH;
 		return ResourceController.getResourceController().getIntProperty(sizeKey(), fallback);
+	}
+
+	private boolean restoredCollapsed() {
+		return ResourceController.getResourceController().getBooleanProperty(collapsedKey(), false);
 	}
 
 	private void applyPreferredSize(int size) {
@@ -1088,6 +1100,14 @@ class ModernToolWindowPanel extends JPanel {
 
 	private void savePreferredSize() {
 		ResourceController.getResourceController().setProperty(sizeKey(), Integer.toString(preferredPanelSize));
+	}
+
+	private void saveCollapsed() {
+		ResourceController.getResourceController().setProperty(collapsedKey(), Boolean.toString(collapsed));
+	}
+
+	private String collapsedKey() {
+		return PROPERTY_PREFIX + anchor.name().toLowerCase() + ".collapsed";
 	}
 
 	private static String stateKey(String id, String property) {

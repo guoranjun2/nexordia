@@ -149,6 +149,10 @@ import org.freeplane.view.swing.map.link.ILinkView;
  */
 public class MapView extends JPanel implements Printable, Autoscroll, IMapChangeListener, IFreeplanePropertyListener, Configurable {
 
+	public interface OverlayPainter {
+		void paint(Graphics2D graphics);
+	}
+
     private static final String MAP_VIEW_ZOOM_SHIFT_PROPERTY = "map_view_zoom_shift";
     static final String BACKGROUND_IMAGE_OPACITY_PROPERTY = "background_image_opacity";
     public enum SelectionDirection {RIGHT, LEFT, DOWN, UP;
@@ -243,12 +247,18 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 	}
 
 	private PaintingMode paintingMode = null;
+	private OverlayPainter overlayPainter;
 	private boolean viewDragInProgress;
 	private static final float FAST_VIEW_DRAG_PAINTING_MAX_ZOOM = 0.7f;
 
 	@Override
 	public void refresh() {
 		repaint();
+	}
+
+	public void setOverlayPainter(OverlayPainter overlayPainter) {
+		this.overlayPainter = overlayPainter;
+		repaintVisible();
 	}
 
 	private class MapSelection implements IMapSelection {
@@ -2507,11 +2517,19 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
 			paintSelectionRectangle(g);
 			if(paintingPurpose == PaintingPurpose.PAINTING)
 				paintCoordinateAxis(g2);
+			if(paintingPurpose == PaintingPurpose.PAINTING)
+				paintOverlay(g2);
 		}
 		finally {
 			PaintPerformanceMonitor.record(PaintPerformanceMonitor.MAP_CHILDREN, start);
 		}
     }
+
+	private void paintOverlay(final Graphics2D g2) {
+		if (overlayPainter != null) {
+			overlayPainter.paint(g2);
+		}
+	}
 
 	private void paintCoordinateAxis(final Graphics2D g2) {
 		final long start = PaintPerformanceMonitor.start();

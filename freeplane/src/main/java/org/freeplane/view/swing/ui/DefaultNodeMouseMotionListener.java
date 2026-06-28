@@ -50,6 +50,41 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 		return ((MainView)e.getComponent()).isInFoldingRegion(e.getPoint());
 	}
 
+	protected void activateFoldingRegion(MouseEvent e) {
+		final MainView component = (MainView) e.getComponent();
+		NodeView nodeView = component.getNodeView();
+		if (nodeView == null)
+			return;
+
+		final NodeModel node = nodeView.getNode();
+		if (nodeFolder.isPreviewUnfolded(node)) {
+			nodeFolder.makePreviewUnfoldingPermanent();
+			return;
+		}
+
+		final ModeController mc = nodeView.getMap().getModeController();
+		final MapController mapController = mc.getMapController();
+		doubleClickTimer.cancel();
+		MouseEventActor.INSTANCE.withMouseEvent( () -> {
+			nodeFolder.stopTimerForDelayedFolding();
+			mapController.toggleFoldedAndScroll(node);
+		});
+	}
+
+	private boolean isInFoldingActionRegion(MouseEvent e) {
+		return isInFoldingRegion(e) && hasFoldingAction(e);
+	}
+
+	private boolean isInFoldingActionControl(MouseEvent e) {
+		return isInFoldingControl(e) && hasFoldingAction(e);
+	}
+
+	private boolean hasFoldingAction(MouseEvent e) {
+		final MainView component = (MainView) e.getComponent();
+		final NodeView nodeView = component.getNodeView();
+		return nodeView != null && nodeView.getNode().hasChildren();
+	}
+
 	protected boolean isInDragRegion(MouseEvent e) {
 		return ((MainView)e.getComponent()).isInDragRegion(e.getPoint());
 	}
@@ -69,7 +104,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 		final MapController mapController = mc.getMapController();
 		if(e.getButton() == MouseEvent.BUTTON1
 		        && Compat.isPlainEvent(e)
-		        && isInFoldingRegion(e)) {
+		        && isInFoldingActionRegion(e)) {
 		    return;
 		}
 
@@ -141,7 +176,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 				}
 			}
 			else if(Compat.isShiftEvent(e)){
-				if (isInFoldingRegion(e)) {
+				if (isInFoldingActionRegion(e)) {
 					if (! mapController.showNextChild(node))
 						mapController.fold(node);
 					e.consume();
@@ -205,7 +240,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	@Override
 	public void mouseEntered(final MouseEvent e) {
 		if (nodeSelector.isRelevant(e)) {
-			if (isInFoldingControl(e)) {
+			if (isInFoldingActionControl(e)) {
 				nodeFolder.handleMouseEvent(e);
 			} else {
 				nodeSelector.handleMouseEvent(e);
@@ -240,12 +275,13 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
         	}
         }
         final Cursor requiredCursor;
+        final boolean inFoldingControl = isInFoldingControl(e);
         if(followLink){
         	modeController.getController().getViewController().out(link);
 			requiredCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
 			node.setMouseArea(MouseArea.LINK);
         }
-        else if (isInFoldingControl(e)){
+        else if (inFoldingControl){
         	requiredCursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
         	node.setMouseArea(MouseArea.FOLDING);
         }
@@ -256,7 +292,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
         if (node.getCursor().getType() != requiredCursor.getType() || requiredCursor.getType() == Cursor.CUSTOM_CURSOR && node.getCursor() != requiredCursor) {
         	node.setCursor(requiredCursor);
         }
-		if (isInFoldingControl(e)) {
+		if (inFoldingControl && hasFoldingAction(e)) {
 			nodeFolder.handleMouseEvent(e);
 		} else {
 			nodeSelector.handleMouseEvent(e);
@@ -275,25 +311,8 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 		} else
 			if(e.getButton() == MouseEvent.BUTTON1
 			&& Compat.isPlainEvent(e)
-			&& isInFoldingRegion(e)) {
-				final MainView component = (MainView) e.getComponent();
-				NodeView nodeView = component.getNodeView();
-				if (nodeView == null)
-					return;
-
-				final NodeModel node = nodeView.getNode();
-				if (nodeFolder.isPreviewUnfolded(node)) {
-					nodeFolder.makePreviewUnfoldingPermanent();
-					return;
-				}
-
-				final ModeController mc = nodeView.getMap().getModeController();
-				final MapController mapController = mc.getMapController();
-				doubleClickTimer.cancel();
-				MouseEventActor.INSTANCE.withMouseEvent( () -> {
-					nodeFolder.stopTimerForDelayedFolding();
-					mapController.toggleFoldedAndScroll(node);
-				});
+			&& isInFoldingActionRegion(e)) {
+				activateFoldingRegion(e);
 				return;
 			}
 
@@ -310,7 +329,7 @@ public class DefaultNodeMouseMotionListener implements IMouseListener {
 	private void showPopupMenu(final MouseEvent e) {
 	    popupMenuIsShown = true;
 		final boolean inside = nodeSelector.isInside(e);
-		final boolean inFoldingRegion = ! inside && isInFoldingRegion(e);
+		final boolean inFoldingRegion = ! inside && isInFoldingActionRegion(e);
 		if (inside || inFoldingRegion) {
 			if(inside){
 				nodeSelector.stopTimerForDelayedSelection();
