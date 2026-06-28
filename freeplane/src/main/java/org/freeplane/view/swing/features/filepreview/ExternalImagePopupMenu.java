@@ -24,14 +24,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.net.URI;
+import java.io.File;
+import java.io.IOException;
 
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import org.freeplane.core.ui.components.UITools;
 import org.freeplane.core.util.Compat;
 import org.freeplane.core.util.Hyperlink;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.image.ImageNodeUpdater;
+import org.freeplane.features.image.ImageStorage;
+import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
 import org.freeplane.features.url.UrlManager;
@@ -117,13 +123,25 @@ class ExternalImagePopupMenu extends JPopupMenu implements MouseListener {
 			change = new JMenuItem(TextUtils.getText("ExternalImage_popupMenu_Change"));
 			change.addActionListener(new ActionListener() {
 				public void actionPerformed(final ActionEvent e) {
-					final ExternalResource extRes = (ExternalResource) viewer.createExtension(node);
-					if (extRes != null) {
-						URI uri = extRes.getAbsoluteUri(node.getMap());
-						if (progUtil.hasExternalResource(node) && !progUtil.hasExtendedProgressIcon(node)) {
-							viewer.undoableDeactivateHook(node);
-							viewer.paste(uri, node);
-						}
+					if (!progUtil.hasExternalResource(node) || progUtil.hasExtendedProgressIcon(node)) {
+						return;
+					}
+					final ImageStorage imageStorage = ImageStorage.currentSettings();
+					if (imageStorage.requiresSavedMap() && node.getMap().getFile() == null) {
+						UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
+						return;
+					}
+					final Controller controller = Controller.getCurrentController();
+					final File imageFile = ImageFileSelector.chooseImageFile(controller, viewer, imageStorage);
+					if (imageFile == null) {
+						return;
+					}
+					try {
+						final StoredImage storedImage = imageStorage.storeImageFile(imageFile, node.getMap().getFile());
+						new ImageNodeUpdater().insertImageAtTop(node, storedImage);
+					}
+					catch (final IOException ex) {
+						LogUtils.warn(ex);
 					}
 				}
 			});

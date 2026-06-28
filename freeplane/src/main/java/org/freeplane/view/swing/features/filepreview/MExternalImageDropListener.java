@@ -26,14 +26,19 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
 
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.image.ImageNodeUpdater;
+import org.freeplane.features.image.ImageStorage;
+import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.clipboard.MindMapNodesSelection;
-import org.freeplane.features.mode.Controller;
 import org.freeplane.view.swing.map.NodeView;
 
 public class MExternalImageDropListener implements DropTargetListener {
@@ -81,11 +86,18 @@ public class MExternalImageDropListener implements DropTargetListener {
 		            final Component target = ev.getDropTargetContext().getComponent();
 		            NodeView nodeView = (NodeView) SwingUtilities.getAncestorOfClass(NodeView.class, target);
 		            final File file = transferData.get(0);
-		    		final ViewerController vc = (Controller.getCurrentController().getModeController()
-		    			    .getExtension(ViewerController.class));
 		    		final NodeModel node = nodeView.getNode();
-					vc.paste(file.toURI(), node);
+					final ImageStorage imageStorage = ImageStorage.currentSettings();
+					if(imageStorage.requiresSavedMap() && node.getMap().getFile() == null) {
+						UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
+						return;
+					}
+					final StoredImage storedImage = imageStorage.storeImageFile(file, node.getMap().getFile());
+					new ImageNodeUpdater().insertImageAtTop(node, storedImage);
 	            }
+				catch (IOException e) {
+					LogUtils.warn(e);
+				}
 	            catch (Exception e) {
 	            	LogUtils.warn(e);
 	            }
@@ -112,7 +124,7 @@ public class MExternalImageDropListener implements DropTargetListener {
 	            final File file = transferData.get(0);
 	            if(! file.canRead())
 	            	return false;
-	            return true;
+	            return ImageStorage.currentSettings().isSupportedImageFile(file);
             }
             catch (Exception e) {
             }

@@ -33,6 +33,7 @@ dependencies {
 	lib 'com.formdev:svgSalamander:1.1.4'
 	lib 'com.github.robtimus:data-url:2.0.1'
 	lib 'com.formdev:flatlaf:3.6'
+	lib 'org.jsoup:jsoup:1.22.2'
 	lib 'com.twelvemonkeys.imageio:imageio-jpeg:3.12.0'
 	lib 'com.twelvemonkeys.imageio:imageio-webp:3.12.0'
 	lib "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"

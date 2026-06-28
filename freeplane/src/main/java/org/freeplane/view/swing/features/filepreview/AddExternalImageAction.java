@@ -20,10 +20,17 @@
 package org.freeplane.view.swing.features.filepreview;
 
 import java.awt.event.ActionEvent;
-import java.net.URI;
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
 import org.freeplane.core.ui.AFreeplaneAction;
+import org.freeplane.core.ui.components.UITools;
+import org.freeplane.core.util.LogUtils;
+import org.freeplane.core.util.TextUtils;
+import org.freeplane.features.image.ImageNodeUpdater;
+import org.freeplane.features.image.ImageStorage;
+import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.Controller;
@@ -50,14 +57,26 @@ public class AddExternalImageAction extends AFreeplaneAction {
 		final NodeModel selectedNode = mapController.getSelectedNode();
 		if (selectedNode == null)
 			return;
-		final ExternalResource extRes = (ExternalResource) vc.createExtension(selectedNode);
-		if (extRes == null)
+		final ImageStorage imageStorage = ImageStorage.currentSettings();
+		final File mapFile = selectedNode.getMap().getFile();
+		if (imageStorage.requiresSavedMap() && mapFile == null) {
+			UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
 			return;
-		URI absoluteUri = extRes.getAbsoluteUri(selectedNode.getMap());
-		if (absoluteUri == null)
+		}
+		final File imageFile = ImageFileSelector.chooseImageFile(controller, vc, imageStorage);
+		if (imageFile == null)
 			return;
+		final StoredImage storedImage;
+		try {
+			storedImage = imageStorage.storeImageFile(imageFile, mapFile);
+		}
+		catch (final IOException e) {
+			LogUtils.warn(e);
+			return;
+		}
+		final ImageNodeUpdater updater = new ImageNodeUpdater();
 		for (final NodeModel node : nodes) {
-			vc.paste(extRes.getUri(), node);
+			updater.insertImageAtTop(node, storedImage);
 		}
 	}
 }

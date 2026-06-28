@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.freeplane.api.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
@@ -50,7 +49,6 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.CaseSensitiveFileNameExtensionFilter;
 import org.freeplane.core.ui.components.OptionalDontShowMeAgainDialog;
 import org.freeplane.core.ui.components.OptionalDontShowMeAgainDialog.MessageType;
 import org.freeplane.core.ui.components.UITools;
@@ -71,6 +69,9 @@ import org.freeplane.features.format.ScannerController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.icon.mindmapmode.TagSelection;
+import org.freeplane.features.image.ImageHtmlInserter;
+import org.freeplane.features.image.ImageStorage;
+import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.link.LinkController;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.link.mindmapmode.MLinkController;
@@ -97,7 +98,6 @@ import org.freeplane.features.text.TextController;
 import org.freeplane.features.text.mindmapmode.MTextController;
 import org.freeplane.features.url.UrlManager;
 import org.freeplane.n3.nanoxml.XMLException;
-import org.freeplane.view.swing.features.filepreview.ImageAdder;
 import org.freeplane.view.swing.features.filepreview.ViewerController;
 import org.freeplane.view.swing.features.filepreview.ViewerController.PasteMode;
 
@@ -144,18 +144,24 @@ public class MMapClipboardController extends MapClipboardController implements M
 		public void paste(Transferable t, final NodeModel target, final Side side, int dropAction) {
 			boolean copyFile = dropAction == DnDConstants.ACTION_COPY;
 	        final File mapFile = target.getMap().getFile();
-			if ((copyFile || LinkController.getLinkType() == LinkController.LINK_RELATIVE_TO_MINDMAP) && mapFile == null) {
-	        	JOptionPane.showMessageDialog(Controller.getCurrentController().getViewController().getCurrentRootComponent(),
-	        	    TextUtils.getText("map_not_saved"), "Freeplane", JOptionPane.WARNING_MESSAGE);
-	        	return;
-	        }
 			ViewerController viewerController = (Controller.getCurrentModeController().getExtension(ViewerController.class));
 			boolean pasteImagesFromFiles = ResourceController.getResourceController().getBooleanProperty("pasteImagesFromFiles");
+			final ImageStorage imageStorage = ImageStorage.currentSettings();
 			Side newChildSide = side.isSibling() ? target.getSide() : side;
 			final MMapController mapController = (MMapController) Controller.getCurrentModeController().getMapController();
 			if(! side.isSibling()  && mapController.placesNewChildFirst(target))
 			    Collections.reverse(fileList);
 			for (final File sourceFile : fileList) {
+				if(pasteImagesFromFiles && dropAction != DnDConstants.ACTION_LINK && imageStorage.isSupportedImageFile(sourceFile)) {
+					if (insertImageFile(sourceFile, target, side, mapFile, imageStorage, newChildSide, mapController)) {
+						continue;
+					}
+				}
+				if ((copyFile || LinkController.getLinkType() == LinkController.LINK_RELATIVE_TO_MINDMAP) && mapFile == null) {
+					JOptionPane.showMessageDialog(Controller.getCurrentController().getViewController().getCurrentRootComponent(),
+					    TextUtils.getText("map_not_saved"), "Freeplane", JOptionPane.WARNING_MESSAGE);
+					return;
+				}
 				final File file;
 				if(copyFile){
 					try {
@@ -175,6 +181,25 @@ public class MMapClipboardController extends MapClipboardController implements M
                     node.setSide(newChildSide);
 					mapController.insertNode(node, target, InsertionRelation.bySide(side));
 				}
+			}
+		}
+
+		private boolean insertImageFile(final File sourceFile, final NodeModel target, final Side side, final File mapFile,
+				final ImageStorage imageStorage, final Side newChildSide, final MMapController mapController) {
+			if(imageStorage.requiresSavedMap() && mapFile == null) {
+				UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
+				return true;
+			}
+			try {
+				final StoredImage image = imageStorage.storeImageFile(sourceFile, mapFile);
+				final NodeModel node = mapController.newNode(new ImageHtmlInserter().createImageHtml(image.getSource()), target.getMap());
+				node.setSide(newChildSide);
+				mapController.insertNode(node, target, InsertionRelation.bySide(side));
+				return true;
+			}
+			catch (final IOException e) {
+				LogUtils.warn(e);
+				return false;
 			}
 		}
 	}
@@ -512,43 +537,19 @@ public class MMapClipboardController extends MapClipboardController implements M
 			final ModeController modeController = Controller.getCurrentModeController();
 			final MMapController mapController = (MMapController) modeController.getMapController();
             File mindmapFile = target.getMap().getFile();
-            if(mindmapFile == null) {
+            final ImageStorage imageStorage = ImageStorage.currentSettings();
+            if(imageStorage.requiresSavedMap() && mindmapFile == null) {
             	UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
             	return;
             }
-            //file that we'll save to disk.
-            File imageFile;
             try {
-            	imageFile = new TargetFileCreator().createTargetFile(mindmapFile, ImageAdder.IMAGE_FORMAT);
-    			imageFile.getParentFile().mkdirs();
-            	String imgfilepath=imageFile.getAbsolutePath();
-            	File tempFile = imageFile = new File(imgfilepath);
-            	final JFileChooser fileChooser = UITools.newFileChooser(imageFile);
-            	final CaseSensitiveFileNameExtensionFilter filter = new CaseSensitiveFileNameExtensionFilter();
-            	filter.addExtension(ImageAdder.IMAGE_FORMAT);
-            	fileChooser.setAcceptAllFileFilterUsed(false);
-            	fileChooser.setFileFilter(filter);
-            	fileChooser.setSelectedFile(imageFile);
-            	int returnVal = fileChooser.showSaveDialog(UITools.getCurrentRootComponent());
-            	if (returnVal != JFileChooser.APPROVE_OPTION) {
-            		tempFile.delete();
-            		return;
-            	}
-            	imageFile = fileChooser.getSelectedFile();
-            	if(tempFile.exists() && ! imageFile.getAbsoluteFile().equals(tempFile)){
-            		tempFile.delete();
-            	}
-            	if(imageFile.isDirectory())
-            		return;
-            	if(! FileUtils.getExtension(imageFile.getName()).equals(ImageAdder.IMAGE_FORMAT))
-            		imageFile = new File(imageFile.getPath() + '.' + ImageAdder.IMAGE_FORMAT);
-            	final NodeModel node = mapController.newNode(imageFile.getName(), target.getMap());
+				final StoredImage storedImage = imageStorage.storeClipboardImage(image, mindmapFile);
+				final NodeModel node = mapController.newNode(new ImageHtmlInserter().createImageHtml(storedImage.getSource()), target.getMap());
 				node.setSide(side.isSibling() ? target.getSide() : side);
             	mapController.insertNode(node, target, InsertionRelation.bySide(side));
-            	new ImageAdder(image, mapController, mindmapFile, imageFile).attachImageToNode(node);
             }
             catch (IOException e) {
-            	e.printStackTrace();
+				LogUtils.warn(e);
             }
         }
 

@@ -54,6 +54,7 @@ import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.InputMapUIResource;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultEditorKit;
@@ -62,9 +63,7 @@ import javax.swing.text.html.HTMLEditorKit;
 
 import org.freeplane.core.resources.IFreeplanePropertyListener;
 import org.freeplane.core.resources.ResourceController;
-import org.freeplane.core.ui.CaseSensitiveFileNameExtensionFilter;
 import org.freeplane.core.ui.IEditHandler.FirstAction;
-import org.freeplane.core.ui.components.BitmapImagePreview;
 import org.freeplane.core.ui.components.OptionalDontShowMeAgainDialog;
 import org.freeplane.core.ui.components.OptionalDontShowMeAgainDialog.MessageType;
 import org.freeplane.core.ui.components.UITools;
@@ -86,6 +85,9 @@ import org.freeplane.features.format.ScannerController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.NamedIcon;
 import org.freeplane.features.icon.mindmapmode.MIconController;
+import org.freeplane.features.image.ImageNodeUpdater;
+import org.freeplane.features.image.ImageStorage;
+import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.link.LinkController;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.link.mindmapmode.MLinkController;
@@ -115,6 +117,7 @@ import org.freeplane.features.text.mindmapmode.EditNodeBase.IEditControl;
 import org.freeplane.features.ui.IMapViewManager;
 import org.freeplane.features.ui.ViewController;
 import org.freeplane.features.url.UrlManager;
+import org.freeplane.view.swing.features.filepreview.ImagePreview;
 
 import com.jgoodies.common.base.Objects;
 import com.lightdev.app.shtm.ActionBuilder;
@@ -446,23 +449,12 @@ public class MTextController extends TextController {
 	}
 
 	public void setImageByFileChooser() {
-		boolean picturesAmongSelecteds = false;
 		final ModeController modeController = Controller.getCurrentModeController();
+		final ImageStorage imageStorage = ImageStorage.currentSettings();
+		final ImageNodeUpdater imageNodeUpdater = new ImageNodeUpdater();
+		boolean picturesAmongSelecteds = false;
 		for (final NodeModel node : modeController.getMapController().getSelectedNodes()) {
-			final Hyperlink link = NodeLinks.getLink(node);
-			if (link != null) {
-				final String linkString = link.toString();
-				final String lowerCase = linkString.toLowerCase();
-				if (lowerCase.endsWith(".png") || lowerCase.endsWith(".jpg") || lowerCase.endsWith(".jpeg")
-				        || lowerCase.endsWith(".gif")) {
-					picturesAmongSelecteds = true;
-					final String encodedLinkString = HtmlUtils.unicodeToHTMLUnicodeEntity(linkString);
-					final String strText = "<html><img src=\"" + encodedLinkString + "\">";
-					((MLinkController) LinkController.getController()).setLink(node, (URI) null,
-					    LinkController.LINK_ABSOLUTE);
-					setNodeText(node, strText);
-				}
-			}
+			picturesAmongSelecteds = insertLinkedImage(node, imageStorage, imageNodeUpdater) || picturesAmongSelecteds;
 		}
 		if (picturesAmongSelecteds) {
 			return;
@@ -472,48 +464,84 @@ public class MTextController extends TextController {
 		final NodeModel selectedNode = modeController.getMapController().getSelectedNode();
 		final MapModel map = selectedNode.getMap();
 		final File file = map.getFile();
-		if (file == null && LinkController.getLinkType() == LinkController.LINK_RELATIVE_TO_MINDMAP) {
+		if (imageStorage.requiresSavedMap() && file == null) {
 			JOptionPane.showMessageDialog(viewController.getCurrentRootComponent(), TextUtils
 			    .getText("not_saved_for_image_error"), "Freeplane", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
-		final CaseSensitiveFileNameExtensionFilter filter = new CaseSensitiveFileNameExtensionFilter();
-		filter.addExtension("jpg");
-		filter.addExtension("jpeg");
-		filter.addExtension("png");
-		filter.addExtension("gif");
-		filter.setDescription(TextUtils.getText("bitmaps"));
 		final UrlManager urlManager = modeController.getExtension(UrlManager.class);
 		final JFileChooser chooser = urlManager.getFileChooser();
-		chooser.setFileFilter(filter);
+		chooser.setFileFilter(new FileFilter() {
+			@Override
+			public boolean accept(final File input) {
+				return input.isDirectory() || imageStorage.isSupportedImageFile(input);
+			}
+
+			@Override
+			public String getDescription() {
+				return TextUtils.getText("bitmaps");
+			}
+		});
 		chooser.setAcceptAllFileFilterUsed(false);
-		chooser.setAccessory(new BitmapImagePreview(chooser));
+		chooser.setAccessory(new ImagePreview(chooser));
 		final int returnVal = chooser.showOpenDialog(viewController.getCurrentRootComponent());
 		if (returnVal != JFileChooser.APPROVE_OPTION) {
 			return;
 		}
 		final File input = chooser.getSelectedFile();
-		URI uri = input.toURI();
-		if (uri == null) {
+		if (!imageStorage.isSupportedImageFile(input)) {
+			UITools.errorMessage(TextUtils.format("file_not_found", input.toString()));
 			return;
 		}
-		// bad hack: try to interpret file as http link
-		if (!input.exists()) {
-			uri = LinkController.toRelativeURI(map.getFile(), input, LinkController.LINK_RELATIVE_TO_MINDMAP);
-			if (uri == null || !"http".equals(uri.getScheme())) {
-				UITools.errorMessage(TextUtils.format("file_not_found", input.toString()));
-				return;
-			}
+		try {
+			final StoredImage storedImage = imageStorage.storeImageFile(input, file);
+			imageNodeUpdater.insertImageAtTop(selectedNode, storedImage);
 		}
-		else if (LinkController.getLinkType() != LinkController.LINK_ABSOLUTE) {
-			uri = LinkController.toLinkTypeDependantURI(map.getFile(), input);
+		catch (final IOException e) {
+			LogUtils.warn(e);
 		}
-		String uriString = uri.toString();
-		if (uriString.startsWith("http:/")) {
-			uriString = "http://" + uriString.substring("http:/".length());
+	}
+
+	private boolean insertLinkedImage(final NodeModel node, final ImageStorage imageStorage,
+			final ImageNodeUpdater imageNodeUpdater) {
+		final Hyperlink link = NodeLinks.getLink(node);
+		if (link == null) {
+			return false;
 		}
-		final String strText = "<html><img src=\"" + uriString + "\">";
-		setNodeText(selectedNode, strText);
+		final URI uri;
+		try {
+			uri = UrlManager.getAbsoluteUri(node.getMap(), link.getUri());
+		}
+		catch (final Exception e) {
+			return false;
+		}
+		if (uri == null || !"file".equals(uri.getScheme())) {
+			return false;
+		}
+		final File file;
+		try {
+			file = new File(uri);
+		}
+		catch (final IllegalArgumentException e) {
+			return false;
+		}
+		if (!imageStorage.isSupportedImageFile(file)) {
+			return false;
+		}
+		if (imageStorage.requiresSavedMap() && node.getMap().getFile() == null) {
+			UITools.errorMessage(TextUtils.getRawText("map_not_saved"));
+			return true;
+		}
+		try {
+			final StoredImage storedImage = imageStorage.storeImageFile(file, node.getMap().getFile());
+			((MLinkController) LinkController.getController()).setLink(node, (URI) null, LinkController.LINK_ABSOLUTE);
+			imageNodeUpdater.insertImageAtTop(node, storedImage);
+			return true;
+		}
+		catch (final IOException e) {
+			LogUtils.warn(e);
+			return false;
+		}
 	}
 
 	private static final Pattern HTML_HEAD = Pattern.compile("\\s*<head>.*</head>", Pattern.DOTALL);
