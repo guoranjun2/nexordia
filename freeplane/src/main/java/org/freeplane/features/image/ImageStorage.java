@@ -49,14 +49,15 @@ public class ImageStorage {
 	StoredImage store(final ImageContent imageContent, final File mapFile) throws IOException {
 		if (location == ImageStorageLocation.EMBEDDED) {
 			final String data = Base64.getEncoder().encodeToString(imageContent.getBytes());
-			return new StoredImage("data:" + imageContent.getMimeType() + ";base64," + data, imageContent.getFileName());
+			return new StoredImage("data:" + imageContent.getMimeType() + ";base64," + data, imageContent.getFileName(),
+					imageContent.getWidth(), imageContent.getHeight());
 		}
 		final File imageFile = new File(directory(mapFile), imageContent.getFileName());
 		writeIfMissing(imageFile, imageContent.getBytes());
 		final String source = location == ImageStorageLocation.CURRENT
 		        ? mapFile.getParentFile().toURI().relativize(imageFile.toURI()).toString()
 		        : imageFile.toURI().toString();
-		return new StoredImage(source, imageFile.getName());
+		return new StoredImage(source, imageFile.getName(), imageContent.getWidth(), imageContent.getHeight());
 	}
 
 	private File directory(final File mapFile) throws IOException {

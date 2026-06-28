@@ -1,5 +1,6 @@
 package org.freeplane.features.image;
 
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -13,6 +14,7 @@ import java.util.Iterator;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.ImageIcon;
 
 import org.freeplane.core.util.FileUtils;
@@ -25,24 +27,32 @@ class ImageContent {
 	private final String extension;
 	private final String mimeType;
 	private final String hash;
+	private final int width;
+	private final int height;
 
-	private ImageContent(final byte[] bytes, final String extension, final String mimeType) {
+	private ImageContent(final byte[] bytes, final String extension, final String mimeType, final int width,
+			final int height) {
 		this.bytes = bytes;
 		this.extension = extension;
 		this.mimeType = mimeType;
 		this.hash = sha256(bytes);
+		this.width = width;
+		this.height = height;
 	}
 
 	static ImageContent fromImage(final Image image) throws IOException {
 		final BufferedImage bufferedImage = toBufferedImage(image);
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ImageIO.write(bufferedImage, PNG_EXTENSION, outputStream);
-		return new ImageContent(outputStream.toByteArray(), PNG_EXTENSION, PNG_MIME_TYPE);
+		return new ImageContent(outputStream.toByteArray(), PNG_EXTENSION, PNG_MIME_TYPE, bufferedImage.getWidth(),
+				bufferedImage.getHeight());
 	}
 
 	static ImageContent fromFile(final File file) throws IOException {
 		final String extension = FileUtils.getExtension(file);
-		return new ImageContent(Files.readAllBytes(file.toPath()), extension, mimeType(file, extension));
+		final Dimension size = imageSize(file, extension);
+		return new ImageContent(Files.readAllBytes(file.toPath()), extension, mimeType(file, extension),
+				size != null ? size.width : -1, size != null ? size.height : -1);
 	}
 
 	static boolean isSupportedImageFile(final File file) {
@@ -67,6 +77,14 @@ class ImageContent {
 
 	String getMimeType() {
 		return mimeType;
+	}
+
+	int getWidth() {
+		return width;
+	}
+
+	int getHeight() {
+		return height;
 	}
 
 	private static BufferedImage toBufferedImage(final Image image) throws IOException {
@@ -104,6 +122,27 @@ class ImageContent {
 			return "image/bmp";
 		}
 		return "image/" + extension;
+	}
+
+	private static Dimension imageSize(final File file, final String extension) throws IOException {
+		if ("svg".equals(extension)) {
+			return null;
+		}
+		final Iterator<ImageReader> readers = ImageIO.getImageReadersBySuffix(extension);
+		if (!readers.hasNext()) {
+			return null;
+		}
+		final ImageReader reader = readers.next();
+		try (ImageInputStream inputStream = ImageIO.createImageInputStream(file)) {
+			if (inputStream == null) {
+				return null;
+			}
+			reader.setInput(inputStream);
+			return new Dimension(reader.getWidth(0), reader.getHeight(0));
+		}
+		finally {
+			reader.dispose();
+		}
 	}
 
 	private static String sha256(final byte[] bytes) {

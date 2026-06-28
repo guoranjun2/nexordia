@@ -61,11 +61,14 @@ import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.MouseArea;
 import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.ui.DefaultNodeMouseMotionListener;
+import org.freeplane.view.swing.ui.HtmlImagePopupMenu;
 
 /**
  * The MouseMotionListener which belongs to every NodeView
  */
 public class MNodeMotionListener extends DefaultNodeMouseMotionListener implements IMouseListener {
+	private final NodeSizeDragController nodeSizeDragController = new NodeSizeDragController();
+	private final HtmlImagePopupMenu imagePopupMenu = new HtmlImagePopupMenu();
 	private Point dragStartingPoint = null;
     private Quantity<LengthUnit> originalHGap;
     private Quantity<LengthUnit> originalAssignedBaseHGap;
@@ -180,6 +183,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
     public void mouseMoved(final MouseEvent e) {
+		if (nodeSizeDragController.mouseMoved(e)) {
+			return;
+		}
 		if (isDragActive() || e.getClickCount() != 0)
 			return;
 		final MainView mainView = (MainView) e.getSource();
@@ -198,7 +204,8 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		if (!isDragActive())
+		nodeSizeDragController.mouseExited(e);
+		if (!isDragActive() && !nodeSizeDragController.isActive())
 			super.mouseExited(e);
 	}
 
@@ -214,6 +221,12 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
         else {
         	doubleClickTimer.setDelay(0);
         }
+		if (nodeSizeDragController.mousePressed(e)) {
+			return;
+		}
+		if (imagePopupMenu.showIfImagePopup(e, HtmlImagePopupMenu.Target.NODE_TEXT)) {
+			return;
+		}
 		if (isInDragRegion(e)) {
 			if ((e.getModifiersEx() & InputEvent.BUTTON1_DOWN_MASK) == (InputEvent.BUTTON1_DOWN_MASK)) {
 			    NodeView nodeView = getNodeView(e);
@@ -270,6 +283,9 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 
 	@Override
     public void mouseDragged(final MouseEvent e) {
+		if (nodeSizeDragController.mouseDragged(e)) {
+			return;
+		}
 	    if (!isDragActive()) {
 	        if(! getNodeView(e).isSelected())
 	            super.mouseDragged(e);
@@ -410,6 +426,12 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 		final MainView v = (MainView) e.getSource();
 		if (!v.contains(e.getX(), e.getY())) {
 			v.setMouseArea(MouseArea.OUT);
+		}
+		if (nodeSizeDragController.mouseReleased(e)) {
+			return;
+		}
+		if (imagePopupMenu.showIfImagePopup(e, HtmlImagePopupMenu.Target.NODE_TEXT)) {
+			return;
 		}
 		if (!isDragActive()) {
 			super.mouseReleased(e);

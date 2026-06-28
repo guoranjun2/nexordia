@@ -458,14 +458,6 @@
 							<Entry name="EditNodeCssAction"/>
 							<Entry name="UsePlainTextAction" accelerator="alt shift P" />
 							<Entry builder="separator" />
-							<Entry name="image_settings">
-								<Entry builder="radio_button_group" name="image_storage_location" textKey="OptionPanel.image_storage_location">
-									<Entry name="SetStringPropertyAction.image_storage_location.current" />
-									<Entry name="SetStringPropertyAction.image_storage_location.global" />
-									<Entry name="SetStringPropertyAction.image_storage_location.embedded" />
-								</Entry>
-							</Entry>
-							<Entry builder="separator" />
 							<Entry builder="radio_button_group" name="nodeShapes" textKey="OptionPanel.nodeshape">
 								<Entry name="NodeShapeAction.fork" />
 								<Entry name="NodeShapeAction.bubble" />
@@ -495,6 +487,13 @@
 								<Entry name="EdgeColorAction" accelerator="alt shift E" />
 							</Entry>
 						</Entry>
+				<Entry name="image_settings">
+					<Entry builder="radio_button_group" name="image_storage_location" textKey="OptionPanel.image_storage_location">
+						<Entry name="SetStringPropertyAction.image_storage_location.current" />
+						<Entry name="SetStringPropertyAction.image_storage_location.global" />
+						<Entry name="SetStringPropertyAction.image_storage_location.embedded" />
+					</Entry>
+				</Entry>
 				<Entry name="styleActions" textKey="menu_applyStyle">
 					<Entry builder="style_actions" />
 					<Entry builder="noActions" />

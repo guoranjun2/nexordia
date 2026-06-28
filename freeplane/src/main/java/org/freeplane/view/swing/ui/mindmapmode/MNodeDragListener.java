@@ -73,6 +73,8 @@ public class MNodeDragListener implements DragGestureListener {
 		Rectangle bounds = new Rectangle(0, 0, component.getWidth(), component.getHeight());
 		if(!bounds.contains(e.getDragOrigin()))
 			return;
+		if(component instanceof MainView && NodeSizeDragController.isResizeHandle((MainView) component, e.getDragOrigin()))
+			return;
 		final TagIcon tag;
 		if(component instanceof MainView)
 			tag = ((MainView) component).getTagIconAt(e.getDragOrigin());

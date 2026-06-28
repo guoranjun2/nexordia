@@ -29,6 +29,8 @@ public class ImageStorageShould {
 		assertThat(first.getSource()).isEqualTo("sample_files/img/" + first.getFileName());
 		assertThat(new File(temporaryFolder.getRoot(), first.getSource())).isFile();
 		assertThat(new File(temporaryFolder.getRoot(), "sample_files/img").listFiles()).hasSize(1);
+		assertThat(first.getWidth()).isEqualTo(2);
+		assertThat(first.getHeight()).isEqualTo(2);
 	}
 
 	@Test
@@ -42,6 +44,8 @@ public class ImageStorageShould {
 		assertThat(storedImage.getSource()).startsWith(new File(temporaryFolder.getRoot(), "image").toURI().toString());
 		assertThat(new File(temporaryFolder.getRoot(), "image/" + storedImage.getFileName())).isFile();
 		assertThat(storedImage.getFileName()).endsWith(".png");
+		assertThat(storedImage.getWidth()).isEqualTo(2);
+		assertThat(storedImage.getHeight()).isEqualTo(2);
 	}
 
 	@Test

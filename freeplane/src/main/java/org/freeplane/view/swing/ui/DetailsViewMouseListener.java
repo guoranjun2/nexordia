@@ -40,6 +40,8 @@ import org.freeplane.view.swing.map.ZoomableLabel;
  */
 public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 	protected final NodeSelector nodeSelector = NodeSelector.mapNodeSelector;
+	private final DetailsImageDragController imageDragController = new DetailsImageDragController();
+	private final HtmlImagePopupMenu imagePopupMenu = new HtmlImagePopupMenu();
 
 	public DetailsViewMouseListener() {
 	}
@@ -91,16 +93,31 @@ public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 
 	@Override
 	public void mousePressed(MouseEvent e) {
+		if (imageDragController.mousePressed(e)) {
+			return;
+		}
+		if (imagePopupMenu.showIfImagePopup(e, HtmlImagePopupMenu.Target.DETAILS)) {
+			return;
+		}
 		new NodePopupMenuDisplayer().showNodePopupMenu(e);
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		if (imageDragController.mouseReleased(e)) {
+			return;
+		}
+		if (imagePopupMenu.showIfImagePopup(e, HtmlImagePopupMenu.Target.DETAILS)) {
+			return;
+		}
 		new NodePopupMenuDisplayer().showNodePopupMenu(e);
 	}
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
+		if (imageDragController.mouseMoved(e)) {
+			return;
+		}
 		super.mouseMoved(e);
 		if (eventFromHideDisplayArea(e) || !nodeSelector.isRelevant(e))
 			nodeSelector.stopTimerForDelayedSelection();
@@ -112,6 +129,9 @@ public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 	 */
 	@Override
 	public void mouseDragged(final MouseEvent e) {
+		if (imageDragController.mouseDragged(e)) {
+			return;
+		}
 		nodeSelector.stopTimerForDelayedSelection();
 		nodeSelector.selectSingleNode(e);
 	}
@@ -127,6 +147,7 @@ public class DetailsViewMouseListener extends LinkNavigatorMouseListener {
 
 	@Override
 	public void mouseExited(final MouseEvent e) {
+		imageDragController.mouseExited(e);
 		nodeSelector.stopTimerForDelayedSelection();
 		nodeSelector.trackWindowForComponent(e.getComponent());
 	}

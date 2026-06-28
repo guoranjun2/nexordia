@@ -170,9 +170,27 @@ public class MNodeDropListener implements DropTargetListener {
 
 	@Override
 	public void dragOver(final DropTargetDragEvent dtde) {
+		final MainView dropTarget = getMainView(dtde.getDropTargetContext());
+		if (isDraggedNodeTarget(dtde, dropTarget)) {
+			dropTarget.stopDragOver();
+			dropTarget.repaint();
+			return;
+		}
 		if(isDragAcceptable(dtde)) {
-			final MainView dropTarget = getMainView(dtde.getDropTargetContext());
 			dropTarget.setDragOverDirection(dtde);
+		}
+	}
+
+	private boolean isDraggedNodeTarget(final DropTargetDragEvent event, final MainView dropTarget) {
+		if (!event.isDataFlavorSupported(MindMapNodesSelection.mindMapNodeObjectsFlavor)) {
+			return false;
+		}
+		try {
+			return NodeDropUtils.droppedNodesContainTargetNode(dropTarget.getNodeView().getNode(),
+					NodeDropUtils.getNodeObjects(event.getTransferable()));
+		}
+		catch (final UnsupportedFlavorException | IOException e) {
+			return false;
 		}
 	}
 

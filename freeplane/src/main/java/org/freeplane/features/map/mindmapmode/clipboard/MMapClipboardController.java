@@ -69,7 +69,7 @@ import org.freeplane.features.format.ScannerController;
 import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.icon.mindmapmode.TagSelection;
-import org.freeplane.features.image.ImageHtmlInserter;
+import org.freeplane.features.image.ImageNodeUpdater;
 import org.freeplane.features.image.ImageStorage;
 import org.freeplane.features.image.StoredImage;
 import org.freeplane.features.link.LinkController;
@@ -192,7 +192,9 @@ public class MMapClipboardController extends MapClipboardController implements M
 			}
 			try {
 				final StoredImage image = imageStorage.storeImageFile(sourceFile, mapFile);
-				final NodeModel node = mapController.newNode(new ImageHtmlInserter().createImageHtml(image.getSource()), target.getMap());
+				final ImageNodeUpdater updater = new ImageNodeUpdater();
+				final NodeModel node = mapController.newNode(updater.createImageHtml(image), target.getMap());
+				updater.fitNodeWidthToImage(node, image);
 				node.setSide(newChildSide);
 				mapController.insertNode(node, target, InsertionRelation.bySide(side));
 				return true;
@@ -544,7 +546,9 @@ public class MMapClipboardController extends MapClipboardController implements M
             }
             try {
 				final StoredImage storedImage = imageStorage.storeClipboardImage(image, mindmapFile);
-				final NodeModel node = mapController.newNode(new ImageHtmlInserter().createImageHtml(storedImage.getSource()), target.getMap());
+				final ImageNodeUpdater updater = new ImageNodeUpdater();
+				final NodeModel node = mapController.newNode(updater.createImageHtml(storedImage), target.getMap());
+				updater.fitNodeWidthToImage(node, storedImage);
 				node.setSide(side.isSibling() ? target.getSide() : side);
             	mapController.insertNode(node, target, InsertionRelation.bySide(side));
             }

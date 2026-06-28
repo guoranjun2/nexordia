@@ -331,9 +331,9 @@ class NodeViewFactory {
 	private DetailsView createDetailView() {
 	    DetailsView detailContent =  new DetailsView();
 	    final DefaultMapMouseListener mouseListener = new DefaultMapMouseListener();
-	    detailContent.addMouseMotionListener(mouseListener);
 	    detailContent.addMouseMotionListener(DETAILS_MOUSE_LISTENER);
 	    detailContent.addMouseListener(DETAILS_MOUSE_LISTENER);
+	    detailContent.addMouseMotionListener(mouseListener);
 	    return detailContent;
     }
 
