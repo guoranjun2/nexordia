@@ -293,6 +293,7 @@ public class MModeControllerFactory {
 		MNodeDragListener nodeDragListener = new MNodeDragListener();
 		userInputListenerFactory.setNodeDragListener(nodeDragListener);
 		userInputListenerFactory.setNodeDropTargetListener(nodeDragListener.createDropListener());
+		controller.getMapViewManager().addMapViewChangeListener(nodeDragListener);
 		LocationController.install(new MLocationController());
 		LayoutController.install(new MLayoutController());
 		final MLogicalStyleController logicalStyleController = new MLogicalStyleController(modeController);

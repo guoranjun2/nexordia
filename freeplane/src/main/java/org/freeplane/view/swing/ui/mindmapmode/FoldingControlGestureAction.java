@@ -34,6 +34,7 @@ public enum FoldingControlGestureAction {
 	};
 
 	private static final double ROTATION_DEGREES = 5d;
+	private static final double MAGNIFICATION_DIRECTION_FACTOR = 20d;
 
 	public static boolean applyDefault(MouseWheelEvent event) {
 		if (!(event.getComponent() instanceof MainView)) {
@@ -42,15 +43,33 @@ public enum FoldingControlGestureAction {
 		return apply((MainView) event.getComponent(), event.getPoint(), event);
 	}
 
+	public static boolean applyMagnification(MainView mainView, double magnification, boolean controlDown,
+			boolean shiftDown, boolean altDown, boolean metaDown) {
+		final double direction = directionForMagnification(magnification);
+		if (isRotationGesture(controlDown, shiftDown, altDown, metaDown)) {
+			return ROTATE_FREE_NODES.consume(mainView, null, direction);
+		}
+		if (isScaleGesture(controlDown, shiftDown, altDown, metaDown)) {
+			return SCALE_FREE_NODE_DISTANCE.consume(mainView, null, direction);
+		}
+		return false;
+	}
+
+	public static boolean hasMagnificationAction(boolean controlDown, boolean shiftDown, boolean altDown,
+			boolean metaDown) {
+		return isRotationGesture(controlDown, shiftDown, altDown, metaDown)
+				|| isScaleGesture(controlDown, shiftDown, altDown, metaDown);
+	}
+
 	private static boolean apply(MainView mainView, java.awt.Point point, MouseWheelEvent event) {
 		final double direction = -event.getPreciseWheelRotation();
 		if (isRotationGesture(event)) {
 			return ROTATE_FREE_NODES.consume(mainView, point, direction);
 		}
-		if (hasModifier(event)) {
-			return false;
+		if (isScaleGesture(event)) {
+			return SCALE_FREE_NODE_DISTANCE.consume(mainView, point, direction);
 		}
-		return SCALE_FREE_NODE_DISTANCE.consume(mainView, point, direction);
+		return false;
 	}
 
 	private boolean consume(MainView mainView, java.awt.Point point, double direction) {
@@ -98,13 +117,30 @@ public enum FoldingControlGestureAction {
 			double direction);
 
 	static boolean isRotationGesture(MouseWheelEvent event) {
-		return PhysicalKeyboardModifierState.isShiftPressed() && !event.isControlDown() && !event.isAltDown()
-				&& !event.isMetaDown();
+		return isRotationGesture(event.isControlDown(), PhysicalKeyboardModifierState.isShiftPressed(),
+				event.isAltDown(), event.isMetaDown());
+	}
+
+	static boolean isScaleGesture(MouseWheelEvent event) {
+		return isScaleGesture(event.isControlDown(), PhysicalKeyboardModifierState.isShiftPressed(),
+				event.isAltDown(), event.isMetaDown());
 	}
 
 	static boolean hasModifier(MouseWheelEvent event) {
 		return event.isAltDown() || event.isControlDown() || event.isMetaDown()
 				|| PhysicalKeyboardModifierState.isShiftPressed();
+	}
+
+	static boolean isRotationGesture(boolean controlDown, boolean shiftDown, boolean altDown, boolean metaDown) {
+		return shiftDown && !controlDown && !altDown && !metaDown;
+	}
+
+	static boolean isScaleGesture(boolean controlDown, boolean shiftDown, boolean altDown, boolean metaDown) {
+		return controlDown && !shiftDown && !altDown && !metaDown;
+	}
+
+	static double directionForMagnification(double magnification) {
+		return magnification * MAGNIFICATION_DIRECTION_FACTOR;
 	}
 
 	private static Point2D.Double childShift(LocationModel location) {

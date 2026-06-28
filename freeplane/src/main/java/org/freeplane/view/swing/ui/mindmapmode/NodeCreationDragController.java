@@ -15,15 +15,18 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.CubicCurve2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.swing.SwingUtilities;
 
+import org.freeplane.api.ChildNodesAlignment;
 import org.freeplane.api.ChildrenSides;
 import org.freeplane.api.LengthUnit;
 import org.freeplane.api.Quantity;
 import org.freeplane.core.ui.components.UITools;
+import org.freeplane.features.edge.EdgeController;
+import org.freeplane.features.edge.EdgeModel;
+import org.freeplane.features.edge.EdgeStyle;
 import org.freeplane.features.link.ConnectorModel;
 import org.freeplane.features.link.ConnectorShape;
 import org.freeplane.features.link.LinkController;
@@ -49,6 +52,9 @@ class NodeCreationDragController {
 	private static final int CLICK_TOLERANCE = 4;
 	private static final float[] PREVIEW_DASH = new float[] { 6f, 5f };
 	private static final Color PREVIEW_COLOR = new Color(0x4D8DFF);
+	private static final double FREE_NODE_PORT_SWITCH_RATIO = 1.15d;
+	private static final double BEZIER_HANDLE_RATIO = 0.32d;
+	private static final int BEZIER_MIN_HANDLE = 24;
 
 	private ActiveDrag activeDrag;
 	private boolean suppressNextClick;
@@ -154,9 +160,10 @@ class NodeCreationDragController {
 		private final NodeModel sourceNode;
 		private final MapView map;
 		private final Point pressScreenPoint;
-		private final ConnectorShape previewShape;
 		private Point currentMapPoint;
 		private NodeView targetNodeView;
+		private ConnectorLocation startConnectorLocation = ConnectorLocation.RIGHT;
+		private ConnectorLocation endConnectorLocation = ConnectorLocation.LEFT;
 		private boolean dragged;
 
 		ActiveDrag(MainView sourceMainView, MouseEvent event) {
@@ -165,7 +172,6 @@ class NodeCreationDragController {
 			this.map = sourceMainView.getNodeView().getMap();
 			this.pressScreenPoint = event.getLocationOnScreen();
 			this.currentMapPoint = mapPoint(event);
-			this.previewShape = LinkController.getController(map.getModeController()).getStandardConnectorShape();
 		}
 
 		void install() {
@@ -203,61 +209,209 @@ class NodeCreationDragController {
 			if (!dragged || currentMapPoint == null) {
 				return;
 			}
-			final Point start = sourceNodeCenterMapPoint();
-			final Point end = targetNodeView != null ? targetConnectorMapPoint(start, targetNodeView) : currentMapPoint;
 			final Stroke oldStroke = graphics.getStroke();
 			final Color oldColor = graphics.getColor();
 			final Object oldAntialiasing = graphics.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
 			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			graphics.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0f, PREVIEW_DASH, 0f));
 			graphics.setColor(PREVIEW_COLOR);
-			paintShape(graphics, start, end);
+			final ConnectorShape connectorShape = targetNodeView != null ? previewConnectorShape() : null;
+			if (connectorShape != null && !ConnectorShape.EDGE_LIKE.equals(connectorShape)) {
+				paintConnectorPreview(graphics, connectorShape);
+			}
+			else {
+				paintShape(graphics, previewEdge());
+			}
 			paintTarget(graphics);
 			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAntialiasing);
 			graphics.setStroke(oldStroke);
 			graphics.setColor(oldColor);
 		}
 
-		private void paintShape(Graphics2D graphics, Point start, Point end) {
-			switch (previewShape) {
-				case CUBIC_CURVE:
-					paintCubic(graphics, start, end);
-					break;
-				case LINEAR_PATH:
-				case EDGE_LIKE:
-					paintLinearPath(graphics, start, end);
-					break;
-				case LINE:
-				default:
-					graphics.draw(new Line2D.Double(start, end));
-					break;
+		private PreviewEdge previewEdge() {
+			if (EdgeStyle.EDGESTYLE_HORIZONTAL.equals(edgeStyle())) {
+				return horizontalPreviewEdge();
 			}
+			return dynamicPreviewEdge();
 		}
 
-		private void paintCubic(Graphics2D graphics, Point start, Point end) {
-			final int direction = end.x >= start.x ? 1 : -1;
-			final int xControlDistance = Math.max(40, Math.abs(end.x - start.x) / 2);
-			graphics.draw(new CubicCurve2D.Double(start.x, start.y,
-					start.x + direction * xControlDistance, start.y,
-					end.x - direction * xControlDistance, end.y,
-					end.x, end.y));
+		private PreviewEdge dynamicPreviewEdge() {
+			final Point sourceCenter = mainViewCenterMapPoint(sourceMainView);
+			final Point targetReference = targetNodeView != null ? mainViewCenterMapPoint(targetNodeView.getMainView())
+					: currentMapPoint;
+			ConnectorLocation[] locations = chooseConnectorLocations(targetReference.x - sourceCenter.x,
+					targetReference.y - sourceCenter.y, startConnectorLocation);
+			Point start = connectorMapPoint(sourceMainView, locations[0]);
+			Point end = targetNodeView != null ? connectorMapPoint(targetNodeView.getMainView(), locations[1])
+					: currentMapPoint;
+			locations = chooseConnectorLocations(end.x - start.x, end.y - start.y, locations[0]);
+			startConnectorLocation = locations[0];
+			endConnectorLocation = locations[1];
+			start = connectorMapPoint(sourceMainView, startConnectorLocation);
+			end = targetNodeView != null ? connectorMapPoint(targetNodeView.getMainView(), endConnectorLocation)
+					: currentMapPoint;
+			align(start, end);
+			return new PreviewEdge(start, end, startConnectorLocation, endConnectorLocation);
 		}
 
-		private void paintLinearPath(Graphics2D graphics, Point start, Point end) {
-			final Path2D path = new Path2D.Double();
-			path.moveTo(start.x, start.y);
-			if (Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) {
-				final int middleX = start.x + (end.x - start.x) / 2;
-				path.lineTo(middleX, start.y);
-				path.lineTo(middleX, end.y);
+		private PreviewEdge horizontalPreviewEdge() {
+			final Point sourceCenter = mainViewCenterMapPoint(sourceMainView);
+			final Point targetReference = targetNodeView != null ? mainViewCenterMapPoint(targetNodeView.getMainView())
+					: currentMapPoint;
+			final ConnectorLocation[] dynamicLocations = chooseConnectorLocations(targetReference.x - sourceCenter.x,
+					targetReference.y - sourceCenter.y, startConnectorLocation);
+			final boolean targetTopOrLeft = targetIsTopOrLeft();
+			startConnectorLocation = horizontalStartLocation(targetTopOrLeft, dynamicLocations[0]);
+			endConnectorLocation = horizontalEndLocation(targetTopOrLeft, dynamicLocations[1]);
+			final Point start = connectorMapPoint(sourceMainView, startConnectorLocation);
+			final Point end = targetNodeView != null ? connectorMapPoint(targetNodeView.getMainView(), endConnectorLocation)
+					: currentMapPoint;
+			align(start, end);
+			return new PreviewEdge(start, end, startConnectorLocation, endConnectorLocation);
+		}
+
+		private void paintShape(Graphics2D graphics, PreviewEdge previewEdge) {
+			final EdgeStyle style = edgeStyle();
+			if (EdgeStyle.EDGESTYLE_LINEAR.equals(style) || EdgeStyle.EDGESTYLE_SHARP_LINEAR.equals(style)) {
+				paintLine(graphics, previewEdge);
+			}
+			else if (EdgeStyle.EDGESTYLE_HORIZONTAL.equals(style)) {
+				paintHorizontalPath(graphics, previewEdge);
+			}
+			else if (EdgeStyle.EDGESTYLE_SUMMARY.equals(style)) {
+				paintSummaryPath(graphics, previewEdge);
 			}
 			else {
-				final int middleY = start.y + (end.y - start.y) / 2;
+				paintCubic(graphics, previewEdge);
+			}
+		}
+
+		private EdgeStyle edgeStyle() {
+			final EdgeStyle edgeStyle = sourceMainView.getNodeView().getEdgeStyle();
+			return edgeStyle != null ? edgeStyle : EdgeController.STANDARD_EDGE_STYLE;
+		}
+
+		private void paintCubic(Graphics2D graphics, PreviewEdge previewEdge) {
+			final Point start = previewEdge.start;
+			final Point end = previewEdge.end;
+			final double dx = end.x - start.x;
+			final double dy = end.y - start.y;
+			final boolean horizontal = isHorizontalConnectorLocation(previewEdge.startLocation);
+			final double handle = calcHandle(Math.abs(horizontal ? dx : dy));
+			final double sign = (horizontal ? dx : dy) >= 0 ? 1d : -1d;
+			final double c1x = horizontal ? start.x + sign * handle : start.x;
+			final double c1y = horizontal ? start.y : start.y + sign * handle;
+			final double c2x = horizontal ? end.x - sign * handle : end.x;
+			final double c2y = horizontal ? end.y : end.y - sign * handle;
+			graphics.draw(new CubicCurve2D.Double(start.x, start.y, c1x, c1y, c2x, c2y, end.x, end.y));
+		}
+
+		private void paintLine(Graphics2D graphics, PreviewEdge previewEdge) {
+			graphics.draw(new Line2D.Double(previewEdge.start, previewEdge.end));
+		}
+
+		private void paintHorizontalPath(Graphics2D graphics, PreviewEdge previewEdge) {
+			final Point start = previewEdge.start;
+			final Point end = previewEdge.end;
+			final Path2D path = new Path2D.Double();
+			path.moveTo(start.x, start.y);
+			final NodeView source = sourceMainView.getNodeView();
+			final boolean usesHorizontalLayout = source.usesHorizontalLayout();
+			final boolean areChildrenApart = source.getChildNodesAlignment().isStacked();
+			int middleGap = map.getZoomed(LocationModel.DEFAULT_HGAP_PX) / 2;
+			final boolean left = targetIsTopOrLeft()
+					|| !MainView.USE_COMMON_OUT_POINT_FOR_ROOT_NODE && source.isRoot()
+							&& (!usesHorizontalLayout && start.x > end.x || usesHorizontalLayout && start.y > end.y);
+			if (left) {
+				middleGap = -middleGap;
+			}
+			if (usesHorizontalLayout) {
+				final int middleY = start.y + middleGap;
 				path.lineTo(start.x, middleY);
 				path.lineTo(end.x, middleY);
 			}
+			else if (areChildrenApart) {
+				path.lineTo(start.x, end.y);
+			}
+			else {
+				final int middleX = start.x + middleGap;
+				path.lineTo(middleX, start.y);
+				path.lineTo(middleX, end.y);
+			}
 			path.lineTo(end.x, end.y);
 			graphics.draw(path);
+		}
+
+		private void paintSummaryPath(Graphics2D graphics, PreviewEdge previewEdge) {
+			final Point start = previewEdge.start;
+			final Point end = previewEdge.end;
+			final boolean isTopOrLeft = targetIsTopOrLeft();
+			final int sign = isTopOrLeft ? -1 : 1;
+			final int xctrl = map.getZoomed(sign * 4);
+			final int childXctrl = map.getZoomed(sign * 20);
+			final Path2D path = new Path2D.Double(Path2D.WIND_EVEN_ODD);
+			if (sourceMainView.getNodeView().usesHorizontalLayout()) {
+				final int startY = isTopOrLeft ? Math.min(start.y, end.y - childXctrl)
+						: Math.max(start.y, end.y - childXctrl);
+				path.moveTo(start.x, startY);
+				path.lineTo(start.x, startY + xctrl);
+				path.curveTo(start.x, startY + 2 * xctrl, end.x, startY, end.x, end.y);
+			}
+			else {
+				final int startX = isTopOrLeft ? Math.min(start.x, end.x - childXctrl)
+						: Math.max(start.x, end.x - childXctrl);
+				path.moveTo(startX, start.y);
+				path.lineTo(startX + xctrl, start.y);
+				path.curveTo(startX + 2 * xctrl, start.y, startX, end.y, end.x, end.y);
+			}
+			graphics.draw(path);
+		}
+
+		private double calcHandle(double mainDistance) {
+			if (mainDistance <= 1) {
+				return 0;
+			}
+			final double handle = mainDistance * BEZIER_HANDLE_RATIO;
+			return Math.max(handle, Math.min(BEZIER_MIN_HANDLE, mainDistance * 0.5d));
+		}
+
+		private ConnectorShape previewConnectorShape() {
+			final ConnectorModel connector = new ConnectorModel(sourceNode, null);
+			return LinkController.getController(map.getModeController()).getShape(connector);
+		}
+
+		private void paintConnectorPreview(Graphics2D graphics, ConnectorShape shape) {
+			final NodeView sourceView = sourceMainView.getNodeView();
+			final ConnectorInclination.Inclination inclination = ConnectorInclination.forViews(sourceView, targetNodeView);
+			final Point startInclination = inclination.start();
+			final Point endInclination = inclination.end();
+			final Point start = sourceView.getLinkPoint(startInclination);
+			final Point end = targetNodeView.getLinkPoint(endInclination);
+			if (ConnectorShape.LINE.equals(shape)) {
+				graphics.draw(new Line2D.Double(start, end));
+				return;
+			}
+			final Point startControl = controlPoint(sourceView, start, startInclination);
+			final Point endControl = controlPoint(targetNodeView, end, endInclination);
+			if (ConnectorShape.LINEAR_PATH.equals(shape)) {
+				final Path2D path = new Path2D.Double();
+				path.moveTo(start.x, start.y);
+				path.lineTo(startControl.x, startControl.y);
+				path.lineTo(endControl.x, endControl.y);
+				path.lineTo(end.x, end.y);
+				graphics.draw(path);
+			}
+			else {
+				graphics.draw(new CubicCurve2D.Double(start.x, start.y, startControl.x, startControl.y,
+						endControl.x, endControl.y, end.x, end.y));
+			}
+		}
+
+		private Point controlPoint(NodeView nodeView, Point linkPoint, Point inclination) {
+			final Point point = new Point(linkPoint);
+			point.translate((nodeView.isTopOrLeft() ? -1 : 1) * nodeView.getMap().getZoomed(inclination.x),
+					nodeView.getMap().getZoomed(inclination.y));
+			return point;
 		}
 
 		private void paintTarget(Graphics2D graphics) {
@@ -273,23 +427,28 @@ class NodeCreationDragController {
 		private void addConnector(NodeModel source, NodeModel target) {
 			final MLinkController linkController = (MLinkController) LinkController.getController(map.getModeController());
 			final ConnectorModel connector = linkController.addConnector(source, target);
-			linkController.setShape(connector, Optional.of(previewShape));
+			if (!ConnectorShape.EDGE_LIKE.equals(linkController.getShape(connector))) {
+				ConnectorInclination.apply(connector, sourceMainView.getNodeView(), targetNodeView);
+			}
 			map.repaintVisible();
 		}
 
 		private NodeModel createFreeNode(Point mapPoint) {
+			final FreeNodePlacement.Placement placement = placement(mapPoint);
+			final MMapController mapController = (MMapController) map.getModeController().getMapController();
+			final NodeModel freeNode = addDefaultFreeNode(mapController, placement.point(), placement.side());
+			centerAndEditNewFreeNodeLater(freeNode, new Point(mapPoint), true);
+			return freeNode;
+		}
+
+		private FreeNodePlacement.Placement placement(Point mapPoint) {
 			final Point sourceLocation = new Point();
 			UITools.convertPointToAncestor(sourceMainView, sourceLocation, map);
 			final Dimension sourceSize = sourceMainView.getSize();
 			final boolean usesHorizontalLayout = sourceMainView.getNodeView().usesHorizontalLayout();
 			final ChildrenSides childrenSides = sourceMainView.getNodeView().childrenSides();
-			final FreeNodePlacement.Placement placement = FreeNodePlacement.fromMapPoint(mapPoint, sourceLocation,
-					sourceSize, map.getZoom(), usesHorizontalLayout, childrenSides);
-			final Side side = placement.side();
-			final MMapController mapController = (MMapController) map.getModeController().getMapController();
-			final NodeModel freeNode = addDefaultFreeNode(mapController, placement.point(), side);
-			centerFreeNodeLater(freeNode, new Point(mapPoint), () -> editNewFreeNode(freeNode));
-			return freeNode;
+			return FreeNodePlacement.fromMapPoint(mapPoint, sourceLocation, sourceSize, map.getZoom(),
+					usesHorizontalLayout, childrenSides);
 		}
 
 		private NodeModel addDefaultFreeNode(MMapController mapController, Point point, Side side) {
@@ -305,6 +464,7 @@ class NodeCreationDragController {
 			final NodeModel freeNode = mapController.addNewNode(sourceNode, mapController.findNewNodePosition(sourceNode), node -> {
 				node.setSide(side);
 				NewNodeStyle.assignStyleToNewNode(node);
+				inheritParentEdgeStyle(node);
 				node.addExtension(modeController.getExtension(FreeNode.class));
 			});
 			if (freeNode == null) {
@@ -318,54 +478,43 @@ class NodeCreationDragController {
 			return freeNode;
 		}
 
-		private void centerFreeNodeLater(NodeModel freeNode, Point requestedCenter, Runnable afterCentering) {
+		private void inheritParentEdgeStyle(NodeModel node) {
+			final EdgeStyle edgeStyle = edgeStyle();
+			if (!EdgeController.STANDARD_EDGE_STYLE.equals(edgeStyle)) {
+				EdgeModel.createEdgeModel(node).setStyle(edgeStyle);
+			}
+		}
+
+		private void centerAndEditNewFreeNodeLater(NodeModel freeNode, Point requestedCenter, boolean retryIfMissing) {
 			if (freeNode == null) {
 				return;
 			}
-			centerFreeNodeAfterLayout(freeNode, requestedCenter, true, afterCentering);
-		}
-
-		private void centerFreeNodeAfterLayout(NodeModel freeNode, Point requestedCenter, boolean retryIfMissing,
-				Runnable afterCentering) {
 			SwingUtilities.invokeLater(() -> {
 				final NodeView freeNodeView = map.getNodeView(freeNode);
 				if (freeNodeView == null || freeNodeView.getMainView().getWidth() == 0
 						|| freeNodeView.getMainView().getHeight() == 0) {
 					if (retryIfMissing) {
-						centerFreeNodeAfterLayout(freeNode, requestedCenter, false, afterCentering);
+						centerAndEditNewFreeNodeLater(freeNode, requestedCenter, false);
 					}
 					else {
-						afterCentering.run();
+						editNewFreeNode(freeNode);
 					}
 					return;
 				}
-				centerFreeNode(freeNode, requestedCenter, freeNodeView);
-				afterCentering.run();
+				centerNewFreeNode(freeNodeView, requestedCenter);
+				editNewFreeNode(freeNode);
 			});
 		}
 
-		private void centerFreeNode(NodeModel freeNode, Point requestedCenter, NodeView freeNodeView) {
-			final MainView freeMainView = freeNodeView.getMainView();
-			final Point currentCenter = new Point(freeMainView.getWidth() / 2, freeMainView.getHeight() / 2);
-			UITools.convertPointToAncestor(freeMainView, currentCenter, map);
-			final int deltaX = Math.round((requestedCenter.x - currentCenter.x) / map.getZoom());
-			final int deltaY = Math.round((requestedCenter.y - currentCenter.y) / map.getZoom());
-			if (deltaX == 0 && deltaY == 0) {
-				return;
+		private void centerNewFreeNode(NodeView freeNodeView, Point requestedCenter) {
+			final NodeModel freeNode = freeNodeView.getNode();
+			final FreeNodePlacement.Location location = FreeNodeCentering.locationForCenter(freeNodeView,
+					requestedCenter);
+			if (!FreeNodeCentering.matches(LocationModel.getModel(freeNode), location)) {
+				final MLocationController locationController = (MLocationController) LocationController
+						.getController(map.getModeController());
+				locationController.moveNodePosition(freeNode, location.hGap(), location.shiftY());
 			}
-			final LocationModel location = LocationModel.getModel(freeNode);
-			final boolean usesHorizontalLayout = freeNodeView.getAncestorWithVisibleContent().usesHorizontalLayout();
-			final Point correction = FreeNodePlacement.centerCorrection(layoutSide(freeNodeView), deltaX, deltaY,
-					usesHorizontalLayout);
-			final Quantity<LengthUnit> hGap = location.getHGap().add(correction.x, LengthUnit.px);
-			final Quantity<LengthUnit> shiftY = location.getShiftY().add(correction.y, LengthUnit.px);
-			final MLocationController locationController = (MLocationController) LocationController
-					.getController(map.getModeController());
-			locationController.moveNodePosition(freeNode, hGap, shiftY);
-		}
-
-		private Side layoutSide(NodeView nodeView) {
-			return nodeView.isTopOrLeft() ? Side.TOP_OR_LEFT : Side.BOTTOM_OR_RIGHT;
 		}
 
 		private void editNewFreeNode(NodeModel freeNode) {
@@ -375,38 +524,129 @@ class NodeCreationDragController {
 			}
 		}
 
-		private Point sourceNodeCenterMapPoint() {
-			final Point point = new Point(sourceMainView.getWidth() / 2, sourceMainView.getHeight() / 2);
-			UITools.convertPointToAncestor(sourceMainView, point, map);
-			return point;
+		private Point mainViewCenterMapPoint(MainView mainView) {
+			return SwingUtilities.convertPoint(mainView,
+					new Point(mainView.getWidth() / 2, mainView.getHeight() / 2), map);
 		}
 
-		private Point targetConnectorMapPoint(Point sourceMapPoint, NodeView targetNodeView) {
-			final MainView targetMainView = targetNodeView.getMainView();
-			final Point sourcePointInTarget = SwingUtilities.convertPoint(map, sourceMapPoint, targetMainView);
-			final ConnectorLocation location = nearestConnectorLocation(targetMainView, sourcePointInTarget);
-			final Point connectorPoint = targetMainView.getConnectorPoint(sourcePointInTarget, location);
-			return SwingUtilities.convertPoint(targetMainView, connectorPoint, map);
+		private Point connectorMapPoint(MainView mainView, ConnectorLocation location) {
+			final Point connectorPoint = connectorPoint(mainView, location);
+			return SwingUtilities.convertPoint(mainView, connectorPoint, map);
 		}
 
-		private ConnectorLocation nearestConnectorLocation(MainView mainView, Point point) {
-			int distance = Math.abs(point.x);
-			ConnectorLocation location = ConnectorLocation.LEFT;
-			final int rightDistance = Math.abs(mainView.getWidth() - point.x);
-			if (rightDistance < distance) {
-				distance = rightDistance;
-				location = ConnectorLocation.RIGHT;
+		private Point connectorPoint(MainView mainView, ConnectorLocation location) {
+			switch (location) {
+				case LEFT:
+					return mainView.getLeftPoint();
+				case RIGHT:
+					return mainView.getRightPoint();
+				case TOP:
+					return mainView.getTopPoint();
+				case BOTTOM:
+					return mainView.getBottomPoint();
+				default:
+					return mainView.getRightPoint();
 			}
-			final int topDistance = Math.abs(point.y);
-			if (topDistance < distance) {
-				distance = topDistance;
-				location = ConnectorLocation.TOP;
+		}
+
+		private ConnectorLocation horizontalStartLocation(boolean targetTopOrLeft, ConnectorLocation fallback) {
+			final NodeView source = sourceMainView.getNodeView();
+			final boolean usesHorizontalLayout = source.usesHorizontalLayout();
+			final ChildNodesAlignment childNodesAlignment = source.getChildNodesAlignment();
+			if (!usesHorizontalLayout && childNodesAlignment.isStacked()
+					&& source.childrenSides() != ChildrenSides.BOTH_SIDES) {
+				return targetTopOrLeft ? ConnectorLocation.RIGHT : ConnectorLocation.LEFT;
 			}
-			final int bottomDistance = Math.abs(mainView.getHeight() - point.y);
-			if (bottomDistance < distance) {
-				location = ConnectorLocation.BOTTOM;
+			if (source.isRoot() && !MainView.USE_COMMON_OUT_POINT_FOR_ROOT_NODE) {
+				return fallback;
 			}
-			return location;
+			if (usesHorizontalLayout) {
+				if (childNodesAlignment == ChildNodesAlignment.AFTER_PARENT
+						&& source.childrenSides() == ChildrenSides.BOTH_SIDES) {
+					return ConnectorLocation.RIGHT;
+				}
+				if (childNodesAlignment == ChildNodesAlignment.BEFORE_PARENT
+						&& source.childrenSides() == ChildrenSides.BOTH_SIDES) {
+					return ConnectorLocation.LEFT;
+				}
+				if (childNodesAlignment.isStacked()) {
+					return fallback;
+				}
+				return targetTopOrLeft ? ConnectorLocation.TOP : ConnectorLocation.BOTTOM;
+			}
+			if (childNodesAlignment == ChildNodesAlignment.AFTER_PARENT) {
+				return ConnectorLocation.BOTTOM;
+			}
+			if (childNodesAlignment == ChildNodesAlignment.BEFORE_PARENT) {
+				return ConnectorLocation.TOP;
+			}
+			return targetTopOrLeft ? ConnectorLocation.LEFT : ConnectorLocation.RIGHT;
+		}
+
+		private ConnectorLocation horizontalEndLocation(boolean targetTopOrLeft, ConnectorLocation fallback) {
+			if (targetNodeView == null) {
+				return fallback;
+			}
+			if (sourceMainView.getNodeView().usesHorizontalLayout()) {
+				return targetTopOrLeft ? ConnectorLocation.BOTTOM : ConnectorLocation.TOP;
+			}
+			return targetTopOrLeft ? ConnectorLocation.RIGHT : ConnectorLocation.LEFT;
+		}
+
+		private boolean targetIsTopOrLeft() {
+			if (targetNodeView != null) {
+				return targetNodeView.isTopOrLeft();
+			}
+			return placement(currentMapPoint).side() == Side.TOP_OR_LEFT;
+		}
+
+		private ConnectorLocation[] chooseConnectorLocations(double dx, double dy, ConnectorLocation fallback) {
+			final double absDx = Math.abs(dx);
+			final double absDy = Math.abs(dy);
+			final boolean horizontal;
+			if (absDx > absDy * FREE_NODE_PORT_SWITCH_RATIO) {
+				horizontal = true;
+			}
+			else if (absDy > absDx * FREE_NODE_PORT_SWITCH_RATIO) {
+				horizontal = false;
+			}
+			else {
+				horizontal = isHorizontalConnectorLocation(fallback);
+			}
+			if (horizontal) {
+				if (dx >= 0) {
+					return new ConnectorLocation[] { ConnectorLocation.RIGHT, ConnectorLocation.LEFT };
+				}
+				return new ConnectorLocation[] { ConnectorLocation.LEFT, ConnectorLocation.RIGHT };
+			}
+			if (dy >= 0) {
+				return new ConnectorLocation[] { ConnectorLocation.BOTTOM, ConnectorLocation.TOP };
+			}
+			return new ConnectorLocation[] { ConnectorLocation.TOP, ConnectorLocation.BOTTOM };
+		}
+
+		private boolean isHorizontalConnectorLocation(ConnectorLocation location) {
+			return ConnectorLocation.LEFT.equals(location) || ConnectorLocation.RIGHT.equals(location);
+		}
+
+		private void align(Point start, Point end) {
+			if (Math.abs(start.y - end.y) == 1) {
+				end.y = start.y;
+			}
+		}
+
+		private static class PreviewEdge {
+			private final Point start;
+			private final Point end;
+			private final ConnectorLocation startLocation;
+			private final ConnectorLocation endLocation;
+
+			private PreviewEdge(Point start, Point end, ConnectorLocation startLocation, ConnectorLocation endLocation) {
+				this.start = start;
+				this.end = end;
+				this.startLocation = startLocation;
+				this.endLocation = endLocation;
+			}
 		}
 
 		private NodeView nodeViewAt(Point mapPoint) {

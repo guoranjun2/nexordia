@@ -13,6 +13,7 @@ import java.awt.dnd.DragSource;
 import java.awt.dnd.DragSourceAdapter;
 import java.awt.dnd.DragSourceDropEvent;
 import java.awt.dnd.DragSourceListener;
+import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetListener;
 import java.awt.dnd.InvalidDnDOperationException;
 import java.awt.event.InputEvent;
@@ -23,6 +24,7 @@ import java.util.UUID;
 import javax.swing.Icon;
 import javax.swing.SwingUtilities;
 
+import org.freeplane.core.ui.FileOpener;
 import org.freeplane.core.ui.components.IconListComponent;
 import org.freeplane.core.ui.components.TagIcon;
 import org.freeplane.core.util.ColorUtils;
@@ -30,10 +32,13 @@ import org.freeplane.features.icon.IconController;
 import org.freeplane.features.icon.Tag;
 import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.icon.mindmapmode.TagSelection;
+import org.freeplane.features.map.FreeNode;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.clipboard.MapClipboardController;
 import org.freeplane.features.map.clipboard.MindMapNodesSelection;
 import org.freeplane.features.mode.Controller;
+import org.freeplane.features.ui.IMapViewChangeListener;
+import org.freeplane.features.url.mindmapmode.DroppedMindMapOpener;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
@@ -43,7 +48,7 @@ import org.freeplane.view.swing.ui.MouseEventActor;
 /**
  * The NodeDragListener which belongs to every NodeView
  */
-public class MNodeDragListener implements DragGestureListener {
+public class MNodeDragListener implements DragGestureListener, IMapViewChangeListener {
 
 	private final NodeViewFolder nodeFolder = new NodeViewFolder(false);
 
@@ -156,17 +161,40 @@ public class MNodeDragListener implements DragGestureListener {
 			((MindMapNodesSelection) t).setDropAction(DnDConstants.ACTION_COPY);
 		}
 		try {
-			e.startDrag(cursor, t, new DragSourceAdapter() {
-
-				@Override
-				public void dragDropEnd(DragSourceDropEvent dsde) {
-					nodeFolder.adjustFolding(Collections.emptySet());
-					nodeView.getMap().getSelected().scrollNodeToVisible();
-				}
-			});
+			final DragSourceAdapter listener = createNodeDragSourceListener(nodeView, dragActionType,
+					dragStartScreenPoint(e));
+			if (listener instanceof FreeNodeDragHandler) {
+				e.startDrag(cursor, new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), new Point(), t, listener);
+				DragSource.getDefaultDragSource().addDragSourceMotionListener((FreeNodeDragHandler) listener);
+			}
+			else {
+				e.startDrag(cursor, t, listener);
+			}
 		}
 		catch (final InvalidDnDOperationException ex) {
 		}
+	}
+
+	private DragSourceAdapter createNodeDragSourceListener(final NodeView nodeView, final int dragActionType,
+			final Point dragStartScreenPoint) {
+		if (dragActionType == DnDConstants.ACTION_MOVE && nodeView.isSelected()
+				&& Controller.getCurrentController().getSelection().size() == 1
+				&& FreeNode.isFreeNode(nodeView.getNode())) {
+			return new FreeNodeDragHandler(nodeView, nodeFolder, dragStartScreenPoint);
+		}
+		return new DragSourceAdapter() {
+
+			@Override
+			public void dragDropEnd(DragSourceDropEvent dsde) {
+				nodeFolder.adjustFolding(Collections.emptySet());
+			}
+		};
+	}
+
+	private Point dragStartScreenPoint(final DragGestureEvent e) {
+		final Point dragStart = new Point(e.getDragOrigin());
+		SwingUtilities.convertPointToScreen(dragStart, e.getComponent());
+		return dragStart;
 	}
 
 	private boolean isLinkDragEvent(final DragGestureEvent e) {
@@ -185,6 +213,16 @@ public class MNodeDragListener implements DragGestureListener {
 	}
 	public DropTargetListener createDropListener() {
 		return new MNodeDropListener(nodeFolder);
+	}
+
+	@Override
+	public void afterViewDisplayed(Component oldView, Component newView) {
+		if (newView instanceof MapView) {
+			final MapView mapView = (MapView) newView;
+			final DropTarget dropTarget = new DropTarget(mapView,
+					new MMapNodeDropListener(mapView, new FileOpener("mm", new DroppedMindMapOpener())));
+			dropTarget.setActive(true);
+		}
 	}
 
 }

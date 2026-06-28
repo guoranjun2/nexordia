@@ -25,7 +25,41 @@ public class FoldingControlGestureActionTest {
 		MouseWheelEvent event = wheelEvent(InputEvent.SHIFT_DOWN_MASK);
 
 		assertThat(FoldingControlGestureAction.isRotationGesture(event)).isFalse();
+		assertThat(FoldingControlGestureAction.isScaleGesture(event)).isFalse();
 		assertThat(FoldingControlGestureAction.hasModifier(event)).isFalse();
+	}
+
+	@Test
+	public void usesControlWheelForScaling() {
+		MouseWheelEvent event = wheelEvent(InputEvent.CTRL_DOWN_MASK);
+
+		assertThat(FoldingControlGestureAction.isScaleGesture(event)).isTrue();
+	}
+
+	@Test
+	public void usesControlMagnificationForScaling() {
+		assertThat(FoldingControlGestureAction.isScaleGesture(true, false, false, false)).isTrue();
+		assertThat(FoldingControlGestureAction.hasMagnificationAction(true, false, false, false)).isTrue();
+	}
+
+	@Test
+	public void amplifiesMagnificationDirection() {
+		assertThat(FoldingControlGestureAction.directionForMagnification(0.25d)).isEqualTo(5d);
+	}
+
+	@Test
+	public void doesNotScaleWithoutControl() {
+		MouseWheelEvent event = wheelEvent(0);
+
+		assertThat(FoldingControlGestureAction.isScaleGesture(event)).isFalse();
+	}
+
+	@Test
+	public void doesNotScaleWithPhysicalShift() {
+		PhysicalKeyboardModifierState.updateFrom(keyEvent(KeyEvent.KEY_PRESSED));
+		MouseWheelEvent event = wheelEvent(InputEvent.CTRL_DOWN_MASK);
+
+		assertThat(FoldingControlGestureAction.isScaleGesture(event)).isFalse();
 	}
 
 	@Test
@@ -38,6 +72,28 @@ public class FoldingControlGestureActionTest {
 	}
 
 	@Test
+	public void usesShiftMagnificationForRotation() {
+		assertThat(FoldingControlGestureAction.isRotationGesture(false, true, false, false)).isTrue();
+		assertThat(FoldingControlGestureAction.hasMagnificationAction(false, true, false, false)).isTrue();
+	}
+
+	@Test
+	public void ignoresCombinedControlAndShiftMagnification() {
+		assertThat(FoldingControlGestureAction.hasMagnificationAction(true, true, false, false)).isFalse();
+	}
+
+	@Test
+	public void tracksPhysicalControlState() {
+		PhysicalKeyboardModifierState.updateFrom(keyEvent(KeyEvent.VK_CONTROL, KeyEvent.KEY_PRESSED));
+
+		assertThat(PhysicalKeyboardModifierState.isControlPressed()).isTrue();
+
+		PhysicalKeyboardModifierState.updateFrom(keyEvent(KeyEvent.VK_CONTROL, KeyEvent.KEY_RELEASED));
+
+		assertThat(PhysicalKeyboardModifierState.isControlPressed()).isFalse();
+	}
+
+	@Test
 	public void clearsPhysicalShiftOnRelease() {
 		PhysicalKeyboardModifierState.updateFrom(keyEvent(KeyEvent.KEY_PRESSED));
 		PhysicalKeyboardModifierState.updateFrom(keyEvent(KeyEvent.KEY_RELEASED));
@@ -47,8 +103,22 @@ public class FoldingControlGestureActionTest {
 	}
 
 	private KeyEvent keyEvent(int id) {
-		return new KeyEvent(source, id, 0, id == KeyEvent.KEY_PRESSED ? InputEvent.SHIFT_DOWN_MASK : 0,
-				KeyEvent.VK_SHIFT, KeyEvent.CHAR_UNDEFINED);
+		return keyEvent(KeyEvent.VK_SHIFT, id);
+	}
+
+	private KeyEvent keyEvent(int keyCode, int id) {
+		return new KeyEvent(source, id, 0, id == KeyEvent.KEY_PRESSED ? modifierMask(keyCode) : 0,
+				keyCode, KeyEvent.CHAR_UNDEFINED);
+	}
+
+	private int modifierMask(int keyCode) {
+		if (keyCode == KeyEvent.VK_SHIFT) {
+			return InputEvent.SHIFT_DOWN_MASK;
+		}
+		if (keyCode == KeyEvent.VK_CONTROL) {
+			return InputEvent.CTRL_DOWN_MASK;
+		}
+		return 0;
 	}
 
 	private MouseWheelEvent wheelEvent(int modifiers) {

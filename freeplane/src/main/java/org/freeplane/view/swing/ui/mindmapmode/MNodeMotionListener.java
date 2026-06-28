@@ -48,6 +48,7 @@ import org.freeplane.features.icon.mindmapmode.MIconController;
 import org.freeplane.features.map.FreeNode;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.NodeModel.Side;
 import org.freeplane.features.map.SummaryNode;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mode.Controller;
@@ -97,12 +98,10 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 	private int getHGapChange(final Point dragNextPoint, boolean usesHorizontalLayout) {
 		final Controller controller = Controller.getCurrentController();
 		final MapView mapView = ((MapView) controller.getMapViewManager().getMapViewComponent());
-		int distance = usesHorizontalLayout ? dragNextPoint.y - dragStartingPoint.y : dragNextPoint.x - dragStartingPoint.x;
-        int hGapChange = (int) (distance / mapView.getZoom());
-		if (getNode().isTopOrLeft(mapView.getRoot().getNode())) {
-			hGapChange = -hGapChange;
-		}
-		return hGapChange;
+		final Side layoutSide = getNode().isTopOrLeft(mapView.getRoot().getNode()) ? Side.TOP_OR_LEFT
+				: Side.BOTTOM_OR_RIGHT;
+		return FreeNodePlacement.hGapChange(dragStartingPoint, dragNextPoint, mapView.getZoom(), layoutSide,
+				usesHorizontalLayout);
 	}
 
 	/**
@@ -110,9 +109,8 @@ public class MNodeMotionListener extends DefaultNodeMouseMotionListener implemen
 	private int getNodeShiftYChange(final Point dragNextPoint, boolean usesHorizontalLayout) {
 		final Controller controller = Controller.getCurrentController();
 		final MapView mapView = ((MapView) controller.getMapViewManager().getMapViewComponent());
-        int distance = usesHorizontalLayout ? dragNextPoint.x - dragStartingPoint.x : dragNextPoint.y - dragStartingPoint.y;
-		final int shiftYChange = (int) (distance / mapView.getZoom());
-		return shiftYChange;
+		return FreeNodePlacement.shiftYChange(dragStartingPoint, dragNextPoint, mapView.getZoom(),
+				usesHorizontalLayout);
 	}
 
 
