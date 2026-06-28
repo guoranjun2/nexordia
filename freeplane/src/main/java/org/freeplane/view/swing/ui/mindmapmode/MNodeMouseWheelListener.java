@@ -31,9 +31,10 @@ public class MNodeMouseWheelListener extends DefaultNodeMouseWheelListener {
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		final MainView view = (MainView) e.getComponent();
 		if (isInFoldingHandler(view, e)) {
-			FoldingControlGestureAction.applyDefault(e);
-			e.consume();
-			return;
+			if (FoldingControlGestureAction.applyDefault(e)) {
+				e.consume();
+				return;
+			}
 		}
 		if(! e.isAltDown()){
 			super.mouseWheelMoved(e);

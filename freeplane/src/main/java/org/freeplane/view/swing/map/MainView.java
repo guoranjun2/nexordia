@@ -380,8 +380,6 @@ public class MainView extends ZoomableLabel {
 				return FoldingMark.FOLDING_CIRCLE_FOLDED;
 			}
 		}
-		if(nodeView.getNode().isRoot())
-			return FoldingMark.INVISIBLE;
 		return FoldingMark.FOLDING_CIRCLE_UNFOLDED;
 	}
 
@@ -803,8 +801,6 @@ public class MainView extends ZoomableLabel {
 
 	public boolean isInFoldingRegion(Point p) {
 	    NodeView nodeView = getNodeView();
-	    if (nodeView.getNode().isRoot())
-	        return false;
 	    Rectangle foldingRectangleBounds = painter.getFoldingRectangleBounds(nodeView, true);
 	    if(nodeView.usesHorizontalLayout()) {
 	        if(nodeView.isTopOrLeft())

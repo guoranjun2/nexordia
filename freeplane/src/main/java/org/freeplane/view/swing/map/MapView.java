@@ -138,6 +138,8 @@ import org.freeplane.view.swing.features.filepreview.ScalableComponent;
 import org.freeplane.view.swing.features.filepreview.ViewerController;
 import org.freeplane.view.swing.map.MapViewScrollPane.MapViewPort;
 import org.freeplane.view.swing.map.NodeView.PreferredChild;
+import org.freeplane.view.swing.ui.mindmapmode.FoldingControlGestureAction;
+import org.freeplane.view.swing.ui.mindmapmode.PhysicalKeyboardModifierState;
 import org.freeplane.view.swing.map.cloud.CloudPaintingOptions;
 import org.freeplane.view.swing.map.link.ConnectorView;
 import org.freeplane.view.swing.map.link.EdgeLinkView;
@@ -894,6 +896,7 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         addMouseListener(userInputListenerFactory.getMapMouseListener());
         addMouseMotionListener(userInputListenerFactory.getMapMouseListener());
         addMouseWheelListener(userInputListenerFactory.getMapMouseWheelListener());
+        PhysicalKeyboardModifierState.initialize();
         addMagnificationListener();
         setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptyNodeViewSet());
         setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptyNodeViewSet());
@@ -3743,6 +3746,53 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
         Controller.getCurrentController().getMapViewManager().setZoom(newZoom);
     }
 
+    private boolean applyFreeNodeMagnification(double magnification) {
+        final boolean controlDown = PhysicalKeyboardModifierState.isControlPressed();
+        final boolean shiftDown = PhysicalKeyboardModifierState.isShiftPressed();
+        final boolean altDown = PhysicalKeyboardModifierState.isAltPressed();
+        final boolean metaDown = PhysicalKeyboardModifierState.isMetaPressed();
+        if (!FoldingControlGestureAction.hasMagnificationAction(controlDown, shiftDown, altDown, metaDown)) {
+            return false;
+        }
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> applyFreeNodeMagnification(magnification, controlDown, shiftDown,
+                    altDown, metaDown));
+            return true;
+        }
+        applyFreeNodeMagnification(magnification, controlDown, shiftDown, altDown, metaDown);
+        return true;
+    }
+
+    private void applyFreeNodeMagnification(double magnification, boolean controlDown, boolean shiftDown,
+            boolean altDown, boolean metaDown) {
+        final MainView mainView = getGestureTargetMainView();
+        if (mainView != null) {
+            FoldingControlGestureAction.applyMagnification(mainView, magnification, controlDown, shiftDown, altDown,
+                    metaDown);
+        }
+    }
+
+    private MainView getGestureTargetMainView() {
+        final Point mousePosition = getCurrentMousePosition();
+        final Component component = SwingUtilities.getDeepestComponentAt(this, mousePosition.x, mousePosition.y);
+        final NodeView nodeView = nodeView(component);
+        if (nodeView != null) {
+            return nodeView.getMainView();
+        }
+        final NodeView selected = getSelected();
+        return selected != null ? selected.getMainView() : null;
+    }
+
+    private NodeView nodeView(Component component) {
+        if (component instanceof MainView) {
+            return ((MainView) component).getNodeView();
+        }
+        if (component instanceof NodeView) {
+            return (NodeView) component;
+        }
+        return component != null ? (NodeView) SwingUtilities.getAncestorOfClass(NodeView.class, component) : null;
+    }
+
     private Point getCurrentMousePosition() {
         Point mousePosition = getMousePosition();
         if (mousePosition != null)
@@ -3778,7 +3828,10 @@ public class MapView extends JPanel implements Printable, Autoscroll, IMapChange
                 return method.invoke(this, args);
             if ("magnify".equals(method.getName()) && args != null && args.length == 1) {
                 final Method getMagnification = args[0].getClass().getMethod("getMagnification");
-                magnify(((Number) getMagnification.invoke(args[0])).doubleValue());
+                final double magnification = ((Number) getMagnification.invoke(args[0])).doubleValue();
+                if (!applyFreeNodeMagnification(magnification)) {
+                    magnify(magnification);
+                }
             }
             return null;
         };
