@@ -15,6 +15,7 @@ import org.freeplane.features.nodestyle.NodeStyleController;
 import org.freeplane.features.nodestyle.mindmapmode.MNodeStyleController;
 import org.freeplane.view.swing.map.MainView;
 import org.freeplane.view.swing.map.MapView;
+import org.freeplane.view.swing.map.MouseArea;
 import org.freeplane.view.swing.map.NodeView;
 import org.freeplane.view.swing.ui.DefaultNodeMouseWheelListener;
 import org.freeplane.view.swing.ui.MouseEventActor;
@@ -23,11 +24,14 @@ public class MNodeMouseWheelListener extends DefaultNodeMouseWheelListener {
 
 	public MNodeMouseWheelListener(MouseWheelListener mapMouseWheelListener) {
 		super(mapMouseWheelListener);
+		PhysicalKeyboardModifierState.initialize();
 	}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
-		if (FoldingControlGestureAction.applyDefault(e)) {
+		final MainView view = (MainView) e.getComponent();
+		if (isInFoldingHandler(view, e)) {
+			FoldingControlGestureAction.applyDefault(e);
 			e.consume();
 			return;
 		}
@@ -35,7 +39,6 @@ public class MNodeMouseWheelListener extends DefaultNodeMouseWheelListener {
 			super.mouseWheelMoved(e);
 			return;
 		}
-		final MainView view = (MainView) e.getComponent();
 		final MapView map = (MapView) SwingUtilities.getAncestorOfClass(MapView.class, view);
 		if(map.usesLayoutSpecificMaxNodeWidth())
 			return;
@@ -58,6 +61,11 @@ public class MNodeMouseWheelListener extends DefaultNodeMouseWheelListener {
 			styleController.setMinNodeWidth(node, newZoomedWidthQuantity);
 			styleController.setMaxNodeWidth(node, newZoomedWidthQuantity);
 		}
+	}
+
+	private boolean isInFoldingHandler(MainView view, MouseWheelEvent e) {
+		return view.getMouseArea() == MouseArea.FOLDING
+				|| view.isInFoldingRegion(e.getPoint()) && view.getFoldingControlBounds().contains(e.getPoint());
 	}
 
 

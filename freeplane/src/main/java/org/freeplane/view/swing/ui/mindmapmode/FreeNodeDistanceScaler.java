@@ -1,12 +1,13 @@
 package org.freeplane.view.swing.ui.mindmapmode;
 
 import java.awt.Dimension;
-import java.awt.Point;
+import java.awt.geom.Point2D;
 
 final class FreeNodeDistanceScaler {
 	private static final double SCALE_STEP = 0.08d;
 
-	static Point scaleChildShiftFromParentCenter(Dimension parentSize, Point childShift, Dimension childSize,
+	static Point2D.Double scaleChildShiftFromParentCenter(Dimension parentSize, Point2D.Double childShift,
+			Dimension childSize,
 			double direction) {
 		final double factor = scaleFactor(direction);
 		final double parentCenterX = parentSize.width / 2d;
@@ -15,8 +16,8 @@ final class FreeNodeDistanceScaler {
 		final double childCenterY = childShift.y + childSize.height / 2d;
 		final double newChildCenterX = parentCenterX + (childCenterX - parentCenterX) * factor;
 		final double newChildCenterY = parentCenterY + (childCenterY - parentCenterY) * factor;
-		return new Point((int) Math.round(newChildCenterX - childSize.width / 2d),
-				(int) Math.round(newChildCenterY - childSize.height / 2d));
+		return new Point2D.Double(newChildCenterX - childSize.width / 2d,
+				newChildCenterY - childSize.height / 2d);
 	}
 
 	private static double scaleFactor(double direction) {
